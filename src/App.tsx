@@ -2004,7 +2004,7 @@ export default function App() {
   // If user is not logged in or auth modal is open, display ONLY the full-screen standalone Auth interface
   if (!currentUser || isAuthModalOpen) {
     return (
-      <div className="fixed inset-0 h-screen w-screen overflow-hidden bg-black">
+      <div className="fixed inset-0 w-full h-full overflow-hidden bg-black">
         <AuthModal 
           isOpen={true} 
           onSuccess={handleAuthSuccess} 

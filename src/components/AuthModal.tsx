@@ -160,14 +160,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] h-screen w-screen flex items-center justify-center p-3 sm:p-4 bg-black overflow-hidden select-none">
+    <div className="fixed inset-0 z-[9999] w-full h-full flex items-center justify-center p-3 sm:p-4 bg-black overflow-hidden select-none">
       {/* Background Video */}
       <video
         autoPlay
         loop
         muted
         playsInline
-        className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none opacity-60 scale-105"
+        className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none opacity-60"
       >
         <source
           src="https://www.callofduty.com/cod/cdn/bo7/BO7_IGS_CODHQ_BaseKA_1696x1056_02sk_CLEAN_Compressed.mp4"
@@ -178,21 +178,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
       {/* Dark overlay gradient for readability */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/65 to-black/95 pointer-events-none z-0" />
 
-      <div className="w-full max-w-md bg-zinc-950/90 border border-zinc-800/80 rounded-3xl p-5 sm:p-7 shadow-2xl relative flex flex-col justify-between z-10 backdrop-blur-xl max-h-[94vh] overflow-y-auto no-scrollbar">
+      <div className="w-full max-w-md bg-zinc-950/90 border border-zinc-800/80 rounded-3xl p-5 sm:p-6 shadow-2xl relative flex flex-col justify-between z-10 backdrop-blur-xl max-h-[92vh] overflow-x-hidden overflow-y-auto no-scrollbar">
         {/* Glow ambient decoration */}
         <div className="absolute -top-24 -left-24 w-52 h-52 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -right-24 w-52 h-52 bg-orange-600/10 rounded-full blur-3xl pointer-events-none" />
 
         <div>
           {/* Header & Logo */}
-          <div className="flex flex-col items-center text-center mb-6">
-            <div className="w-14 h-14 bg-gradient-to-tr from-amber-600 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/25 mb-3 border border-amber-400/20">
-              <Zap className="w-7 h-7 text-white fill-white stroke-[1.5]" />
+          <div className="flex flex-col items-center text-center mb-4 sm:mb-5">
+            <div className="w-12 h-12 bg-gradient-to-tr from-amber-600 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/25 mb-2 border border-amber-400/20">
+              <Zap className="w-6 h-6 text-white fill-white stroke-[1.5]" />
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white font-sans">
               Life Organizer
             </h1>
-            <p className="text-xs sm:text-sm text-zinc-400 mt-1 font-medium">
+            <p className="text-xs sm:text-sm text-zinc-400 mt-0.5 font-medium">
               Organize sua vida!
             </p>
           </div>
@@ -504,8 +504,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
         </div>
 
         {/* Bottom Section: 5 PILARES TE ESPERANDO (as requested in screenshot) */}
-        <div className="mt-8 pt-6 border-t border-zinc-900/90 text-center">
-          <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3">
+        <div className="mt-5 pt-4 border-t border-zinc-900/90 text-center shrink-0">
+          <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2.5">
             5 PILARES TE ESPERANDO
           </p>
 
