@@ -568,7 +568,7 @@ export default function CalendarView({
   const handleGoogleLogin = async () => {
     try {
       const redirectUri = `${window.location.origin}/auth/callback`;
-      const response = await fetch(`/api/auth/google/url?redirect_uri=${encodeURIComponent(redirectUri)}`);
+      const response = await fetch(`/api/auth/google/url?redirect_uri=${encodeURIComponent(redirectUri)}&scope=calendar`);
       if (!response.ok) {
         const errText = await response.json();
         alert(errText.error || 'Erro ao gerar URL de autenticação.');

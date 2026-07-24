@@ -15,13 +15,15 @@ import {
   BookOpen,
   Coins,
   Flame,
-  Compass
+  Compass,
+  Link2
 } from 'lucide-react';
 import { 
   registerWithEmail, 
   loginWithEmailOrUsername, 
   loginWithGoogleProfile, 
   isUsernameAvailable, 
+  recoverAccountByEmail,
   AuthUser 
 } from '../lib/auth';
 
@@ -31,12 +33,22 @@ interface AuthModalProps {
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
-  // Initial mode is 'welcome', giving user choice to 'login' or 'signup'
-  const [mode, setMode] = useState<'welcome' | 'login' | 'signup'>('welcome');
+  // Initial mode is 'welcome', giving user choice to 'login', 'signup', or 'forgot'
+  const [mode, setMode] = useState<'welcome' | 'login' | 'signup' | 'forgot'>('welcome');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
+
+  // Account recovery states
+  const [recoveryEmail, setRecoveryEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [foundAccount, setFoundAccount] = useState<{ username: string; syncKey: string; user?: AuthUser } | null>(null);
+  const [recoverySuccessMsg, setRecoverySuccessMsg] = useState<string | null>(null);
+
+  // Link existing account states
+  const [linkSyncKeyInput, setLinkSyncKeyInput] = useState('');
+  const [showLinkSection, setShowLinkSection] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -101,7 +113,37 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
     }
   };
 
-  const handleGoogleLogin = async () => {
+  const handleRecoverSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg(null);
+    setRecoverySuccessMsg(null);
+    setLoading(true);
+
+    try {
+      const res = await recoverAccountByEmail(recoveryEmail, newPassword);
+      if (!res.ok) {
+        setErrorMsg(res.message || 'Erro ao localizar conta.');
+        setFoundAccount(null);
+      } else {
+        setFoundAccount({
+          username: res.username || '',
+          syncKey: res.syncKey || '',
+          user: res.user
+        });
+        setRecoverySuccessMsg(res.message || 'Conta localizada com sucesso!');
+
+        if (newPassword.trim() && res.user) {
+          onSuccess(res.user, rememberMe);
+        }
+      }
+    } catch (err) {
+      setErrorMsg('Erro ao tentar recuperar conta.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async (overrideLinkKey?: string) => {
     setErrorMsg(null);
     setLoading(true);
 
@@ -133,11 +175,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
           window.removeEventListener('message', handleMessage);
           const profile = event.data.profile;
 
-          const loginRes = await loginWithGoogleProfile({
-            email: profile.email,
-            name: profile.name,
-            picture: profile.picture
-          });
+          const localKey = localStorage.getItem('mbc_sync_key');
+          const validLocalKey = (localKey && localKey !== 'USUARIO_UNICO' && localKey.trim()) ? localKey.trim() : undefined;
+          const keyToLink = (typeof overrideLinkKey === 'string' && overrideLinkKey.trim())
+            ? overrideLinkKey.trim()
+            : (linkSyncKeyInput.trim() || validLocalKey);
+
+          const loginRes = await loginWithGoogleProfile(
+            {
+              email: profile.email,
+              name: profile.name,
+              picture: profile.picture
+            },
+            keyToLink
+          );
 
           if (loginRes.ok && loginRes.user) {
             onSuccess(loginRes.user, rememberMe);
@@ -147,7 +198,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
           setLoading(false);
         } else if (event.data?.type === 'GOOGLE_OAUTH_FAILURE') {
           window.removeEventListener('message', handleMessage);
-          setErrorMsg('Falha no login com Google.');
+          const errDetail = event.data?.error ? `: ${event.data.error}` : '';
+          setErrorMsg(`Falha no login com Google${errDetail}. Verifique as URIs de redirecionamento (redirect_uri) autorizadas no Google Cloud Console.`);
           setLoading(false);
         }
       };
@@ -242,7 +294,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
 
                 <button
                   type="button"
-                  onClick={handleGoogleLogin}
+                  onClick={() => handleGoogleLogin()}
                   disabled={loading}
                   className="w-full py-3 px-4 bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-800 text-xs font-semibold text-zinc-200 rounded-xl flex items-center justify-center gap-2.5 transition-all disabled:opacity-50"
                 >
@@ -266,6 +318,35 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
                   </svg>
                   <span>Continuar com o Google</span>
                 </button>
+
+                <div className="mt-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setShowLinkSection(!showLinkSection)}
+                    className="text-[11px] text-zinc-400 hover:text-amber-400 flex items-center justify-center gap-1.5 w-full transition-colors font-medium py-1"
+                  >
+                    <Link2 className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Possui conta prévia ou chave de sync? Vincular ao Google</span>
+                  </button>
+
+                  {showLinkSection && (
+                    <div className="mt-2 p-3 bg-zinc-900/90 border border-zinc-800 rounded-xl space-y-2 animate-in fade-in">
+                      <label className="block text-[11px] font-semibold text-zinc-300">
+                        Usuário ou Chave de Sincronização a vincular:
+                      </label>
+                      <input
+                        type="text"
+                        value={linkSyncKeyInput}
+                        onChange={(e) => setLinkSyncKeyInput(e.target.value)}
+                        placeholder="Ex: @usuario ou MBC-..."
+                        className="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500"
+                      />
+                      <p className="text-[10px] text-zinc-400 leading-tight">
+                        Ao entrar com o Google, os dados associados a este usuário/chave serão mantidos e vinculados à sua conta Google.
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -395,9 +476,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
 
                 {/* Password Field */}
                 <div>
-                  <label className="block text-xs font-medium text-zinc-300 mb-1">
-                    Senha <span className="text-amber-500">*</span>
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-medium text-zinc-300">
+                      Senha <span className="text-amber-500">*</span>
+                    </label>
+                    {mode === 'login' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMode('forgot');
+                          setErrorMsg(null);
+                          setRecoveryEmail(email && email.includes('@') ? email : '');
+                          setFoundAccount(null);
+                          setRecoverySuccessMsg(null);
+                        }}
+                        className="text-[11px] text-amber-500 hover:text-amber-400 hover:underline transition-colors font-medium"
+                      >
+                        Esqueceu seus dados?
+                      </button>
+                    )}
+                  </div>
                   <div className="relative">
                     <Lock className="w-4 h-4 text-zinc-500 absolute left-3 top-3" />
                     <input
@@ -499,6 +597,139 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
                 </svg>
                 <span>Entrar com o Google</span>
               </button>
+            </div>
+          )}
+
+          {/* Mode Form (Forgot Password & Account Recovery) */}
+          {mode === 'forgot' && (
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-200">
+              <div className="flex items-center justify-between mb-3.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('login');
+                    setErrorMsg(null);
+                    setFoundAccount(null);
+                    setRecoverySuccessMsg(null);
+                  }}
+                  className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition-colors"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Voltar para Login</span>
+                </button>
+
+                <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wide">
+                  Recuperação
+                </span>
+              </div>
+
+              <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-3 mb-3 text-xs text-zinc-300">
+                <p className="font-semibold text-white mb-0.5 flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-amber-500 shrink-0" />
+                  Recuperar Conta por E-mail
+                </p>
+                <p className="text-zinc-400 text-[11px] leading-relaxed">
+                  Insira o e-mail cadastrado para encontrar seu usuário e chave de sincronização e redefinir sua senha.
+                </p>
+              </div>
+
+              {errorMsg && (
+                <div className="mb-3 p-3 bg-red-950/60 border border-red-800/80 rounded-xl flex items-start gap-2.5 text-red-300 text-xs">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-400" />
+                  <span>{errorMsg}</span>
+                </div>
+              )}
+
+              {recoverySuccessMsg && (
+                <div className="mb-3 p-3 bg-emerald-950/60 border border-emerald-800/80 rounded-xl flex items-start gap-2.5 text-emerald-300 text-xs">
+                  <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-400" />
+                  <span>{recoverySuccessMsg}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleRecoverSubmit} className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium text-zinc-300 mb-1">
+                    E-mail cadastrado <span className="text-amber-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-zinc-500 absolute left-3 top-3" />
+                    <input
+                      type="email"
+                      value={recoveryEmail}
+                      onChange={(e) => {
+                        setRecoveryEmail(e.target.value);
+                        setErrorMsg(null);
+                      }}
+                      placeholder="seu@email.com"
+                      className="w-full pl-9 pr-3 py-2.5 bg-zinc-900/90 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500 transition-all"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {foundAccount && (
+                  <div className="space-y-2.5 bg-zinc-900/90 border border-amber-500/30 rounded-2xl p-3 animate-in fade-in">
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-[11px] text-zinc-400 font-medium">Sua conta foi localizada:</span>
+                      <div className="flex items-center justify-between bg-zinc-950 p-2 rounded-lg border border-zinc-800">
+                        <span className="text-[11px] text-zinc-400">Usuário:</span>
+                        <span className="text-xs font-bold text-amber-400">@{foundAccount.username}</span>
+                      </div>
+                      <div className="flex items-center justify-between bg-zinc-950 p-2 rounded-lg border border-zinc-800">
+                        <span className="text-[11px] text-zinc-400">Chave Sync:</span>
+                        <span className="text-[11px] font-mono text-zinc-200 select-all">{foundAccount.syncKey}</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-zinc-300 mb-1">
+                        Nova Senha (deixe em branco para não alterar)
+                      </label>
+                      <div className="relative">
+                        <Lock className="w-4 h-4 text-zinc-500 absolute left-3 top-3" />
+                        <input
+                          type="password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="Nova senha (mín. 6 caracteres)"
+                          className="w-full pl-9 pr-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500 transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-zinc-800/80">
+                      <button
+                        type="button"
+                        onClick={() => handleGoogleLogin(foundAccount.syncKey || foundAccount.username)}
+                        disabled={loading}
+                        className="w-full py-2 px-3 bg-zinc-950 hover:bg-zinc-800 border border-amber-500/40 rounded-xl text-xs font-semibold text-amber-400 flex items-center justify-center gap-2 transition-all"
+                      >
+                        <Link2 className="w-3.5 h-3.5 text-amber-500" />
+                        <span>Vincular @{foundAccount.username} ao Google e Entrar</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-2.5 px-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-zinc-950 font-bold text-xs rounded-xl shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 transition-all disabled:opacity-50 mt-1"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Buscando conta...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>{foundAccount ? (newPassword.trim() ? 'Redefinir Senha e Entrar' : 'Entrar na Conta') : 'Localizar Minha Conta'}</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </form>
             </div>
           )}
         </div>

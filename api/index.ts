@@ -25,12 +25,22 @@ app.get("/api/auth/google/url", (req, res) => {
   }
 
   const clientRedirectUri = (req.query.redirect_uri as string) || getRedirectUri(req);
-  const scopes = [
-    "https://www.googleapis.com/auth/calendar",
-    "https://www.googleapis.com/auth/calendar.events",
+  const requestedScope = req.query.scope as string;
+  const defaultScopes = [
     "https://www.googleapis.com/auth/userinfo.profile",
     "https://www.googleapis.com/auth/userinfo.email"
-  ].join(" ");
+  ];
+
+  if (requestedScope === "calendar") {
+    defaultScopes.push(
+      "https://www.googleapis.com/auth/calendar",
+      "https://www.googleapis.com/auth/calendar.events"
+    );
+  }
+
+  const scopes = requestedScope && requestedScope !== "calendar" 
+    ? requestedScope 
+    : defaultScopes.join(" ");
 
   const state = clientRedirectUri;
 
