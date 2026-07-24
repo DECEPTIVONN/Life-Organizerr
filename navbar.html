@@ -1,0 +1,2171 @@
+<!--
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  NAVBAR STANDALONE — Sidebar HUD + Mobile Header + Search + Sliding Menu  ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║  Arquivo autocontido com HTML, CSS e JS completos.                         ║
+║  Basta copiar este arquivo e incluir na sua página.                        ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║  COMO USAR:                                                                ║
+║                                                                            ║
+║  1. Copie todo o conteúdo deste arquivo para um arquivo .html              ║
+║  2. Adicione um container no <body> da sua página:                         ║
+║     <div id="navbar-container"></div>                                       ║
+║  3. Coloque este container como PRIMEIRO filho do <body>                   ║
+║  4. Adicione padding-left no body para desktop (76px colapsado):           ║
+║     <style>body { margin: 0; padding: 0; }                                 ║
+║     @media (min-width: 769px) { body { padding-left: 76px; } }             ║
+║     @media (max-width: 768px) { body { padding-top: 65px; } }</style>      ║
+║  5. Copie as variáveis CSS do :root para o seu main.css (ver SEÇÃO 1)      ║
+║  6. Ajuste os hrefs dos links para apontar às suas páginas                 ║
+║  7. Ajuste o caminho da logo (Assets/Images/LogoItens/D.jpg)               ║
+║                                                                            ║
+║  ARQUITETURA:                                                              ║
+║  • Desktop (> 768px): Sidebar HUD fixa à esquerda (76px → 256px hover)    ║
+║  • Mobile (≤ 768px): Header fixo no topo + hamburger → sidebar deslizante ║
+║  • Barra de progresso no topo em todas as telas                            ║
+║  • Search overlay com Ctrl+K                                               ║
+║                                                                            ║
+║  Z-INDEX HIERARCHY:                                                        ║
+║  progressBar: 10001 | sidebar: 999 | mobile header: 1000                  ║
+║  sidebar-overlay: 9998 | sidebar-menu: 9999 | search: 9990                ║
+║                                                                            ║
+║  DEPENDÊNCIAS:                                                             ║
+║  • Google Font: Rajdhani (300-900)                                         ║
+║  • Imagem de logo em ./Assets/Images/LogoItens/D.jpg                       ║
+║  • Opcional: thememanager.js para troca de temas                           ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+-->
+
+<!--
+  ╔═════════════════════════════════════════════════════════════╗
+  ║  SEÇÃO 1: CSS VARIABLES — Copie para o seu :root           ║
+  ╚═════════════════════════════════════════════════════════════╝
+  
+  Adicione estas variáveis no :root do seu CSS principal para
+  suportar troca dinâmica de temas via ThemeManager:
+  
+  :root {
+      --theme-primary: #8b5cf6;
+      --theme-primary-light: #c084fc;
+      --theme-primary-dark: #6d28d9;
+      --theme-accent: #f5a6d3;
+      --theme-glow: rgba(139, 92, 246, 0.8);
+      --theme-shadow: rgba(139, 92, 246, 0.4);
+      --theme-border: rgba(139, 92, 246, 0.4);
+      --theme-border-light: rgba(139, 92, 246, 0.2);
+      --theme-overlay: rgba(139, 92, 246, 0.1);
+      --theme-background-card-hover: rgba(139, 92, 246, 0.15);
+      --theme-gradient: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  }
+-->
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Navbar Standalone</title>
+
+    <!-- Google Font Rajdhani -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        /* =================================================================
+           RESET & BASE
+           ================================================================= */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --theme-primary: #8b5cf6;
+            --theme-primary-light: #c084fc;
+            --theme-primary-dark: #6d28d9;
+            --theme-accent: #f5a6d3;
+            --theme-glow: rgba(139, 92, 246, 0.8);
+            --theme-shadow: rgba(139, 92, 246, 0.4);
+            --theme-border: rgba(139, 92, 246, 0.4);
+            --theme-border-light: rgba(139, 92, 246, 0.2);
+            --theme-overlay: rgba(139, 92, 246, 0.1);
+            --theme-background-card-hover: rgba(139, 92, 246, 0.15);
+            --theme-gradient: linear-gradient(135deg, #8b5cf6, #6d28d9);
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: #0a0a0a;
+            color: #f8fafc;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Desktop: sidebar pushes content */
+        @media (min-width: 769px) {
+            body { padding-left: 76px; transition: padding-left 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
+        }
+
+        /* Mobile: header pushes content */
+        @media (max-width: 768px) {
+            body { padding-top: 65px; }
+        }
+
+        /* =================================================================
+           PROGRESS BAR
+           ================================================================= */
+        #progressBar {
+            position: fixed;
+            top: 0; left: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--theme-primary), var(--theme-primary-light));
+            width: 0%;
+            transition: width 0.1s linear;
+            z-index: 10001;
+            box-shadow: 0 0 10px var(--theme-glow);
+        }
+
+        /* =================================================================
+           MOBILE HEADER (≤ 768px)
+           ================================================================= */
+        .mobile-header {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--theme-border-light);
+        }
+
+        .mobile-header.scrolled {
+            background: rgba(0, 0, 0, 0.85);
+            border-bottom-color: var(--theme-border);
+        }
+
+        .mobile-header nav { background: transparent; }
+
+        .mobile-header .nav-container {
+            max-width: 100%;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .mobile-header .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .mobile-header .logo-text {
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .mobile-header .logo-icon {
+            width: 35px; height: 35px;
+            background: linear-gradient(135deg, var(--theme-primary), var(--theme-primary-dark));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+            object-fit: cover;
+        }
+
+        .mobile-header .nav-right {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        @media (min-width: 769px) {
+            .mobile-header { display: none !important; }
+        }
+
+        /* =================================================================
+           DESKTOP SIDEBAR HUD (> 768px)
+           ================================================================= */
+        .sidebar-hud {
+            position: fixed;
+            top: 0; left: 0;
+            height: 100vh;
+            width: 76px;
+            z-index: 999;
+            background: rgba(3, 5, 16, 0.95);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border-right: 1px solid var(--theme-border-light);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: 4px 0 24px rgba(3, 5, 16, 0.8);
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .sidebar-hud.hovered,
+        .sidebar-hud.pinned { width: 256px; }
+
+        @media (min-width: 769px) {
+            body.sidebar-layout-collapsed { padding-left: 76px; }
+            body.sidebar-layout-pinned    { padding-left: 256px; }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar-hud { display: none !important; }
+        }
+
+        /* --- Brand --- */
+        .sidebar-brand {
+            height: 72px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            border-bottom: 1px solid rgba(139, 92, 246, 0.1);
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        .brand-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            min-width: 0;
+        }
+
+        .logo-icon-container {
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, var(--theme-primary), var(--theme-primary-dark));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.4);
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-brand:hover .logo-icon-container {
+            transform: rotate(15deg) scale(1.05);
+        }
+
+        .logo-img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+        }
+
+        .brand-text {
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            transform: translateX(-15px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .sidebar-hud.hovered .brand-text,
+        .sidebar-hud.pinned .brand-text {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .brand-title {
+            font-size: 14px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            color: #fff;
+            line-height: 1;
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        .brand-subtitle {
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: var(--theme-primary-light);
+            margin-top: 3px;
+            text-transform: uppercase;
+        }
+
+        .sidebar-brand-actions {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .sidebar-login-btn,
+        .sidebar-pin-btn {
+            background: transparent;
+            border: none;
+            color: #555;
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s ease, color 0.2s ease, background 0.2s ease;
+        }
+
+        .sidebar-login-btn:hover,
+        .sidebar-pin-btn:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .sidebar-pin-btn.active { color: var(--theme-primary-light); opacity: 1; }
+
+        .sidebar-hud.hovered .sidebar-login-btn,
+        .sidebar-hud.hovered .sidebar-pin-btn,
+        .sidebar-hud.pinned .sidebar-login-btn,
+        .sidebar-hud.pinned .sidebar-pin-btn { opacity: 1; }
+
+        /* --- Navigation Items --- */
+        .sidebar-navigation {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 14px 10px;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .sidebar-navigation::-webkit-scrollbar { width: 4px; }
+        .sidebar-navigation::-webkit-scrollbar-thumb {
+            background: var(--theme-border-light);
+            border-radius: 2px;
+        }
+
+        .sidebar-nav-item {
+            width: 100%;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .hud-active-bar {
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 0;
+            background: linear-gradient(to bottom, var(--theme-primary), var(--theme-accent));
+            box-shadow: 0 0 10px var(--theme-primary);
+            border-radius: 0 4px 4px 0;
+            transition: width 0.25s ease;
+        }
+
+        .sidebar-nav-link {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            height: 44px;
+            padding: 0 16px;
+            background: transparent;
+            border: 1px solid transparent;
+            color: #94a3b8;
+            text-decoration: none;
+            border-radius: 6px;
+            transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+            cursor: pointer;
+            font-family: 'Rajdhani', sans-serif;
+            outline: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sidebar-nav-item .sidebar-nav-link.search-icon-btn {
+            width: 100%; height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            border-radius: 6px;
+            font-size: inherit;
+        }
+
+        .sidebar-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            width: 20px;
+            transition: transform 0.25s ease, color 0.25s ease;
+        }
+
+        .sidebar-text-group {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            margin-left: 16px;
+            opacity: 0;
+            transform: translateX(-15px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            white-space: nowrap;
+            text-align: left;
+        }
+
+        .sidebar-hud.hovered .sidebar-text-group,
+        .sidebar-hud.pinned .sidebar-text-group {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .sidebar-label {
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: inherit;
+            line-height: 1.2;
+        }
+
+        .sidebar-desc {
+            font-size: 9px;
+            font-weight: 500;
+            color: #555;
+            line-height: 1;
+            margin-top: 2px;
+        }
+
+        .chevron-icon {
+            margin-left: auto;
+            color: #555;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+            opacity: 0;
+        }
+
+        .sidebar-hud.hovered .chevron-icon,
+        .sidebar-hud.pinned .chevron-icon { opacity: 1; }
+
+        .sidebar-nav-item.expanded .chevron-icon { transform: rotate(180deg); }
+
+        .sidebar-nav-link:hover {
+            background: rgba(255, 255, 255, 0.03);
+            color: #fff;
+            border-color: rgba(139, 92, 246, 0.1);
+        }
+
+        .sidebar-nav-link:hover .sidebar-icon {
+            transform: scale(1.1);
+            color: var(--theme-primary-light);
+        }
+
+        .sidebar-nav-link:hover .sidebar-desc { color: #888; }
+
+        .sidebar-nav-link.active {
+            background: linear-gradient(90deg, rgba(139, 92, 246, 0.1), transparent);
+            color: var(--theme-primary-light);
+            border-color: rgba(139, 92, 246, 0.2);
+        }
+
+        .sidebar-nav-link.active .hud-active-bar { width: 4px; }
+
+        .sidebar-nav-link.active .sidebar-icon {
+            color: var(--theme-primary-light);
+            filter: drop-shadow(0 0 6px rgba(139, 92, 246, 0.6));
+        }
+
+        .submenu-trigger.active-parent {
+            background: linear-gradient(90deg, rgba(139, 92, 246, 0.1), transparent);
+            color: var(--theme-primary-light);
+            border-color: rgba(139, 92, 246, 0.2);
+        }
+
+        .submenu-trigger.active-parent .hud-active-bar { width: 4px; }
+        .submenu-trigger.active-parent .sidebar-icon {
+            color: var(--theme-primary-light);
+            filter: drop-shadow(0 0 6px rgba(139, 92, 246, 0.6));
+        }
+        .submenu-trigger.active-parent .sidebar-label { color: var(--theme-primary-light); }
+
+        /* Submenu */
+        .sidebar-submenu-list {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding-left: 54px;
+        }
+
+        .sidebar-hud.hovered .sidebar-nav-item.expanded .sidebar-submenu-list,
+        .sidebar-hud.pinned .sidebar-nav-item.expanded .sidebar-submenu-list {
+            max-height: 300px;
+            margin-top: 4px;
+        }
+
+        .sidebar-hud:not(.hovered):not(.pinned) .sidebar-submenu-list {
+            max-height: 0 !important;
+        }
+
+        .sidebar-sub-item-link {
+            display: block;
+            padding: 8px 12px;
+            color: #64748b;
+            text-decoration: none;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            text-align: left;
+        }
+
+        .sidebar-sub-item-link::before {
+            content: '•';
+            color: var(--theme-primary);
+            margin-right: 8px;
+            font-size: 10px;
+        }
+
+        .sidebar-sub-item-link:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.03);
+            padding-left: 18px;
+        }
+
+        .sidebar-sub-item-link.active {
+            color: var(--theme-primary-light);
+            background: rgba(139, 92, 246, 0.05);
+        }
+
+        /* --- Bottom Utilities --- */
+        .sidebar-utilities {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            padding: 6px 10px;
+            border-top: 1px solid rgba(139, 92, 246, 0.1);
+        }
+
+        .sidebar-utilities .lang-selector,
+        .sidebar-utilities .theme-selector {
+            position: relative;
+            width: 100%;
+            height: 38px;
+            display: flex;
+            align-items: center;
+        }
+
+        .sidebar-utilities .lang-btn,
+        .sidebar-utilities .theme-btn {
+            width: 100%; height: 38px;
+            padding: 0 16px;
+            justify-content: flex-start;
+            gap: 12px;
+            border: none;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            border-radius: 6px;
+            color: #64748b;
+            cursor: pointer;
+            font-family: 'Rajdhani', sans-serif;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-utilities .lang-btn {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .sidebar-utilities .lang-btn svg,
+        .sidebar-utilities .theme-btn svg {
+            flex-shrink: 0;
+            width: 18px; height: 18px;
+        }
+
+        .sidebar-utilities .lang-btn .util-label,
+        .sidebar-utilities .theme-btn .util-label { margin-left: 0; }
+
+        .sidebar-utilities .lang-btn:hover,
+        .sidebar-utilities .theme-btn:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        /* --- Theme/Language Dropdowns --- */
+        .lang-selector, .theme-selector { position: relative; }
+
+        .lang-btn {
+            background: transparent;
+            border: 1px solid var(--theme-border-light);
+            color: #fff;
+            padding: 8px 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: 600;
+            font-family: 'Rajdhani', sans-serif;
+            letter-spacing: 1px;
+            border-radius: 2px;
+        }
+
+        .lang-btn:hover {
+            color: var(--theme-primary-light);
+            border-color: var(--theme-primary-light);
+            background: var(--theme-overlay);
+        }
+
+        .lang-dropdown,
+        .theme-dropdown {
+            position: fixed;
+            min-width: 200px;
+            background: rgba(10, 10, 10, 0.98);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            border: 1px solid var(--theme-border);
+            border-top: 3px solid var(--theme-primary);
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.9);
+            max-height: 350px;
+            overflow-y: auto;
+            border-radius: 4px;
+            z-index: 10002;
+        }
+
+        .lang-dropdown.active,
+        .theme-dropdown.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .lang-option,
+        .theme-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 11px 18px;
+            color: #aaa;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border-bottom: 1px solid rgba(139, 92, 246, 0.15);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .lang-option::before,
+        .theme-option::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0;
+            width: 0; height: 100%;
+            background: var(--theme-overlay);
+            transition: width 0.3s ease;
+            z-index: -1;
+        }
+
+        .lang-option:hover::before,
+        .theme-option:hover::before { width: 100%; }
+
+        .lang-option:last-child,
+        .theme-option:last-child { border-bottom: none; }
+
+        .lang-option:hover,
+        .theme-option:hover { color: #fff; padding-left: 23px; }
+
+        .lang-option.active,
+        .theme-option.active {
+            color: var(--theme-primary);
+            background: var(--theme-overlay);
+        }
+
+        .theme-btn {
+            background: transparent;
+            border: 1px solid var(--theme-border-light);
+            color: #fff;
+            padding: 8px 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 16px;
+            font-family: 'Rajdhani', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px; height: 36px;
+            border-radius: 2px;
+        }
+
+        .theme-btn:hover {
+            border-color: var(--theme-primary);
+            background: var(--theme-overlay);
+            transform: scale(1.05);
+        }
+
+        .nav-buy-button {
+            background: linear-gradient(135deg, var(--theme-primary), var(--theme-primary-dark));
+            border: 2px solid var(--theme-primary);
+            color: #fff;
+            padding: 10px 24px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        .nav-buy-button:hover {
+            background: linear-gradient(135deg, var(--theme-primary-light), var(--theme-primary));
+            box-shadow: 0 0 20px var(--theme-glow);
+            transform: scale(1.05);
+        }
+
+        /* =================================================================
+           HAMBURGER & MOBILE SLIDING SIDEBAR
+           ================================================================= */
+        .menu-icon {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 40px; height: 40px;
+            cursor: pointer;
+            background: transparent;
+            border: none;
+            gap: 5px;
+            transition: all 0.3s ease;
+            padding: 0;
+        }
+
+        .menu-icon:hover { transform: scale(1.1); }
+
+        .menu-icon-svg {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            width: 100%; height: 100%;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .menu-icon-svg span {
+            display: block;
+            width: 24px; height: 3px;
+            background: #fff;
+            border-radius: 2px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .menu-icon.active .menu-icon-svg span:nth-child(1) { transform: rotate(45deg) translate(10px, 10px); }
+        .menu-icon.active .menu-icon-svg span:nth-child(2) { opacity: 0; }
+        .menu-icon.active .menu-icon-svg span:nth-child(3) { transform: rotate(-45deg) translate(7px, -7px); }
+
+        .sidebar-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9998;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.4s ease;
+        }
+
+        .sidebar-overlay.active { opacity: 1; visibility: visible; }
+
+        .sidebar-menu {
+            position: fixed;
+            top: 0; right: -420px;
+            width: 100%;
+            max-width: 400px;
+            height: 100%;
+            background: rgba(3, 5, 16, 0.98);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 9999;
+            overflow-y: auto;
+            transition: right 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            border-left: 1px solid var(--theme-border);
+            box-shadow: -10px 0 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .sidebar-menu.active { right: 0; }
+
+        .sidebar-header {
+            padding: 30px 40px;
+            border-bottom: 1px solid var(--theme-border-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sidebar-login {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-login:hover { transform: translateX(3px); }
+
+        .sidebar-login-icon {
+            width: 38px; height: 38px;
+            background: linear-gradient(135deg, var(--theme-primary), var(--theme-primary-dark));
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px var(--theme-shadow);
+        }
+
+        .sidebar-login-text { display: flex; flex-direction: column; gap: 2px; }
+        .sidebar-login-label {
+            font-size: 10px;
+            color: var(--theme-primary);
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        .sidebar-login-title {
+            font-size: 14px;
+            color: #fff;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .sidebar-close {
+            background: transparent;
+            border: 2px solid var(--theme-border-light);
+            color: #fff;
+            font-size: 24px;
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        .sidebar-close:hover {
+            background: var(--theme-overlay);
+            border-color: var(--theme-primary);
+            transform: rotate(90deg);
+        }
+
+        .sidebar-content { padding: 40px 0; }
+
+        .sidebar-nav { padding: 0 40px; }
+
+        .sidebar-section { margin-bottom: 6px; }
+
+        .sidebar-link {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 16px;
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: capitalize;
+            letter-spacing: 0.5px;
+            background: rgba(30, 41, 59, 0.4);
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            position: relative;
+            margin-bottom: 4px;
+        }
+
+        .sidebar-link-icon {
+            width: 18px; height: 18px;
+            margin-right: 10px;
+            color: var(--theme-primary);
+            flex-shrink: 0;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-link-content {
+            display: flex;
+            align-items: center;
+            flex: 1;
+        }
+
+        .sidebar-link:hover {
+            color: #fff;
+            background: var(--theme-background-card-hover);
+            transform: translateX(4px);
+        }
+
+        .sidebar-link:hover .sidebar-link-icon { transform: scale(1.15); }
+
+        .sidebar-link.active {
+            background: linear-gradient(90deg, var(--theme-background-card-hover), var(--theme-overlay));
+            color: #fff;
+            border-left: 2px solid var(--theme-primary);
+        }
+
+        .sidebar-link.has-submenu::after {
+            content: '›';
+            font-size: 18px;
+            transition: transform 0.3s ease;
+            margin-left: auto;
+        }
+
+        .sidebar-link.has-submenu.expanded::after { transform: rotate(90deg); }
+
+        .sidebar-submenu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            padding-left: 15px;
+        }
+
+        .sidebar-submenu.expanded { max-height: 500px; }
+
+        .sidebar-sublink {
+            display: flex;
+            align-items: center;
+            padding: 10px 16px;
+            color: #64748b;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border-radius: 4px;
+            margin-bottom: 3px;
+        }
+
+        .sidebar-sublink::before {
+            content: '•';
+            margin-right: 8px;
+            color: var(--theme-primary);
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-sublink:hover {
+            color: #fff;
+            background: var(--theme-overlay);
+            padding-left: 21px;
+        }
+
+        .sidebar-sublink:hover::before { transform: scale(1.5); }
+
+        .sidebar-divider {
+            height: 1px;
+            background: linear-gradient(to right, transparent, var(--theme-border), transparent);
+            margin: 40px 0;
+        }
+
+        .sidebar-footer {
+            margin-top: 60px;
+            padding: 30px 40px;
+            border-top: 1px solid var(--theme-border-light);
+        }
+
+        .sidebar-social {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .sidebar-social-icon {
+            width: 45px; height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--theme-overlay);
+            border: 2px solid var(--theme-border);
+            color: #fff;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            clip-path: polygon(20% 0%, 80% 0%, 100% 20%, 100% 80%, 80% 100%, 20% 100%, 0% 80%, 0% 20%);
+        }
+
+        .sidebar-social-icon:hover {
+            background: var(--theme-background-card-hover);
+            border-color: var(--theme-primary);
+            transform: translateY(-5px);
+        }
+
+        .sidebar-social-icon svg { width: 20px; height: 20px; fill: currentColor; }
+
+        /* =================================================================
+           SEARCH OVERLAY
+           ================================================================= */
+        @keyframes searchGlowPulse {
+            0%, 100% { box-shadow: 0 0 15px var(--theme-glow); }
+            50% { box-shadow: 0 0 25px var(--theme-glow); }
+        }
+
+        @keyframes searchSlideDown {
+            from { opacity: 0; transform: translateY(-20px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        @keyframes searchExpand {
+            from { opacity: 0; max-height: 0; }
+            to { opacity: 1; max-height: 600px; }
+        }
+
+        @keyframes filtersSlideIn {
+            from { opacity: 0; transform: translateY(-6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes countPop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+
+        .search-icon-btn {
+            background: transparent;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px; height: 40px;
+            border-radius: 50%;
+        }
+
+        .search-icon-btn:hover {
+            color: var(--theme-primary);
+            transform: scale(1.1);
+        }
+
+        .search-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: none;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 9990;
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: 80px;
+        }
+
+        .search-overlay.active {
+            display: flex;
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .search-container {
+            width: 92%;
+            max-width: 700px;
+            background: linear-gradient(145deg, rgba(20, 27, 45, 0.98), rgba(15, 23, 42, 0.98));
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--theme-border);
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.7), 0 0 40px rgba(139, 92, 246, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            animation: searchSlideDown 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: padding 0.3s ease;
+        }
+
+        .search-overlay.compact .search-results-section,
+        .search-overlay.compact .search-filters-section { display: none; }
+
+        .search-overlay:not(.compact) .search-results-section {
+            animation: searchExpand 0.35s ease forwards;
+        }
+
+        .search-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .search-header h2 {
+            margin: 0;
+            font-size: 20px;
+            color: #fff;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            letter-spacing: 0.5px;
+        }
+
+        .search-header h2 svg { color: var(--theme-primary); opacity: 0.8; }
+
+        .search-close-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #94a3b8;
+            font-size: 24px;
+            width: 36px; height: 36px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .search-close-btn:hover {
+            background: rgba(239, 68, 68, 0.15);
+            border-color: rgba(239, 68, 68, 0.4);
+            color: #ef4444;
+            transform: rotate(90deg);
+        }
+
+        .search-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-input-icon {
+            position: absolute;
+            left: 16px;
+            color: var(--theme-primary);
+            pointer-events: none;
+            transition: color 0.3s ease;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 14px 100px 14px 48px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 2px solid rgba(139, 92, 246, 0.2);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            font-family: 'Rajdhani', sans-serif;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .search-input:focus {
+            background: rgba(15, 23, 42, 0.8);
+            border-color: var(--theme-primary);
+            animation: searchGlowPulse 2s ease-in-out infinite;
+        }
+
+        .search-input:focus ~ .search-input-icon { color: var(--theme-primary-light); }
+        .search-input::placeholder { color: #475569; font-weight: 500; }
+
+        .search-shortcut-hint {
+            position: absolute;
+            right: 14px;
+            display: flex;
+            gap: 4px;
+            pointer-events: none;
+            opacity: 0.5;
+            transition: opacity 0.3s ease;
+        }
+
+        .search-input:focus ~ .search-shortcut-hint { opacity: 0.2; }
+
+        .search-shortcut-hint kbd {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2px 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 5px;
+            font-size: 11px;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            color: #64748b;
+            line-height: 1.4;
+        }
+
+        /* Filters */
+        .search-filters-section { margin-top: 24px; margin-bottom: 24px; }
+
+        .filters-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #64748b;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 8px;
+            transition: all 0.25s ease;
+            user-select: none;
+        }
+
+        .filters-label:hover {
+            color: var(--theme-primary);
+            background: rgba(139, 92, 246, 0.08);
+        }
+
+        .filters-label svg { opacity: 0.6; transition: all 0.3s ease; }
+
+        .filters-label svg.chevron {
+            width: 12px; height: 12px;
+            opacity: 0.4;
+            transition: transform 0.3s ease;
+        }
+
+        .search-filters-section.expanded .filters-label svg.chevron { transform: rotate(180deg); }
+
+        .search-filters {
+            display: none;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 14px;
+            animation: filtersSlideIn 0.25s ease;
+        }
+
+        .search-filters-section.expanded .search-filters { display: flex; }
+
+        .filter-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(139, 92, 246, 0.15);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            user-select: none;
+        }
+
+        .filter-pill:hover {
+            background: rgba(139, 92, 246, 0.1);
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+
+        .filter-pill input { display: none; }
+
+        .filter-pill-icon {
+            display: flex;
+            align-items: center;
+            color: #64748b;
+            transition: color 0.25s ease;
+        }
+
+        .filter-pill-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #94a3b8;
+            transition: color 0.25s ease;
+        }
+
+        .filter-pill:has(input:checked) {
+            background: var(--theme-overlay);
+            border-color: var(--theme-primary);
+            box-shadow: 0 0 12px rgba(139, 92, 246, 0.15);
+        }
+
+        .filter-pill:has(input:checked) .filter-pill-icon { color: var(--theme-primary); }
+        .filter-pill:has(input:checked) .filter-pill-label { color: var(--theme-primary-light); }
+
+        /* Results */
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .results-title {
+            font-size: 12px;
+            color: #64748b;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .results-title svg { opacity: 0.5; }
+
+        .results-count {
+            background: var(--theme-overlay);
+            color: var(--theme-primary);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            transition: all 0.3s ease;
+        }
+
+        .results-count.animate { animation: countPop 0.3s ease; }
+
+        .search-results-list {
+            max-height: 400px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(139, 92, 246, 0.3) transparent;
+        }
+
+        .search-results-list::-webkit-scrollbar { width: 6px; }
+        .search-results-list::-webkit-scrollbar-track { background: transparent; }
+        .search-results-list::-webkit-scrollbar-thumb {
+            background: rgba(139, 92, 246, 0.25);
+            border-radius: 3px;
+        }
+
+        .search-result-item {
+            display: flex;
+            gap: 14px;
+            padding: 14px;
+            background: rgba(30, 41, 59, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            align-items: flex-start;
+        }
+
+        .search-result-item:hover {
+            background: rgba(139, 92, 246, 0.08);
+            border-color: rgba(139, 92, 246, 0.2);
+            transform: translateX(4px);
+        }
+
+        .search-result-image {
+            width: 48px; height: 48px;
+            border-radius: 10px;
+            background: var(--theme-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .search-result-image img { width: 100%; height: 100%; object-fit: cover; }
+
+        .search-result-content { flex: 1; min-width: 0; }
+
+        .search-result-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #e2e8f0;
+            margin: 0 0 4px 0;
+            text-transform: capitalize;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .search-result-desc {
+            font-size: 12px;
+            color: #64748b;
+            margin: 0;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .search-result-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 6px;
+            padding: 3px 8px;
+            background: rgba(139, 92, 246, 0.1);
+            color: var(--theme-primary);
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .search-result-arrow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #475569;
+            flex-shrink: 0;
+            transition: color 0.25s ease;
+        }
+
+        .search-result-item:hover .search-result-arrow { color: var(--theme-primary); }
+
+        .search-empty { text-align: center; padding: 32px 20px; }
+        .search-empty-illustration { margin-bottom: 16px; opacity: 0.9; }
+
+        .search-empty-title {
+            font-size: 15px;
+            color: #94a3b8;
+            margin: 0 0 6px 0;
+            font-weight: 600;
+        }
+
+        .search-empty-text {
+            font-size: 13px;
+            color: #475569;
+            margin: 0;
+        }
+
+        .search-view-all {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            text-align: center;
+            margin-top: 16px;
+            padding: 12px 24px;
+            background: rgba(139, 92, 246, 0.1);
+            color: var(--theme-primary);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        .search-view-all:hover {
+            background: var(--theme-gradient);
+            color: #fff;
+            border-color: transparent;
+            box-shadow: 0 0 24px rgba(139, 92, 246, 0.4);
+            transform: translateY(-1px);
+        }
+
+        /* =================================================================
+           RESPONSIVE
+           ================================================================= */
+        @media (max-width: 1024px) {
+            .sidebar-menu { max-width: 380px; }
+        }
+
+        @media (max-width: 768px) {
+            .menu-icon { display: flex; }
+            .sidebar-menu { max-width: 100%; }
+            .sidebar-header, .sidebar-nav, .sidebar-footer {
+                padding-left: 25px; padding-right: 25px;
+            }
+            .sidebar-link { font-size: 13px; }
+            .search-container { width: 95%; max-width: 100%; padding: 30px 20px; }
+            .search-filters { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+        }
+
+        @media (max-width: 480px) {
+            .nav-buy-button { padding: 10px 20px; font-size: 12px; }
+            .sidebar-close { width: 45px; height: 45px; font-size: 20px; }
+            .sidebar-link { font-size: 12px; padding: 12px 14px; }
+            .sidebar-social-icon { width: 40px; height: 40px; }
+            .sidebar-social-icon svg { width: 18px; height: 18px; }
+            .search-overlay { padding-top: 50px; }
+            .search-container { width: 98%; padding: 25px 15px; }
+            .search-header h2 { font-size: 16px; }
+            .search-input { padding: 14px 14px 14px 45px; font-size: 14px; }
+            .search-filters { grid-template-columns: 1fr; }
+            .search-result-item { padding: 12px; gap: 10px; }
+            .search-result-image { width: 48px; height: 48px; font-size: 20px; }
+            .search-result-title { font-size: 13px; }
+            .search-result-desc { font-size: 11px; -webkit-line-clamp: 1; }
+            .search-view-all { padding: 12px 20px; font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Container onde a navbar será injetada -->
+<div id="navbar-container"></div>
+
+<!-- =================================================================
+     JS: Navbar Component — copie para seu arquivo JS ou mantenha inline
+     ================================================================= -->
+<script>
+(function() {
+    'use strict';
+
+    // ===== HTML TEMPLATES =====
+
+    const navbarHTML = `
+        <div id="progressBar"></div>
+
+        <!-- MOBILE HEADER -->
+        <header class="mobile-header">
+            <nav>
+                <div class="nav-container">
+                    <a class="logo" href="./home.html">
+                        <img src="./Assets/Images/LogoItens/D.jpg" class="logo-icon" alt="Logo"/>
+                        <span class="logo-text">'TRONUS</span>
+                    </a>
+                    <div class="nav-right">
+                        <button class="search-icon-btn" title="Buscar (Ctrl+K)">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        </button>
+                        <div class="lang-selector">
+                            <button class="lang-btn" id="langBtn">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                <span>PT-BR</span>
+                            </button>
+                            <div class="lang-dropdown" id="langDropdown">
+                                <div class="lang-option active" data-lang="pt-BR">Portugues (BR)</div>
+                                <div class="lang-option" data-lang="ja">日本語</div>
+                                <div class="lang-option" data-lang="en-US">English (US)</div>
+                                <div class="lang-option" data-lang="en-UK">English (UK)</div>
+                                <div class="lang-option" data-lang="fr">Francais</div>
+                                <div class="lang-option" data-lang="es">Espanol</div>
+                                <div class="lang-option" data-lang="zh-CN">简体中文</div>
+                                <div class="lang-option" data-lang="ko">한국어</div>
+                            </div>
+                        </div>
+                        <div class="theme-selector">
+                            <button class="theme-btn" id="themeBtn">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+                            </button>
+                            <div class="theme-dropdown" id="themeDropdown"></div>
+                        </div>
+                        <button class="nav-buy-button" onclick="window.location.href='./login.html'">Login</button>
+                        <div class="menu-icon" id="menuToggle">
+                            <div class="menu-icon-svg"><span></span><span></span><span></span></div>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+        </header>
+
+        <!-- DESKTOP SIDEBAR HUD -->
+        <aside id="sidebarHUD" class="sidebar-hud">
+            <div class="sidebar-brand">
+                <div class="brand-wrapper" onclick="window.location.href='./home.html'">
+                    <div class="logo-icon-container">
+                        <img src="./Assets/Images/LogoItens/D.jpg" class="logo-img" alt="Logo"/>
+                    </div>
+                    <div class="brand-text">
+                        <span class="brand-title">TRONUS</span>
+                        <span class="brand-subtitle">SYSTEM_HUD</span>
+                    </div>
+                </div>
+                <div class="sidebar-brand-actions">
+                    <button class="sidebar-login-btn" onclick="window.location.href='./login.html'" title="Login">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                    </button>
+                    <button id="sidebarPinBtn" class="sidebar-pin-btn" title="Fixar barra lateral">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" class="pin-icon-svg"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-.44-1.24l-2.33-2.77a2 2 0 0 1-.44-1.24V5a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v4.99a2 2 0 0 1-.44 1.24l-2.33 2.77A2 2 0 0 0 3.8 15.2V17z"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <nav class="sidebar-navigation">
+                <div class="sidebar-nav-item">
+                    <a href="./home.html" class="sidebar-nav-link" data-route="home.html">
+                        <div class="hud-active-bar"></div>
+                        <span class="sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+                        <div class="sidebar-text-group"><span class="sidebar-label">Inicio</span><span class="sidebar-desc">Portal principal</span></div>
+                    </a>
+                </div>
+
+                <div class="sidebar-nav-item">
+                    <button class="sidebar-nav-link search-icon-btn" title="Buscar">
+                        <div class="hud-active-bar"></div>
+                        <span class="sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+                        <div class="sidebar-text-group"><span class="sidebar-label">Buscar</span><span class="sidebar-desc">Pesquisar conteudo</span></div>
+                    </button>
+                </div>
+
+                <div class="sidebar-nav-item has-submenu-parent">
+                    <button class="sidebar-nav-link submenu-trigger">
+                        <div class="hud-active-bar"></div>
+                        <span class="sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="15" y1="13" x2="15.01" y2="13"/><line x1="18" y1="11" x2="18.01" y2="11"/><rect x="2" y="6" width="20" height="12" rx="2"/></svg></span>
+                        <div class="sidebar-text-group"><span class="sidebar-label">Games</span><span class="sidebar-desc">Analises e opinioes</span></div>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" class="chevron-icon"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="sidebar-submenu-list">
+                        <a href="./review-games.html" class="sidebar-sub-item-link" data-route="review-games.html">Reviews</a>
+                        <a href="./review-anual.html" class="sidebar-sub-item-link" data-route="review-anual.html">Anual</a>
+                        <a href="./review-individual.html" class="sidebar-sub-item-link" data-route="review-individual.html">Review Individual</a>
+                    </div>
+                </div>
+
+                <div class="sidebar-nav-item has-submenu-parent">
+                    <button class="sidebar-nav-link submenu-trigger">
+                        <div class="hud-active-bar"></div>
+                        <span class="sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></span>
+                        <div class="sidebar-text-group"><span class="sidebar-label">Anuais</span><span class="sidebar-desc">Retrospectivas</span></div>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" class="chevron-icon"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="sidebar-submenu-list">
+                        <a href="./anual-hub.html" class="sidebar-sub-item-link" data-route="anual-hub.html">Todos</a>
+                        <a href="./review-anual.html" class="sidebar-sub-item-link" data-route="review-anual.html">Filmes/Games</a>
+                        <a href="./review-anual-books.html" class="sidebar-sub-item-link" data-route="review-anual-books.html">HQs</a>
+                        <a href="./review-book-individual.html" class="sidebar-sub-item-link" data-route="review-book-individual.html">Review Individual</a>
+                    </div>
+                </div>
+
+                <div class="sidebar-nav-item has-submenu-parent">
+                    <button class="sidebar-nav-link submenu-trigger">
+                        <div class="hud-active-bar"></div>
+                        <span class="sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg></span>
+                        <div class="sidebar-text-group"><span class="sidebar-label">Franquias</span><span class="sidebar-desc">Universos epicos</span></div>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" class="chevron-icon"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="sidebar-submenu-list">
+                        <a href="./franquias.html" class="sidebar-sub-item-link" data-route="franquias.html">Franquias</a>
+                        <a href="./franquiaexemplo.html" class="sidebar-sub-item-link" data-route="franquiaexemplo.html">Franquia Exemplo</a>
+                        <a href="./roster-franquia.html" class="sidebar-sub-item-link" data-route="roster-franquia.html">Roster</a>
+                        <a href="./review-movies-individual.html" class="sidebar-sub-item-link" data-route="review-movies-individual.html">Review Movie</a>
+                        <a href="./review-series-individual.html" class="sidebar-sub-item-link" data-route="review-series-individual.html">Review Serie</a>
+                    </div>
+                </div>
+
+                <div class="sidebar-nav-item">
+                    <a href="./noticias.html" class="sidebar-nav-link" data-route="noticias.html">
+                        <div class="hud-active-bar"></div>
+                        <span class="sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></span>
+                        <div class="sidebar-text-group"><span class="sidebar-label">Noticias</span><span class="sidebar-desc">Feed de novidades</span></div>
+                    </a>
+                </div>
+
+                <div class="sidebar-nav-item has-submenu-parent">
+                    <button class="sidebar-nav-link submenu-trigger">
+                        <div class="hud-active-bar"></div>
+                        <span class="sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>
+                        <div class="sidebar-text-group"><span class="sidebar-label">Downloads</span><span class="sidebar-desc">Arquivos e ROMs</span></div>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" class="chevron-icon"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="sidebar-submenu-list">
+                        <a href="./Downloads.html" class="sidebar-sub-item-link" data-route="Downloads.html">Todos</a>
+                        <a href="./emuladores.html" class="sidebar-sub-item-link" data-route="emuladores.html">Games</a>
+                        <a href="./Wallpapers.html" class="sidebar-sub-item-link" data-route="wallpapers.html">Wallpapers</a>
+                        <a href="./Hqs.html" class="sidebar-sub-item-link" data-route="hqs.html">HQs</a>
+                    </div>
+                </div>
+
+                <div class="sidebar-nav-item has-submenu-parent">
+                    <button class="sidebar-nav-link submenu-trigger">
+                        <div class="hud-active-bar"></div>
+                        <span class="sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+                        <div class="sidebar-text-group"><span class="sidebar-label">Suporte</span><span class="sidebar-desc">FAQ e contato</span></div>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" class="chevron-icon"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="sidebar-submenu-list">
+                        <a href="./faq.html" class="sidebar-sub-item-link" data-route="faq.html">FAQ</a>
+                        <a href="./suporte.html" class="sidebar-sub-item-link" data-route="suporte.html">Contato</a>
+                        <a href="./sobre.html" class="sidebar-sub-item-link" data-route="sobre.html">Sobre Nos</a>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="sidebar-utilities">
+                <div class="lang-selector sidebar-lang">
+                    <button class="lang-btn" id="sidebarLangBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                        <span class="util-label">PT-BR</span>
+                    </button>
+                    <div class="lang-dropdown" id="sidebarLangDropdown">
+                        <div class="lang-option active" data-lang="pt-BR">Portugues (BR)</div>
+                        <div class="lang-option" data-lang="ja">日本語</div>
+                        <div class="lang-option" data-lang="en-US">English (US)</div>
+                        <div class="lang-option" data-lang="en-UK">English (UK)</div>
+                        <div class="lang-option" data-lang="fr">Francais</div>
+                        <div class="lang-option" data-lang="es">Espanol</div>
+                        <div class="lang-option" data-lang="zh-CN">简体中文</div>
+                        <div class="lang-option" data-lang="ko">한국어</div>
+                    </div>
+                </div>
+                <div class="theme-selector sidebar-theme">
+                    <button class="theme-btn" id="sidebarThemeBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+                        <span class="util-label">Tema</span>
+                    </button>
+                    <div class="theme-dropdown" id="sidebarThemeDropdown"></div>
+                </div>
+            </div>
+        </aside>
+    `;
+
+    const searchHTML = `
+        <div class="search-overlay" id="searchOverlay">
+            <div class="search-container">
+                <div class="search-header">
+                    <h2>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        Buscar
+                    </h2>
+                    <button class="search-close-btn" id="searchCloseBtn" title="Fechar (Esc)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                </div>
+                <div class="search-input-section">
+                    <div class="search-input-wrapper">
+                        <span class="search-input-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+                        <input type="text" class="search-input" id="searchInput" placeholder="Buscar games, noticias..." autocomplete="off"/>
+                        <span class="search-shortcut-hint"><kbd>Ctrl</kbd><kbd>K</kbd></span>
+                    </div>
+                </div>
+                <div class="search-filters-section" id="searchFiltersSection">
+                    <div class="filters-label" id="filtersToggle">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                        Filtros
+                        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </div>
+                    <div class="search-filters" id="searchFilters">
+                        <label class="filter-pill" for="filter-games"><input type="checkbox" id="filter-games" value="games" class="search-filter"/><span class="filter-pill-label">Games</span></label>
+                        <label class="filter-pill" for="filter-hq"><input type="checkbox" id="filter-hq" value="hq" class="search-filter"/><span class="filter-pill-label">HQ</span></label>
+                        <label class="filter-pill" for="filter-news"><input type="checkbox" id="filter-news" value="news" class="search-filter"/><span class="filter-pill-label">Noticias</span></label>
+                        <label class="filter-pill" for="filter-operators"><input type="checkbox" id="filter-operators" value="operators" class="search-filter"/><span class="filter-pill-label">Operadores</span></label>
+                    </div>
+                </div>
+                <div class="search-results-section">
+                    <div class="results-header">
+                        <span class="results-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                            Resultados
+                        </span>
+                        <span class="results-count" id="resultsCount">0</span>
+                    </div>
+                    <div class="search-results-list" id="searchResultsList">
+                        <div class="search-empty">
+                            <p class="search-empty-title">Nenhum resultado encontrado</p>
+                            <p class="search-empty-text">Digite um termo ou use os filtros para buscar</p>
+                        </div>
+                    </div>
+                    <button class="search-view-all" id="viewAllBtn">
+                        <span>Ver todos os resultados</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    const sidebarHTML = `
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+        <div class="sidebar-menu" id="sidebarMenu">
+            <div class="sidebar-header">
+                <div class="sidebar-login" onclick="window.location.href='./login.html'">
+                    <div class="sidebar-login-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+                    <div class="sidebar-login-text"><div class="sidebar-login-label">Login</div><div class="sidebar-login-title">Registro</div></div>
+                </div>
+                <button class="sidebar-close" id="sidebarClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+            <div class="sidebar-content">
+                <nav class="sidebar-nav">
+                    <div class="sidebar-section"><a href="./home.html" class="sidebar-link"><div class="sidebar-link-content"><span class="sidebar-link-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span><span class="sidebar-link-text">Inicio</span></div></a></div>
+                    <div class="sidebar-section collapsible"><div class="sidebar-link has-submenu" id="gamesMenu"><div class="sidebar-link-content"><span class="sidebar-link-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="15" y1="13" x2="15.01" y2="13"/><line x1="18" y1="11" x2="18.01" y2="11"/><rect x="2" y="6" width="20" height="12" rx="2"/></svg></span><span class="sidebar-link-text">Games</span></div></div><div class="sidebar-submenu" id="gamesSubmenu"><a href="./review-games.html" class="sidebar-sublink">Reviews</a><a href="./review-anual.html" class="sidebar-sublink">Anual</a><a href="./review-individual.html" class="sidebar-sublink">Review Individual</a></div></div>
+                    <div class="sidebar-section collapsible"><div class="sidebar-link has-submenu" id="hqMenu"><div class="sidebar-link-content"><span class="sidebar-link-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span><span class="sidebar-link-text">Anuais</span></div></div><div class="sidebar-submenu" id="hqSubmenu"><a href="./anual-hub.html" class="sidebar-sublink">Todos</a><a href="./review-anual.html" class="sidebar-sublink">Filmes/Games</a><a href="./review-anual-books.html" class="sidebar-sublink">HQs</a></div></div>
+                    <div class="sidebar-section collapsible"><div class="sidebar-link has-submenu" id="operadoresMenu"><div class="sidebar-link-content"><span class="sidebar-link-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg></span><span class="sidebar-link-text">Franquias</span></div></div><div class="sidebar-submenu" id="operadoresSubmenu"><a href="./franquias.html" class="sidebar-sublink">Franquias</a><a href="./franquiaexemplo.html" class="sidebar-sublink">Franquia Exemplo</a><a href="./roster-franquia.html" class="sidebar-sublink">Roster</a></div></div>
+                    <div class="sidebar-section"><a href="./noticias.html" class="sidebar-link"><div class="sidebar-link-content"><span class="sidebar-link-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></span><span class="sidebar-link-text">Noticias</span></div></a></div>
+                    <div class="sidebar-section collapsible"><div class="sidebar-link has-submenu" id="midiaMenu"><div class="sidebar-link-content"><span class="sidebar-link-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span><span class="sidebar-link-text">Downloads</span></div></div><div class="sidebar-submenu" id="midiaSubmenu"><a href="./Downloads.html" class="sidebar-sublink">Todos</a><a href="./emuladores.html" class="sidebar-sublink">Games</a><a href="./Wallpapers.html" class="sidebar-sublink">Wallpapers</a></div></div>
+                    <div class="sidebar-section collapsible"><div class="sidebar-link has-submenu" id="suporteMenu"><div class="sidebar-link-content"><span class="sidebar-link-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span><span class="sidebar-link-text">Suporte</span></div></div><div class="sidebar-submenu" id="suporteSubmenu"><a href="./faq.html" class="sidebar-sublink">FAQ</a><a href="./suporte.html" class="sidebar-sublink">Contato</a><a href="./sobre.html" class="sidebar-sublink">Sobre Nos</a></div></div>
+                </nav>
+                <div class="sidebar-divider"></div>
+                <div class="sidebar-footer">
+                    <div class="sidebar-social">
+                        <a href="#" class="sidebar-social-icon" title="Instagram"><svg viewBox="0 0 24 24"><path d="M7.0301.084c-1.2768.0602-2.1487.264-2.911.5651-.6865.2642-1.265.6193-1.8353 1.1905-.5636.5663-.9149 1.1346-1.1631 1.8073-.3624.88-.5831 1.7432-.6224 2.9786-.0545 1.5012.0213 1.9776.0991 3.7428.1079 2.4694.4804 3.972.9966 5.6721.5199 1.7228 1.5235 3.2553 2.9503 4.3874 1.3343 1.0871 3.037 1.8571 4.8383 2.1228 1.2788.207 2.6699.1954 4.97.0429 2.3012-.1264 3.2231-.3899 4.9-1.0871 1.3343-1.8571 3.037-2.1228 4.8383-.207 1.2788-.1954 2.6699-.0429 4.97.1264 2.3012.3899 3.2231 1.0871 4.9 1.3343 1.3343 1.8571 3.037 2.1228 4.8383.207 1.2788.1954 2.6699.0429 4.97.1264 2.3012.3899 3.2231 1.0871 4.9-1.3343 1.3343-1.8571 3.037-2.1228 4.8383M12.896 2.252c2.6487 0 3.106.0116 4.2046.0603 1.0921.0577 1.6846.2873 2.0793.4773.522.2454.8945.5384 1.2856.9295.391.391.6841.7636.9295 1.2856.1905.4947.4196 1.0872.4773 2.0793.0487 1.0946.0603 1.5559.0603 4.2046 0 2.6487-.0116 3.106-.0603 4.2046-.0577 1.0921-.2873 1.6846-.4773 2.0793-.2454.522-.5384.8945-.9295 1.2856-.391.391-.7636.6841-1.2856.9295-.4947.1905-1.0872.4196-2.0793.4773-1.0946.0487-1.5559.0603-4.2046.0603-2.6487 0-3.106-.0116-4.2046-.0603-1.0921-.0577-1.6846-.2873-2.0793-.4773-.522-.2454-.8945-.5384-1.2856-.9295-.391.391-.7636.6841-1.2856.9295-.4947.1905-1.0872.4196-2.0793.4773-1.0946.0487-1.5559.0603-4.2046.0603m0 3.8112c-2.771 0-5.0188 2.2478-5.0188 5.0188s2.2478 5.0188 5.0188 5.0188 5.0188-2.2478 5.0188-5.0188-2.2478-5.0188-5.0188-5.0188zm0 8.3033c-1.8063 0-3.2845-1.4782-3.2845-3.2845s1.4782-3.2845 3.2845-3.2845 3.2845 1.4782 3.2845 3.2845-1.4782 3.2845-3.2845 3.2845zm4.3053-8.6477c0 .6476.5283 1.176 1.176 1.176s1.176-.5283 1.176-1.176-.5283-1.176-1.176-1.176-1.176.5283-1.176 1.176z"/></svg></a>
+                        <a href="#" class="sidebar-social-icon" title="YouTube"><svg viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></a>
+                        <a href="#" class="sidebar-social-icon" title="X"><svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // ===== INJECT HTML =====
+    const container = document.getElementById('navbar-container');
+    if (container) container.innerHTML = navbarHTML + searchHTML + sidebarHTML;
+
+    // ===== SEARCH DATABASE =====
+    const searchDatabase = [
+        { id: 1, title: 'Mortal Kombat 11', description: 'MK de volta e melhor do que nunca.', category: 'games', tag: 'Luta' },
+        { id: 2, title: 'Street Fighter 6', description: 'Ultimo titulo da serie SF.', category: 'games', tag: 'Luta' },
+        { id: 3, title: 'Batman: O Cavaleiro das Trevas', description: 'HQ epica e inesperada.', category: 'hq', tag: 'Super-heroi' },
+        { id: 4, title: 'X-Men: Era do Apocalipse', description: 'Os X-Men enfrentam seu maior inimigo.', category: 'hq', tag: 'Super-heroi' },
+        { id: 5, title: 'Noticia: Novo Jogo Anunciado', description: 'Desenvolvedora anuncia titulo revolucionario.', category: 'news', tag: 'Noticia' },
+        { id: 6, title: 'Liu Kang - Operador', description: 'Mestre dos elementos, versatil e poderoso.', category: 'operators', tag: 'Personagem' },
+    ];
+
+    // ===== PROGRESS BAR =====
+    const progressBar = document.getElementById('progressBar');
+    if (progressBar) {
+        window.addEventListener('scroll', () => {
+            const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+            const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            progressBar.style.width = (scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0) + '%';
+        });
+    }
+
+    // ===== MOBILE HEADER SCROLL =====
+    const mobileHeader = document.querySelector('.mobile-header');
+    if (mobileHeader) {
+        window.addEventListener('scroll', () => {
+            mobileHeader.classList.toggle('scrolled', window.pageYOffset > 50);
+        });
+    }
+
+    // ===== SEARCH =====
+    const searchOverlay = document.getElementById('searchOverlay');
+    const searchInput = document.getElementById('searchInput');
+    const searchResultsList = document.getElementById('searchResultsList');
+    const resultsCount = document.getElementById('resultsCount');
+    const searchFilters = document.querySelectorAll('.search-filter');
+    const filtersToggle = document.getElementById('filtersToggle');
+    const searchFiltersSection = document.getElementById('searchFiltersSection');
+
+    if (filtersToggle && searchFiltersSection) {
+        filtersToggle.addEventListener('click', () => searchFiltersSection.classList.toggle('expanded'));
+    }
+
+    function openSearchOverlay() {
+        if (searchOverlay) { searchOverlay.classList.add('active', 'compact'); document.body.style.overflow = 'hidden'; }
+        if (searchInput) { searchInput.value = ''; setTimeout(() => searchInput.focus(), 100); }
+    }
+
+    function closeSearchOverlay() {
+        if (searchOverlay) searchOverlay.classList.remove('active', 'compact');
+        document.body.style.overflow = '';
+        if (searchInput) searchInput.value = '';
+        if (searchFiltersSection) searchFiltersSection.classList.remove('expanded');
+        if (searchResultsList) searchResultsList.innerHTML = '<div class="search-empty"><p class="search-empty-title">Nenhum resultado encontrado</p><p class="search-empty-text">Digite um termo ou use os filtros</p></div>';
+        if (resultsCount) resultsCount.textContent = '0';
+    }
+
+    document.querySelectorAll('.search-icon-btn').forEach(btn => {
+        btn.addEventListener('click', e => { e.stopPropagation(); openSearchOverlay(); });
+    });
+
+    document.getElementById('searchCloseBtn')?.addEventListener('click', closeSearchOverlay);
+    searchOverlay?.addEventListener('click', e => { if (e.target === searchOverlay) closeSearchOverlay(); });
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && searchOverlay?.classList.contains('active')) {
+            if (!searchOverlay.classList.contains('compact')) { searchOverlay.classList.add('compact'); }
+            else { closeSearchOverlay(); }
+        }
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            if (!searchOverlay?.classList.contains('active')) openSearchOverlay();
+            else closeSearchOverlay();
+        }
+    });
+
+    function performSearch() {
+        if (!searchInput || !searchResultsList || !resultsCount) return;
+        const query = searchInput.value.toLowerCase().trim();
+        const selectedFilters = Array.from(searchFilters).filter(f => f.checked).map(f => f.value);
+
+        if (query.length === 0) {
+            searchResultsList.innerHTML = '<div class="search-empty"><p class="search-empty-title">Nenhum resultado encontrado</p><p class="search-empty-text">Digite um termo ou use os filtros</p></div>';
+            resultsCount.textContent = '0';
+            return;
+        }
+
+        const results = searchDatabase.filter(item => {
+            const matchesQuery = item.title.toLowerCase().includes(query) || item.description.toLowerCase().includes(query) || item.tag.toLowerCase().includes(query);
+            const matchesFilter = selectedFilters.length === 0 || selectedFilters.includes(item.category);
+            return matchesQuery && matchesFilter;
+        });
+
+        resultsCount.textContent = results.length;
+        resultsCount.classList.remove('animate'); void resultsCount.offsetWidth; resultsCount.classList.add('animate');
+
+        if (results.length === 0) {
+            searchResultsList.innerHTML = '<div class="search-empty"><p class="search-empty-title">Nenhum resultado para "' + query + '"</p><p class="search-empty-text">Tente outros termos</p></div>';
+        } else {
+            searchResultsList.innerHTML = results.map(item => `
+                <div class="search-result-item" onclick="window.location.href='#'">
+                    <div class="search-result-image">${item.image || ''}</div>
+                    <div class="search-result-content">
+                        <h3 class="search-result-title">${item.title}</h3>
+                        <p class="search-result-desc">${item.description}</p>
+                        <span class="search-result-tag">${item.tag}</span>
+                    </div>
+                    <div class="search-result-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="9 18 15 12 9 6"/></svg></div>
+                </div>
+            `).join('');
+        }
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener('input', () => { if (!searchOverlay.classList.contains('compact')) performSearch(); });
+        searchInput.addEventListener('keydown', e => {
+            if (e.key === 'Enter') { e.preventDefault(); searchOverlay.classList.remove('compact'); performSearch(); }
+            if (e.key === 'Backspace' && searchInput.value === '' && !searchOverlay.classList.contains('compact')) {
+                searchOverlay.classList.add('compact');
+                searchFiltersSection?.classList.remove('expanded');
+            }
+        });
+    }
+
+    searchFilters.forEach(f => f.addEventListener('change', performSearch));
+    document.getElementById('viewAllBtn')?.addEventListener('click', () => { closeSearchOverlay(); });
+
+    // ===== LANGUAGE SELECTOR =====
+    const langBtns = document.querySelectorAll('.lang-btn');
+    const langDropdowns = document.querySelectorAll('.lang-dropdown');
+    const langOptions = document.querySelectorAll('.lang-option');
+
+    // Move sidebar dropdowns to body
+    const sidebarLangDD = document.getElementById('sidebarLangDropdown');
+    const sidebarThemeDD = document.getElementById('sidebarThemeDropdown');
+    if (sidebarLangDD) document.body.appendChild(sidebarLangDD);
+    if (sidebarThemeDD) document.body.appendChild(sidebarThemeDD);
+
+    function positionSidebarDropdown(dropdown, btn) {
+        if (!dropdown || !btn) return;
+        const sidebarHud = document.getElementById('sidebarHUD');
+        const isExpanded = sidebarHud && (sidebarHud.classList.contains('hovered') || sidebarHud.classList.contains('pinned'));
+        const sidebarWidth = isExpanded ? 256 : 76;
+        const rect = btn.getBoundingClientRect();
+        dropdown.style.left = (sidebarWidth + 8) + 'px';
+        dropdown.style.right = 'auto';
+        if (rect.bottom + 320 > window.innerHeight - 10) {
+            dropdown.style.bottom = (window.innerHeight - rect.top + 8) + 'px';
+            dropdown.style.top = 'auto';
+        } else {
+            dropdown.style.top = rect.top + 'px';
+            dropdown.style.bottom = 'auto';
+        }
+    }
+
+    langBtns.forEach(btn => {
+        btn.addEventListener('click', e => {
+            e.stopPropagation();
+            document.querySelectorAll('.lang-dropdown, .theme-dropdown').forEach(d => { if (d !== sidebarLangDD) d.classList.remove('active'); });
+            if (sidebarLangDD) { positionSidebarDropdown(sidebarLangDD, btn); sidebarLangDD.classList.toggle('active'); }
+        });
+    });
+
+    langOptions.forEach(option => {
+        option.addEventListener('click', e => {
+            e.stopPropagation();
+            const lang = option.dataset.lang;
+            langOptions.forEach(opt => opt.classList.toggle('active', opt.dataset.lang === lang));
+            langBtns.forEach(btn => { btn.querySelector('span') && (btn.querySelector('span').textContent = lang); });
+            langDropdowns.forEach(d => d.classList.remove('active'));
+        });
+    });
+
+    // ===== THEME SELECTOR =====
+    const THEME_NAMES = { dark: 'Escuro', light: 'Claro', blue: 'Azul', green: 'Verde', red: 'Vermelho', orange: 'Laranja', pink: 'Rosa', cyan: 'Ciano' };
+
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+        btn.addEventListener('click', e => {
+            e.stopPropagation();
+            document.querySelectorAll('.lang-dropdown, .theme-dropdown').forEach(d => { if (d !== sidebarThemeDD) d.classList.remove('active'); });
+            if (sidebarThemeDD) { positionSidebarDropdown(sidebarThemeDD, btn); sidebarThemeDD.classList.toggle('active'); }
+        });
+    });
+
+    function populateSidebarThemes() {
+        if (!sidebarThemeDD || sidebarThemeDD.children.length > 0) return;
+        const mgr = window.themeManager;
+        const available = window.availableThemes;
+        const themeKeys = available ? Object.keys(available) : Object.keys(THEME_NAMES);
+        const current = mgr?.getCurrentTheme ? mgr.getCurrentTheme().id : 'dark';
+        sidebarThemeDD.innerHTML = themeKeys.map(key => {
+            const name = available?.[key] ? available[key].name : (THEME_NAMES[key] || key);
+            return `<div class="theme-option${key === current ? ' active' : ''}" data-theme="${key}">${name}</div>`;
+        }).join('');
+        sidebarThemeDD.querySelectorAll('.theme-option').forEach(opt => {
+            opt.addEventListener('click', e => {
+                e.stopPropagation();
+                if (window.themeManager?.applyTheme) window.themeManager.applyTheme(opt.dataset.theme);
+                sidebarThemeDD.querySelectorAll('.theme-option').forEach(o => o.classList.remove('active'));
+                opt.classList.add('active');
+                sidebarThemeDD.classList.remove('active');
+            });
+        });
+    }
+
+    const themePoll = setInterval(() => { populateSidebarThemes(); if (sidebarThemeDD?.children.length > 0) clearInterval(themePoll); }, 100);
+
+    document.addEventListener('click', () => {
+        document.querySelectorAll('.lang-dropdown, .theme-dropdown').forEach(d => d.classList.remove('active'));
+    });
+
+    // ===== MOBILE SIDEBAR =====
+    const menuToggle = document.getElementById('menuToggle');
+    const sidebarMenu = document.getElementById('sidebarMenu');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const sidebarClose = document.getElementById('sidebarClose');
+
+    function openMobileSidebar() {
+        sidebarMenu?.classList.add('active');
+        sidebarOverlay?.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeMobileSidebar() {
+        sidebarMenu?.classList.remove('active');
+        sidebarOverlay?.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    menuToggle?.addEventListener('click', openMobileSidebar);
+    sidebarClose?.addEventListener('click', closeMobileSidebar);
+    sidebarOverlay?.addEventListener('click', closeMobileSidebar);
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && sidebarMenu?.classList.contains('active')) closeMobileSidebar();
+    });
+
+    // Collapsible submenus
+    const collapsibleMenus = [
+        { menu: 'gamesMenu', submenu: 'gamesSubmenu' },
+        { menu: 'hqMenu', submenu: 'hqSubmenu' },
+        { menu: 'operadoresMenu', submenu: 'operadoresSubmenu' },
+        { menu: 'midiaMenu', submenu: 'midiaSubmenu' },
+        { menu: 'suporteMenu', submenu: 'suporteSubmenu' }
+    ];
+
+    collapsibleMenus.forEach(({ menu, submenu }) => {
+        const menuEl = document.getElementById(menu);
+        const subEl = document.getElementById(submenu);
+        if (menuEl && subEl) {
+            menuEl.addEventListener('click', e => {
+                e.preventDefault();
+                menuEl.classList.toggle('expanded');
+                subEl.classList.toggle('expanded');
+            });
+        }
+    });
+
+    // ===== DESKTOP SIDEBAR PIN =====
+    const sidebarHUD = document.getElementById('sidebarHUD');
+    const sidebarPinBtn = document.getElementById('sidebarPinBtn');
+    let isPinned = false;
+    try { isPinned = localStorage.getItem('sidebar_pinned') === 'true'; } catch (e) {}
+
+    const updateSidebarStates = () => {
+        if (!sidebarHUD) return;
+        if (isPinned) {
+            sidebarHUD.classList.add('pinned');
+            document.body.classList.add('sidebar-layout-pinned');
+            document.body.classList.remove('sidebar-layout-collapsed');
+            sidebarPinBtn?.classList.add('active');
+        } else {
+            sidebarHUD.classList.remove('pinned');
+            document.body.classList.remove('sidebar-layout-pinned');
+            document.body.classList.add('sidebar-layout-collapsed');
+            sidebarPinBtn?.classList.remove('active');
+        }
+    };
+
+    updateSidebarStates();
+
+    sidebarPinBtn?.addEventListener('click', e => {
+        e.stopPropagation();
+        isPinned = !isPinned;
+        try { localStorage.setItem('sidebar_pinned', String(isPinned)); } catch (err) {}
+        updateSidebarStates();
+    });
+
+    // Hover behavior
+    if (sidebarHUD) {
+        sidebarHUD.addEventListener('mouseenter', () => sidebarHUD.classList.add('hovered'));
+        sidebarHUD.addEventListener('mouseleave', () => {
+            sidebarHUD.classList.remove('hovered');
+            if (!isPinned) document.querySelectorAll('.sidebar-nav-item.expanded').forEach(i => i.classList.remove('expanded'));
+        });
+    }
+
+    // Desktop submenu triggers
+    document.querySelectorAll('.submenu-trigger').forEach(trigger => {
+        trigger.addEventListener('click', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            const parent = trigger.closest('.sidebar-nav-item');
+            if (parent) {
+                if (sidebarHUD && !sidebarHUD.classList.contains('hovered') && !isPinned) sidebarHUD.classList.add('hovered');
+                parent.classList.toggle('expanded', !parent.classList.contains('expanded'));
+            }
+        });
+    });
+
+    // ===== ACTIVE ROUTE =====
+    const currentPage = window.location.pathname.split('/').pop().split('?')[0].split('#')[0].toLowerCase();
+
+    document.querySelectorAll('.sidebar-nav-link.active').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.sidebar-sub-item-link.active').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.submenu-trigger.active-parent').forEach(el => el.classList.remove('active-parent'));
+    document.querySelectorAll('.sidebar-nav-item.expanded').forEach(el => el.classList.remove('expanded'));
+
+    document.querySelectorAll('.sidebar-nav-item').forEach(item => {
+        const trigger = item.querySelector('.submenu-trigger');
+        const subLinks = item.querySelectorAll('.sidebar-sub-item-link');
+        const directLink = item.querySelector('.sidebar-nav-link:not(.submenu-trigger)');
+        let found = false;
+
+        subLinks.forEach(link => {
+            const href = link.getAttribute('href');
+            if (href) {
+                const pageName = href.split('/').pop().split('?')[0].split('#')[0].toLowerCase();
+                if (pageName && (pageName === currentPage || (currentPage === '' && pageName === 'home.html'))) {
+                    link.classList.add('active');
+                    found = true;
+                }
+            }
+        });
+
+        if (found && trigger) {
+            trigger.classList.add('active-parent');
+            item.classList.add('expanded');
+        }
+
+        if (directLink) {
+            const href = directLink.getAttribute('href');
+            if (href) {
+                const pageName = href.split('/').pop().split('?')[0].split('#')[0].toLowerCase();
+                if (pageName && (pageName === currentPage || (currentPage === '' && pageName === 'home.html'))) {
+                    directLink.classList.add('active');
+                }
+            }
+        }
+    });
+
+    console.log('%c Navbar HUD standalone carregada!', 'color: #8b5cf6; font-weight: bold;');
+})();
+</script>
+
+</body>
+</html>

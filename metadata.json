@@ -1,0 +1,6 @@
+{
+  "name": "Planner",
+  "description": "Um planejador de vida completo com gamificação, dashboard, finanças, rotina, checklist, metas, calendário e arquivador de documentos.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

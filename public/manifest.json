@@ -1,0 +1,16 @@
+{
+  "name": "TRONUS Planner",
+  "short_name": "TRONUS",
+  "description": "HUD Planner & Task System",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#040405",
+  "theme_color": "#f97316",
+  "icons": [
+    {
+      "src": "https://img.icons8.com/neon/512/experimental-flash-neon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
