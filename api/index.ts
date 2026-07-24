@@ -1,9 +1,7 @@
 import express from "express";
-import path from "path";
 
 const app = express();
 app.use(express.json());
-app.use("/assets", express.static(path.join(process.cwd(), "assets")));
 
 // Helper to construct exact redirect URI
 const getRedirectUri = (req: express.Request) => {
