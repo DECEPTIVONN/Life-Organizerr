@@ -2001,6 +2001,18 @@ export default function App() {
     );
   }
 
+  // If user is not logged in or auth modal is open, display ONLY the full-screen standalone Auth interface
+  if (!currentUser || isAuthModalOpen) {
+    return (
+      <div className="fixed inset-0 h-screen w-screen overflow-hidden bg-black">
+        <AuthModal 
+          isOpen={true} 
+          onSuccess={handleAuthSuccess} 
+        />
+      </div>
+    );
+  }
+
   return (
     <div id="main-app-container" className="flex flex-col lg:flex-row min-h-screen bg-[#040405] text-zinc-300 font-sans">
       
@@ -2026,12 +2038,6 @@ export default function App() {
         appLockEnabled={appLockEnabled && appLockPassword !== ''}
         onLogout={handleLogout}
         currentUser={currentUser}
-      />
-
-      {/* Authentication Modal (Opens on first access or when logged out) */}
-      <AuthModal 
-        isOpen={isAuthModalOpen || !currentUser} 
-        onSuccess={handleAuthSuccess} 
       />
 
       {/* 2. Main Workspace Area (responsive margin/padding for the fixed desktop HUD and mobile header) */}

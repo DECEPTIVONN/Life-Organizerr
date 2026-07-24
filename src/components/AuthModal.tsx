@@ -160,8 +160,25 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
-      <div className="w-full max-w-md bg-zinc-950 border border-zinc-800/80 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden flex flex-col justify-between">
+    <div className="fixed inset-0 z-[9999] h-screen w-screen flex items-center justify-center p-3 sm:p-4 bg-black overflow-hidden select-none">
+      {/* Background Video */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none opacity-60 scale-105"
+      >
+        <source
+          src="https://www.callofduty.com/cod/cdn/bo7/BO7_IGS_CODHQ_BaseKA_1696x1056_02sk_CLEAN_Compressed.mp4"
+          type="video/mp4"
+        />
+      </video>
+
+      {/* Dark overlay gradient for readability */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/65 to-black/95 pointer-events-none z-0" />
+
+      <div className="w-full max-w-md bg-zinc-950/90 border border-zinc-800/80 rounded-3xl p-5 sm:p-7 shadow-2xl relative flex flex-col justify-between z-10 backdrop-blur-xl max-h-[94vh] overflow-y-auto no-scrollbar">
         {/* Glow ambient decoration */}
         <div className="absolute -top-24 -left-24 w-52 h-52 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -right-24 w-52 h-52 bg-orange-600/10 rounded-full blur-3xl pointer-events-none" />
