@@ -15,6 +15,8 @@ import { motion, AnimatePresence } from 'motion/react';
 // Subcomponents
 import Sidebar from './components/Sidebar';
 import LockScreen from './components/LockScreen';
+import { AuthModal } from './components/AuthModal';
+import { AuthUser } from './lib/auth';
 import DashboardView from './components/DashboardView';
 import ChecklistView from './components/ChecklistView';
 import FinancesView from './components/FinancesView';
@@ -119,20 +121,41 @@ export default function App() {
     return enabled && pass !== '';
   });
 
+  // --- Core Auth & User Session States ---
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
+    const savedLocal = localStorage.getItem('mbc_auth_user');
+    if (savedLocal) {
+      try { return JSON.parse(savedLocal); } catch (e) {}
+    }
+    const savedSession = sessionStorage.getItem('mbc_auth_user');
+    if (savedSession) {
+      try { return JSON.parse(savedSession); } catch (e) {}
+    }
+    return null;
+  });
+
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(() => {
+    return !currentUser;
+  });
+
   // --- Core States & LocalStorage Hydration ---
   const [userName, setUserName] = useState(() => {
+    if (currentUser?.name) return currentUser.name;
     return localStorage.getItem('mbc_userName') || 'Nando';
   });
 
   const [userPhoto, setUserPhoto] = useState(() => {
+    if (currentUser?.photo) return currentUser.photo;
     return localStorage.getItem('mbc_userPhoto') || 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=100';
   });
 
   const [userHandle, setUserHandle] = useState(() => {
-    return localStorage.getItem('mbc_userHandle') || '@nando_mbc';
+    if (currentUser?.username) return `@${currentUser.username}`;
+    return localStorage.getItem('mbc_userHandle') || '@usuario';
   });
 
   const [userEmail, setUserEmail] = useState(() => {
+    if (currentUser?.email) return currentUser.email;
     return localStorage.getItem('mbc_userEmail') || 'etanomicosl5@gmail.com';
   });
 
@@ -849,8 +872,9 @@ export default function App() {
     localStorage.setItem('mbc_grid_routine', JSON.stringify(gridRoutine));
   }, [gridRoutine]);
 
-  // --- Firebase Synchronization Logic ---
+  // --- Firebase / Supabase Synchronization Logic ---
   const [syncKey, setSyncKey] = useState<string>(() => {
+    if (currentUser?.syncKey) return currentUser.syncKey;
     return localStorage.getItem('mbc_sync_key') || 'USUARIO_UNICO';
   });
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle');
@@ -1203,18 +1227,63 @@ export default function App() {
     }
   };
 
-  // Auto-generate syncKey on startup if it doesn't exist
+  // Handle successful login/signup
+  const handleAuthSuccess = async (user: AuthUser, rememberMe: boolean) => {
+    setCurrentUser(user);
+    setIsAuthModalOpen(false);
+
+    if (rememberMe) {
+      localStorage.setItem('mbc_auth_user', JSON.stringify(user));
+      localStorage.setItem('mbc_remember_me', 'true');
+      sessionStorage.removeItem('mbc_auth_user');
+    } else {
+      sessionStorage.setItem('mbc_auth_user', JSON.stringify(user));
+      localStorage.removeItem('mbc_auth_user');
+      localStorage.setItem('mbc_remember_me', 'false');
+    }
+
+    if (user.name) {
+      setUserName(user.name);
+      localStorage.setItem('mbc_userName', user.name);
+    }
+    if (user.username) {
+      setUserHandle(`@${user.username}`);
+      localStorage.setItem('mbc_userHandle', `@${user.username}`);
+    }
+    if (user.email) {
+      setUserEmail(user.email);
+      localStorage.setItem('mbc_userEmail', user.email);
+    }
+    if (user.photo) {
+      setUserPhoto(user.photo);
+      localStorage.setItem('mbc_userPhoto', user.photo);
+    }
+
+    if (user.syncKey) {
+      await connectSyncKey(user.syncKey);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('mbc_auth_user');
+    sessionStorage.removeItem('mbc_auth_user');
+    localStorage.removeItem('mbc_sync_key');
+    setCurrentUser(null);
+    setIsAuthModalOpen(true);
+  };
+
+  // Sync session on startup
   useEffect(() => {
     const autoInitSync = async () => {
-      const existingKey = localStorage.getItem('mbc_sync_key');
-      if (!existingKey) {
-        console.log("Definindo chave de sincronização padrão:", 'USUARIO_UNICO');
-        localStorage.setItem('mbc_sync_key', 'USUARIO_UNICO');
-        setSyncKey('USUARIO_UNICO');
+      if (currentUser?.syncKey) {
+        setSyncKey(currentUser.syncKey);
+        localStorage.setItem('mbc_sync_key', currentUser.syncKey);
+      } else if (!localStorage.getItem('mbc_sync_key')) {
+        setIsAuthModalOpen(true);
       }
     };
     autoInitSync();
-  }, []);
+  }, [currentUser]);
 
   const disconnectSync = async () => {
     await connectSyncKey('USUARIO_UNICO');
@@ -1955,6 +2024,14 @@ export default function App() {
         userPhoto={userPhoto}
         onLockApp={() => setIsAppLocked(true)}
         appLockEnabled={appLockEnabled && appLockPassword !== ''}
+        onLogout={handleLogout}
+        currentUser={currentUser}
+      />
+
+      {/* Authentication Modal (Opens on first access or when logged out) */}
+      <AuthModal 
+        isOpen={isAuthModalOpen || !currentUser} 
+        onSuccess={handleAuthSuccess} 
       />
 
       {/* 2. Main Workspace Area (responsive margin/padding for the fixed desktop HUD and mobile header) */}

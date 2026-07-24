@@ -37,7 +37,8 @@ import {
   Compass,
   User,
   Layers,
-  Lock
+  Lock,
+  LogOut
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -57,6 +58,8 @@ interface SidebarProps {
   userPhoto?: string;
   onLockApp?: () => void;
   appLockEnabled?: boolean;
+  onLogout?: () => void;
+  currentUser?: any;
 }
 
 interface SearchResult {
@@ -82,7 +85,9 @@ export default function Sidebar({
   userName = 'Nando',
   userPhoto = 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=100',
   onLockApp,
-  appLockEnabled = false
+  appLockEnabled = false,
+  onLogout,
+  currentUser
 }: SidebarProps) {
   
   // Animation/HUD state
@@ -1014,6 +1019,21 @@ export default function Sidebar({
                 <Lock className="h-4 w-4 text-zinc-500 group-hover:text-red-400 flex-shrink-0 group-hover:scale-110 transition-all" />
                 <span className={`text-[11px] font-bold leading-none transition-all duration-300 ${isExpanded ? 'opacity-100 block' : 'opacity-0 hidden w-0 overflow-hidden'}`}>
                   Trancar App
+                </span>
+              </button>
+            )}
+
+            {onLogout && (
+              <button
+                onClick={onLogout}
+                className={`flex items-center rounded-xl text-zinc-400 hover:text-red-400 hover:bg-red-500/10 border border-transparent transition-all group duration-200 w-full ${
+                  isExpanded ? 'px-3 py-2 justify-start gap-3' : 'p-2 justify-center h-10 w-10'
+                }`}
+                title="Sair da Conta"
+              >
+                <LogOut className="h-4 w-4 text-zinc-500 group-hover:text-red-400 flex-shrink-0 group-hover:scale-110 transition-all" />
+                <span className={`text-[11px] font-bold leading-none transition-all duration-300 ${isExpanded ? 'opacity-100 block' : 'opacity-0 hidden w-0 overflow-hidden'}`}>
+                  Sair da Conta
                 </span>
               </button>
             )}
