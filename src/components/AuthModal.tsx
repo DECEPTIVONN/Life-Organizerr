@@ -160,8 +160,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
-      <div className="w-full max-w-md bg-zinc-950 border border-zinc-800/80 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden flex flex-col justify-between">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300 relative overflow-hidden">
+      {/* Background Video from assets/LOGIN.mp4 */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 filter brightness-50 contrast-125"
+      >
+        <source src="/assets/LOGIN.mp4" type="video/mp4" />
+        <source src="/LOGIN.mp4" type="video/mp4" />
+      </video>
+
+      {/* Dark gradient overlay for contrast */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/80 pointer-events-none z-0" />
+
+      <div className="w-full max-w-md bg-zinc-950/90 backdrop-blur-xl border border-zinc-800/80 rounded-3xl p-6 sm:p-8 shadow-2xl relative z-10 overflow-hidden flex flex-col justify-between">
         {/* Glow ambient decoration */}
         <div className="absolute -top-24 -left-24 w-52 h-52 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -right-24 w-52 h-52 bg-orange-600/10 rounded-full blur-3xl pointer-events-none" />
