@@ -47,6 +47,7 @@ interface SettingsViewProps {
   
   // Account Status
   setAccountDeactivated: (deactivated: boolean) => void;
+  onLogout?: () => void;
   
   // Sync Profile
   syncKey: string;
@@ -105,6 +106,7 @@ export default function SettingsView({
   autoFullscreen,
   setAutoFullscreen,
   setAccountDeactivated,
+  onLogout,
   syncKey,
   syncStatus,
   connectSyncKey,
@@ -460,10 +462,21 @@ export default function SettingsView({
   };
 
   const handleLogout = async () => {
-    if (confirm('Deseja realmente sair (Log out)? Os dados locais de rascunho deste dispositivo serão limpos por segurança.')) {
-      await disconnectSync();
-      localStorage.clear();
-      window.location.reload();
+    if (confirm('Deseja realmente sair (Log out)? A sessão deste dispositivo será encerrada por segurança.')) {
+      try {
+        await disconnectSync();
+      } catch (e) {
+        console.error('Error disconnecting sync:', e);
+      }
+      localStorage.removeItem('mbc_auth_user');
+      sessionStorage.removeItem('mbc_auth_user');
+      localStorage.removeItem('mbc_sync_key');
+      if (onLogout) {
+        onLogout();
+      } else {
+        localStorage.clear();
+        window.location.reload();
+      }
     }
   };
 
@@ -706,6 +719,19 @@ export default function SettingsView({
                 </div>
                 <ChevronRight className="h-4 w-4 text-zinc-700 mt-1.5" />
               </div>
+
+              {/* Logout Option in Sua Conta */}
+              <div 
+                onClick={handleLogout}
+                className="flex items-start gap-4 p-4 hover:bg-red-950/10 active:bg-red-950/20 cursor-pointer transition-colors group"
+              >
+                <LogOut className="h-4.5 w-4.5 text-red-500 mt-1 shrink-0" />
+                <div className="flex-1 space-y-0.5">
+                  <h4 className="text-xs font-bold text-red-400">Sair da conta (Logout)</h4>
+                  <p className="text-[10px] text-zinc-500 font-mono">Encerra a sessão atual e desconecta deste dispositivo.</p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-zinc-700 mt-1.5" />
+              </div>
             </div>
           </motion.div>
         )}
@@ -911,12 +937,21 @@ export default function SettingsView({
                 />
               </div>
 
-              <div className="pt-2">
+              <div className="pt-2 space-y-2">
                 <button
                   type="submit"
-                  className="w-full py-2.5 bg-orange-500 hover:bg-orange-600 font-bold text-xs uppercase tracking-wider rounded-xl transition-all"
+                  className="w-full py-2.5 bg-orange-500 hover:bg-orange-600 font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer"
                 >
                   Salvar Informações
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="w-full py-2.5 bg-red-950/20 hover:bg-red-950/40 border border-red-900/30 text-red-400 font-bold text-xs font-mono uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                  <LogOut className="h-4 w-4 text-red-500" />
+                  <span>Sair da Conta (Logout)</span>
                 </button>
               </div>
             </form>

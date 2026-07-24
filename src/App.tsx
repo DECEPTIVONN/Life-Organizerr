@@ -1928,6 +1928,7 @@ export default function App() {
             autoFullscreen={autoFullscreen}
             setAutoFullscreen={setAutoFullscreen}
             setAccountDeactivated={setAccountDeactivated}
+            onLogout={handleLogout}
             syncKey={syncKey}
             syncStatus={syncStatus}
             connectSyncKey={connectSyncKey}
