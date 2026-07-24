@@ -653,6 +653,26 @@ export default function CalendarView({
     return () => window.removeEventListener('message', handleOAuthMessage);
   }, [userName, userEmail, userPhoto, setUserName, setUserEmail, setUserPhoto]);
 
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const savedToken = localStorage.getItem('google_calendar_token');
+      const savedUser = localStorage.getItem('google_calendar_user');
+      if (savedToken && savedToken !== googleToken) {
+        setGoogleToken(savedToken);
+        fetchGoogleEvents(savedToken);
+      }
+      if (savedUser) {
+        try {
+          const parsed = JSON.parse(savedUser);
+          setGoogleUser(parsed);
+        } catch (e) {}
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [googleToken]);
+
   const getEventsForDay = (dateStr: string) => {
     let dayEvents = googleEvents.filter(event => {
       if (!event.start) return false;

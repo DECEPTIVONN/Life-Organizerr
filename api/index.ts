@@ -31,7 +31,7 @@ app.get("/api/auth/google/url", (req, res) => {
     "https://www.googleapis.com/auth/userinfo.email"
   ];
 
-  if (requestedScope === "calendar") {
+  if (requestedScope === "calendar" || !requestedScope) {
     defaultScopes.push(
       "https://www.googleapis.com/auth/calendar",
       "https://www.googleapis.com/auth/calendar.events"

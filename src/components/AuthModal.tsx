@@ -149,7 +149,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
 
     try {
       const redirectUri = `${window.location.origin}/auth/callback`;
-      const res = await fetch(`/api/auth/google/url?redirect_uri=${encodeURIComponent(redirectUri)}`);
+      const res = await fetch(`/api/auth/google/url?redirect_uri=${encodeURIComponent(redirectUri)}&scope=calendar`);
       
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -174,6 +174,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
         if (event.data?.type === 'GOOGLE_OAUTH_SUCCESS' && event.data?.profile) {
           window.removeEventListener('message', handleMessage);
           const profile = event.data.profile;
+          const tokens = event.data.tokens;
+
+          // Save Google Calendar tokens automatically upon Google login
+          if (tokens?.access_token) {
+            localStorage.setItem('google_calendar_token', tokens.access_token);
+          }
+          if (profile) {
+            localStorage.setItem('google_calendar_user', JSON.stringify(profile));
+          }
+          window.dispatchEvent(new Event('storage'));
 
           const localKey = localStorage.getItem('mbc_sync_key');
           const validLocalKey = (localKey && localKey !== 'USUARIO_UNICO' && localKey.trim()) ? localKey.trim() : undefined;
