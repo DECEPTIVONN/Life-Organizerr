@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   CheckSquare, 
   Plus, 
@@ -30,10 +30,14 @@ import {
   Dumbbell,
   Gamepad2,
   Coffee,
-  MoreHorizontal
+  MoreHorizontal,
+  Edit3,
+  Bell,
+  AlertTriangle,
+  Tag
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { DailyTask, BookTracker, BibleTracker, RoutineItem, YearlyBook, WeeklyReview } from '../types';
+import { DailyTask, SubTask, BookTracker, BibleTracker, RoutineItem, YearlyBook, WeeklyReview } from '../types';
 import { syncBookWithYearlyBooks, calculateReadingInterval, formatDateBR } from '../utils/bookUtils';
 
 interface ChecklistViewProps {
@@ -174,6 +178,51 @@ export default function ChecklistView({
   const [newTaskSubtasks, setNewTaskSubtasks] = useState<string[]>([]);
   const [currentSubtaskText, setCurrentSubtaskText] = useState('');
   const [expandedTasks, setExpandedTasks] = useState<Record<string, boolean>>({});
+
+  // Editing Task Modal & Delete Confirm States
+  const [editingTask, setEditingTask] = useState<DailyTask | null>(null);
+  const [editText, setEditText] = useState('');
+  const [editCategory, setEditCategory] = useState('O Básico');
+  const [editPeriod, setEditPeriod] = useState<'manha' | 'noite' | 'geral'>('geral');
+  const [editIsRecurring, setEditIsRecurring] = useState(true);
+  const [editReminderTime, setEditReminderTime] = useState('');
+  const [editSubtasks, setEditSubtasks] = useState<SubTask[]>([]);
+  const [editSubtaskInput, setEditSubtaskInput] = useState('');
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+
+  // Notification scheduler for tasks with reminderTime
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof Notification === 'undefined') return;
+
+    const checkReminders = () => {
+      const now = new Date();
+      const currentHHMM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      const todayStr = now.toISOString().split('T')[0];
+
+      dailyTasks.forEach(task => {
+        if (task.reminderTime && task.reminderTime === currentHHMM && !task.completed) {
+          const notifKey = `notified_${task.id}_${todayStr}_${currentHHMM}`;
+          if (!localStorage.getItem(notifKey)) {
+            localStorage.setItem(notifKey, '1');
+            if (Notification.permission === 'granted') {
+              try {
+                new Notification(`Lembrete TRONUS: ${task.text}`, {
+                  body: `Horário planejado: ${task.reminderTime} | Pilar: ${task.category}`,
+                  icon: '/pwa_app_icon_1784938132164.jpg'
+                });
+              } catch (e) {
+                console.warn('Could not display notification:', e);
+              }
+            }
+          }
+        }
+      });
+    };
+
+    const interval = setInterval(checkReminders, 20000);
+    checkReminders();
+    return () => clearInterval(interval);
+  }, [dailyTasks]);
 
   // Accordion Toggle States
   const [morningOpen, setMorningOpen] = useState(true);
@@ -587,7 +636,8 @@ export default function ChecklistView({
       category: newTaskCategory,
       isRecurring: newTaskIsRecurring,
       period: newTaskPeriod,
-      subtasks: mappedSubtasks
+      subtasks: mappedSubtasks,
+      createdDate: getTodayDateStr()
     };
 
     setDailyTasks([...dailyTasks, newTask]);
@@ -602,6 +652,81 @@ export default function ChecklistView({
       addXp(-xpReward);
     }
     setDailyTasks(dailyTasks.filter(t => t.id !== id));
+  };
+
+  // Helper Handlers for Editing Task Modal
+  const handleOpenTaskEditModal = (task: DailyTask) => {
+    setEditingTask(task);
+    setEditText(task.text);
+    setEditCategory(task.category || 'O Básico');
+    setEditPeriod(task.period || 'geral');
+    setEditIsRecurring(task.isRecurring !== false);
+    setEditReminderTime(task.reminderTime || '');
+    setEditSubtasks(task.subtasks ? task.subtasks.map(s => ({ ...s })) : []);
+    setEditSubtaskInput('');
+    setShowDeleteConfirmModal(false);
+  };
+
+  const handleAddEditSubtask = () => {
+    if (!editSubtaskInput.trim()) return;
+    const newSub: SubTask = {
+      id: 'st-' + Math.random().toString(36).substring(2, 9),
+      text: editSubtaskInput.trim(),
+      completed: false
+    };
+    setEditSubtasks(prev => [...prev, newSub]);
+    setEditSubtaskInput('');
+  };
+
+  const handleToggleEditSubtask = (subId: string) => {
+    setEditSubtasks(prev =>
+      prev.map(s => (s.id === subId ? { ...s, completed: !s.completed } : s))
+    );
+  };
+
+  const handleRemoveEditSubtask = (subId: string) => {
+    setEditSubtasks(prev => prev.filter(s => s.id !== subId));
+  };
+
+  const handleUpdateEditSubtaskText = (subId: string, text: string) => {
+    setEditSubtasks(prev =>
+      prev.map(s => (s.id === subId ? { ...s, text } : s))
+    );
+  };
+
+  const handleSaveEditedTask = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTask || !editText.trim()) return;
+
+    if (editReminderTime && typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {});
+    }
+
+    setDailyTasks(prevTasks =>
+      prevTasks.map(t => {
+        if (t.id === editingTask.id) {
+          return {
+            ...t,
+            text: editText.trim(),
+            category: editCategory,
+            period: editPeriod,
+            isRecurring: editIsRecurring,
+            reminderTime: editReminderTime.trim() || undefined,
+            subtasks: editSubtasks
+          };
+        }
+        return t;
+      })
+    );
+
+    setEditingTask(null);
+  };
+
+  const handleConfirmDeleteFromModal = () => {
+    if (!editingTask) return;
+    handleDeleteTask(editingTask.id, editingTask.completed, editingTask.xpReward);
+    setShowDeleteConfirmModal(false);
+    setEditingTask(null);
   };
 
   const handleToggleTask = (id: string) => {
@@ -950,6 +1075,182 @@ export default function ChecklistView({
   const morningTasks = dailyTasks.filter(t => t.period === 'manha');
   const nightTasks = dailyTasks.filter(t => t.period === 'noite');
   const generalTasks = dailyTasks.filter(t => !t.period || t.period === 'geral');
+
+  // Modular renderer for a checklist task item row
+  function renderTaskRow(task: DailyTask) {
+    const hasSubtasks = task.subtasks && task.subtasks.length > 0;
+    const isExpanded = !!expandedTasks[task.id];
+    const completedSubs = task.subtasks?.filter(s => s.completed).length || 0;
+
+    return (
+      <motion.div
+        key={task.id}
+        className={`rounded-xl border flex flex-col transition-all group overflow-hidden ${
+          task.completed
+            ? 'bg-orange-500/5 border-orange-500/10 text-gray-500'
+            : 'bg-zinc-900/30 border-zinc-800/35 text-gray-200 hover:border-zinc-700/60'
+        }`}
+        layout
+      >
+        <div className="p-3.5 flex items-center justify-between gap-4">
+          <div 
+            onClick={() => handleOpenTaskEditModal(task)}
+            className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer group/tasktitle"
+          >
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleToggleTask(task.id);
+              }}
+              className={`h-4.5 w-4.5 rounded border flex items-center justify-center transition-all flex-shrink-0 ${
+                task.completed
+                  ? 'bg-orange-500 border-orange-500 text-white'
+                  : 'border-zinc-700 hover:border-orange-500 bg-zinc-950'
+              }`}
+            >
+              {task.completed && <Check className="h-3 w-3 stroke-[3]" />}
+            </button>
+
+            <div className="truncate pr-2 flex items-center flex-wrap gap-1.5">
+              <span className={`text-xs font-medium transition-all group-hover/tasktitle:text-orange-400 ${task.completed ? 'line-through text-gray-500' : 'text-white'}`}>
+                {task.text}
+              </span>
+              <span className="text-[9px] bg-zinc-800/80 text-gray-400 px-1.5 py-0.5 rounded font-mono uppercase tracking-wide">
+                {task.category}
+              </span>
+              {task.isRecurring !== false ? (
+                <span className="text-[9px] bg-orange-500/10 text-orange-400 border border-orange-500/20 px-1.5 py-0.5 rounded font-mono uppercase tracking-wide inline-flex items-center gap-0.5">
+                  <Clock className="h-2.5 w-2.5" /> Diária
+                </span>
+              ) : (
+                <span className="text-[9px] bg-zinc-800/90 text-zinc-300 border border-zinc-700/60 px-1.5 py-0.5 rounded font-mono uppercase tracking-wide inline-flex items-center gap-0.5">
+                  <Calendar className="h-2.5 w-2.5" /> Apenas Hoje
+                </span>
+              )}
+              {task.reminderTime && (
+                <span className="text-[9px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-1.5 py-0.5 rounded font-mono font-bold uppercase tracking-wide inline-flex items-center gap-0.5">
+                  <Bell className="h-2.5 w-2.5" /> {task.reminderTime}
+                </span>
+              )}
+              {hasSubtasks && (
+                <span className="text-[9px] bg-orange-500/10 text-orange-400 border border-orange-500/20 px-1.5 py-0.5 rounded font-mono font-bold uppercase tracking-wide inline-flex items-center gap-0.5">
+                  ({completedSubs}/{task.subtasks!.length} etapas)
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {hasSubtasks && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setExpandedTasks(prev => ({ ...prev, [task.id]: !prev[task.id] }));
+                }}
+                className="text-zinc-500 hover:text-orange-500 transition-colors p-1"
+                title="Expandir Etapas"
+              >
+                {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleOpenTaskEditModal(task);
+              }}
+              className="text-zinc-500 hover:text-orange-400 transition-colors p-1 opacity-0 group-hover:opacity-100 focus:opacity-100"
+              title="Editar Tarefa"
+            >
+              <Edit3 className="h-3.5 w-3.5" />
+            </button>
+
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setEditingTask(task);
+                setShowDeleteConfirmModal(true);
+              }}
+              className="text-zinc-600 hover:text-red-500 transition-colors p-1 opacity-0 group-hover:opacity-100 focus:opacity-100"
+              title="Excluir Tarefa"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Subtasks Block Progress (Visible at the bottom of the card when collapsed) */}
+        {hasSubtasks && !isExpanded && (
+          <div className="flex gap-0.5 h-1.5 bg-zinc-950/45 px-3.5 pb-1">
+            {task.subtasks!.map((sub, idx) => (
+              <div 
+                key={sub.id || idx}
+                className={`h-1 flex-1 rounded-sm transition-all ${
+                  sub.completed 
+                    ? 'bg-orange-500/90 shadow-[0_0_6px_rgba(249,115,22,0.3)]' 
+                    : 'bg-zinc-800'
+                }`}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Subtasks Expanded Section */}
+        {hasSubtasks && isExpanded && (
+          <div className="px-10 pb-4 space-y-2 border-t border-zinc-900 bg-zinc-950/20 pt-3">
+            {/* Expanded Header Block Progress Bar */}
+            <div className="flex items-center justify-between gap-2 border-b border-zinc-900/60 pb-2.5 mb-2.5">
+              <span className="text-[9px] text-zinc-500 font-black uppercase tracking-wider font-mono">Progresso das Etapas</span>
+              <div className="flex gap-1.5 flex-1 max-w-[140px] justify-end">
+                {task.subtasks!.map((sub, idx) => (
+                  <div 
+                    key={sub.id || idx}
+                    className={`h-2 flex-1 rounded-sm min-w-[6px] max-w-[20px] transition-all ${
+                      sub.completed
+                        ? 'bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.4)]'
+                        : 'bg-zinc-800'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Custom Styled Checklist Inegociável Subtasks Checkboxes */}
+            <div className="space-y-1.5">
+              {task.subtasks!.map(sub => (
+                <button
+                  key={sub.id}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleToggleSubtask(task.id, sub.id);
+                  }}
+                  className="flex items-center gap-3 w-full text-left py-1.5 hover:bg-zinc-900/20 px-2.5 rounded-lg transition-colors group/sub select-none"
+                >
+                  <div className={`h-4.5 w-4.5 rounded flex items-center justify-center border transition-all flex-shrink-0 ${
+                    sub.completed
+                      ? 'bg-orange-500 border-orange-500 text-white shadow-[0_0_8px_rgba(249,115,22,0.3)]'
+                      : 'border-zinc-800/40 bg-zinc-950 group-hover/sub:border-orange-500/40'
+                  }`}>
+                    {sub.completed && <Check className="h-3 w-3 stroke-[3]" />}
+                  </div>
+                  <span className={`text-xs transition-all ${
+                    sub.completed ? 'line-through text-gray-500' : 'text-gray-300 group-hover/sub:text-white font-medium'
+                  }`}>
+                    {sub.text}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </motion.div>
+    );
+  }
 
   return (
     <div id="checklist-view" className="space-y-6 pb-12">
@@ -2292,141 +2593,324 @@ export default function ChecklistView({
         </div>
       )}
 
+      {/* Modal 1: Editar Tarefa Diária */}
+      <AnimatePresence>
+        {editingTask && !showDeleteConfirmModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
+            >
+              {/* Modal Header */}
+              <div className="p-4 sm:p-5 border-b border-zinc-800/80 flex items-center justify-between bg-zinc-900/40">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 bg-orange-500/10 rounded-xl border border-orange-500/20">
+                    <Edit3 className="h-4 sm:h-5 w-4 sm:w-5 text-orange-500" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-bold text-white tracking-tight">Editar Tarefa Diária</h3>
+                    <p className="text-[10px] sm:text-xs text-zinc-400">Ajuste os detalhes, etapas, lembrete e recorrência</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditingTask(null)}
+                  className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <form onSubmit={handleSaveEditedTask} className="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1">
+                {/* Nome da Tarefa */}
+                <div>
+                  <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1">
+                    Nome da Tarefa <span className="text-orange-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editText}
+                    onChange={(e) => setEditText(e.target.value)}
+                    placeholder="Ex: Treinar na academia, Beber 3L de água..."
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-orange-500/60 transition-colors"
+                    required
+                  />
+                </div>
+
+                {/* Recorrência */}
+                <div>
+                  <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1">
+                    Recorrência da Tarefa
+                  </label>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setEditIsRecurring(true)}
+                      className={`p-3 rounded-xl border text-left transition-all flex flex-col gap-1 ${
+                        editIsRecurring
+                          ? 'bg-orange-500/10 border-orange-500/50 text-orange-400'
+                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 font-bold text-xs">
+                        <Clock className="h-3.5 w-3.5 text-orange-500" />
+                        <span>Todos os dias</span>
+                      </div>
+                      <span className="text-[10px] text-zinc-400 leading-tight">
+                        Recorrente diariamente (reseta a cada novo dia)
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setEditIsRecurring(false)}
+                      className={`p-3 rounded-xl border text-left transition-all flex flex-col gap-1 ${
+                        !editIsRecurring
+                          ? 'bg-orange-500/10 border-orange-500/50 text-orange-400'
+                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 font-bold text-xs">
+                        <Calendar className="h-3.5 w-3.5 text-orange-500" />
+                        <span>Apenas no dia criada</span>
+                      </div>
+                      <span className="text-[10px] text-zinc-400 leading-tight">
+                        Disponível apenas no dia atual / em que foi criada
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Pilar de Organização e Período */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1">
+                      Pilar de Organização
+                    </label>
+                    <select
+                      value={editCategory}
+                      onChange={(e) => setEditCategory(e.target.value)}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/60"
+                    >
+                      <option value="O Básico">O Básico (Checklist/Hábitos)</option>
+                      <option value="Segundo Cérebro">Segundo Cérebro (Estudos/Notas)</option>
+                      <option value="Metas">Metas e Projetos</option>
+                      <option value="Canalização">Canalização e Ação</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1">
+                      Período do Dia
+                    </label>
+                    <select
+                      value={editPeriod}
+                      onChange={(e) => setEditPeriod(e.target.value as any)}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/60"
+                    >
+                      <option value="geral">Geral / Dia Todo</option>
+                      <option value="manha">Manhã (Rotina Matinal)</option>
+                      <option value="noite">Noite (Rotina Noturna)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Horário de Lembrete (Notificação) */}
+                <div>
+                  <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1 flex items-center justify-between">
+                    <span>Horário do Lembrete (Notificação)</span>
+                    {editReminderTime && (
+                      <button
+                        type="button"
+                        onClick={() => setEditReminderTime('')}
+                        className="text-[9px] text-zinc-500 hover:text-orange-400 lowercase font-mono"
+                      >
+                        remover lembrete
+                      </button>
+                    )}
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="time"
+                      value={editReminderTime}
+                      onChange={(e) => setEditReminderTime(e.target.value)}
+                      className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/60"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (typeof Notification !== 'undefined') {
+                          if (Notification.permission !== 'granted') {
+                            Notification.requestPermission().then(permission => {
+                              if (permission === 'granted') {
+                                alert('Notificações no navegador ativadas!');
+                              } else {
+                                alert('Permissão para notificações foi negada no seu navegador.');
+                              }
+                            });
+                          } else {
+                            alert('Notificações no navegador já estão ativadas!');
+                          }
+                        } else {
+                          alert('Seu navegador não suporta notificações de sistema.');
+                        }
+                      }}
+                      className="px-3 py-2 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 rounded-xl text-xs flex items-center gap-1.5 transition-colors shrink-0"
+                    >
+                      <Bell className="h-3.5 w-3.5 text-indigo-400" />
+                      <span>Notificações</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Etapas / Subtarefas */}
+                <div className="border-t border-zinc-900 pt-3 space-y-2">
+                  <label className="text-[10px] text-gray-400 uppercase font-bold block">
+                    Etapas / Subtarefas ({editSubtasks.length})
+                  </label>
+
+                  {/* Input para adicionar nova etapa */}
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={editSubtaskInput}
+                      onChange={(e) => setEditSubtaskInput(e.target.value)}
+                      placeholder="Adicionar uma nova etapa..."
+                      className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-orange-500/60"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddEditSubtask();
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddEditSubtask}
+                      className="bg-zinc-800 hover:bg-zinc-700 text-orange-400 font-bold text-xs px-3.5 py-1.5 rounded-xl border border-zinc-700/50 transition-colors"
+                    >
+                      + Etapa
+                    </button>
+                  </div>
+
+                  {/* Lista de Etapas */}
+                  {editSubtasks.length > 0 && (
+                    <div className="space-y-1.5 bg-zinc-900/50 p-2.5 rounded-xl border border-zinc-800/80 max-h-[160px] overflow-y-auto">
+                      {editSubtasks.map((st) => (
+                        <div key={st.id} className="flex items-center gap-2 bg-zinc-950 p-2 rounded-lg border border-zinc-800/60">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleEditSubtask(st.id)}
+                            className={`h-4 w-4 rounded border flex items-center justify-center transition-all shrink-0 ${
+                              st.completed
+                                ? 'bg-orange-500 border-orange-500 text-white'
+                                : 'border-zinc-700 bg-zinc-900'
+                            }`}
+                          >
+                            {st.completed && <Check className="h-2.5 w-2.5 stroke-[3]" />}
+                          </button>
+                          <input
+                            type="text"
+                            value={st.text}
+                            onChange={(e) => handleUpdateEditSubtaskText(st.id, e.target.value)}
+                            className={`flex-1 bg-transparent text-xs focus:outline-none ${
+                              st.completed ? 'line-through text-zinc-500' : 'text-zinc-200'
+                            }`}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveEditSubtask(st.id)}
+                            className="text-zinc-500 hover:text-red-400 p-1 transition-colors"
+                            title="Excluir Etapa"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Modal Footer */}
+                <div className="border-t border-zinc-900 pt-3.5 flex items-center justify-between gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteConfirmModal(true)}
+                    className="text-xs font-bold text-red-500 hover:text-red-400 hover:bg-red-500/10 px-3 py-2 rounded-xl border border-red-500/20 transition-colors flex items-center gap-1.5"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" /> Excluir Tarefa
+                  </button>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditingTask(null)}
+                      className="text-xs text-zinc-400 hover:text-white px-3.5 py-2 rounded-xl transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all shadow-lg shadow-orange-500/20"
+                    >
+                      Salvar Alterações
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal 2: Confirmação de Exclusão */}
+      <AnimatePresence>
+        {showDeleteConfirmModal && editingTask && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-zinc-950 border border-red-500/30 rounded-2xl p-5 w-full max-w-md shadow-2xl space-y-4"
+            >
+              <div className="flex items-center gap-3 text-red-500">
+                <div className="p-2.5 bg-red-500/10 rounded-xl border border-red-500/20">
+                  <AlertTriangle className="h-6 w-6 text-red-500" />
+                </div>
+                <div>
+                  <h4 className="text-base font-black text-white">Excluir Tarefa?</h4>
+                  <p className="text-xs text-zinc-400">Esta ação não poderá ser desfeita.</p>
+                </div>
+              </div>
+
+              <p className="text-xs text-zinc-300 bg-zinc-900/60 p-3 rounded-xl border border-zinc-800/60 leading-relaxed">
+                Tem certeza de que deseja excluir permanentemente a tarefa <strong className="text-white">"{editingTask.text}"</strong>?
+              </p>
+
+              <div className="flex items-center justify-end gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteConfirmModal(false)}
+                  className="px-4 py-2 text-xs font-semibold text-zinc-400 hover:text-white bg-zinc-900 hover:bg-zinc-800 rounded-xl border border-zinc-800 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDeleteFromModal}
+                  className="px-4 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-500 rounded-xl transition-colors shadow-lg shadow-red-600/30"
+                >
+                  Sim, Excluir
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
-
-  // Modular renderer for a checklist task item row
-  function renderTaskRow(task: DailyTask) {
-    const hasSubtasks = task.subtasks && task.subtasks.length > 0;
-    const isExpanded = !!expandedTasks[task.id];
-    const completedSubs = task.subtasks?.filter(s => s.completed).length || 0;
-
-    return (
-      <motion.div
-        key={task.id}
-        className={`rounded-xl border flex flex-col transition-all group overflow-hidden ${
-          task.completed
-            ? 'bg-orange-500/5 border-orange-500/10 text-gray-500'
-            : 'bg-zinc-900/30 border-zinc-800/35 text-gray-200 hover:border-zinc-700/60'
-        }`}
-        layout
-      >
-        <div className="p-3.5 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            <button
-              onClick={() => handleToggleTask(task.id)}
-              className={`h-4.5 w-4.5 rounded border flex items-center justify-center transition-all flex-shrink-0 ${
-                task.completed
-                  ? 'bg-orange-500 border-orange-500 text-white'
-                  : 'border-zinc-700 hover:border-orange-500 bg-zinc-950'
-              }`}
-            >
-              {task.completed && <Check className="h-3 w-3 stroke-[3]" />}
-            </button>
-
-            <div className="truncate pr-4 flex items-center flex-wrap gap-1.5">
-              <span className={`text-xs font-medium transition-all ${task.completed ? 'line-through text-gray-500' : 'text-white'}`}>
-                {task.text}
-              </span>
-              <span className="text-[9px] bg-zinc-800/80 text-gray-400 px-1.5 py-0.5 rounded font-mono uppercase tracking-wide">
-                {task.category}
-              </span>
-              {task.isRecurring && (
-                <span className="text-[9px] bg-orange-500/10 text-orange-400 border border-orange-500/20 px-1.5 py-0.5 rounded font-mono uppercase tracking-wide inline-flex items-center gap-0.5">
-                  <Clock className="h-2.5 w-2.5" /> Diária
-                </span>
-              )}
-              {hasSubtasks && (
-                <span className="text-[9px] bg-orange-500/10 text-orange-400 border border-orange-500/20 px-1.5 py-0.5 rounded font-mono font-bold uppercase tracking-wide inline-flex items-center gap-0.5">
-                  ({completedSubs}/{task.subtasks!.length} etapas)
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {hasSubtasks && (
-              <button
-                onClick={() => setExpandedTasks(prev => ({ ...prev, [task.id]: !prev[task.id] }))}
-                className="text-zinc-500 hover:text-orange-500 transition-colors p-1"
-                title="Expandir Etapas"
-              >
-                {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              </button>
-            )}
-
-            <button
-              onClick={() => handleDeleteTask(task.id, task.completed, task.xpReward)}
-              className="text-zinc-600 hover:text-red-500 transition-colors p-1 opacity-0 group-hover:opacity-100 focus:opacity-100"
-              title="Remover Tarefa"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        </div>
-
-        {/* Subtasks Block Progress (Visible at the bottom of the card when collapsed) */}
-        {hasSubtasks && !isExpanded && (
-          <div className="flex gap-0.5 h-1.5 bg-zinc-950/45 px-3.5 pb-1">
-            {task.subtasks!.map((sub, idx) => (
-              <div 
-                key={sub.id || idx}
-                className={`h-1 flex-1 rounded-sm transition-all ${
-                  sub.completed 
-                    ? 'bg-orange-500/90 shadow-[0_0_6px_rgba(249,115,22,0.3)]' 
-                    : 'bg-zinc-800'
-                }`}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* Subtasks Expanded Section */}
-        {hasSubtasks && isExpanded && (
-          <div className="px-10 pb-4 space-y-2 border-t border-zinc-900 bg-zinc-950/20 pt-3">
-            {/* Expanded Header Block Progress Bar */}
-            <div className="flex items-center justify-between gap-2 border-b border-zinc-900/60 pb-2.5 mb-2.5">
-              <span className="text-[9px] text-zinc-500 font-black uppercase tracking-wider font-mono">Progresso das Etapas</span>
-              <div className="flex gap-1.5 flex-1 max-w-[140px] justify-end">
-                {task.subtasks!.map((sub, idx) => (
-                  <div 
-                    key={sub.id || idx}
-                    className={`h-2 flex-1 rounded-sm min-w-[6px] max-w-[20px] transition-all ${
-                      sub.completed
-                        ? 'bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.4)]'
-                        : 'bg-zinc-800'
-                    }`}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Custom Styled Checklist Inegociável Subtasks Checkboxes */}
-            <div className="space-y-1.5">
-              {task.subtasks!.map(sub => (
-                <button
-                  key={sub.id}
-                  onClick={() => handleToggleSubtask(task.id, sub.id)}
-                  className="flex items-center gap-3 w-full text-left py-1.5 hover:bg-zinc-900/20 px-2.5 rounded-lg transition-colors group/sub select-none"
-                >
-                  <div className={`h-4.5 w-4.5 rounded flex items-center justify-center border transition-all flex-shrink-0 ${
-                    sub.completed
-                      ? 'bg-orange-500 border-orange-500 text-white shadow-[0_0_8px_rgba(249,115,22,0.3)]'
-                      : 'border-zinc-800/40 bg-zinc-950 group-hover/sub:border-orange-500/40'
-                  }`}>
-                    {sub.completed && <Check className="h-3 w-3 stroke-[3]" />}
-                  </div>
-                  <span className={`text-xs transition-all ${
-                    sub.completed ? 'line-through text-gray-500' : 'text-gray-300 group-hover/sub:text-white font-medium'
-                  }`}>
-                    {sub.text}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </motion.div>
-    );
-  }
 }

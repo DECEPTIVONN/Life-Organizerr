@@ -13,6 +13,8 @@ export interface DailyTask {
   isRecurring?: boolean;
   period?: 'manha' | 'noite' | 'geral';
   subtasks?: SubTask[];
+  reminderTime?: string;
+  createdDate?: string;
 }
 
 export interface BookTracker {
