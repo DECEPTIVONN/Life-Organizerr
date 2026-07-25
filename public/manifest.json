@@ -11,21 +11,21 @@
   "theme_color": "#f97316",
   "icons": [
     {
-      "src": "/assets/D-192.png",
+      "src": "/assets/D.jpg",
       "sizes": "192x192",
-      "type": "image/png",
+      "type": "image/jpeg",
       "purpose": "any"
     },
     {
-      "src": "/assets/D-512.png",
+      "src": "/assets/D.jpg",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/jpeg",
       "purpose": "any"
     },
     {
-      "src": "/maskable-D.png",
+      "src": "/assets/D.jpg",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/jpeg",
       "purpose": "maskable"
     }
   ]
