@@ -47,7 +47,8 @@ import {
   BibleTracker,
   TimelineGoal,
   FutureEvent,
-  Habit
+  Habit,
+  YearlyBook
 } from './types';
 
 
@@ -322,20 +323,38 @@ export default function App() {
 
   // --- Sub-data States with Hydration & Initial Demo Data ---
   const [dailyTasks, setDailyTasks] = useState<DailyTask[]>(() => {
+    const d = new Date();
+    const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const lastReset = localStorage.getItem('mbc_last_daily_reset');
+    const needsReset = lastReset !== todayStr;
+
     try {
       const saved = localStorage.getItem('mbc_dailyTasks');
       if (saved && saved !== 'undefined') {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          if (needsReset) {
+            const resetTasks = parsed.map((t: DailyTask) => ({
+              ...t,
+              completed: false,
+              subtasks: t.subtasks?.map((s) => ({ ...s, completed: false }))
+            }));
+            localStorage.setItem('mbc_last_daily_reset', todayStr);
+            return resetTasks;
+          }
+          return parsed;
+        }
       }
     } catch (e) {
       console.error("Failed to parse mbc_dailyTasks", e);
     }
+
+    localStorage.setItem('mbc_last_daily_reset', todayStr);
     return [
-      { id: 'dt-1', text: 'Limpar a mente e meditar por 15 minutos', completed: true, xpReward: 10, category: 'O Básico' },
+      { id: 'dt-1', text: 'Limpar a mente e meditar por 15 minutos', completed: false, xpReward: 10, category: 'O Básico' },
       { id: 'dt-2', text: 'Treino de alta intensidade na academia', completed: false, xpReward: 10, category: 'O Básico' },
       { id: 'dt-3', text: 'Leitura de 10 páginas de livro de desenvolvimento', completed: false, xpReward: 10, category: 'Segundo Cérebro' },
-      { id: 'dt-4', text: 'Revisar as metas e projetos da semana', completed: true, xpReward: 10, category: 'Metas' },
+      { id: 'dt-4', text: 'Revisar as metas e projetos da semana', completed: false, xpReward: 10, category: 'Metas' },
       { id: 'dt-5', text: 'Registrar despesas e receitas diárias', completed: false, xpReward: 10, category: 'Canalização' }
     ];
   });
@@ -649,6 +668,63 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('mbc_weeklyReviews', JSON.stringify(weeklyReviews));
   }, [weeklyReviews]);
+
+  const [books, setBooks] = useState<YearlyBook[]>(() => {
+    try {
+      const saved = localStorage.getItem('mbc_yearly_books');
+      if (saved && saved !== 'undefined') {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.error("Failed to parse mbc_yearly_books", e);
+    }
+    return [
+      {
+        id: 'book-1',
+        year: 2026,
+        title: 'Hábitos Atômicos',
+        author: 'James Clear',
+        totalPages: 320,
+        pagesRead: 140,
+        status: 'lendo',
+        rating: 4,
+        review: 'Excelente livro sobre micro-hábitos e disciplina.',
+        startDate: '2026-01-02',
+        readingInterval: '02/01/2026 - Em andamento'
+      },
+      {
+        id: 'book-2',
+        year: 2026,
+        title: 'O Homem Mais Rico da Babilônia',
+        author: 'George S. Clason',
+        totalPages: 160,
+        pagesRead: 160,
+        status: 'lido',
+        rating: 5,
+        review: 'Leitura obrigatória sobre finanças e poupança.',
+        startDate: '2026-02-10',
+        endDate: '2026-02-25',
+        readingInterval: '10/02/2026 a 25/02/2026'
+      },
+      {
+        id: 'book-3',
+        year: 2026,
+        title: 'A Única Coisa',
+        author: 'Gary Keller',
+        totalPages: 240,
+        pagesRead: 0,
+        status: 'quero_ler',
+        rating: 0,
+        review: '',
+        readingInterval: 'A iniciar'
+      }
+    ];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('mbc_yearly_books', JSON.stringify(books));
+  }, [books]);
 
   const [futureEvents, setFutureEvents] = useState<FutureEvent[]>(() => {
     try {
@@ -1403,6 +1479,43 @@ export default function App() {
   useEffect(() => { localStorage.setItem('mbc_documents', JSON.stringify(documents)); }, [documents]);
   useEffect(() => { localStorage.setItem('mbc_notes', JSON.stringify(notes)); }, [notes]);
 
+  // --- Automatic Daily Reset Effect for Daily Tasks ---
+  useEffect(() => {
+    const checkDailyReset = () => {
+      const d = new Date();
+      const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const lastReset = localStorage.getItem('mbc_last_daily_reset');
+      if (lastReset !== todayStr) {
+        setDailyTasks(prev => prev.map(t => ({
+          ...t,
+          completed: false,
+          subtasks: t.subtasks?.map(s => ({ ...s, completed: false }))
+        })));
+        localStorage.setItem('mbc_last_daily_reset', todayStr);
+      }
+    };
+
+    checkDailyReset();
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkDailyReset();
+      }
+    };
+
+    window.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', checkDailyReset);
+
+    // Periodic check every minute
+    const interval = setInterval(checkDailyReset, 60000);
+
+    return () => {
+      window.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', checkDailyReset);
+      clearInterval(interval);
+    };
+  }, []);
+
   // --- Auto-seeder Effect for First Load ---
   useEffect(() => {
     const isFirstTime = !localStorage.getItem('mbc_has_seeded_v3');
@@ -1502,10 +1615,10 @@ export default function App() {
   // --- Content Seeder for Demo Content ---
   const loadDemoData = () => {
     const demoDailyTasks: DailyTask[] = [
-      { id: 'dt-1', text: 'Limpar a mente e meditar por 15 minutos', completed: true, xpReward: 10, category: 'O Básico' },
+      { id: 'dt-1', text: 'Limpar a mente e meditar por 15 minutos', completed: false, xpReward: 10, category: 'O Básico' },
       { id: 'dt-2', text: 'Treino de alta intensidade na academia', completed: false, xpReward: 10, category: 'O Básico' },
       { id: 'dt-3', text: 'Leitura de 10 páginas de livro de desenvolvimento', completed: false, xpReward: 10, category: 'Segundo Cérebro' },
-      { id: 'dt-4', text: 'Revisar as metas e projetos da semana', completed: true, xpReward: 10, category: 'Metas' },
+      { id: 'dt-4', text: 'Revisar as metas e projetos da semana', completed: false, xpReward: 10, category: 'Metas' },
       { id: 'dt-5', text: 'Registrar despesas e receitas diárias', completed: false, xpReward: 10, category: 'Canalização' }
     ];
 
@@ -1758,6 +1871,10 @@ export default function App() {
             setActiveTab={setChecklistActiveTab}
             gridRoutine={gridRoutine}
             setGridRoutine={setGridRoutine}
+            books={books}
+            setBooks={setBooks}
+            weeklyReviews={weeklyReviews}
+            setWeeklyReviews={setWeeklyReviews}
           />
         );
       case 'rotina':
@@ -1848,10 +1965,13 @@ export default function App() {
             weeklyReviews={weeklyReviews}
             setWeeklyReviews={setWeeklyReviews}
             bookTracker={bookTracker}
+            setBookTracker={setBookTracker}
             bibleTracker={bibleTracker}
             routine={routine}
             goals={goals}
             finances={finances}
+            books={books}
+            setBooks={setBooks}
           />
         );
       case 'documentos':

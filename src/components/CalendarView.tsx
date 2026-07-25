@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CalendarNote, DailyTask, SubTask, MonthlyReview, BookTracker, BibleTracker, RoutineItem, WeeklyReview, FutureEvent } from '../types';
+import { saveGoogleOAuthTokens, clearGoogleOAuthSession, refreshGoogleAccessToken } from '../utils/googleToken';
 // @ts-ignore
 import classicalLightEngraving from '../assets/images/classical_light_engraving_1784335041654.jpg';
 
@@ -382,7 +383,12 @@ export default function CalendarView({
 
   const handleAddGoogleEvent = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!googleEventTitle.trim() || !selectedDateStr || !googleToken) return;
+    let tok = googleToken;
+    if (!tok) {
+      tok = await refreshGoogleAccessToken();
+      if (tok) setGoogleToken(tok);
+    }
+    if (!googleEventTitle.trim() || !selectedDateStr || !tok) return;
 
     setIsLoadingEvents(true);
     try {
@@ -400,14 +406,30 @@ export default function CalendarView({
         body.end = { dateTime: `${selectedDateStr}T${googleEventEndTime}:00`, timeZone: userTimeZone };
       }
 
-      const response = await fetch('/api/calendar/events', {
+      let response = await fetch('/api/calendar/events', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${googleToken}`,
+          'Authorization': `Bearer ${tok}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(body)
       });
+
+      if (!response.ok && response.status === 401) {
+        const newToken = await refreshGoogleAccessToken();
+        if (newToken) {
+          tok = newToken;
+          setGoogleToken(newToken);
+          response = await fetch('/api/calendar/events', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${newToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(body)
+          });
+        }
+      }
 
       if (!response.ok) {
         throw new Error('Falha ao criar evento no Google Agenda');
@@ -421,7 +443,7 @@ export default function CalendarView({
       setGoogleEventEndTime('10:00');
       addXp(15);
       
-      await fetchGoogleEvents(googleToken);
+      await fetchGoogleEvents(tok);
     } catch (err: any) {
       console.error(err);
       alert(err.message || 'Erro ao criar evento');
@@ -432,7 +454,12 @@ export default function CalendarView({
 
   const handleUpdateGoogleEvent = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!editingGoogleEventId || !googleEventTitle.trim() || !selectedDateStr || !googleToken) return;
+    let tok = googleToken;
+    if (!tok) {
+      tok = await refreshGoogleAccessToken();
+      if (tok) setGoogleToken(tok);
+    }
+    if (!editingGoogleEventId || !googleEventTitle.trim() || !selectedDateStr || !tok) return;
 
     setIsLoadingEvents(true);
     try {
@@ -450,14 +477,30 @@ export default function CalendarView({
         body.end = { dateTime: `${selectedDateStr}T${googleEventEndTime}:00`, timeZone: userTimeZone };
       }
 
-      const response = await fetch(`/api/calendar/events/${editingGoogleEventId}`, {
+      let response = await fetch(`/api/calendar/events/${editingGoogleEventId}`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${googleToken}`,
+          'Authorization': `Bearer ${tok}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(body)
       });
+
+      if (!response.ok && response.status === 401) {
+        const newToken = await refreshGoogleAccessToken();
+        if (newToken) {
+          tok = newToken;
+          setGoogleToken(newToken);
+          response = await fetch(`/api/calendar/events/${editingGoogleEventId}`, {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${newToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(body)
+          });
+        }
+      }
 
       if (!response.ok) {
         throw new Error('Falha ao atualizar evento no Google Agenda');
@@ -471,7 +514,7 @@ export default function CalendarView({
       setGoogleEventEndTime('10:00');
       addXp(10);
       
-      await fetchGoogleEvents(googleToken);
+      await fetchGoogleEvents(tok);
     } catch (err: any) {
       console.error(err);
       alert(err.message || 'Erro ao atualizar evento');
@@ -481,24 +524,43 @@ export default function CalendarView({
   };
 
   const handleDeleteGoogleEvent = async (eventId: string) => {
-    if (!googleToken) return;
+    let tok = googleToken;
+    if (!tok) {
+      tok = await refreshGoogleAccessToken();
+      if (tok) setGoogleToken(tok);
+    }
+    if (!tok) return;
     if (!confirm('Deseja realmente excluir este evento do seu Google Agenda?')) return;
 
     setIsLoadingEvents(true);
     try {
-      const response = await fetch(`/api/calendar/events/${eventId}`, {
+      let response = await fetch(`/api/calendar/events/${eventId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${googleToken}`
+          'Authorization': `Bearer ${tok}`
         }
       });
+
+      if (!response.ok && response.status === 401) {
+        const newToken = await refreshGoogleAccessToken();
+        if (newToken) {
+          tok = newToken;
+          setGoogleToken(newToken);
+          response = await fetch(`/api/calendar/events/${eventId}`, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${newToken}`
+            }
+          });
+        }
+      }
 
       if (!response.ok) {
         throw new Error('Falha ao excluir evento no Google Agenda');
       }
 
       addXp(5);
-      await fetchGoogleEvents(googleToken);
+      await fetchGoogleEvents(tok);
     } catch (err: any) {
       console.error(err);
       alert(err.message || 'Erro ao excluir evento');
@@ -508,8 +570,16 @@ export default function CalendarView({
   };
 
   const fetchGoogleEvents = async (tokenToUse?: string) => {
-    const tok = tokenToUse || googleToken;
-    if (!tok) return;
+    let tok = tokenToUse || googleToken;
+    if (!tok) {
+      const refreshed = await refreshGoogleAccessToken();
+      if (refreshed) {
+        tok = refreshed;
+        setGoogleToken(refreshed);
+      } else {
+        return;
+      }
+    }
 
     setIsLoadingEvents(true);
     setGoogleError(null);
@@ -519,16 +589,29 @@ export default function CalendarView({
       const timeMin = startOfView.toISOString();
       const timeMax = endOfView.toISOString();
 
-      const response = await fetch(`/api/calendar/events?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}`, {
+      let response = await fetch(`/api/calendar/events?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}`, {
         headers: {
           'Authorization': `Bearer ${tok}`
         }
       });
 
+      if (!response.ok && response.status === 401) {
+        const newToken = await refreshGoogleAccessToken();
+        if (newToken) {
+          tok = newToken;
+          setGoogleToken(newToken);
+          response = await fetch(`/api/calendar/events?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}`, {
+            headers: {
+              'Authorization': `Bearer ${newToken}`
+            }
+          });
+        }
+      }
+
       if (!response.ok) {
         if (response.status === 401) {
           handleGoogleLogout();
-          throw new Error('Sessão do Google expirada. Por favor, faça login novamente.');
+          throw new Error('Sessão do Google expirada. Por favor, conecte a conta do Google novamente.');
         }
         let detailedError = '';
         try {
@@ -596,14 +679,29 @@ export default function CalendarView({
   };
 
   const handleGoogleLogout = () => {
-    localStorage.removeItem('google_calendar_user');
-    localStorage.removeItem('google_calendar_token');
+    clearGoogleOAuthSession();
     setGoogleUser(null);
     setGoogleToken(null);
     setGoogleEvents([]);
     setGoogleError(null);
     setIsProfileDropdownOpen(false);
   };
+
+  // Restore or refresh session on mount
+  useEffect(() => {
+    const restoreSession = async () => {
+      const savedRefreshToken = localStorage.getItem('google_calendar_refresh_token');
+      const savedUser = localStorage.getItem('google_calendar_user');
+      if (savedUser && savedRefreshToken && !googleToken) {
+        const newTok = await refreshGoogleAccessToken();
+        if (newTok) {
+          setGoogleToken(newTok);
+          fetchGoogleEvents(newTok);
+        }
+      }
+    };
+    restoreSession();
+  }, []);
 
   useEffect(() => {
     const handleOAuthMessage = (event: MessageEvent) => {
@@ -615,10 +713,9 @@ export default function CalendarView({
       if (event.data?.type === 'GOOGLE_OAUTH_SUCCESS') {
         const { tokens, profile } = event.data;
         if (tokens?.access_token) {
-          localStorage.setItem('google_calendar_token', tokens.access_token);
-          if (profile) {
-            localStorage.setItem('google_calendar_user', JSON.stringify(profile));
+          saveGoogleOAuthTokens(tokens, profile);
 
+          if (profile) {
             // Auto-fill logic
             const defaultName = 'Nando';
             const defaultEmail = 'etanomicosl5@gmail.com';
@@ -3676,7 +3773,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                     className="bg-orange-500 hover:bg-orange-600 disabled:bg-orange-500/50 text-white font-bold text-xs px-5 py-2 rounded-xl flex items-center gap-1.5 shadow-[0_4px_12px_rgba(249,115,22,0.2)] transition-colors"
                   >
                     <Save className="h-3.5 w-3.5" />
-                    {weekReviewSavingStatus === 'saving' ? 'Salvando...' : 'Salvar na Agenda (+30 XP)'}
+                    {weekReviewSavingStatus === 'saving' ? 'Salvando...' : 'Salvar na Agenda'}
                   </button>
                 </div>
               </div>
@@ -4062,7 +4159,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                     <Zap className="h-4 w-4 animate-pulse" />
                   </span>
                   <div>
-                    <span className="text-xs font-bold text-white block">Recompensa Mental +50 XP</span>
+                    <span className="text-xs font-bold text-white block">Evolução Mental</span>
                     <span className="text-[10px] text-zinc-500 block">Refletir ajuda a expandir seu nível de maestria pessoal.</span>
                   </div>
                 </div>
@@ -4091,7 +4188,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                     ) : (
                       <>
                         <Save className="h-4 w-4" />
-                        Salvar Reflexão & Resgatar XP
+                        Salvar Reflexão
                       </>
                     )}
                   </button>

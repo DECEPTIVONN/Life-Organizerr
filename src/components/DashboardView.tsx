@@ -1165,7 +1165,7 @@ export default function DashboardView({
                   className="overflow-hidden"
                 >
                   <p className="text-xs text-zinc-500 mb-4 leading-normal">
-                    Conclua suas tarefas inegociáveis do dia diretamente do painel inicial para pontuar XP.
+                    Conclua suas tarefas inegociáveis do dia diretamente do painel inicial.
                   </p>
 
                   <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1 scrollbar-thin">
@@ -1193,16 +1193,13 @@ export default function DashboardView({
                             <span className={`text-xs font-bold leading-normal ${task.completed ? 'line-through text-zinc-600' : 'text-zinc-200'}`}>
                               {task.text}
                             </span>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <span className="text-[8px] bg-zinc-950 px-1.5 py-0.5 rounded border border-zinc-850 uppercase text-zinc-500 font-bold font-mono">
-                                +{task.xpReward} XP
-                              </span>
-                              {task.period && (
+                            {task.period && (
+                              <div className="flex items-center gap-2 mt-0.5">
                                 <span className="text-[8px] text-zinc-500 font-bold">
-                                  • {task.period.toUpperCase()}
+                                  {task.period.toUpperCase()}
                                 </span>
-                              )}
-                            </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                         
@@ -1228,9 +1225,9 @@ export default function DashboardView({
 
                   {dailyTasks.length > 0 && (
                     <div className="mt-4 pt-4 border-t border-zinc-900 flex justify-between items-center text-xs">
-                      <span className="text-zinc-500 font-medium">Bônus por fechar o dia:</span>
-                      <span className="text-orange-400 font-extrabold font-mono flex items-center gap-1">
-                        <Sparkles className="h-3.5 w-3.5" /> +25 XP EXTRA
+                      <span className="text-zinc-500 font-medium">Status de Conclusão:</span>
+                      <span className="text-emerald-400 font-extrabold font-mono flex items-center gap-1">
+                        <CheckCircle className="h-3.5 w-3.5" /> {completedChecklistCount}/{dailyTasks.length} Cumpridos
                       </span>
                     </div>
                   )}
@@ -1335,7 +1332,7 @@ export default function DashboardView({
                                   : 'bg-orange-500/10 text-orange-400 border-orange-500/20'
                                 : 'bg-zinc-950 text-zinc-500 border-zinc-900'
                             }`}>
-                              {isChecked ? isBad ? '+15 XP' : '+10 XP' : 'Pendente'}
+                              {isChecked ? 'Concluído' : 'Pendente'}
                             </span>
                           </div>
                         </div>

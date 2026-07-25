@@ -26,6 +26,7 @@ import {
   recoverAccountByEmail,
   AuthUser 
 } from '../lib/auth';
+import { saveGoogleOAuthTokens } from '../utils/googleToken';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -176,14 +177,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
           const profile = event.data.profile;
           const tokens = event.data.tokens;
 
-          // Save Google Calendar tokens automatically upon Google login
-          if (tokens?.access_token) {
-            localStorage.setItem('google_calendar_token', tokens.access_token);
-          }
-          if (profile) {
-            localStorage.setItem('google_calendar_user', JSON.stringify(profile));
-          }
-          window.dispatchEvent(new Event('storage'));
+          // Save Google Calendar tokens & refresh token automatically upon Google login
+          saveGoogleOAuthTokens(tokens, profile);
 
           const localKey = localStorage.getItem('mbc_sync_key');
           const validLocalKey = (localKey && localKey !== 'USUARIO_UNICO' && localKey.trim()) ? localKey.trim() : undefined;

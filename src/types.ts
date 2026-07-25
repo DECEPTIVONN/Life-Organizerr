@@ -183,12 +183,12 @@ export interface YearlyBook {
   author: string;
   totalPages: number;
   pagesRead: number;
-  status: 'lendo' | 'lido' | 'quero_ler';
+  status: 'lendo' | 'lido' | 'quero_ler' | 'dropado';
   rating?: number; // 1-5 stars
   review?: string;
   startDate?: string;
   endDate?: string;
-  readingInterval?: string; // dd/mm-dd/mm
+  readingInterval?: string; // dd/mm/yyyy - dd/mm/yyyy
 }
 
 

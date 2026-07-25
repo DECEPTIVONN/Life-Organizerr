@@ -632,20 +632,6 @@ export default function Sidebar({
                   <button
                     onClick={() => {
                       setMobileMenuOpen(false);
-                      triggerInstall();
-                    }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-bold text-gray-400 hover:text-white hover:bg-zinc-900 border border-transparent transition-all"
-                  >
-                    <Download className="h-4 w-4 text-orange-500" />
-                    <div className="text-left">
-                      <div className="text-xs font-bold text-zinc-300">Instalar Aplicativo</div>
-                      <div className="text-[9px] text-zinc-500 font-mono mt-0.5">Adicionar à Tela Inicial</div>
-                    </div>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setMobileMenuOpen(false);
                       toggleFullscreen();
                     }}
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-bold text-gray-400 hover:text-white hover:bg-zinc-900 border border-transparent transition-all"
@@ -975,19 +961,6 @@ export default function Sidebar({
               }`} />
               <span className={`text-[11px] font-bold leading-none transition-all duration-300 ${isExpanded ? 'opacity-100 block' : 'opacity-0 hidden w-0 overflow-hidden'}`}>
                 {syncKey ? (syncStatus === 'error' ? 'Erro de Sync' : syncStatus === 'syncing' ? 'Sincronizando' : 'Sincronizado') : 'Sincronizar'}
-              </span>
-            </button>
-
-            <button
-              onClick={triggerInstall}
-              className={`flex items-center rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-900/40 border border-transparent transition-all group duration-200 w-full ${
-                isExpanded ? 'px-3 py-2 justify-start gap-3' : 'p-2 justify-center h-10 w-10'
-              }`}
-              title="Instalar TRONUS HUD"
-            >
-              <Download className="h-4 w-4 text-orange-500 flex-shrink-0 group-hover:scale-110 transition-all" />
-              <span className={`text-[11px] font-bold leading-none transition-all duration-300 ${isExpanded ? 'opacity-100 block' : 'opacity-0 hidden w-0 overflow-hidden'}`}>
-                Instalar App
               </span>
             </button>
 

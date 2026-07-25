@@ -498,7 +498,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                 {isEveryDay ? 'Nova Atividade para Todos os Dias' : `Nova Atividade para ${daysOfWeek.find(d => d.id === selectedDay)?.fullName}`}
               </h3>
               <span className="text-[10px] text-orange-500 font-mono font-bold bg-orange-500/10 px-2 py-0.5 rounded">
-                Ganha +15 XP ao criar
+                Atividade Recorrente
               </span>
             </div>
 
@@ -690,7 +690,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                             : 'border-zinc-700 text-gray-400 hover:border-orange-500 hover:text-white'
                         }`}
                       >
-                        {isItemCompleted ? 'Feito! (+10 XP)' : 'Completar'}
+                        {isItemCompleted ? 'Feito!' : 'Completar'}
                       </button>
 
                       <button
@@ -786,7 +786,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                       ? 'bg-orange-500 border-orange-500 text-white' 
                                       : 'border-zinc-800 hover:border-orange-500 text-zinc-500 hover:text-white'
                                   }`}
-                                  title={isItemCompleted ? 'Desmarcar' : 'Completar tarefa (+10 XP)'}
+                                  title={isItemCompleted ? 'Desmarcar' : 'Completar tarefa'}
                                 >
                                   <Check className="h-3 w-3 stroke-[3]" />
                                 </button>
@@ -1196,7 +1196,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                     className="bg-orange-500 hover:bg-orange-600 disabled:bg-orange-500/50 text-white font-bold text-xs px-5 py-2 rounded-xl flex items-center gap-1.5 shadow-[0_4px_12px_rgba(249,115,22,0.2)] transition-colors"
                   >
                     <Save className="h-3.5 w-3.5" />
-                    {weekReviewSavingStatus === 'saving' ? 'Salvando...' : 'Salvar na Agenda (+30 XP)'}
+                    {weekReviewSavingStatus === 'saving' ? 'Salvando...' : 'Salvar na Agenda'}
                   </button>
                 </div>
               </div>
@@ -1591,7 +1591,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                     <Zap className="h-4 w-4 animate-pulse" />
                   </span>
                   <div>
-                    <span className="text-xs font-bold text-white block">Recompensa Mental +50 XP</span>
+                    <span className="text-xs font-bold text-white block">Evolução Mental</span>
                     <span className="text-[10px] text-zinc-500 block">Refletir ajuda a expandir seu nível de maestria pessoal.</span>
                   </div>
                 </div>
@@ -1621,7 +1621,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                     ) : (
                       <>
                         <Save className="h-4 w-4" />
-                        Salvar Reflexão & Resgatar XP
+                        Salvar Reflexão
                       </>
                     )}
                   </button>

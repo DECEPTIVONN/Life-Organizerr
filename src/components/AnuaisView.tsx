@@ -31,10 +31,13 @@ import {
   ChevronDown,
   ChevronUp,
   Upload,
-  TrendingUp
+  TrendingUp,
+  Pause,
+  Play
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CalendarNote, DailyTask, MonthlyReview, WeeklyReview, YearlyBook, SubTask, Goal, FinanceEntry } from '../types';
+import { calculateReadingInterval, formatDateBR } from '../utils/bookUtils';
 
 interface AnuaisViewProps {
   notes: CalendarNote[];
@@ -46,10 +49,13 @@ interface AnuaisViewProps {
   weeklyReviews: WeeklyReview[];
   setWeeklyReviews: React.Dispatch<React.SetStateAction<WeeklyReview[]>>;
   bookTracker: any;
+  setBookTracker?: React.Dispatch<React.SetStateAction<any>>;
   bibleTracker: any;
   routine: any;
   goals?: Goal[];
   finances?: FinanceEntry[];
+  books?: YearlyBook[];
+  setBooks?: React.Dispatch<React.SetStateAction<YearlyBook[]>>;
 }
 
 export default function AnuaisView({
@@ -62,10 +68,13 @@ export default function AnuaisView({
   weeklyReviews,
   setWeeklyReviews,
   bookTracker,
+  setBookTracker,
   bibleTracker,
   routine,
   goals = [],
-  finances = []
+  finances = [],
+  books: propBooks,
+  setBooks: propSetBooks
 }: AnuaisViewProps) {
   const [selectedYear, setSelectedYear] = useState(() => Math.max(2026, new Date().getFullYear()));
   const [selectedMonthIndex, setSelectedMonthIndex] = useState<number>(0); // 0-11 for months, -1 for "Livros"
@@ -325,7 +334,7 @@ export default function AnuaisView({
   });
 
   // Yearly Books states
-  const [books, setBooks] = useState<YearlyBook[]>(() => {
+  const [localBooks, setLocalBooks] = useState<YearlyBook[]>(() => {
     const saved = localStorage.getItem('mbc_yearly_books');
     if (saved) {
       try {
@@ -346,7 +355,8 @@ export default function AnuaisView({
         status: 'lendo',
         rating: 4,
         review: 'Excelente livro sobre micro-hábitos e disciplina.',
-        startDate: '2026-01-02'
+        startDate: '2026-01-02',
+        readingInterval: '02/01/2026 - Em andamento'
       },
       {
         id: 'book-2',
@@ -359,7 +369,8 @@ export default function AnuaisView({
         rating: 5,
         review: 'Leitura obrigatória sobre finanças e poupança.',
         startDate: '2026-02-10',
-        endDate: '2026-02-25'
+        endDate: '2026-02-25',
+        readingInterval: '10/02/2026 a 25/02/2026'
       },
       {
         id: 'book-3',
@@ -370,15 +381,21 @@ export default function AnuaisView({
         pagesRead: 0,
         status: 'quero_ler',
         rating: 0,
-        review: ''
+        review: '',
+        readingInterval: 'A iniciar'
       }
     ];
   });
 
-  // Save books list to localStorage whenever it changes
+  const books = propBooks || localBooks;
+  const setBooks = propSetBooks || setLocalBooks;
+
+  // Save books list to localStorage whenever local state changes
   useEffect(() => {
-    localStorage.setItem('mbc_yearly_books', JSON.stringify(books));
-  }, [books]);
+    if (!propBooks) {
+      localStorage.setItem('mbc_yearly_books', JSON.stringify(localBooks));
+    }
+  }, [localBooks, propBooks]);
 
   // Book edit form states
   const [isBookModalOpen, setIsBookModalOpen] = useState(false);
@@ -387,10 +404,11 @@ export default function AnuaisView({
   const [bookAuthor, setBookAuthor] = useState('');
   const [bookTotalPages, setBookTotalPages] = useState(200);
   const [bookPagesRead, setBookPagesRead] = useState(0);
-  const [bookStatus, setBookStatus] = useState<'lendo' | 'lido' | 'quero_ler'>('quero_ler');
+  const [bookStatus, setBookStatus] = useState<'lendo' | 'lido' | 'quero_ler' | 'dropado'>('quero_ler');
   const [bookRating, setBookRating] = useState(0);
   const [bookReview, setBookReview] = useState('');
   const [bookReadingInterval, setBookReadingInterval] = useState('');
+  const [bookFilterTab, setBookFilterTab] = useState<'todos' | 'lendo' | 'lido' | 'quero_ler' | 'dropado'>('todos');
 
   // Monthly Review Form states (for the selected month in the selected year)
   const [isMonthlyReviewModalOpen, setIsMonthlyReviewModalOpen] = useState(false);
@@ -869,27 +887,90 @@ export default function AnuaisView({
     setIsBookModalOpen(true);
   };
 
+  const handleResumeBookInAnuais = (bk: YearlyBook) => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const startDate = bk.startDate || todayStr;
+    const interval = calculateReadingInterval(startDate, undefined, 'lendo');
+
+    setBooks(prev => prev.map(b => b.id === bk.id ? {
+      ...b,
+      status: 'lendo',
+      endDate: undefined,
+      readingInterval: interval
+    } : b));
+
+    if (setBookTracker) {
+      setBookTracker({
+        bookName: bk.title,
+        totalPages: bk.totalPages,
+        deadlineDays: 7,
+        pagesRead: bk.pagesRead,
+        startedDate: startDate,
+        history: []
+      });
+    }
+    addXp(15);
+  };
+
+  const handlePauseBookInAnuais = (bk: YearlyBook) => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const startDate = bk.startDate || todayStr;
+    const interval = calculateReadingInterval(startDate, todayStr, 'dropado');
+
+    setBooks(prev => prev.map(b => b.id === bk.id ? {
+      ...b,
+      status: 'dropado',
+      endDate: todayStr,
+      readingInterval: interval
+    } : b));
+
+    if (setBookTracker && bookTracker?.bookName?.toLowerCase() === bk.title.toLowerCase()) {
+      setBookTracker({
+        bookName: '',
+        totalPages: 250,
+        deadlineDays: 7,
+        pagesRead: 0,
+        startedDate: undefined,
+        history: []
+      });
+    }
+  };
+
   const handleSaveBook = (e: React.FormEvent) => {
     e.preventDefault();
     if (!bookTitle.trim()) return;
 
+    const todayStr = new Date().toISOString().split('T')[0];
+
     if (editingBookId) {
       // Edit mode
-      setBooks(prev => prev.map(b => b.id === editingBookId ? {
-        ...b,
-        title: bookTitle,
-        author: bookAuthor,
-        totalPages: bookTotalPages,
-        pagesRead: Math.min(bookPagesRead, bookTotalPages),
-        status: bookStatus,
-        rating: bookRating,
-        review: bookReview,
-        readingInterval: bookReadingInterval,
-        endDate: bookStatus === 'lido' && b.status !== 'lido' ? new Date().toISOString().split('T')[0] : b.endDate
-      } : b));
+      setBooks(prev => prev.map(b => {
+        if (b.id !== editingBookId) return b;
+        const startDate = b.startDate || (bookStatus !== 'quero_ler' ? todayStr : undefined);
+        const endDate = (bookStatus === 'lido' || bookStatus === 'dropado') ? (b.endDate || todayStr) : undefined;
+        const interval = bookReadingInterval.trim() || calculateReadingInterval(startDate, endDate, bookStatus);
+
+        return {
+          ...b,
+          title: bookTitle,
+          author: bookAuthor,
+          totalPages: bookTotalPages,
+          pagesRead: Math.min(bookPagesRead, bookTotalPages),
+          status: bookStatus,
+          rating: bookRating,
+          review: bookReview,
+          startDate: startDate,
+          endDate: endDate,
+          readingInterval: interval
+        };
+      }));
       addXp(20);
     } else {
       // Create mode
+      const startDate = bookStatus !== 'quero_ler' ? todayStr : undefined;
+      const endDate = (bookStatus === 'lido' || bookStatus === 'dropado') ? todayStr : undefined;
+      const interval = bookReadingInterval.trim() || calculateReadingInterval(startDate, endDate, bookStatus);
+
       const newBook: YearlyBook = {
         id: 'bk-' + Math.random().toString(36).substring(2, 9),
         year: selectedYear,
@@ -900,9 +981,9 @@ export default function AnuaisView({
         status: bookStatus,
         rating: bookRating,
         review: bookReview,
-        readingInterval: bookReadingInterval,
-        startDate: bookStatus !== 'quero_ler' ? new Date().toISOString().split('T')[0] : undefined,
-        endDate: bookStatus === 'lido' ? new Date().toISOString().split('T')[0] : undefined
+        startDate: startDate,
+        endDate: endDate,
+        readingInterval: interval
       };
       setBooks(prev => [...prev, newBook]);
       addXp(40);
@@ -922,6 +1003,10 @@ export default function AnuaisView({
       if (b.id !== bookId) return b;
       const nextRead = Math.min(b.totalPages, Math.max(0, b.pagesRead + inc));
       const nextStatus = nextRead === b.totalPages ? 'lido' : 'lendo';
+      const todayStr = new Date().toISOString().split('T')[0];
+      const endDate = nextStatus === 'lido' ? todayStr : b.endDate;
+      const interval = calculateReadingInterval(b.startDate, endDate, nextStatus);
+
       if (nextStatus === 'lido' && b.status !== 'lido') {
         addXp(100); // Level completion massive reward
       }
@@ -929,14 +1014,19 @@ export default function AnuaisView({
         ...b,
         pagesRead: nextRead,
         status: nextStatus as any,
-        endDate: nextStatus === 'lido' ? new Date().toISOString().split('T')[0] : b.endDate
+        endDate: endDate,
+        readingInterval: interval
       };
     }));
     addXp(10);
   };
 
-  // Filter books of selected year
-  const filteredBooks = books.filter(b => b.year === selectedYear);
+  // Filter books of selected year and tab filter
+  const yearBooks = books.filter(b => b.year === selectedYear);
+  const filteredBooks = yearBooks.filter(b => {
+    if (bookFilterTab === 'todos') return true;
+    return b.status === bookFilterTab;
+  });
 
   return (
     <div id="anuais-view" className="space-y-6 pb-12">
@@ -1321,48 +1411,81 @@ export default function AnuaisView({
               </div>
 
               {/* Book shelf Stats */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-zinc-950 p-4 border border-zinc-900 rounded-2xl flex flex-col justify-between">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="bg-zinc-950 p-3.5 border border-zinc-900 rounded-2xl flex flex-col justify-between">
                   <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block">Lidos no Ano</span>
-                  <div className="text-3xl font-mono font-black text-emerald-400 mt-2">
-                    {filteredBooks.filter(b => b.status === 'lido').length}
+                  <div className="text-2xl font-mono font-black text-emerald-400 mt-1">
+                    {yearBooks.filter(b => b.status === 'lido').length}
                   </div>
-                  <span className="text-[8px] text-zinc-600 block mt-1">Livros finalizados com sucesso</span>
+                  <span className="text-[8px] text-zinc-600 block mt-0.5">Livros concluídos</span>
                 </div>
 
-                <div className="bg-zinc-950 p-4 border border-zinc-900 rounded-2xl flex flex-col justify-between">
+                <div className="bg-zinc-950 p-3.5 border border-zinc-900 rounded-2xl flex flex-col justify-between">
                   <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block">Leitura Ativa</span>
-                  <div className="text-3xl font-mono font-black text-amber-400 mt-2">
-                    {filteredBooks.filter(b => b.status === 'lendo').length}
+                  <div className="text-2xl font-mono font-black text-amber-400 mt-1">
+                    {yearBooks.filter(b => b.status === 'lendo').length}
                   </div>
-                  <span className="text-[8px] text-zinc-600 block mt-1">Livros sendo lidos atualmente</span>
+                  <span className="text-[8px] text-zinc-600 block mt-0.5">Sendo lidos agora</span>
                 </div>
 
-                <div className="bg-zinc-950 p-4 border border-zinc-900 rounded-2xl flex flex-col justify-between">
-                  <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block">Total na Fila</span>
-                  <div className="text-3xl font-mono font-black text-zinc-400 mt-2">
-                    {filteredBooks.length}
+                <div className="bg-zinc-950 p-3.5 border border-zinc-900 rounded-2xl flex flex-col justify-between">
+                  <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block">Dropados / Pausados</span>
+                  <div className="text-2xl font-mono font-black text-rose-400 mt-1">
+                    {yearBooks.filter(b => b.status === 'dropado').length}
                   </div>
-                  <span className="text-[8px] text-zinc-600 block mt-1">Acervo completo registrado</span>
+                  <span className="text-[8px] text-zinc-600 block mt-0.5">Pausados para continuar depois</span>
                 </div>
+
+                <div className="bg-zinc-950 p-3.5 border border-zinc-900 rounded-2xl flex flex-col justify-between">
+                  <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block">Total no Acervo</span>
+                  <div className="text-2xl font-mono font-black text-zinc-400 mt-1">
+                    {yearBooks.length}
+                  </div>
+                  <span className="text-[8px] text-zinc-600 block mt-0.5">Acervo do ano</span>
+                </div>
+              </div>
+
+              {/* Status Filter Tabs */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs">
+                {[
+                  { id: 'todos', label: 'Todos' },
+                  { id: 'lendo', label: '📖 Lendo' },
+                  { id: 'lido', label: '✅ Lidos' },
+                  { id: 'dropado', label: '⏸️ Dropados / Pausados' },
+                  { id: 'quero_ler', label: '📌 Quero Ler' }
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setBookFilterTab(tab.id as any)}
+                    className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all whitespace-nowrap ${
+                      bookFilterTab === tab.id
+                        ? 'bg-orange-500 text-white shadow-sm'
+                        : 'bg-zinc-900/60 text-zinc-400 hover:text-white hover:bg-zinc-800'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
               </div>
 
               {/* Books List Grid */}
               {filteredBooks.length === 0 ? (
                 <div className="text-center py-16 border border-dashed border-zinc-900 rounded-2xl">
                   <BookOpen className="h-8 w-8 text-zinc-700 mx-auto mb-2" />
-                  <p className="text-xs text-zinc-500">Nenhum livro registrado na estante de {selectedYear}.</p>
+                  <p className="text-xs text-zinc-500">Nenhum livro encontrado com o filtro selecionado.</p>
                   <button
                     onClick={handleOpenAddBook}
                     className="mt-3 text-orange-500 hover:text-orange-400 text-xs font-bold underline"
                   >
-                    Adicionar o primeiro livro agora
+                    Adicionar um livro agora
                   </button>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {filteredBooks.map((bk) => {
                     const percent = bk.totalPages > 0 ? Math.round((bk.pagesRead / bk.totalPages) * 100) : 0;
+                    const displayInterval = bk.readingInterval || calculateReadingInterval(bk.startDate, bk.endDate, bk.status);
+
                     return (
                       <div
                         key={bk.id}
@@ -1373,17 +1496,32 @@ export default function AnuaisView({
                             <div>
                               <span className={`inline-block text-[8px] font-bold uppercase px-2 py-0.5 rounded border ${
                                 bk.status === 'lido'
-                                  ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-400'
+                                  ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
                                   : bk.status === 'lendo'
-                                  ? 'bg-amber-500/5 border-amber-500/20 text-amber-400'
+                                  ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                                  : bk.status === 'dropado'
+                                  ? 'bg-rose-500/10 border-rose-500/20 text-rose-400'
                                   : 'bg-zinc-900/50 border-zinc-850 text-zinc-500'
                               }`}>
-                                {bk.status === 'lido' ? 'Lido' : bk.status === 'lendo' ? 'Lendo' : 'Quero Ler'}
+                                {bk.status === 'lido' 
+                                  ? 'Lido' 
+                                  : bk.status === 'lendo' 
+                                  ? 'Lendo' 
+                                  : bk.status === 'dropado' 
+                                  ? 'Pausado / Dropado' 
+                                  : 'Quero Ler'}
                               </span>
                               <h4 className="text-xs font-black text-white mt-2 group-hover:text-orange-500 transition-colors leading-snug">
                                 {bk.title}
                               </h4>
                               <p className="text-[10px] text-zinc-500">por {bk.author || 'Autor desconhecido'}</p>
+
+                              {displayInterval && (
+                                <p className="text-[9.5px] text-zinc-400 font-mono mt-1 flex items-center gap-1">
+                                  <Calendar className="h-3 w-3 text-zinc-500 shrink-0" />
+                                  <span>{displayInterval}</span>
+                                </p>
+                              )}
                             </div>
 
                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
@@ -1413,7 +1551,11 @@ export default function AnuaisView({
                             <div className="h-1.5 w-full bg-zinc-900 rounded-full overflow-hidden">
                               <div
                                 className={`h-full rounded-full transition-all duration-300 ${
-                                  bk.status === 'lido' ? 'bg-emerald-500' : 'bg-orange-500'
+                                  bk.status === 'lido' 
+                                    ? 'bg-emerald-500' 
+                                    : bk.status === 'dropado'
+                                    ? 'bg-rose-500'
+                                    : 'bg-orange-500'
                                 }`}
                                 style={{ width: `${percent}%` }}
                               />
@@ -1443,31 +1585,58 @@ export default function AnuaisView({
                         </div>
 
                         {/* Quick actions bar */}
-                        {bk.status !== 'lido' && (
-                          <div className="flex gap-1.5 pt-4 border-t border-zinc-900 mt-auto">
+                        <div className="flex gap-1.5 pt-3 border-t border-zinc-900 mt-auto">
+                          {(bk.status === 'dropado' || bk.status === 'quero_ler') && (
                             <button
-                              onClick={() => handleQuickPageIncrement(bk.id, 10)}
-                              className="flex-1 py-1 px-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-lg text-[9px] font-mono font-bold transition-all"
+                              onClick={() => handleResumeBookInAnuais(bk)}
+                              className="w-full py-1.5 px-3 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/20 rounded-xl text-[10px] font-bold transition-all flex items-center justify-center gap-1.5"
                             >
-                              +10 pág.
+                              <Play className="h-3 w-3 fill-orange-400" />
+                              Continuar Lendo (Retomar)
                             </button>
-                            <button
-                              onClick={() => handleQuickPageIncrement(bk.id, 30)}
-                              className="flex-1 py-1 px-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-lg text-[9px] font-mono font-bold transition-all"
-                            >
-                              +30 pág.
-                            </button>
-                            <button
-                              onClick={() => {
-                                setBooks(prev => prev.map(b => b.id === bk.id ? { ...b, pagesRead: b.totalPages, status: 'lido' } : b));
-                                addXp(100);
-                              }}
-                              className="py-1 px-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-lg text-[9px] font-bold transition-all"
-                            >
-                              Marcar como Lido
-                            </button>
-                          </div>
-                        )}
+                          )}
+
+                          {bk.status === 'lendo' && (
+                            <>
+                              <button
+                                onClick={() => handleQuickPageIncrement(bk.id, 10)}
+                                className="py-1 px-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-lg text-[9px] font-mono font-bold transition-all"
+                              >
+                                +10 pág.
+                              </button>
+                              <button
+                                onClick={() => handleQuickPageIncrement(bk.id, 30)}
+                                className="py-1 px-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-lg text-[9px] font-mono font-bold transition-all"
+                              >
+                                +30 pág.
+                              </button>
+                              <button
+                                onClick={() => handlePauseBookInAnuais(bk)}
+                                className="py-1 px-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg text-[9px] font-bold transition-all"
+                                title="Pausar / Dropar esta leitura"
+                              >
+                                Pausar
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const todayStr = new Date().toISOString().split('T')[0];
+                                  const interval = calculateReadingInterval(bk.startDate, todayStr, 'lido');
+                                  setBooks(prev => prev.map(b => b.id === bk.id ? { 
+                                    ...b, 
+                                    pagesRead: b.totalPages, 
+                                    status: 'lido',
+                                    endDate: todayStr,
+                                    readingInterval: interval
+                                  } : b));
+                                  addXp(100);
+                                }}
+                                className="py-1 px-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-lg text-[9px] font-bold transition-all"
+                              >
+                                Concluir
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
@@ -2998,6 +3167,7 @@ export default function AnuaisView({
                       <option value="quero_ler">Quero Ler (Fila)</option>
                       <option value="lendo">Lendo Ativamente</option>
                       <option value="lido">Concluído (Lido)</option>
+                      <option value="dropado">Pausado / Dropado (Interrompido)</option>
                     </select>
                   </div>
 

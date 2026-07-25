@@ -33,7 +33,8 @@ import {
   MoreHorizontal
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { DailyTask, BookTracker, BibleTracker, RoutineItem } from '../types';
+import { DailyTask, BookTracker, BibleTracker, RoutineItem, YearlyBook, WeeklyReview } from '../types';
+import { syncBookWithYearlyBooks, calculateReadingInterval, formatDateBR } from '../utils/bookUtils';
 
 interface ChecklistViewProps {
   dailyTasks: DailyTask[];
@@ -51,6 +52,10 @@ interface ChecklistViewProps {
   setGridRoutine?: (newGrid: any) => void;
   routine?: RoutineItem[];
   setRoutine?: React.Dispatch<React.SetStateAction<RoutineItem[]>>;
+  books?: YearlyBook[];
+  setBooks?: React.Dispatch<React.SetStateAction<YearlyBook[]>>;
+  weeklyReviews?: WeeklyReview[];
+  setWeeklyReviews?: React.Dispatch<React.SetStateAction<WeeklyReview[]>>;
 }
 
 // Bible total chapters standard (1189 is standard for Protestant bible)
@@ -150,8 +155,17 @@ export default function ChecklistView({
   gridRoutine: propGridRoutine,
   setGridRoutine: propSetGridRoutine,
   routine: propRoutine,
-  setRoutine: propSetRoutine
+  setRoutine: propSetRoutine,
+  books: propBooks,
+  setBooks: propSetBooks,
+  weeklyReviews: propWeeklyReviews,
+  setWeeklyReviews: propSetWeeklyReviews
 }: ChecklistViewProps) {
+  const [localBooks, setLocalBooks] = useState<YearlyBook[]>([]);
+  const actualBooks = propBooks || localBooks;
+  const actualSetBooks = propSetBooks || setLocalBooks;
+  const actualWeeklyReviews = propWeeklyReviews;
+  const actualSetWeeklyReviews = propSetWeeklyReviews;
   const [newTaskText, setNewTaskText] = useState('');
   const [newTaskCategory, setNewTaskCategory] = useState('O Básico');
   const [newTaskIsRecurring, setNewTaskIsRecurring] = useState(true);
@@ -525,11 +539,13 @@ export default function ChecklistView({
   // ----------------------------------------------------
 
   const handleResetForNewDay = () => {
-    if (window.confirm("Deseja iniciar um novo dia? Isso irá desmarcar todas as tarefas recorrentes e remover as tarefas concluídas de uso único.")) {
+    if (window.confirm("Deseja iniciar um novo dia? Isso irá desmarcar todas as tarefas e etapas do checklist diário.")) {
       setDailyTasks(prev => 
-        prev
-          .filter(t => t.isRecurring || !t.completed)
-          .map(t => t.isRecurring ? { ...t, completed: false } : t)
+        prev.map(t => ({
+          ...t,
+          completed: false,
+          subtasks: t.subtasks?.map(s => ({ ...s, completed: false }))
+        }))
       );
       // Reset chapters read today for the Bible tracker
       setBibleTracker(prev => ({
@@ -657,16 +673,54 @@ export default function ChecklistView({
   // Book Tracking actions
   const handleSaveBookConfig = (e: React.FormEvent) => {
     e.preventDefault();
-    setBookTracker({
+    const todayStr = getTodayDateStr();
+    const pRead = Number(bookFormPagesRead) || 0;
+    const totalP = Number(bookFormTotalPages) || 250;
+    const isCompleted = pRead >= totalP;
+
+    const newTrackerData: BookTracker = {
       bookName: bookFormName,
-      totalPages: Number(bookFormTotalPages) || 250,
+      totalPages: totalP,
       deadlineDays: Number(bookFormDeadline) || 7,
-      pagesRead: Number(bookFormPagesRead) || 0,
-      startedDate: getTodayDateStr(),
-      history: []
-    });
-    setShowBookConfig(false);
-    addXp(20); // Small reward for planning
+      pagesRead: pRead,
+      startedDate: bookTracker?.startedDate || todayStr,
+      history: bookTracker?.history || []
+    };
+
+    if (isCompleted) {
+      syncBookWithYearlyBooks(
+        { ...newTrackerData, pagesRead: totalP },
+        actualBooks,
+        actualSetBooks,
+        actualWeeklyReviews,
+        actualSetWeeklyReviews
+      );
+
+      setBookTracker({
+        bookName: '',
+        totalPages: 250,
+        deadlineDays: 7,
+        pagesRead: 0,
+        startedDate: undefined,
+        history: []
+      });
+      setBookFormName('');
+      setBookFormPagesRead(0);
+      setShowBookConfig(false);
+      addXp(100);
+      alert(`🎉 Parabéns! O livro "${bookFormName}" foi concluído e salvo no seu histórico em Anuais. O campo foi liberado para você registrar o próximo livro!`);
+    } else {
+      setBookTracker(newTrackerData);
+      syncBookWithYearlyBooks(
+        newTrackerData,
+        actualBooks,
+        actualSetBooks,
+        actualWeeklyReviews,
+        actualSetWeeklyReviews
+      );
+      setShowBookConfig(false);
+      addXp(20);
+    }
   };
 
   const handleLogBookReading = (e: React.FormEvent) => {
@@ -677,33 +731,164 @@ export default function ChecklistView({
     const currentPagesRead = bookTracker?.pagesRead || 0;
     const total = bookTracker?.totalPages || 250;
     const updatedPagesRead = Math.min(total, currentPagesRead + pRead);
+    const todayStr = getTodayDateStr();
 
     const history = bookTracker?.history || [];
     const targetToday = bookMetrics.dailyTarget;
 
     const updatedHistory = [
       {
-        date: getTodayDateStr(),
+        date: todayStr,
         pagesReadToday: pRead,
         dailyTarget: targetToday
       },
       ...history
     ];
 
-    setBookTracker(prev => ({
-      ...prev,
+    const isCompletedNow = updatedPagesRead >= total;
+
+    const updatedTracker = {
+      ...bookTracker,
       pagesRead: updatedPagesRead,
       history: updatedHistory
+    };
+
+    if (isCompletedNow) {
+      syncBookWithYearlyBooks(
+        { ...updatedTracker, pagesRead: total },
+        actualBooks,
+        actualSetBooks,
+        actualWeeklyReviews,
+        actualSetWeeklyReviews
+      );
+
+      setBookTracker({
+        bookName: '',
+        totalPages: 250,
+        deadlineDays: 7,
+        pagesRead: 0,
+        startedDate: undefined,
+        history: []
+      });
+      setBookFormName('');
+      setBookFormPagesRead(0);
+      setPagesLoggedToday('');
+      addXp(100);
+      alert(`🎉 Parabéns! Você concluiu a leitura de "${bookTracker.bookName}"! Ele foi salvo no seu histórico em Anuais e o campo foi liberado para o próximo livro.`);
+    } else {
+      setBookTracker(updatedTracker);
+      syncBookWithYearlyBooks(
+        updatedTracker,
+        actualBooks,
+        actualSetBooks,
+        actualWeeklyReviews,
+        actualSetWeeklyReviews
+      );
+
+      let gainedXp = 10;
+      if (pRead >= targetToday) {
+        gainedXp += 15;
+      }
+      addXp(gainedXp);
+      setPagesLoggedToday('');
+    }
+  };
+
+  const handleCompleteActiveBook = () => {
+    if (!bookTracker?.bookName) return;
+    const total = bookTracker.totalPages || 250;
+    const title = bookTracker.bookName;
+
+    syncBookWithYearlyBooks(
+      { ...bookTracker, pagesRead: total },
+      actualBooks,
+      actualSetBooks,
+      actualWeeklyReviews,
+      actualSetWeeklyReviews
+    );
+
+    setBookTracker({
+      bookName: '',
+      totalPages: 250,
+      deadlineDays: 7,
+      pagesRead: 0,
+      startedDate: undefined,
+      history: []
+    });
+    setBookFormName('');
+    setBookFormPagesRead(0);
+    addXp(100);
+    alert(`🎉 Parabéns! O livro "${title}" foi marcado como concluído e salvo no seu histórico em Anuais. O campo foi liberado para o próximo livro!`);
+  };
+
+  const handlePauseActiveBook = () => {
+    if (!bookTracker?.bookName) return;
+    const title = bookTracker.bookName;
+    const todayStr = getTodayDateStr();
+    const startDate = bookTracker.startedDate || todayStr;
+    const interval = calculateReadingInterval(startDate, todayStr, 'dropado');
+
+    actualSetBooks(prev => prev.map(b => {
+      if (b.title.trim().toLowerCase() === title.trim().toLowerCase()) {
+        return {
+          ...b,
+          status: 'dropado',
+          endDate: todayStr,
+          readingInterval: interval
+        };
+      }
+      return b;
     }));
 
-    // XP Rewards: +10 base XP for logging, +15 bonus XP if they hit or exceed today's target
-    let gainedXp = 10;
-    if (pRead >= targetToday) {
-      gainedXp += 15;
-    }
-    addXp(gainedXp);
+    setBookTracker({
+      bookName: '',
+      totalPages: 250,
+      deadlineDays: 7,
+      pagesRead: 0,
+      startedDate: undefined,
+      history: []
+    });
+    setBookFormName('');
+    setBookFormPagesRead(0);
+    alert(`O livro "${title}" foi pausado e salvo no seu histórico de livros dropados em Anuais.`);
+  };
 
-    setPagesLoggedToday('');
+  const handleResumeBookFromHistory = (bk: YearlyBook) => {
+    const todayStr = getTodayDateStr();
+    const startDate = bk.startDate || todayStr;
+    const interval = calculateReadingInterval(startDate, undefined, 'lendo');
+
+    actualSetBooks(prev => prev.map(b => b.id === bk.id ? {
+      ...b,
+      status: 'lendo',
+      endDate: undefined,
+      readingInterval: interval
+    } : b));
+
+    const newTracker: BookTracker = {
+      bookName: bk.title,
+      totalPages: bk.totalPages,
+      deadlineDays: 7,
+      pagesRead: bk.pagesRead,
+      startedDate: startDate,
+      history: []
+    };
+
+    setBookTracker(newTracker);
+    setBookFormName(bk.title);
+    setBookFormTotalPages(bk.totalPages);
+    setBookFormPagesRead(bk.pagesRead);
+
+    syncBookWithYearlyBooks(
+      newTracker,
+      actualBooks,
+      actualSetBooks,
+      actualWeeklyReviews,
+      actualSetWeeklyReviews
+    );
+
+    setShowBookConfig(false);
+    addXp(15);
   };
 
   // Bible Tracking actions
@@ -816,23 +1001,25 @@ export default function ChecklistView({
       {activeTab === 'checklist' ? (
         <>
 
-      {/* 3. Daily XP Summary & Progress Panel */}
+      {/* 3. Daily Progress Panel */}
       <div className="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="p-3 bg-orange-500/10 rounded-xl border border-orange-500/20">
-            <Zap className="h-6 w-6 text-orange-500 fill-orange-500/10" />
+            <CheckSquare className="h-6 w-6 text-orange-500" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-white">XP Ganho Hoje</h3>
+            <h3 className="text-sm font-bold text-white">Progresso Diário</h3>
             <p className="text-[11px] text-gray-500 mt-0.5">
               {completedTasks} de {totalTasks} tarefas completas
             </p>
           </div>
         </div>
         <div className="text-right">
-          <span className="text-3xl font-black text-white font-mono">+{xpEarnedToday}</span>
+          <span className="text-2xl font-black text-white font-mono">
+            {totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0}%
+          </span>
           <span className="text-[10px] text-gray-500 font-mono block mt-0.5">
-            {completedTasks * 10} base {isComboComplete ? '+ 25 bônus' : ''}
+            {completedTasks === totalTasks && totalTasks > 0 ? 'Tudo concluído!' : 'Em andamento'}
           </span>
         </div>
       </div>
@@ -993,7 +1180,7 @@ export default function ChecklistView({
                   type="submit"
                   className="bg-orange-500 hover:bg-orange-600 text-white font-semibold text-xs px-4 py-1.5 rounded-lg transition-colors"
                 >
-                  Confirmar (+10 XP)
+                  Confirmar Tarefa
                 </button>
               </div>
             </motion.form>
@@ -1144,87 +1331,127 @@ export default function ChecklistView({
                 exit={{ height: 0, opacity: 0 }}
                 className="overflow-hidden p-5 space-y-4 bg-zinc-950/20 text-left"
               >
-                <div className="space-y-1">
-                  <h3 className="text-sm font-bold text-white leading-snug">
-                    {bookMetrics.bookName}
-                  </h3>
-                  <p className="text-[10px] text-gray-500">
-                    Progresso: <span className="text-white font-bold">{bookMetrics.read}</span> de <span className="text-white font-bold">{bookMetrics.total}</span> páginas ({bookMetrics.progressPercent}%)
-                  </p>
-                </div>
-
-                {/* Progress bar */}
-                <div className="w-full bg-[#18181b] h-2 rounded-full overflow-hidden border border-[#27272a]/50">
-                  <motion.div 
-                    className="bg-gradient-to-r from-orange-500 to-amber-500 h-full rounded-full"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${bookMetrics.progressPercent}%` }}
-                    transition={{ duration: 0.3 }}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 bg-zinc-950/65 p-3 rounded-xl border border-zinc-900">
-                  <div>
-                    <span className="text-[9px] text-gray-500 block uppercase font-bold tracking-wider">Meta de Hoje</span>
-                    <span className="text-lg font-black text-orange-500 font-mono">
-                      {bookMetrics.dailyTarget} <span className="text-xs font-normal text-gray-400 font-sans">págs</span>
-                    </span>
+                {!bookTracker?.bookName ? (
+                  <div className="text-center py-6 space-y-3 bg-zinc-950/60 p-4 rounded-xl border border-zinc-900">
+                    <BookOpen className="h-8 w-8 text-zinc-600 mx-auto" />
+                    <div className="space-y-1">
+                      <h4 className="text-xs font-bold text-white">Nenhum livro ativo sendo lido</h4>
+                      <p className="text-[10px] text-zinc-500">Configure um novo livro ou retome uma leitura pausada do seu histórico em Anuais.</p>
+                    </div>
+                    <button
+                      onClick={() => setShowBookConfig(true)}
+                      className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all inline-flex items-center gap-1.5 shadow-lg shadow-orange-500/10"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      Configurar ou Retomar Livro
+                    </button>
                   </div>
-                  <div>
-                    <span className="text-[9px] text-gray-500 block uppercase font-bold tracking-wider">Dias Restantes</span>
-                    <span className="text-lg font-black text-white font-mono">
-                      {bookMetrics.remainingDays} <span className="text-xs font-normal text-gray-400 font-sans">dias</span>
-                    </span>
-                  </div>
-                </div>
+                ) : (
+                  <>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="space-y-1">
+                        <h3 className="text-sm font-bold text-white leading-snug">
+                          {bookMetrics.bookName}
+                        </h3>
+                        <p className="text-[10px] text-gray-500">
+                          Progresso: <span className="text-white font-bold">{bookMetrics.read}</span> de <span className="text-white font-bold">{bookMetrics.total}</span> páginas ({bookMetrics.progressPercent}%)
+                        </p>
+                      </div>
 
-                {/* Log reading form */}
-                <form onSubmit={handleLogBookReading} className="flex gap-2">
-                  <input 
-                    type="number"
-                    min="1"
-                    max={bookMetrics.remainingPages}
-                    value={pagesLoggedToday}
-                    onChange={(e) => setPagesLoggedToday(e.target.value)}
-                    placeholder="Quantas páginas leu hoje?"
-                    className="flex-1 bg-zinc-950 border border-zinc-900 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono"
-                  />
-                  <button
-                    type="submit"
-                    className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs px-4 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
-                  >
-                    Registrar
-                  </button>
-                </form>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={handlePauseActiveBook}
+                          className="px-2.5 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-lg text-[10px] font-bold transition-all"
+                          title="Pausar esta leitura e salvar no histórico de livros dropados"
+                        >
+                          Pausar / Dropar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCompleteActiveBook}
+                          className="px-2.5 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-lg text-[10px] font-bold transition-all"
+                          title="Marcar livro como lido e salvar em Anuais"
+                        >
+                          Concluir Livro
+                        </button>
+                      </div>
+                    </div>
 
-                {/* Heatmap Grid */}
-                <div className="space-y-1.5 pt-1">
-                  <div className="flex items-center justify-between text-[9px] text-zinc-550 font-bold uppercase tracking-wider">
-                    <span>Consistência (28 dias)</span>
-                    <span>Sequência: {bookStreak} {bookStreak === 1 ? 'dia' : 'dias'}</span>
-                  </div>
-                  <div className="flex gap-1 justify-between bg-zinc-950/40 p-2.5 rounded-xl border border-zinc-900">
-                    {bookHeatmap.map((day, i) => {
-                      let bgClass = 'bg-zinc-950 border border-zinc-900/60';
-                      let titleText = `${day.date}: nenhuma leitura`;
-                      if (day.level === 1) {
-                        bgClass = 'bg-orange-500/20 border border-orange-500/10 hover:bg-orange-500/35';
-                        titleText = `${day.date}: ${day.totalRead} págs lidas (Meta: ${day.target})`;
-                      } else if (day.level === 2) {
-                        bgClass = 'bg-orange-500 border border-orange-400 hover:bg-orange-400';
-                        titleText = `${day.date}: ${day.totalRead} págs (Meta batida! 🎉)`;
-                      }
-                      
-                      return (
-                        <div 
-                          key={i} 
-                          className={`w-[11px] h-[11px] rounded-[3px] transition-all cursor-help ${bgClass}`}
-                          title={titleText}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
+                    {/* Progress bar */}
+                    <div className="w-full bg-[#18181b] h-2 rounded-full overflow-hidden border border-[#27272a]/50">
+                      <motion.div 
+                        className="bg-gradient-to-r from-orange-500 to-amber-500 h-full rounded-full"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${bookMetrics.progressPercent}%` }}
+                        transition={{ duration: 0.3 }}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 bg-zinc-950/65 p-3 rounded-xl border border-zinc-900">
+                      <div>
+                        <span className="text-[9px] text-gray-500 block uppercase font-bold tracking-wider">Meta de Hoje</span>
+                        <span className="text-lg font-black text-orange-500 font-mono">
+                          {bookMetrics.dailyTarget} <span className="text-xs font-normal text-gray-400 font-sans">págs</span>
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[9px] text-gray-500 block uppercase font-bold tracking-wider">Dias Restantes</span>
+                        <span className="text-lg font-black text-white font-mono">
+                          {bookMetrics.remainingDays} <span className="text-xs font-normal text-gray-400 font-sans">dias</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Log reading form */}
+                    <form onSubmit={handleLogBookReading} className="flex gap-2">
+                      <input 
+                        type="number"
+                        min="1"
+                        max={bookMetrics.remainingPages}
+                        value={pagesLoggedToday}
+                        onChange={(e) => setPagesLoggedToday(e.target.value)}
+                        placeholder="Quantas páginas leu hoje?"
+                        className="flex-1 bg-zinc-950 border border-zinc-900 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono"
+                      />
+                      <button
+                        type="submit"
+                        className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs px-4 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
+                      >
+                        Registrar Leitura
+                      </button>
+                    </form>
+
+                    {/* Heatmap Grid */}
+                    <div className="space-y-1.5 pt-1">
+                      <div className="flex items-center justify-between text-[9px] text-zinc-550 font-bold uppercase tracking-wider">
+                        <span>Consistência (28 dias)</span>
+                        <span>Sequência: {bookStreak} {bookStreak === 1 ? 'dia' : 'dias'}</span>
+                      </div>
+                      <div className="flex gap-1 justify-between bg-zinc-950/40 p-2.5 rounded-xl border border-zinc-900">
+                        {bookHeatmap.map((day, i) => {
+                          let bgClass = 'bg-zinc-950 border border-zinc-900/60';
+                          let titleText = `${day.date}: nenhuma leitura`;
+                          if (day.level === 1) {
+                            bgClass = 'bg-orange-500/20 border border-orange-500/10 hover:bg-orange-500/35';
+                            titleText = `${day.date}: ${day.totalRead} págs lidas (Meta: ${day.target})`;
+                          } else if (day.level === 2) {
+                            bgClass = 'bg-orange-500 border border-orange-400 hover:bg-orange-400';
+                            titleText = `${day.date}: ${day.totalRead} págs (Meta batida! 🎉)`;
+                          }
+                          
+                          return (
+                            <div 
+                              key={i} 
+                              className={`w-[11px] h-[11px] rounded-[3px] transition-all cursor-help ${bgClass}`}
+                              title={titleText}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
@@ -1373,84 +1600,140 @@ export default function ChecklistView({
           <motion.div 
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-md overflow-hidden z-50 p-6 space-y-4 shadow-2xl"
+            className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-lg overflow-hidden z-50 p-6 space-y-5 shadow-2xl max-h-[90vh] flex flex-col"
           >
-            <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
+            <div className="flex items-center justify-between border-b border-zinc-900 pb-3 shrink-0">
               <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
                 <BookOpen className="h-4.5 w-4.5 text-orange-500" />
-                Configurar Livro da Semana
+                Configurar Leitura & Histórico
               </h3>
-              <button onClick={() => setShowBookConfig(false)} className="text-zinc-500 hover:text-white">✕</button>
+              <button onClick={() => setShowBookConfig(false)} className="text-zinc-500 hover:text-white p-1">✕</button>
             </div>
 
-            <form onSubmit={handleSaveBookConfig} className="space-y-4">
-              <div>
-                <label className="text-[10px] text-gray-400 font-bold block mb-1 uppercase">Nome do Livro</label>
-                <input 
-                  type="text"
-                  required
-                  placeholder="Nome do Livro..."
-                  value={bookFormName}
-                  onChange={(e) => setBookFormName(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+            <div className="overflow-y-auto space-y-6 pr-1 custom-scrollbar">
+              <form onSubmit={handleSaveBookConfig} className="space-y-4 bg-zinc-900/30 p-4 rounded-xl border border-zinc-900">
+                <h4 className="text-xs font-bold text-white uppercase tracking-wider text-orange-400">Novo Livro / Editar Livro Atual</h4>
                 <div>
-                  <label className="text-[10px] text-gray-400 font-bold block mb-1 uppercase">Total de Páginas</label>
+                  <label className="text-[10px] text-gray-400 font-bold block mb-1 uppercase">Nome do Livro</label>
                   <input 
-                    type="number"
-                    min="1"
+                    type="text"
                     required
-                    value={bookFormTotalPages}
-                    onChange={(e) => setBookFormTotalPages(Number(e.target.value))}
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono"
+                    placeholder="Nome do Livro..."
+                    value={bookFormName}
+                    onChange={(e) => setBookFormName(e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50"
                   />
                 </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] text-gray-400 font-bold block mb-1 uppercase">Total de Páginas</label>
+                    <input 
+                      type="number"
+                      min="1"
+                      required
+                      value={bookFormTotalPages}
+                      onChange={(e) => setBookFormTotalPages(Number(e.target.value))}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-gray-400 font-bold block mb-1 uppercase">Prazo (Dias)</label>
+                    <input 
+                      type="number"
+                      min="1"
+                      required
+                      value={bookFormDeadline}
+                      onChange={(e) => setBookFormDeadline(Number(e.target.value))}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono"
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <label className="text-[10px] text-gray-400 font-bold block mb-1 uppercase">Prazo (Dias)</label>
+                  <label className="text-[10px] text-gray-400 font-bold block mb-1 uppercase">Páginas Já Lidas</label>
                   <input 
                     type="number"
-                    min="1"
+                    min="0"
+                    max={bookFormTotalPages}
                     required
-                    value={bookFormDeadline}
-                    onChange={(e) => setBookFormDeadline(Number(e.target.value))}
+                    value={bookFormPagesRead}
+                    onChange={(e) => setBookFormPagesRead(Number(e.target.value))}
                     className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono"
                   />
+                  <span className="text-[9px] text-gray-500 mt-1 block">Útil caso você já tenha começado o livro.</span>
                 </div>
-              </div>
 
-              <div>
-                <label className="text-[10px] text-gray-400 font-bold block mb-1 uppercase">Páginas Já Lidas</label>
-                <input 
-                  type="number"
-                  min="0"
-                  max={bookFormTotalPages}
-                  required
-                  value={bookFormPagesRead}
-                  onChange={(e) => setBookFormPagesRead(Number(e.target.value))}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono"
-                />
-                <span className="text-[9px] text-gray-500 mt-1 block">Útil caso você já tenha começado o livro.</span>
-              </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowBookConfig(false)}
+                    className="text-xs text-gray-400 hover:text-white px-3 py-1.5 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs px-4 py-1.5 rounded-lg transition-colors"
+                  >
+                    Salvar / Iniciar Leitura
+                  </button>
+                </div>
+              </form>
 
-              <div className="flex justify-end gap-2 border-t border-zinc-900 pt-3">
-                <button
-                  type="button"
-                  onClick={() => setShowBookConfig(false)}
-                  className="text-xs text-gray-400 hover:text-white px-3 py-1.5 transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs px-4 py-1.5 rounded-lg transition-colors"
-                >
-                  Confirmar e Salvar
-                </button>
-              </div>
-            </form>
+              {/* History / Dropped Books list */}
+              {actualBooks && actualBooks.length > 0 && (
+                <div className="space-y-3 pt-2">
+                  <h4 className="text-xs font-bold text-zinc-300 uppercase tracking-wider flex items-center justify-between">
+                    <span>Histórico de Livros em Anuais ({actualBooks.length})</span>
+                  </h4>
+
+                  <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                    {actualBooks.map((bk) => {
+                      const isCurrentlyActive = bookTracker?.bookName?.trim().toLowerCase() === bk.title.trim().toLowerCase();
+                      const statusColor = 
+                        bk.status === 'lido' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                        bk.status === 'dropado' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
+                        bk.status === 'lendo' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
+                        'bg-zinc-800 text-zinc-400 border-zinc-700';
+
+                      const statusLabel = 
+                        bk.status === 'lido' ? 'Lido' :
+                        bk.status === 'dropado' ? 'Pausado / Dropado' :
+                        bk.status === 'lendo' ? 'Lendo Atualmente' :
+                        'Quero Ler';
+
+                      return (
+                        <div key={bk.id} className="bg-zinc-900/50 border border-zinc-900 rounded-xl p-3 flex items-center justify-between gap-3 hover:border-zinc-800 transition-colors">
+                          <div className="space-y-1 min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-xs font-bold text-white truncate">{bk.title}</span>
+                              <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${statusColor}`}>
+                                {statusLabel}
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-zinc-500">
+                              {bk.pagesRead} / {bk.totalPages} págs • Intervalo: {bk.readingInterval || '—'}
+                            </p>
+                          </div>
+
+                          {!isCurrentlyActive && bk.status !== 'lido' && (
+                            <button
+                              type="button"
+                              onClick={() => handleResumeBookFromHistory(bk)}
+                              className="px-3 py-1.5 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/20 rounded-lg text-[10px] font-bold transition-all shrink-0 flex items-center gap-1"
+                            >
+                              <Play className="h-3 w-3 fill-orange-400" />
+                              Continuar Lendo
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
           </motion.div>
         </div>
       )}
@@ -2062,10 +2345,6 @@ export default function ChecklistView({
           </div>
 
           <div className="flex items-center gap-3">
-            <span className={`text-[10px] font-bold font-mono ${task.completed ? 'text-gray-500' : 'text-orange-500'}`}>
-              +{task.xpReward} XP
-            </span>
-            
             {hasSubtasks && (
               <button
                 onClick={() => setExpandedTasks(prev => ({ ...prev, [task.id]: !prev[task.id] }))}

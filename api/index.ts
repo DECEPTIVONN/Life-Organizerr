@@ -57,6 +57,47 @@ app.get("/api/auth/google/url", (req, res) => {
   res.json({ url: `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}` });
 });
 
+// OAuth Refresh Token Route
+app.post("/api/auth/google/refresh", async (req, res) => {
+  const { refresh_token } = req.body;
+  if (!refresh_token) {
+    return res.status(400).json({ error: "Refresh token ausente." });
+  }
+
+  const client_id = process.env.GOOGLE_CLIENT_ID || process.env.CLIENT_ID || process.env.OAUTH_CLIENT_ID;
+  const client_secret = process.env.GOOGLE_CLIENT_SECRET || process.env.CLIENT_SECRET || process.env.OAUTH_CLIENT_SECRET;
+
+  if (!client_id || !client_secret) {
+    return res.status(500).json({ error: "Credenciais de cliente Google não configuradas." });
+  }
+
+  try {
+    const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: new URLSearchParams({
+        client_id,
+        client_secret,
+        refresh_token,
+        grant_type: "refresh_token"
+      }).toString()
+    });
+
+    if (!tokenResponse.ok) {
+      const errText = await tokenResponse.text();
+      return res.status(tokenResponse.status).json({ error: `Falha ao renovar token: ${errText}` });
+    }
+
+    const tokens = await tokenResponse.json();
+    res.json(tokens);
+  } catch (err: any) {
+    console.error("[Planner Server] Refresh token error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // OAuth Callback Route
 app.get(["/auth/callback", "/auth/callback/"], async (req, res) => {
   const { code, error, state } = req.query;

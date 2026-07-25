@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { setSupabaseConfig, testSupabaseConnection } from '../lib/supabase';
+import { saveGoogleOAuthTokens, clearGoogleOAuthSession, refreshGoogleAccessToken } from '../utils/googleToken';
 
 interface SettingsViewProps {
   userName: string;
@@ -222,8 +223,7 @@ export default function SettingsView({
   };
 
   const handleGoogleLogout = () => {
-    localStorage.removeItem('google_calendar_user');
-    localStorage.removeItem('google_calendar_token');
+    clearGoogleOAuthSession();
     setGoogleUser(null);
     setGoogleToken(null);
   };
@@ -238,10 +238,9 @@ export default function SettingsView({
       if (event.data?.type === 'GOOGLE_OAUTH_SUCCESS') {
         const { tokens, profile } = event.data;
         if (tokens?.access_token) {
-          localStorage.setItem('google_calendar_token', tokens.access_token);
-          if (profile) {
-            localStorage.setItem('google_calendar_user', JSON.stringify(profile));
+          saveGoogleOAuthTokens(tokens, profile);
 
+          if (profile) {
             // Auto-fill logic: only fill if empty or default values
             const defaultName = 'Nando';
             const defaultEmail = 'etanomicosl5@gmail.com';
