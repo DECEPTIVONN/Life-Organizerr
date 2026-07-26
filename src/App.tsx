@@ -1070,8 +1070,33 @@ export default function App() {
       // 2. Standalone Notes (Notas)
       notes.forEach(n => {
         if (!n.reminderTime || n.archived) return;
-        const matchesDate = !n.reminderDate || n.reminderDate === todayDateStr;
-        if (matchesDate && n.reminderTime === currentHHMM) {
+        if (n.reminderTime !== currentHHMM) return;
+
+        let shouldTrigger = false;
+        const rec = n.reminderRecurrence || 'none';
+
+        if (rec === 'daily') {
+          shouldTrigger = true;
+        } else if (rec === 'weekly') {
+          if (!n.reminderDate) {
+            shouldTrigger = true;
+          } else {
+            const remD = new Date(n.reminderDate + 'T00:00:00');
+            shouldTrigger = remD.getDay() === dayOfWeek;
+          }
+        } else if (rec === 'monthly') {
+          if (!n.reminderDate) {
+            shouldTrigger = true;
+          } else {
+            const remD = new Date(n.reminderDate + 'T00:00:00');
+            shouldTrigger = remD.getDate() === now.getDate();
+          }
+        } else {
+          // 'none' or default single occurrence
+          shouldTrigger = !n.reminderDate || n.reminderDate === todayDateStr;
+        }
+
+        if (shouldTrigger) {
           const key = `note-${n.id}-${todayDateStr}-${currentHHMM}`;
           if (!notifiedKeysRef.current.has(key)) {
             notifiedKeysRef.current.add(key);
@@ -1130,13 +1155,17 @@ export default function App() {
                 if (ev.start?.dateTime) {
                   const evDate = new Date(ev.start.dateTime);
                   eventTime = `${pad(evDate.getHours())}:${pad(evDate.getMinutes())}`;
+                } else if (ev.start?.date === todayDateStr) {
+                  // All day event - notify at 09:00
+                  eventTime = '09:00';
                 }
+
                 if (eventTime && eventTime === currentHHMM) {
                   const key = `gcal-${ev.id}-${todayDateStr}-${currentHHMM}`;
                   if (!notifiedKeysRef.current.has(key)) {
                     notifiedKeysRef.current.add(key);
-                    new Notification(`Google Agenda: ${ev.summary || 'Evento'}`, {
-                      body: ev.description ? ev.description.substring(0, 100) : `Evento agendado para ${eventTime}`,
+                    new Notification(`Google Agenda: ${ev.summary || 'Evento do dia'}`, {
+                      body: ev.description ? ev.description.substring(0, 100) : `Evento no Google Agenda agendado para hoje`,
                       icon: '/favicon.ico'
                     });
                   }

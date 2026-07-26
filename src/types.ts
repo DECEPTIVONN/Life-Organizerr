@@ -121,6 +121,7 @@ export interface Note {
   archived?: boolean;
   reminderTime?: string; // e.g., "10:30"
   reminderDate?: string; // e.g., "2026-07-25"
+  reminderRecurrence?: 'none' | 'daily' | 'weekly' | 'monthly'; // e.g., "none" | "daily" | "weekly" | "monthly"
 }
 
 export interface RoutineItem {

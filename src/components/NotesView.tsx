@@ -38,6 +38,7 @@ export default function NotesView({ notes, setNotes, addXp }: NotesViewProps) {
   const [tagsInput, setTagsInput] = useState('');
   const [reminderTime, setReminderTime] = useState('');
   const [reminderDate, setReminderDate] = useState('');
+  const [reminderRecurrence, setReminderRecurrence] = useState<'none' | 'daily' | 'weekly' | 'monthly'>('none');
 
   // Collect all unique tags for filter row based on active view mode
   const allTags = Array.from(
@@ -65,6 +66,7 @@ export default function NotesView({ notes, setNotes, addXp }: NotesViewProps) {
     setTagsInput('');
     setReminderTime('');
     setReminderDate('');
+    setReminderRecurrence('none');
 
     // Reward XP
     addXp(15);
@@ -87,6 +89,7 @@ export default function NotesView({ notes, setNotes, addXp }: NotesViewProps) {
           tags: parsedTags,
           reminderTime: reminderTime.trim() || undefined,
           reminderDate: reminderDate.trim() || undefined,
+          reminderRecurrence,
           updatedAt: new Date().toLocaleDateString('pt-BR')
         };
       }
@@ -150,6 +153,7 @@ export default function NotesView({ notes, setNotes, addXp }: NotesViewProps) {
     setTagsInput(note.tags.join(', '));
     setReminderTime(note.reminderTime || '');
     setReminderDate(note.reminderDate || '');
+    setReminderRecurrence(note.reminderRecurrence || 'none');
     setIsEditing(false);
   };
 
@@ -322,6 +326,9 @@ export default function NotesView({ notes, setNotes, addXp }: NotesViewProps) {
                   {note.reminderTime && (
                     <span className="text-[8px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-1.5 py-0.5 rounded font-mono font-bold flex items-center gap-1">
                       <Bell className="h-2.5 w-2.5 text-indigo-400" /> {note.reminderTime}
+                      {note.reminderRecurrence === 'daily' && ' (Diário)'}
+                      {note.reminderRecurrence === 'weekly' && ' (Semanal)'}
+                      {note.reminderRecurrence === 'monthly' && ' (Mensal)'}
                     </span>
                   )}
                   {note.tags.slice(0, 2).map(tag => (
@@ -445,10 +452,10 @@ export default function NotesView({ notes, setNotes, addXp }: NotesViewProps) {
                       />
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <label className="text-[10px] text-gray-500 font-bold block mb-1.5 uppercase tracking-wider flex items-center gap-1">
-                          <Bell className="h-3 w-3 text-orange-500" /> Horário do Lembrete (Notificação)
+                          <Bell className="h-3 w-3 text-orange-500" /> Horário (Notificação)
                         </label>
                         <input
                           type="time"
@@ -460,7 +467,7 @@ export default function NotesView({ notes, setNotes, addXp }: NotesViewProps) {
 
                       <div>
                         <label className="text-[10px] text-gray-500 font-bold block mb-1.5 uppercase tracking-wider flex items-center gap-1">
-                          <CalendarDays className="h-3 w-3 text-orange-500" /> Data do Lembrete (Opcional)
+                          <CalendarDays className="h-3 w-3 text-orange-500" /> Data (Opcional)
                         </label>
                         <input
                           type="date"
@@ -468,6 +475,22 @@ export default function NotesView({ notes, setNotes, addXp }: NotesViewProps) {
                           onChange={(e) => setReminderDate(e.target.value)}
                           className="w-full bg-zinc-950/80 border border-zinc-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500/40 font-mono"
                         />
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] text-gray-500 font-bold block mb-1.5 uppercase tracking-wider flex items-center gap-1">
+                          <Clock className="h-3 w-3 text-orange-500" /> Recorrência
+                        </label>
+                        <select
+                          value={reminderRecurrence}
+                          onChange={(e) => setReminderRecurrence(e.target.value as any)}
+                          className="w-full bg-zinc-950/80 border border-zinc-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500/40 font-mono"
+                        >
+                          <option value="none">Nenhuma (Apenas Data)</option>
+                          <option value="daily">Diário</option>
+                          <option value="weekly">Semanal</option>
+                          <option value="monthly">Mensal</option>
+                        </select>
                       </div>
                     </div>
 
