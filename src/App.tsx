@@ -1036,6 +1036,126 @@ export default function App() {
     }
   }, [syncKey]);
 
+  // --- Central Notification Scheduler ---
+  const notifiedKeysRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof Notification === 'undefined') return;
+
+    const checkNotifications = async () => {
+      if (Notification.permission !== 'granted') return;
+
+      const now = new Date();
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const todayDateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+      const currentHHMM = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+      const dayOfWeek = now.getDay(); // 0 = Dom, 1 = Seg, ...
+
+      // 1. Routine Items (blocos de tempo de rotina diária)
+      routine.forEach(item => {
+        if (!item.reminderTime) return;
+        const matchesDay = item.isEveryDay || item.dayOfWeek === dayOfWeek;
+        if (matchesDay && item.reminderTime === currentHHMM) {
+          const key = `routine-${item.id}-${todayDateStr}-${currentHHMM}`;
+          if (!notifiedKeysRef.current.has(key)) {
+            notifiedKeysRef.current.add(key);
+            new Notification(`Lembrete de Rotina: ${item.task}`, {
+              body: `Horário planejado: ${item.time} | Rotina Diária`,
+              icon: '/favicon.ico'
+            });
+          }
+        }
+      });
+
+      // 2. Standalone Notes (Notas)
+      notes.forEach(n => {
+        if (!n.reminderTime || n.archived) return;
+        const matchesDate = !n.reminderDate || n.reminderDate === todayDateStr;
+        if (matchesDate && n.reminderTime === currentHHMM) {
+          const key = `note-${n.id}-${todayDateStr}-${currentHHMM}`;
+          if (!notifiedKeysRef.current.has(key)) {
+            notifiedKeysRef.current.add(key);
+            new Notification(`Lembrete de Nota: ${n.title}`, {
+              body: n.content ? n.content.substring(0, 100) : 'Lembrete de anotação',
+              icon: '/favicon.ico'
+            });
+          }
+        }
+      });
+
+      // 3. Calendar Notes (Registros/Anotações do Dia)
+      calendarNotes.forEach(cn => {
+        if (!cn.reminderTime) return;
+        if (cn.date === todayDateStr && cn.reminderTime === currentHHMM) {
+          const key = `calnote-${cn.id}-${todayDateStr}-${currentHHMM}`;
+          if (!notifiedKeysRef.current.has(key)) {
+            notifiedKeysRef.current.add(key);
+            new Notification(`Lembrete de Anotação: ${cn.title}`, {
+              body: cn.content ? cn.content.substring(0, 100) : 'Lembrete da Agenda',
+              icon: '/favicon.ico'
+            });
+          }
+        }
+      });
+
+      // 4. Daily Tasks (Checklist Inegociável)
+      dailyTasks.forEach(task => {
+        if (!task.reminderTime || task.completed) return;
+        if (task.reminderTime === currentHHMM) {
+          const key = `task-${task.id}-${todayDateStr}-${currentHHMM}`;
+          if (!notifiedKeysRef.current.has(key)) {
+            notifiedKeysRef.current.add(key);
+            new Notification(`Lembrete de Tarefa: ${task.text}`, {
+              body: `Horário: ${task.reminderTime} | Pilar: ${task.category}`,
+              icon: '/favicon.ico'
+            });
+          }
+        }
+      });
+
+      // 5. Google Calendar Events for today
+      const googleToken = localStorage.getItem('google_calendar_token');
+      if (googleToken) {
+        try {
+          const timeMin = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0).toISOString();
+          const timeMax = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString();
+          const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}&singleEvents=true`, {
+            headers: { Authorization: `Bearer ${googleToken}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.items) {
+              data.items.forEach((ev: any) => {
+                let eventTime = '';
+                if (ev.start?.dateTime) {
+                  const evDate = new Date(ev.start.dateTime);
+                  eventTime = `${pad(evDate.getHours())}:${pad(evDate.getMinutes())}`;
+                }
+                if (eventTime && eventTime === currentHHMM) {
+                  const key = `gcal-${ev.id}-${todayDateStr}-${currentHHMM}`;
+                  if (!notifiedKeysRef.current.has(key)) {
+                    notifiedKeysRef.current.add(key);
+                    new Notification(`Google Agenda: ${ev.summary || 'Evento'}`, {
+                      body: ev.description ? ev.description.substring(0, 100) : `Evento agendado para ${eventTime}`,
+                      icon: '/favicon.ico'
+                    });
+                  }
+                }
+              });
+            }
+          }
+        } catch (e) {
+          // background fetch silent error ignore
+        }
+      }
+    };
+
+    const interval = setInterval(checkNotifications, 30000);
+    checkNotifications();
+
+    return () => clearInterval(interval);
+  }, [routine, notes, calendarNotes, dailyTasks]);
+
   // Initial load & Realtime / Periodic Sync from Supabase
   useEffect(() => {
     if (!syncKey) return;

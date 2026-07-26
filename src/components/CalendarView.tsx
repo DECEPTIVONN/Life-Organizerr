@@ -31,7 +31,8 @@ import {
   Search,
   User,
   LogIn,
-  LogOut
+  LogOut,
+  Bell
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CalendarNote, DailyTask, SubTask, MonthlyReview, BookTracker, BibleTracker, RoutineItem, WeeklyReview, FutureEvent } from '../types';
@@ -303,6 +304,7 @@ export default function CalendarView({
   const [gratitudeText, setGratitudeText] = useState('');
   const [decreesText, setDecreesText] = useState('');
   const [prayerText, setPrayerText] = useState('');
+  const [noteReminderTime, setNoteReminderTime] = useState('');
   const [alterEgoWinner, setAlterEgoWinner] = useState<'Alfredo' | 'Beto' | null>(null);
   const [alterEgoText, setAlterEgoText] = useState('');
   const [sleepBedTime, setSleepBedTime] = useState('');
@@ -1139,6 +1141,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
       setFoodAfternoon(activeRecord.foodAfternoon || '');
       setFoodNight(activeRecord.foodNight || '');
       setWaterLiters(activeRecord.waterLiters ?? 0);
+      setNoteReminderTime(activeRecord.reminderTime || '');
       
       const fullTasks = getFullDailyTasks();
       let initialChecklist = [];
@@ -1464,6 +1467,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
           foodAfternoon: foodAfternoon,
           foodNight: foodNight,
           waterLiters: waterLiters,
+          reminderTime: noteReminderTime.trim() || undefined,
           title: 'Registro de ' + formatShortDate(selectedDateStr),
           content: journalText ? (journalText.substring(0, 40) + (journalText.length > 40 ? '...' : '')) : 'Diário, Checklist & Fé',
           isDailyRecord: true
@@ -1488,7 +1492,8 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
           foodMorning: foodMorning,
           foodAfternoon: foodAfternoon,
           foodNight: foodNight,
-          waterLiters: waterLiters
+          waterLiters: waterLiters,
+          reminderTime: noteReminderTime.trim() || undefined
         };
         return [...prev, newRecord];
       }
@@ -2316,8 +2321,24 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                             value={journalText}
                             onChange={(e) => setJournalText(e.target.value)}
                             placeholder="Escreva aqui como foi o seu dia, suas vitórias, lições aprendidas e sentimentos... registre tudo."
-                            className="w-full flex-1 min-h-[180px] bg-zinc-950/40 border border-zinc-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-none font-sans leading-relaxed"
+                            className="w-full flex-1 min-h-[140px] bg-zinc-950/40 border border-zinc-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-none font-sans leading-relaxed"
                           />
+                          <div className="pt-2 flex items-center justify-between bg-zinc-950/30 p-2.5 rounded-xl border border-zinc-900/60">
+                            <label className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                              <Bell className="h-3 w-3 text-orange-500" /> Horário do Lembrete
+                            </label>
+                            <input
+                              type="time"
+                              value={noteReminderTime}
+                              onChange={(e) => {
+                                setNoteReminderTime(e.target.value);
+                                if (e.target.value && typeof Notification !== 'undefined' && Notification.permission === 'default') {
+                                  Notification.requestPermission().catch(() => {});
+                                }
+                              }}
+                              className="bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1 text-xs text-white font-mono focus:outline-none focus:border-orange-500/50"
+                            />
+                          </div>
                         </div>
                       ) : activeTopic === 'checklist' ? (
                         /* CHECKLIST TOPIC */

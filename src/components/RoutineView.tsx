@@ -19,7 +19,8 @@ import {
   ChevronRight,
   Save,
   AlertCircle,
-  Pencil
+  Pencil,
+  Bell
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { RoutineItem, MonthlyReview, CalendarNote, WeeklyReview } from '../types';
@@ -63,6 +64,7 @@ export default function RoutineView({
   });
   const [isAdding, setIsAdding] = useState(false);
   const [time, setTime] = useState('08:00');
+  const [reminderTime, setReminderTime] = useState('08:00');
   const [taskText, setTaskText] = useState('');
   const [isEveryDay, setIsEveryDay] = useState(false);
   const [viewMode, setViewMode] = useState<'lista' | 'quadro'>('lista');
@@ -70,6 +72,7 @@ export default function RoutineView({
   // Edit / Clear states
   const [editingItem, setEditingItem] = useState<RoutineItem | null>(null);
   const [editTime, setEditTime] = useState('08:00');
+  const [editReminderTime, setEditReminderTime] = useState('08:00');
   const [editTaskText, setEditTaskText] = useState('');
   const [editIsEveryDay, setEditIsEveryDay] = useState(false);
   const [editSelectedDay, setEditSelectedDay] = useState<number>(1);
@@ -340,7 +343,8 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
       task: taskText.trim(),
       completed: false,
       isEveryDay,
-      completedDays: []
+      completedDays: [],
+      reminderTime: reminderTime.trim() || time
     };
 
     setRoutine([...routine, newItem]);
@@ -377,6 +381,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
   const handleStartEditTask = (item: RoutineItem) => {
     setEditingItem(item);
     setEditTime(item.time || '08:00');
+    setEditReminderTime(item.reminderTime || item.time || '08:00');
     setEditTaskText(item.task || '');
     setEditIsEveryDay(!!item.isEveryDay);
     setEditSelectedDay(item.dayOfWeek >= 0 ? item.dayOfWeek : selectedDay);
@@ -393,7 +398,8 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
           time: editTime,
           task: editTaskText.trim(),
           isEveryDay: editIsEveryDay,
-          dayOfWeek: editIsEveryDay ? -1 : editSelectedDay
+          dayOfWeek: editIsEveryDay ? -1 : editSelectedDay,
+          reminderTime: editReminderTime.trim() || editTime
         };
       }
       return item;
@@ -502,15 +508,33 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
               </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
               <div className="md:col-span-1">
                 <label className="text-[10px] text-gray-400 font-bold block mb-1 uppercase">Horário</label>
                 <input
                   type="time"
                   required
                   value={time}
-                  onChange={(e) => setTime(e.target.value)}
+                  onChange={(e) => {
+                    setTime(e.target.value);
+                    if (!reminderTime || reminderTime === time) {
+                      setReminderTime(e.target.value);
+                    }
+                  }}
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono"
+                />
+              </div>
+
+              <div className="md:col-span-1">
+                <label className="text-[10px] text-gray-400 font-bold mb-1 uppercase flex items-center gap-1">
+                  <Bell className="h-3 w-3 text-orange-500" /> Notificação
+                </label>
+                <input
+                  type="time"
+                  value={reminderTime}
+                  onChange={(e) => setReminderTime(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono"
+                  title="Horário do alarme / notificação no navegador"
                 />
               </div>
 
@@ -677,6 +701,12 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                       {item.isEveryDay && (
                         <span className="text-[9px] bg-orange-500/10 text-orange-400 border border-orange-500/20 px-1.5 py-0.5 rounded font-mono uppercase tracking-wide inline-flex items-center gap-0.5 flex-shrink-0">
                           Todos os dias
+                        </span>
+                      )}
+
+                      {item.reminderTime && (
+                        <span className="text-[9px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-1.5 py-0.5 rounded font-mono font-bold uppercase tracking-wide inline-flex items-center gap-0.5 flex-shrink-0">
+                          <Bell className="h-2.5 w-2.5" /> Lembrete: {item.reminderTime}
                         </span>
                       )}
                     </div>
@@ -1675,7 +1705,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1.5">
-                      Horário
+                      Horário Atividade
                     </label>
                     <input
                       type="time"
@@ -1685,6 +1715,19 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                       required
                     />
                   </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1.5 flex items-center gap-1">
+                      <Bell className="h-3 w-3 text-orange-500" /> Notificação
+                    </label>
+                    <input
+                      type="time"
+                      value={editReminderTime}
+                      onChange={(e) => setEditReminderTime(e.target.value)}
+                      className="w-full bg-zinc-900 border border-zinc-800 focus:border-orange-500/50 rounded-xl px-3.5 py-2.5 text-xs text-white outline-none transition-all"
+                    />
+                  </div>
+                </div>
 
                   <div>
                     <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1.5">
@@ -1702,7 +1745,6 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                       {editIsEveryDay ? 'Todos os Dias' : 'Dia Específico'}
                     </button>
                   </div>
-                </div>
 
                 {!editIsEveryDay && (
                   <div>

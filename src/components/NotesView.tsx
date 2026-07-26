@@ -10,7 +10,9 @@ import {
   X,
   FileText,
   CalendarDays,
-  Archive
+  Archive,
+  Bell,
+  Clock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Note } from '../types';
@@ -34,6 +36,8 @@ export default function NotesView({ notes, setNotes, addXp }: NotesViewProps) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [tagsInput, setTagsInput] = useState('');
+  const [reminderTime, setReminderTime] = useState('');
+  const [reminderDate, setReminderDate] = useState('');
 
   // Collect all unique tags for filter row based on active view mode
   const allTags = Array.from(
@@ -59,6 +63,8 @@ export default function NotesView({ notes, setNotes, addXp }: NotesViewProps) {
     setTitle('Nota sem título');
     setContent('');
     setTagsInput('');
+    setReminderTime('');
+    setReminderDate('');
 
     // Reward XP
     addXp(15);
@@ -79,6 +85,8 @@ export default function NotesView({ notes, setNotes, addXp }: NotesViewProps) {
           title: title.trim() || 'Nota sem título',
           content,
           tags: parsedTags,
+          reminderTime: reminderTime.trim() || undefined,
+          reminderDate: reminderDate.trim() || undefined,
           updatedAt: new Date().toLocaleDateString('pt-BR')
         };
       }
@@ -140,6 +148,8 @@ export default function NotesView({ notes, setNotes, addXp }: NotesViewProps) {
     setTitle(note.title);
     setContent(note.content);
     setTagsInput(note.tags.join(', '));
+    setReminderTime(note.reminderTime || '');
+    setReminderDate(note.reminderDate || '');
     setIsEditing(false);
   };
 
@@ -309,6 +319,11 @@ export default function NotesView({ notes, setNotes, addXp }: NotesViewProps) {
 
               <div className="flex items-center justify-between mt-4 pt-3 border-t border-zinc-900/60 min-w-0">
                 <div className="flex flex-wrap gap-1 max-w-[65%] truncate">
+                  {note.reminderTime && (
+                    <span className="text-[8px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-1.5 py-0.5 rounded font-mono font-bold flex items-center gap-1">
+                      <Bell className="h-2.5 w-2.5 text-indigo-400" /> {note.reminderTime}
+                    </span>
+                  )}
                   {note.tags.slice(0, 2).map(tag => (
                     <span key={tag} className="text-[8px] bg-zinc-950 border border-zinc-800/40 text-zinc-400 px-1.5 py-0.5 rounded font-mono uppercase tracking-wide">
                       {tag}
@@ -428,6 +443,32 @@ export default function NotesView({ notes, setNotes, addXp }: NotesViewProps) {
                         placeholder="Insira o título da nota..."
                         className="w-full bg-zinc-950/80 border border-zinc-800 rounded-xl px-4 py-3 text-base text-white focus:outline-none focus:border-orange-500/40 font-bold"
                       />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-[10px] text-gray-500 font-bold block mb-1.5 uppercase tracking-wider flex items-center gap-1">
+                          <Bell className="h-3 w-3 text-orange-500" /> Horário do Lembrete (Notificação)
+                        </label>
+                        <input
+                          type="time"
+                          value={reminderTime}
+                          onChange={(e) => setReminderTime(e.target.value)}
+                          className="w-full bg-zinc-950/80 border border-zinc-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500/40 font-mono"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] text-gray-500 font-bold block mb-1.5 uppercase tracking-wider flex items-center gap-1">
+                          <CalendarDays className="h-3 w-3 text-orange-500" /> Data do Lembrete (Opcional)
+                        </label>
+                        <input
+                          type="date"
+                          value={reminderDate}
+                          onChange={(e) => setReminderDate(e.target.value)}
+                          className="w-full bg-zinc-950/80 border border-zinc-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500/40 font-mono"
+                        />
+                      </div>
                     </div>
 
                     <div>

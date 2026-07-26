@@ -100,6 +100,7 @@ export interface CalendarNote {
   foodAfternoon?: string;
   foodNight?: string;
   waterLiters?: number;
+  reminderTime?: string; // e.g., "14:00"
 }
 
 export interface ArchivedDocument {
@@ -118,6 +119,8 @@ export interface Note {
   updatedAt: string;
   createdAt?: string;
   archived?: boolean;
+  reminderTime?: string; // e.g., "10:30"
+  reminderDate?: string; // e.g., "2026-07-25"
 }
 
 export interface RoutineItem {
@@ -130,6 +133,7 @@ export interface RoutineItem {
   isEveryDay?: boolean;
   completedDays?: number[]; // indices of days completed (0-6)
   category?: string; // e.g., "Trabalho", "Exercício", "Estudo", "Lazer", "Rotina", "Outro"
+  reminderTime?: string; // e.g., "08:00"
 }
 
 export interface UserStats {
