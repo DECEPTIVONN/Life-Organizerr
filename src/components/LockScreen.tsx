@@ -118,7 +118,7 @@ export default function LockScreen({
 
         {/* Locking description inspired by premium dashboard interfaces */}
         <p className="text-[11px] text-zinc-400/90 max-w-xs mx-auto leading-relaxed mb-10 select-none">
-          O bloqueio do app está ativado. Insira sua senha para abrir o <span className="text-orange-500 font-black tracking-widest font-mono">PLANNER</span>.
+          O bloqueio do app está ativado. Digite sua <span className="text-zinc-200 font-bold">Senha de Bloqueio do App</span> para acessar o <span className="text-orange-500 font-black tracking-widest font-mono">PLANNER</span>.
         </p>
 
         {/* Password input & controls */}

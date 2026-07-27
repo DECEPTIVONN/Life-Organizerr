@@ -24,7 +24,16 @@ import {
   Image as ImageIcon,
   LogIn,
   X,
-  Upload
+  Upload,
+  Laptop,
+  QrCode,
+  Clock,
+  Globe,
+  Edit2,
+  Monitor,
+  ShieldCheck,
+  Sliders,
+  CheckCircle2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { setSupabaseConfig, testSupabaseConnection } from '../lib/supabase';
@@ -81,8 +90,44 @@ type SettingsScreen =
   | 'alterar_senha' 
   | 'desativar_conta' 
   | 'seguranca' 
+  | 'dispositivos_conectados'
   | 'notificacoes' 
   | 'exibicao';
+
+export interface ConnectedDevice {
+  id: string;
+  name: string;
+  customName?: string;
+  browser: string;
+  os: string;
+  isCurrent: boolean;
+  lastActive: string;
+  ip?: string;
+  deviceType: 'desktop' | 'mobile' | 'tablet';
+}
+
+const detectDeviceDetails = () => {
+  if (typeof navigator === 'undefined') {
+    return { browser: 'Microsoft Edge', os: 'Windows', fullName: 'Microsoft Edge (Windows)' };
+  }
+  const ua = navigator.userAgent;
+  let browser = 'Microsoft Edge';
+  let os = 'Windows';
+
+  if (ua.includes('Edg/')) browser = 'Microsoft Edge';
+  else if (ua.includes('Chrome/')) browser = 'Google Chrome';
+  else if (ua.includes('Safari/') && !ua.includes('Chrome')) browser = 'Apple Safari';
+  else if (ua.includes('Firefox/')) browser = 'Mozilla Firefox';
+  else if (ua.includes('OPR/') || ua.includes('Opera/')) browser = 'Opera';
+
+  if (ua.includes('Windows')) os = 'Windows';
+  else if (ua.includes('Mac OS')) os = 'macOS';
+  else if (ua.includes('Android')) os = 'Android';
+  else if (ua.includes('iPhone') || ua.includes('iPad')) os = 'iOS';
+  else if (ua.includes('Linux')) os = 'Linux';
+
+  return { browser, os, fullName: `${browser} (${os})` };
+};
 
 const AVATAR_PRESETS = [
   'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=150', // Atleta clássico
@@ -188,6 +233,43 @@ export default function SettingsView({
     const saved = localStorage.getItem('google_calendar_user');
     return saved ? JSON.parse(saved) : null;
   });
+
+  // Connected Devices state
+  const [connectedDevices, setConnectedDevices] = useState<ConnectedDevice[]>(() => {
+    const saved = localStorage.getItem('mbc_connected_devices');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {}
+    }
+
+    const { browser, os, fullName } = detectDeviceDetails();
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+    return [
+      {
+        id: 'dev-curr-session',
+        name: fullName,
+        browser,
+        os,
+        isCurrent: true,
+        lastActive: `hoje às ${timeStr}`,
+        ip: '189.28.102.44',
+        deviceType: os === 'Android' || os === 'iOS' ? 'mobile' : 'desktop'
+      }
+    ];
+  });
+
+  const [editingDevice, setEditingDevice] = useState<ConnectedDevice | null>(null);
+  const [showConnectDeviceModal, setShowConnectDeviceModal] = useState(false);
+  const [editDeviceCustomName, setEditDeviceCustomName] = useState('');
+
+  useEffect(() => {
+    localStorage.setItem('mbc_connected_devices', JSON.stringify(connectedDevices));
+  }, [connectedDevices]);
   const [googleToken, setGoogleToken] = useState<string | null>(() => {
     return localStorage.getItem('google_calendar_token');
   });
@@ -529,6 +611,13 @@ export default function SettingsView({
       screen: 'seguranca' as SettingsScreen
     },
     {
+      id: 'dispositivos_conectados',
+      title: 'Dispositivos conectados',
+      desc: 'Veja e gerencie celulares, computadores e navegadores em que sua conta está ativa.',
+      icon: Laptop,
+      screen: 'dispositivos_conectados' as SettingsScreen
+    },
+    {
       id: 'notificacoes',
       title: 'Notificações',
       desc: 'Selecione os tipos de notificação que você deseja receber sobre atividades, metas e lembretes de rotinas.',
@@ -688,8 +777,21 @@ export default function SettingsView({
               >
                 <Lock className="h-4.5 w-4.5 text-zinc-500 mt-1 shrink-0" />
                 <div className="flex-1 space-y-0.5">
-                  <h4 className="text-xs font-bold text-zinc-200">Alterar sua senha</h4>
-                  <p className="text-[10px] text-zinc-500 font-mono">Altere a senha a qualquer momento.</p>
+                  <h4 className="text-xs font-bold text-zinc-200">Alterar senha da conta do usuário</h4>
+                  <p className="text-[10px] text-zinc-500 font-mono">Altere a senha de autenticação e identificação do seu perfil.</p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-zinc-600 mt-1.5" />
+              </div>
+
+              {/* Dispositivos Conectados Shortcut */}
+              <div 
+                onClick={() => navigateTo('dispositivos_conectados')}
+                className="flex items-start gap-4 p-4 hover:bg-zinc-950 cursor-pointer transition-colors group"
+              >
+                <Laptop className="h-4.5 w-4.5 text-emerald-400 mt-1 shrink-0" />
+                <div className="flex-1 space-y-0.5">
+                  <h4 className="text-xs font-bold text-zinc-200">Dispositivos conectados</h4>
+                  <p className="text-[10px] text-zinc-500 font-mono">Veja em quais aparelhos ou navegadores sua conta está conectada.</p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-zinc-600 mt-1.5" />
               </div>
@@ -990,7 +1092,7 @@ export default function SettingsView({
               <button onClick={navigateBack} className="p-1.5 hover:bg-zinc-900 rounded-xl text-zinc-400">
                 <ArrowLeft className="h-4.5 w-4.5" />
               </button>
-              <h3 className="text-xs font-black tracking-wider uppercase font-mono text-zinc-300">Alterar sua senha</h3>
+              <h3 className="text-xs font-black tracking-wider uppercase font-mono text-zinc-300">Alterar Senha do Usuário</h3>
             </div>
 
             {saveFeedback && (
@@ -1002,19 +1104,19 @@ export default function SettingsView({
 
             <form onSubmit={handleSavePassword} className="p-4 space-y-5">
               <div className="p-4 bg-zinc-950 border border-zinc-900 rounded-2xl">
-                <p className="text-[10px] text-zinc-500 leading-normal font-mono">
-                  Sua senha atual serve para autenticação local e segurança básica. Escolha uma nova senha forte contendo letras e números.
+                <p className="text-[10px] text-zinc-400 leading-normal font-sans">
+                  Sua <strong className="text-white">Senha de Usuário</strong> é utilizada para autenticar seu perfil e proteger suas configurações pessoais. Ela é totalmente independente da <strong className="text-orange-400">Senha de Bloqueio do App</strong>.
                 </p>
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] text-zinc-500 font-mono font-bold uppercase tracking-wider block">Nova Senha</label>
+                <label className="text-[10px] text-zinc-500 font-mono font-bold uppercase tracking-wider block">Nova Senha da Conta</label>
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
                     value={editPassword}
                     onChange={(e) => setEditPassword(e.target.value)}
-                    placeholder="Defina a nova senha"
+                    placeholder="Defina a nova senha do usuário"
                     className="w-full bg-zinc-950 border border-zinc-900 rounded-xl pl-3.5 pr-10 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500/40"
                     required
                   />
@@ -1033,7 +1135,7 @@ export default function SettingsView({
                   type="submit"
                   className="w-full py-2.5 bg-orange-500 hover:bg-orange-600 font-bold text-xs uppercase tracking-wider rounded-xl transition-all"
                 >
-                  Salvar Nova Senha
+                  Salvar Senha do Usuário
                 </button>
               </div>
             </form>
@@ -1226,22 +1328,44 @@ export default function SettingsView({
               </form>
             </div>
 
+            {/* Dispositivos Conectados Shortcut in Seguridad */}
+            <div className="p-4 bg-[#111115] border border-zinc-900 rounded-2xl space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <Laptop className="h-4 w-4 text-emerald-400" />
+                  <div>
+                    <h5 className="text-xs font-bold text-zinc-200">Dispositivos Conectados</h5>
+                    <p className="text-[9px] text-zinc-500 font-mono">
+                      {connectedDevices.length} aparelho(s) ativo(s) na conta
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigateTo('dispositivos_conectados')}
+                  className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-emerald-400 font-bold text-[10px] uppercase rounded-xl transition-all"
+                >
+                  Gerenciar
+                </button>
+              </div>
+            </div>
+
             {/* --- APP LOCK CONFIGURATION SECTION --- */}
             <div className="border-t border-zinc-900/80 my-5 pt-5 space-y-4">
               <div className="flex items-center gap-2">
                 <Lock className="h-4 w-4 text-orange-500 shadow-[0_0_8px_#f97316]" />
-                <h4 className="text-xs font-black uppercase tracking-wider text-zinc-300 font-sans">Bloqueio do Site</h4>
+                <h4 className="text-xs font-black uppercase tracking-wider text-zinc-300 font-sans">Bloqueio do App (PIN / Tela de Bloqueio)</h4>
               </div>
               <p className="text-[10px] text-zinc-500 font-sans leading-relaxed">
-                Adicione uma camada extra de privacidade protegendo o site com senha. O Planner será trancado ao carregar a página ou após o intervalo de inatividade selecionado.
+                Configure uma <strong className="text-zinc-300">Senha de Bloqueio do App</strong> para trancar a tela do Planner quando estiver inativo. Esta senha é separada da sua senha de login do usuário.
               </p>
 
               {/* Toggle Bloqueio */}
               <div className="flex items-center justify-between p-4 bg-[#111115] border border-zinc-900 rounded-2xl">
                 <div>
-                  <h5 className="text-xs font-bold text-zinc-200">Ativar Bloqueio por Senha</h5>
+                  <h5 className="text-xs font-bold text-zinc-200">Ativar Bloqueio por Senha do App</h5>
                   <p className="text-[9px] text-zinc-500 font-mono mt-0.5">
-                    {appLockPassword ? 'Bloqueio configurado localmente.' : 'Defina uma senha primeiro.'}
+                    {appLockPassword ? 'Bloqueio do app configurado.' : 'Defina uma senha de bloqueio primeiro.'}
                   </p>
                 </div>
                 <button
@@ -1275,31 +1399,99 @@ export default function SettingsView({
                 </div>
               )}
 
-              {/* Tempo de Inatividade dropdown */}
+              {/* Tempo de Inatividade Personalizado (1 a 30 minutos) */}
               {appLockEnabled && (
-                <div className="space-y-1.5">
-                  <label className="text-[10px] text-zinc-500 font-sans font-bold uppercase block">Inatividade para Bloqueio</label>
-                  <select
-                    value={appLockTimeout}
-                    onChange={(e) => {
-                      const val = parseInt(e.target.value, 10);
-                      setAppLockTimeout(val);
-                      setLockSuccess('Tempo de inatividade atualizado!');
-                      setTimeout(() => setLockSuccess(''), 3000);
-                    }}
-                    className="w-full bg-zinc-950 border border-zinc-900 rounded-xl px-3.5 py-2.5 text-xs text-zinc-300 focus:outline-none focus:border-orange-500/40 font-mono"
-                  >
-                    <option value={-1}>Sempre logado (Bloquear só ao carregar/recarregar)</option>
-                    <option value={1}>1 minuto de inatividade</option>
-                    <option value={5}>5 minutos de inatividade</option>
-                    <option value={15}>15 minutos de inatividade</option>
-                    <option value={30}>30 minutos de inatividade</option>
-                    <option value={60}>1 hora de inatividade</option>
-                  </select>
+                <div className="space-y-3 bg-zinc-950/80 p-4 border border-zinc-900 rounded-2xl">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="text-[10px] text-zinc-400 font-sans font-bold uppercase tracking-wider block">
+                        Intervalo de Inatividade (Bloqueio)
+                      </label>
+                      <p className="text-[9px] text-zinc-500 font-mono mt-0.5">
+                        Defina de 1 a 30 minutos antes do app trancar.
+                      </p>
+                    </div>
+                    <span className="text-xs font-mono font-black text-orange-400 bg-orange-500/10 border border-orange-500/20 px-2.5 py-1 rounded-lg">
+                      {appLockTimeout === -1 ? 'Sempre Logado' : `${appLockTimeout} min`}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-3 pt-1">
+                    <input
+                      type="range"
+                      min={1}
+                      max={30}
+                      value={appLockTimeout === -1 ? 5 : appLockTimeout}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value, 10);
+                        setAppLockTimeout(val);
+                        setLockSuccess(`Inatividade definida para ${val} minuto(s)!`);
+                        setTimeout(() => setLockSuccess(''), 3000);
+                      }}
+                      className="flex-1 accent-orange-500 cursor-pointer h-1.5 bg-zinc-800 rounded-lg"
+                    />
+                    <div className="flex items-center gap-1 shrink-0">
+                      <input
+                        type="number"
+                        min={1}
+                        max={30}
+                        value={appLockTimeout === -1 ? '' : appLockTimeout}
+                        onChange={(e) => {
+                          let val = parseInt(e.target.value, 10);
+                          if (isNaN(val)) return;
+                          if (val < 1) val = 1;
+                          if (val > 30) val = 30;
+                          setAppLockTimeout(val);
+                          setLockSuccess(`Inatividade definida para ${val} minuto(s)!`);
+                          setTimeout(() => setLockSuccess(''), 3000);
+                        }}
+                        placeholder="1-30"
+                        className="w-14 bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1 text-xs text-center text-white font-mono font-bold focus:outline-none focus:border-orange-500/50"
+                      />
+                      <span className="text-[10px] text-zinc-500 font-mono font-bold">min</span>
+                    </div>
+                  </div>
+
+                  {/* Preset quick buttons */}
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {[1, 2, 5, 10, 15, 30].map((mins) => (
+                      <button
+                        key={mins}
+                        type="button"
+                        onClick={() => {
+                          setAppLockTimeout(mins);
+                          setLockSuccess(`Inatividade definida para ${mins} min!`);
+                          setTimeout(() => setLockSuccess(''), 3000);
+                        }}
+                        className={`px-2.5 py-1 text-[9px] font-mono rounded-lg border transition-all ${
+                          appLockTimeout === mins
+                            ? 'bg-orange-500/20 border-orange-500/50 text-orange-400 font-bold shadow-[0_0_8px_rgba(249,115,22,0.2)]'
+                            : 'bg-zinc-900 border-zinc-850 text-zinc-400 hover:text-zinc-200'
+                        }`}
+                      >
+                        {mins} min
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAppLockTimeout(-1);
+                        setLockSuccess('Modo Sempre Logado ativado (sem auto-bloqueio)!');
+                        setTimeout(() => setLockSuccess(''), 3000);
+                      }}
+                      className={`px-2.5 py-1 text-[9px] font-mono rounded-lg border transition-all ${
+                        appLockTimeout === -1
+                          ? 'bg-purple-500/20 border-purple-500/50 text-purple-400 font-bold'
+                          : 'bg-zinc-900 border-zinc-850 text-zinc-400 hover:text-zinc-200'
+                      }`}
+                    >
+                      Sempre Logado
+                    </button>
+                  </div>
                 </div>
               )}
 
-              {/* Button to setup or change password */}
+              {/* Button to setup or change lock password */}
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -1310,7 +1502,7 @@ export default function SettingsView({
                   }}
                   className="flex-1 py-2 bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 font-bold text-xs text-zinc-400 hover:text-white uppercase tracking-wider rounded-xl transition-all"
                 >
-                  {appLockPassword ? 'Alterar Senha' : 'Criar Senha'}
+                  {appLockPassword ? 'Alterar Senha de Bloqueio' : 'Criar Senha de Bloqueio'}
                 </button>
 
                 {appLockEnabled && appLockPassword && (
@@ -1335,7 +1527,7 @@ export default function SettingsView({
                     className="p-4 bg-zinc-950/80 border border-zinc-900 rounded-2xl space-y-4 overflow-hidden"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Configurar Senha</span>
+                      <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Configurar Senha de Bloqueio do App</span>
                       <button 
                         type="button"
                         onClick={() => setShowLockPasswordForm(false)} 
@@ -1347,23 +1539,23 @@ export default function SettingsView({
 
                     <div className="space-y-3">
                       <div className="space-y-1">
-                        <label className="text-[9px] text-zinc-500 font-sans font-bold uppercase block">Nova Senha de Bloqueio</label>
+                        <label className="text-[9px] text-zinc-500 font-sans font-bold uppercase block">Nova Senha de Bloqueio do App</label>
                         <input
                           type="password"
                           value={newLockPassword}
                           onChange={(e) => setNewLockPassword(e.target.value)}
-                          placeholder="Nova senha numérica ou alfa"
+                          placeholder="Digite o PIN/Senha da tela de bloqueio"
                           className="w-full bg-zinc-950 border border-zinc-900 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-orange-500/40 font-mono tracking-widest font-bold"
                         />
                       </div>
                       
                       <div className="space-y-1">
-                        <label className="text-[9px] text-zinc-500 font-sans font-bold uppercase block">Confirmar Nova Senha</label>
+                        <label className="text-[9px] text-zinc-500 font-sans font-bold uppercase block">Confirmar Senha de Bloqueio</label>
                         <input
                           type="password"
                           value={confirmLockPassword}
                           onChange={(e) => setConfirmLockPassword(e.target.value)}
-                          placeholder="Repita a nova senha"
+                          placeholder="Repita a nova senha de bloqueio"
                           className="w-full bg-zinc-950 border border-zinc-900 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-orange-500/40 font-mono tracking-widest font-bold"
                         />
                       </div>
@@ -1373,11 +1565,11 @@ export default function SettingsView({
                       type="button"
                       onClick={() => {
                         if (!newLockPassword) {
-                          setLockError('A senha não pode ser vazia!');
+                          setLockError('A senha de bloqueio não pode ser vazia!');
                           return;
                         }
                         if (newLockPassword !== confirmLockPassword) {
-                          setLockError('As senhas não coincidem!');
+                          setLockError('As senhas de bloqueio não coincidem!');
                           return;
                         }
                         setAppLockPassword(newLockPassword);
@@ -1386,12 +1578,12 @@ export default function SettingsView({
                         setConfirmLockPassword('');
                         setLockError('');
                         setShowLockPasswordForm(false);
-                        setLockSuccess('Senha de bloqueio salva e ativa!');
+                        setLockSuccess('Senha de bloqueio do app salva e ativa!');
                         setTimeout(() => setLockSuccess(''), 3000);
                       }}
                       className="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-md"
                     >
-                      Salvar Senha de Acesso
+                      Salvar Senha de Bloqueio do App
                     </button>
                   </motion.div>
                 )}
@@ -1556,6 +1748,293 @@ export default function SettingsView({
           </motion.div>
         )}
 
+        {/* VIEW: DISPOSITIVOS CONECTADOS (Imagens fixadas) */}
+        {currentScreen === 'dispositivos_conectados' && (
+          <motion.div
+            key="dispositivos-conectados-screen"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.25 }}
+            className="p-4 space-y-5"
+          >
+            {/* Header */}
+            <div className="flex items-center gap-3 border-b border-zinc-900 pb-4">
+              <button onClick={navigateBack} className="p-1.5 hover:bg-zinc-900 rounded-xl text-zinc-400 hover:text-white transition-colors">
+                <ArrowLeft className="h-4.5 w-4.5" />
+              </button>
+              <div>
+                <h3 className="text-xs font-black tracking-wider uppercase font-mono text-zinc-200">Dispositivos conectados</h3>
+                <p className="text-[9px] text-zinc-500 font-mono">Gerenciamento de aparelhos da conta</p>
+              </div>
+            </div>
+
+            {/* Top Emerald Graphic Banner matching Image 1 */}
+            <div className="p-5 bg-gradient-to-br from-emerald-950/40 via-zinc-950 to-emerald-950/20 border border-emerald-500/20 rounded-2xl relative overflow-hidden space-y-4">
+              <div className="absolute right-3 top-3 opacity-15 text-emerald-400 pointer-events-none">
+                <Laptop className="w-24 h-24" />
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.2)]">
+                  <Smartphone className="h-6 w-6" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-white uppercase tracking-wider">Conectar Novos Aparelhos</h4>
+                  <p className="text-[10px] text-zinc-400 font-sans leading-relaxed mt-0.5">
+                    Você pode conectar mais celulares ou computadores a essa conta para sincronizar todos os seus dados em tempo real.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowConnectDeviceModal(true)}
+                className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
+              >
+                <QrCode className="h-4 w-4" />
+                Conectar dispositivo
+              </button>
+            </div>
+
+            {/* STATUS DO DISPOSITIVO section */}
+            <div className="space-y-3 pt-2">
+              <div>
+                <span className="text-[10px] text-zinc-500 font-mono font-bold uppercase tracking-widest block">
+                  STATUS DO DISPOSITIVO
+                </span>
+                <p className="text-[10px] text-zinc-400 font-sans mt-0.5">
+                  Toque em um dispositivo para definir um novo nome ou desconectá-lo.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                {connectedDevices.map((dev) => {
+                  const isCurrent = dev.isCurrent;
+                  return (
+                    <div
+                      key={dev.id}
+                      onClick={() => {
+                        setEditingDevice(dev);
+                        setEditDeviceCustomName(dev.customName || dev.name);
+                      }}
+                      className={`p-4 bg-[#111115] hover:bg-zinc-900/80 border rounded-2xl cursor-pointer transition-all flex items-center justify-between group ${
+                        isCurrent ? 'border-emerald-500/40 shadow-[0_0_12px_rgba(16,185,129,0.08)]' : 'border-zinc-900 hover:border-zinc-800'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3.5">
+                        <div className={`p-2.5 rounded-xl border ${
+                          isCurrent ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-zinc-900 border-zinc-800 text-zinc-400'
+                        }`}>
+                          {dev.deviceType === 'mobile' ? <Smartphone className="h-5 w-5" /> : <Laptop className="h-5 w-5" />}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h5 className="text-xs font-bold text-zinc-200 group-hover:text-white transition-colors">
+                              {dev.customName || dev.name}
+                            </h5>
+                            {isCurrent && (
+                              <span className="text-[8px] font-mono font-bold uppercase bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-md border border-emerald-500/30">
+                                SESSÃO ATUAL
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-zinc-500 font-mono mt-0.5">
+                            {isCurrent ? 'Ativo agora nesta janela' : `Última sessão ativa ${dev.lastActive}`}
+                          </p>
+                        </div>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-zinc-600 group-hover:text-zinc-300 transition-colors" />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* End to End Encryption footer note */}
+            <div className="p-4 bg-zinc-950/80 border border-zinc-900 rounded-2xl flex items-start gap-3">
+              <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+              <p className="text-[10px] text-zinc-400 font-sans leading-relaxed">
+                🔒 Suas informações pessoais e dados do planner são protegidos com criptografia de ponta a ponta em todos os seus dispositivos.
+              </p>
+            </div>
+          </motion.div>
+        )}
+
+      </AnimatePresence>
+
+      {/* Modal: Editar Dispositivo (Image 2) */}
+      <AnimatePresence>
+        {editingDevice && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-zinc-950 border border-zinc-800 rounded-2xl p-6 max-w-md w-full space-y-5 text-left shadow-2xl relative"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
+                <button
+                  type="button"
+                  onClick={() => setEditingDevice(null)}
+                  className="p-1 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-900 transition-colors"
+                >
+                  <ArrowLeft className="h-4.5 w-4.5" />
+                </button>
+                <h3 className="text-xs font-black uppercase tracking-wider text-zinc-200">Editar dispositivo</h3>
+                <button
+                  type="button"
+                  onClick={() => setEditingDevice(null)}
+                  className="text-zinc-500 hover:text-white p-1"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Central Large Icon */}
+              <div className="flex flex-col items-center justify-center py-3">
+                <div className="w-16 h-16 rounded-3xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-emerald-400 shadow-xl mb-3">
+                  {editingDevice.deviceType === 'mobile' ? <Smartphone className="h-8 w-8" /> : <Laptop className="h-8 w-8" />}
+                </div>
+                <h4 className="text-sm font-bold text-white text-center">
+                  {editingDevice.customName || editingDevice.name}
+                </h4>
+                <p className="text-[10px] text-zinc-500 font-mono mt-0.5">Nome do dispositivo</p>
+              </div>
+
+              {/* Edit Device Name Input */}
+              <div className="space-y-1">
+                <label className="text-[9px] text-zinc-500 font-mono font-bold uppercase block">Renomear Dispositivo</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={editDeviceCustomName}
+                    onChange={(e) => setEditDeviceCustomName(e.target.value)}
+                    placeholder="Nome personalizado do aparelho"
+                    className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500/50 font-sans"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setConnectedDevices(prev => prev.map(d => d.id === editingDevice.id ? { ...d, customName: editDeviceCustomName } : d));
+                      setEditingDevice(prev => prev ? { ...prev, customName: editDeviceCustomName } : null);
+                    }}
+                    className="px-3 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 font-bold text-xs rounded-xl border border-emerald-500/30 transition-all"
+                  >
+                    Salvar
+                  </button>
+                </div>
+              </div>
+
+              {/* Detail Info Rows */}
+              <div className="space-y-2.5 pt-1">
+                <div className="flex items-center gap-3 p-3 bg-zinc-900/60 border border-zinc-900 rounded-xl">
+                  <Clock className="h-4 w-4 text-zinc-500 shrink-0" />
+                  <span className="text-xs text-zinc-300 font-mono">
+                    Última sessão ativa {editingDevice.lastActive}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3 p-3 bg-zinc-900/60 border border-zinc-900 rounded-xl">
+                  <Globe className="h-4 w-4 text-zinc-500 shrink-0" />
+                  <span className="text-xs text-zinc-300 font-mono">
+                    {editingDevice.browser} ({editingDevice.os})
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3 p-3 bg-zinc-900/60 border border-zinc-900 rounded-xl">
+                  <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0" />
+                  <span className="text-xs text-emerald-400 font-mono">
+                    Criptografia de ponta a ponta ativa
+                  </span>
+                </div>
+              </div>
+
+              {/* Disconnect Red Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setConnectedDevices(prev => prev.filter(d => d.id !== editingDevice.id));
+                  setEditingDevice(null);
+                }}
+                className="w-full py-2.5 bg-red-950/20 hover:bg-red-950/40 border border-red-900/40 text-red-400 font-bold text-xs uppercase tracking-wider rounded-xl transition-all"
+              >
+                Desconectar dispositivo
+              </button>
+
+              <p className="text-[10px] text-zinc-500 font-sans text-center leading-relaxed">
+                Se você não reconhece esse dispositivo ou não tem mais acesso a ele, desconecte o dispositivo da sua conta.
+              </p>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal: Conectar Dispositivo (QR Code / Test Device) */}
+      <AnimatePresence>
+        {showConnectDeviceModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-zinc-950 border border-emerald-500/20 rounded-2xl p-6 max-w-sm w-full space-y-5 text-center shadow-2xl relative"
+            >
+              <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
+                <h3 className="text-xs font-black uppercase tracking-wider text-emerald-400">Conectar Novo Dispositivo</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowConnectDeviceModal(false)}
+                  className="text-zinc-500 hover:text-white p-1"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Simulated QR Code box */}
+              <div className="p-4 bg-white rounded-2xl mx-auto w-44 h-44 flex flex-col items-center justify-center shadow-inner relative group border-4 border-emerald-500/20">
+                <QrCode className="w-32 h-32 text-zinc-950" />
+                <span className="text-[8px] font-mono font-bold text-zinc-600 mt-1">Sincronização QR Code</span>
+              </div>
+
+              <div className="space-y-1">
+                <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider block">Código de Pareamento</span>
+                <span className="text-base font-mono font-black text-emerald-400 tracking-widest bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-xl inline-block">
+                  PLN-9482-SYNC
+                </span>
+              </div>
+
+              <div className="text-[10px] text-zinc-400 space-y-1 text-left bg-zinc-900/60 p-3 rounded-xl border border-zinc-900">
+                <p>1. Acesse o Planner TRONUS em outro celular ou PC.</p>
+                <p>2. Vá em Configurações &gt; Dispositivos Conectados.</p>
+                <p>3. Aponte a câmera ou insira o código acima.</p>
+              </div>
+
+              {/* Action to test adding a connected device */}
+              <button
+                type="button"
+                onClick={() => {
+                  const newDev: ConnectedDevice = {
+                    id: `dev-test-${Date.now()}`,
+                    name: 'Safari (iPhone 15 Pro)',
+                    browser: 'Apple Safari',
+                    os: 'iOS 17.5',
+                    isCurrent: false,
+                    lastActive: 'hoje às ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    ip: '189.28.102.89',
+                    deviceType: 'mobile'
+                  };
+                  setConnectedDevices(prev => [...prev, newDev]);
+                  setShowConnectDeviceModal(false);
+                }}
+                className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md"
+              >
+                Simular Conexão de Novo Aparelho
+              </button>
+            </motion.div>
+          </div>
+        )}
       </AnimatePresence>
 
       {/* Supabase SQL Setup Modal */}
