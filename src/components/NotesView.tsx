@@ -46,40 +46,22 @@ export default function NotesView({ notes, setNotes, addXp, freeEditMode = false
 
   // Real-time auto-save effect when freeEditMode is active
   useEffect(() => {
-    if (!freeEditMode || !isEditing || !activeNote) return;
+    if (!freeEditMode || !activeNote) return;
 
-    const parsedTags = tagsInput
-      .split(',')
-      .map(t => t.trim())
-      .filter(t => t.length > 0);
-
-    const updatedNotes = notes.map(n => {
-      if (n.id === activeNote.id) {
-        return {
-          ...n,
-          title: title.trim() || 'Nota sem título',
-          content,
-          tags: parsedTags,
-          reminderTime: reminderTime.trim() || undefined,
-          reminderDate: reminderDate.trim() || undefined,
-          reminderRecurrence,
-          updatedAt: new Date().toLocaleDateString('pt-BR')
-        };
-      }
-      return n;
+    setNotes(prev => {
+      const idx = prev.findIndex(n => n.id === activeNote.id);
+      if (idx === -1) return prev;
+      if (prev[idx].content === content && prev[idx].title === title) return prev;
+      const copy = [...prev];
+      copy[idx] = {
+        ...copy[idx],
+        title: title.trim() || 'Nota sem título',
+        content,
+        updatedAt: new Date().toLocaleDateString('pt-BR')
+      };
+      return copy;
     });
-
-    setNotes(updatedNotes);
-    setActiveNote(prev => prev ? {
-      ...prev,
-      title: title.trim() || 'Nota sem título',
-      content,
-      tags: parsedTags,
-      reminderTime: reminderTime.trim() || undefined,
-      reminderDate: reminderDate.trim() || undefined,
-      reminderRecurrence
-    } : null);
-  }, [title, content, tagsInput, reminderTime, reminderDate, reminderRecurrence, freeEditMode, isEditing]);
+  }, [title, content, freeEditMode, activeNote?.id]);
 
   // Collect all unique tags for filter row based on active view mode
   const allTags = Array.from(
@@ -454,12 +436,6 @@ export default function NotesView({ notes, setNotes, addXp, freeEditMode = false
 
                   {isEditing ? (
                     <>
-                      {freeEditMode && (
-                        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg flex items-center gap-1.5">
-                          <Check className="h-3.5 w-3.5 text-emerald-400" />
-                          Edição Livre (Tempo Real)
-                        </span>
-                      )}
                       <button
                         onClick={() => setIsEditing(false)}
                         className="text-xs text-gray-400 hover:text-white px-3.5 py-1.5 transition-colors"
@@ -687,12 +663,12 @@ export default function NotesView({ notes, setNotes, addXp, freeEditMode = false
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-6 flex-1 flex flex-col">
+                  <div className="space-y-4 flex-1 flex flex-col">
                     <div>
                       <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight leading-snug">{activeNote.title}</h2>
                       
                       {activeNote.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mt-4">
+                        <div className="flex flex-wrap gap-1.5 mt-3">
                           {activeNote.tags.map(tag => (
                             <span key={tag} className="text-[10px] bg-orange-500/10 border border-orange-500/10 text-orange-400 px-3 py-1 rounded-full font-mono uppercase tracking-wide font-bold">
                               {tag}
@@ -702,11 +678,22 @@ export default function NotesView({ notes, setNotes, addXp, freeEditMode = false
                       )}
                     </div>
 
-                    <div className="flex-1 text-sm md:text-base text-gray-300 leading-relaxed break-words whitespace-pre-wrap font-sans border-t border-zinc-900/80 pt-6">
-                      {activeNote.content ? (
-                        activeNote.content
+                    <div className="flex-1 flex flex-col border-t border-zinc-900/80 pt-4">
+                      {freeEditMode ? (
+                        <textarea
+                          value={content}
+                          onChange={(e) => setContent(e.target.value)}
+                          placeholder="Digite suas anotações aqui (edição livre em tempo real)..."
+                          className="w-full flex-1 bg-zinc-950/60 border border-zinc-800/80 rounded-xl p-5 text-sm md:text-base text-gray-200 focus:outline-none focus:border-orange-500/40 resize-none min-h-[350px] font-sans leading-relaxed"
+                        />
                       ) : (
-                        <p className="text-gray-600 italic">Esta nota está vazia. Clique em "Editar Nota" para começar a escrever.</p>
+                        <div className="flex-1 text-sm md:text-base text-gray-300 leading-relaxed break-words whitespace-pre-wrap font-sans">
+                          {activeNote.content ? (
+                            activeNote.content
+                          ) : (
+                            <p className="text-gray-600 italic">Esta nota está vazia. Clique em "Editar Nota" para começar a escrever.</p>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>

@@ -60,6 +60,7 @@ interface CalendarViewProps {
   setUserPhoto?: (photo: string) => void;
   userEmail?: string;
   setUserEmail?: (email: string) => void;
+  freeEditMode?: boolean;
 }
 
 const DEFAULT_GRATITUDE_TEMPLATE = `Sou profundamente grato(a) hoje por:
@@ -90,7 +91,8 @@ export default function CalendarView({
   userPhoto,
   setUserPhoto,
   userEmail,
-  setUserEmail
+  setUserEmail,
+  freeEditMode = false
 }: CalendarViewProps) {
   const BIBLE_TOTAL_CHAPTERS = 1189;
 
@@ -1504,6 +1506,66 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
       addXp(5);
     }, 400);
   };
+
+  // Real-time auto-save for Espaço Diário & Fé in CalendarView when freeEditMode is active
+  useEffect(() => {
+    if (!freeEditMode || !selectedDateStr) return;
+
+    const finalGratitude = gratitudeText.trim() ? gratitudeText : templateGratitude;
+    const finalDecrees = decreesText.trim() ? decreesText : templateDecrees;
+    const finalPrayer = prayerText.trim() ? prayerText : templatePrayer;
+
+    setNotes(prev => {
+      const idx = prev.findIndex(n => n.date === selectedDateStr);
+      const updatedRecord: CalendarNote = {
+        id: idx !== -1 ? prev[idx].id : 'rec-' + Math.random().toString(36).substring(2, 9),
+        date: selectedDateStr,
+        title: 'Registro de ' + formatShortDate(selectedDateStr),
+        content: journalText ? (journalText.substring(0, 40) + (journalText.length > 40 ? '...' : '')) : 'Diário, Checklist & Fé',
+        isDailyRecord: true,
+        journalText,
+        gratitudeText: finalGratitude,
+        decreesText: finalDecrees,
+        prayerText: finalPrayer,
+        checklist: dayChecklist,
+        alterEgoWinner,
+        alterEgoText,
+        sleepBedTime,
+        sleepWakeTime,
+        foodMorning,
+        foodAfternoon,
+        foodNight,
+        waterLiters,
+        reminderTime: noteReminderTime.trim() || undefined
+      };
+
+      if (idx !== -1) {
+        if (JSON.stringify(prev[idx]) === JSON.stringify(updatedRecord)) return prev;
+        const copy = [...prev];
+        copy[idx] = updatedRecord;
+        return copy;
+      } else {
+        return [...prev, updatedRecord];
+      }
+    });
+  }, [
+    freeEditMode,
+    selectedDateStr,
+    journalText,
+    gratitudeText,
+    decreesText,
+    prayerText,
+    dayChecklist,
+    alterEgoWinner,
+    alterEgoText,
+    sleepBedTime,
+    sleepWakeTime,
+    foodMorning,
+    foodAfternoon,
+    foodNight,
+    waterLiters,
+    noteReminderTime
+  ]);
 
   const saveChecklistToNotes = (updatedChecklist: DailyTask[]) => {
     if (!selectedDateStr) return;

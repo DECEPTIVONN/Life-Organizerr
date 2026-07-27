@@ -2104,6 +2104,7 @@ export default function App() {
             setUserPhoto={setUserPhoto}
             userEmail={userEmail}
             setUserEmail={setUserEmail}
+            freeEditMode={freeEditMode}
           />
         );
       case 'anuais':
@@ -2125,6 +2126,7 @@ export default function App() {
             finances={finances}
             books={books}
             setBooks={setBooks}
+            freeEditMode={freeEditMode}
           />
         );
       case 'documentos':

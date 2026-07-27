@@ -56,6 +56,7 @@ interface AnuaisViewProps {
   finances?: FinanceEntry[];
   books?: YearlyBook[];
   setBooks?: React.Dispatch<React.SetStateAction<YearlyBook[]>>;
+  freeEditMode?: boolean;
 }
 
 export default function AnuaisView({
@@ -74,7 +75,8 @@ export default function AnuaisView({
   goals = [],
   finances = [],
   books: propBooks,
-  setBooks: propSetBooks
+  setBooks: propSetBooks,
+  freeEditMode = false
 }: AnuaisViewProps) {
   const [selectedYear, setSelectedYear] = useState(() => Math.max(2026, new Date().getFullYear()));
   const [selectedMonthIndex, setSelectedMonthIndex] = useState<number>(0); // 0-11 for months, -1 for "Livros"
@@ -779,6 +781,64 @@ export default function AnuaisView({
       setTimeout(() => setSelectedDateStr(null), 700);
     }, 500);
   };
+
+  // Real-time auto-save for Espaço Diário & Fé in AnuaisView when freeEditMode is active
+  useEffect(() => {
+    if (!freeEditMode || !selectedDateStr) return;
+
+    const finalGratitude = gratitudeText.trim() ? gratitudeText : templateGratitude;
+    const finalDecrees = decreesText.trim() ? decreesText : templateDecrees;
+    const finalPrayer = prayerText.trim() ? prayerText : templatePrayer;
+
+    setNotes(prev => {
+      const idx = prev.findIndex(n => n.date === selectedDateStr);
+      const updatedRecord: CalendarNote = {
+        id: idx !== -1 ? prev[idx].id : 'rec-' + Math.random().toString(36).substring(2, 9),
+        date: selectedDateStr,
+        title: 'Registro de ' + selectedDateStr.split('-').reverse().join('/'),
+        content: journalText ? (journalText.substring(0, 40) + '...') : 'Diário, Checklist & Fé',
+        isDailyRecord: true,
+        journalText,
+        gratitudeText: finalGratitude,
+        decreesText: finalDecrees,
+        prayerText: finalPrayer,
+        checklist: dayChecklist,
+        alterEgoWinner,
+        alterEgoText,
+        sleepBedTime,
+        sleepWakeTime,
+        foodMorning,
+        foodAfternoon,
+        foodNight,
+        waterLiters
+      };
+
+      if (idx !== -1) {
+        if (JSON.stringify(prev[idx]) === JSON.stringify(updatedRecord)) return prev;
+        const copy = [...prev];
+        copy[idx] = updatedRecord;
+        return copy;
+      } else {
+        return [...prev, updatedRecord];
+      }
+    });
+  }, [
+    freeEditMode,
+    selectedDateStr,
+    journalText,
+    gratitudeText,
+    decreesText,
+    prayerText,
+    dayChecklist,
+    alterEgoWinner,
+    alterEgoText,
+    sleepBedTime,
+    sleepWakeTime,
+    foodMorning,
+    foodAfternoon,
+    foodNight,
+    waterLiters
+  ]);
 
   const saveChecklistToNotes = (updatedChecklist: DailyTask[]) => {
     if (!selectedDateStr) return;
