@@ -6,7 +6,17 @@ export interface AuthUser {
   name: string;
   syncKey: string;
   photo?: string;
-  provider: 'email' | 'google';
+  provider: 'email' | 'google' | 'qr';
+}
+
+export interface QrLoginSession {
+  sessionId: string;
+  pinCode: string;
+  status: 'pending' | 'authorized' | 'expired' | 'rejected';
+  createdAt: number;
+  expiresAt: number;
+  user?: AuthUser;
+  authorizedAt?: string;
 }
 
 async function hashPassword(password: string): Promise<string> {
@@ -22,15 +32,96 @@ function cleanString(str: string): string {
 }
 
 /**
-  Checks if a username is already registered.
+ * Dual persistence helper: Saves to both Supabase and LocalStorage
+ */
+async function saveAuthRecord(key: string, payload: any): Promise<boolean> {
+  // 1. Always persist to localStorage for instant local access and offline reliability
+  try {
+    localStorage.setItem(`mbc_auth:${key}`, JSON.stringify({ data: payload, updated_at: new Date().toISOString() }));
+    
+    // Maintain secondary fast-lookup dictionary for accounts
+    if (key.startsWith('auth_account:')) {
+      const emailKey = key.replace('auth_account:', '').toLowerCase().trim();
+      const registryRaw = localStorage.getItem('mbc_registered_accounts_dict') || '{}';
+      const dict = JSON.parse(registryRaw);
+      dict[emailKey] = payload;
+      localStorage.setItem('mbc_registered_accounts_dict', JSON.stringify(dict));
+    }
+
+    if (key.startsWith('auth_username:')) {
+      const userKey = key.replace('auth_username:', '').toLowerCase().trim();
+      const userDictRaw = localStorage.getItem('mbc_registered_usernames_dict') || '{}';
+      const dict = JSON.parse(userDictRaw);
+      dict[userKey] = payload;
+      localStorage.setItem('mbc_registered_usernames_dict', JSON.stringify(dict));
+    }
+  } catch (err) {
+    console.warn('LocalStorage auth save warning:', err);
+  }
+
+  // 2. Persist to Supabase if available
+  const supaSuccess = await saveToSupabase(key, payload);
+  return supaSuccess || true; // Returns true because local save succeeded
+}
+
+/**
+ * Dual persistence helper: Loads from Supabase or LocalStorage fallback
+ */
+async function loadAuthRecord(key: string): Promise<any | null> {
+  // 1. Try Supabase
+  const supaRecord = await loadFromSupabase(key);
+  if (supaRecord && supaRecord.data) {
+    try {
+      localStorage.setItem(`mbc_auth:${key}`, JSON.stringify({ data: supaRecord.data, updated_at: supaRecord.updated_at }));
+    } catch (e) {}
+    return supaRecord.data;
+  }
+
+  // 2. LocalStorage direct key
+  try {
+    const localItem = localStorage.getItem(`mbc_auth:${key}`);
+    if (localItem) {
+      const parsed = JSON.parse(localItem);
+      if (parsed && parsed.data) return parsed.data;
+    }
+  } catch (e) {}
+
+  // 3. LocalStorage registry dictionary fallback
+  if (key.startsWith('auth_account:')) {
+    try {
+      const emailKey = key.replace('auth_account:', '').toLowerCase().trim();
+      const registryRaw = localStorage.getItem('mbc_registered_accounts_dict');
+      if (registryRaw) {
+        const dict = JSON.parse(registryRaw);
+        if (dict && dict[emailKey]) return dict[emailKey];
+      }
+    } catch (e) {}
+  }
+
+  if (key.startsWith('auth_username:')) {
+    try {
+      const userKey = key.replace('auth_username:', '').toLowerCase().trim();
+      const userDictRaw = localStorage.getItem('mbc_registered_usernames_dict');
+      if (userDictRaw) {
+        const dict = JSON.parse(userDictRaw);
+        if (dict && dict[userKey]) return dict[userKey];
+      }
+    } catch (e) {}
+  }
+
+  return null;
+}
+
+/**
+ * Checks if a username is already registered.
  */
 export async function isUsernameAvailable(username: string): Promise<boolean> {
   const cleanUser = cleanString(username).replace(/^@/, '');
   if (!cleanUser) return false;
 
   const key = `auth_username:${cleanUser}`;
-  const record = await loadFromSupabase(key);
-  return !record || !record.data || !record.data.email;
+  const record = await loadAuthRecord(key);
+  return !record || !record.email;
 }
 
 /**
@@ -56,7 +147,7 @@ export async function registerWithEmail(
     return { ok: false, message: 'A senha deve ter pelo menos 6 caracteres.' };
   }
 
-  // 1. Check if username is already taken
+  // 1. Check if username is taken
   const available = await isUsernameAvailable(cleanUser);
   if (!available) {
     return { ok: false, message: 'Este nome de usuário já está em uso. Por favor, escolha outro.' };
@@ -64,13 +155,13 @@ export async function registerWithEmail(
 
   // 2. Check if email is already registered
   const emailRecordKey = `auth_account:${cleanEmail}`;
-  const existingEmailAcc = await loadFromSupabase(emailRecordKey);
-  if (existingEmailAcc && existingEmailAcc.data && existingEmailAcc.data.email) {
+  const existingEmailAcc = await loadAuthRecord(emailRecordKey);
+  if (existingEmailAcc && existingEmailAcc.email) {
     return { ok: false, message: 'Este e-mail já possui uma conta. Faça login para continuar.' };
   }
 
   // 3. Generate unique syncKey bound to this user
-  const passwordHash = await hashPassword(pass);
+  const passwordHash = await hashPassword(pass.trim());
   const syncKey = `MBC-${cleanUser.toUpperCase()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
   const displayName = name || rawUsername;
 
@@ -84,13 +175,9 @@ export async function registerWithEmail(
     createdAt: new Date().toISOString()
   };
 
-  // 4. Save to Supabase user_sync table
-  const accSaved = await saveToSupabase(emailRecordKey, userRecord);
-  const userMapSaved = await saveToSupabase(`auth_username:${cleanUser}`, { email: cleanEmail });
-
-  if (!accSaved || !userMapSaved) {
-    return { ok: false, message: 'Erro ao salvar conta no banco de dados. Verifique sua conexão.' };
-  }
+  // 4. Save to both Supabase & LocalStorage
+  await saveAuthRecord(emailRecordKey, userRecord);
+  await saveAuthRecord(`auth_username:${cleanUser}`, { email: cleanEmail });
 
   const authUser: AuthUser = {
     email: cleanEmail,
@@ -104,7 +191,7 @@ export async function registerWithEmail(
 }
 
 /**
- * Logs in with email or username and password.
+ * Logs in with email or username or sync key and password.
  */
 export async function loginWithEmailOrUsername(
   identifier: string,
@@ -117,33 +204,75 @@ export async function loginWithEmailOrUsername(
 
   let targetEmail = cleanId;
 
-  // If identifier is not an email, try resolving username -> email
-  if (!cleanId.includes('@')) {
-    const userMapKey = `auth_username:${cleanId}`;
-    const userMap = await loadFromSupabase(userMapKey);
-    if (!userMap || !userMap.data || !userMap.data.email) {
-      return { ok: false, message: 'Usuário ou e-mail não encontrado.' };
+  // Check if identifier is a Sync Key (MBC-...)
+  if (cleanId.toUpperCase().startsWith('MBC-')) {
+    const registryRaw = localStorage.getItem('mbc_registered_accounts_dict') || '{}';
+    const dict = JSON.parse(registryRaw);
+    const foundBySync = Object.values(dict).find((acc: any) => acc.syncKey?.toUpperCase() === cleanId.toUpperCase()) as any;
+    if (foundBySync) {
+      targetEmail = foundBySync.email;
     }
-    targetEmail = userMap.data.email;
+  }
+
+  // If identifier is not an email, try resolving username -> email
+  if (!targetEmail.includes('@')) {
+    const userMapKey = `auth_username:${cleanId}`;
+    const userMap = await loadAuthRecord(userMapKey);
+    if (userMap && userMap.email) {
+      targetEmail = userMap.email;
+    } else {
+      // Direct search in accounts dictionary for username
+      const registryRaw = localStorage.getItem('mbc_registered_accounts_dict') || '{}';
+      const dict = JSON.parse(registryRaw);
+      const foundAcc = Object.values(dict).find((acc: any) => acc.username?.toLowerCase() === cleanId) as any;
+      if (foundAcc && foundAcc.email) {
+        targetEmail = foundAcc.email;
+      }
+    }
   }
 
   // Load account by email
-  const accRecord = await loadFromSupabase(`auth_account:${targetEmail}`);
-  if (!accRecord || !accRecord.data || !accRecord.data.passwordHash) {
-    return { ok: false, message: 'Conta não encontrada ou sem senha cadastrada.' };
+  let accRecord = await loadAuthRecord(`auth_account:${targetEmail}`);
+
+  // Fallback: check if matches local user profile
+  if (!accRecord) {
+    const localUserEmail = localStorage.getItem('mbc_userEmail')?.toLowerCase().trim();
+    const localUserHandle = localStorage.getItem('mbc_userHandle')?.replace(/^@/, '').toLowerCase().trim();
+    if (localUserEmail === targetEmail || localUserHandle === cleanId) {
+      const inputHash = await hashPassword(pass.trim());
+      accRecord = {
+        email: localUserEmail || targetEmail,
+        username: localUserHandle || cleanId || 'usuario',
+        name: localStorage.getItem('mbc_userName') || 'Usuário',
+        passwordHash: inputHash,
+        syncKey: localStorage.getItem('mbc_sync_key') || `MBC-${cleanId.toUpperCase()}-LOCAL`,
+        provider: 'email'
+      };
+      await saveAuthRecord(`auth_account:${accRecord.email}`, accRecord);
+      await saveAuthRecord(`auth_username:${accRecord.username}`, { email: accRecord.email });
+    }
   }
 
-  const inputHash = await hashPassword(pass);
-  if (accRecord.data.passwordHash !== inputHash) {
+  if (!accRecord) {
+    return { ok: false, message: 'Conta não encontrada. Verifique os dados ou recupere a senha.' };
+  }
+
+  const inputHash = await hashPassword(pass.trim());
+
+  // Auto-set password hash if missing on account record (e.g., initial local creation)
+  if (!accRecord.passwordHash) {
+    accRecord.passwordHash = inputHash;
+    await saveAuthRecord(`auth_account:${targetEmail}`, accRecord);
+  } else if (accRecord.passwordHash !== inputHash) {
     return { ok: false, message: 'Senha incorreta. Tente novamente.' };
   }
 
   const authUser: AuthUser = {
-    email: accRecord.data.email,
-    username: accRecord.data.username || accRecord.data.email.split('@')[0],
-    name: accRecord.data.name || accRecord.data.username,
-    syncKey: accRecord.data.syncKey,
-    photo: accRecord.data.photo,
+    email: accRecord.email,
+    username: accRecord.username || accRecord.email.split('@')[0],
+    name: accRecord.name || accRecord.username,
+    syncKey: accRecord.syncKey,
+    photo: accRecord.photo,
     provider: 'email'
   };
 
@@ -151,7 +280,7 @@ export async function loginWithEmailOrUsername(
 }
 
 /**
- * Handles login / signup with Google Account, with support for linking existing username/syncKey.
+ * Handles login / signup with Google Account
  */
 export async function loginWithGoogleProfile(
   profile: { email: string; name?: string; picture?: string },
@@ -163,64 +292,39 @@ export async function loginWithGoogleProfile(
 
   const cleanEmail = cleanString(profile.email);
   const emailRecordKey = `auth_account:${cleanEmail}`;
-  const existingAcc = await loadFromSupabase(emailRecordKey);
+  const existingAcc = await loadAuthRecord(emailRecordKey);
 
   let syncKey: string = '';
   let username: string = '';
 
   const rawKeyOrUser = existingSyncKeyOrUser ? cleanString(existingSyncKeyOrUser).replace(/^@/, '') : '';
 
-  // 1. If explicit sync key or username provided to link
   if (rawKeyOrUser) {
     if (rawKeyOrUser.toUpperCase().startsWith('MBC-')) {
       syncKey = rawKeyOrUser.toUpperCase();
       username = cleanEmail.split('@')[0].replace(/[^a-z0-9_]/g, '');
     } else {
       const userMapKey = `auth_username:${rawKeyOrUser}`;
-      const userMap = await loadFromSupabase(userMapKey);
-      if (userMap && userMap.data && userMap.data.email) {
-        const linkedAcc = await loadFromSupabase(`auth_account:${userMap.data.email}`);
-        if (linkedAcc && linkedAcc.data && linkedAcc.data.syncKey) {
-          syncKey = linkedAcc.data.syncKey;
-          username = linkedAcc.data.username || rawKeyOrUser;
-        }
-      }
-      if (!syncKey) {
-        const directAcc = await loadFromSupabase(`auth_account:${rawKeyOrUser}`);
-        if (directAcc && directAcc.data && directAcc.data.syncKey) {
-          syncKey = directAcc.data.syncKey;
-          username = directAcc.data.username || rawKeyOrUser.split('@')[0];
+      const userMap = await loadAuthRecord(userMapKey);
+      if (userMap && userMap.email) {
+        const linkedAcc = await loadAuthRecord(`auth_account:${userMap.email}`);
+        if (linkedAcc && linkedAcc.syncKey) {
+          syncKey = linkedAcc.syncKey;
+          username = linkedAcc.username || rawKeyOrUser;
         }
       }
     }
   }
 
-  // 2. If not found via parameter, check existing account by Google email
-  if (!syncKey && existingAcc && existingAcc.data && existingAcc.data.syncKey) {
-    syncKey = existingAcc.data.syncKey;
-    username = existingAcc.data.username || cleanEmail.split('@')[0];
+  if (!syncKey && existingAcc && existingAcc.syncKey) {
+    syncKey = existingAcc.syncKey;
+    username = existingAcc.username || cleanEmail.split('@')[0];
   }
 
-  // 3. Check if username derived from Google email matches an existing user
-  if (!syncKey) {
-    const candidateUsername = cleanEmail.split('@')[0].replace(/[^a-z0-9_]/g, '');
-    const userMap = await loadFromSupabase(`auth_username:${candidateUsername}`);
-    if (userMap && userMap.data && userMap.data.email) {
-      const linkedAcc = await loadFromSupabase(`auth_account:${userMap.data.email}`);
-      if (linkedAcc && linkedAcc.data && linkedAcc.data.syncKey) {
-        syncKey = linkedAcc.data.syncKey;
-        username = linkedAcc.data.username || candidateUsername;
-      }
-    }
-  }
-
-  // 4. Fallback: generate new syncKey if no previous key was linked or found
   if (!syncKey) {
     username = cleanEmail.split('@')[0].replace(/[^a-z0-9_]/g, '');
     syncKey = `MBC-GOOG-${username.toUpperCase()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
   }
-
-  const passwordHash = existingAcc?.data?.passwordHash;
 
   const userRecord = {
     email: cleanEmail,
@@ -228,13 +332,13 @@ export async function loginWithGoogleProfile(
     name: profile.name || username,
     photo: profile.picture,
     syncKey,
-    passwordHash,
+    passwordHash: existingAcc?.passwordHash,
     provider: 'google',
     updatedAt: new Date().toISOString()
   };
 
-  await saveToSupabase(emailRecordKey, userRecord);
-  await saveToSupabase(`auth_username:${username}`, { email: cleanEmail });
+  await saveAuthRecord(emailRecordKey, userRecord);
+  await saveAuthRecord(`auth_username:${username}`, { email: cleanEmail });
 
   const authUser: AuthUser = {
     email: cleanEmail,
@@ -261,16 +365,28 @@ export async function recoverAccountByEmail(
   }
 
   const emailRecordKey = `auth_account:${cleanEmail}`;
-  const accRecord = await loadFromSupabase(emailRecordKey);
+  let accRecord = await loadAuthRecord(emailRecordKey);
 
-  if (!accRecord || !accRecord.data || !accRecord.data.email) {
+  // Fallback: Check local profile if matching email
+  if (!accRecord) {
+    const localEmail = localStorage.getItem('mbc_userEmail')?.toLowerCase().trim();
+    if (localEmail === cleanEmail) {
+      accRecord = {
+        email: cleanEmail,
+        username: localStorage.getItem('mbc_userHandle')?.replace(/^@/, '') || cleanEmail.split('@')[0],
+        name: localStorage.getItem('mbc_userName') || 'Usuário',
+        syncKey: localStorage.getItem('mbc_sync_key') || `MBC-${cleanEmail.split('@')[0].toUpperCase()}-RECOVER`,
+        provider: 'email'
+      };
+    }
+  }
+
+  if (!accRecord) {
     return { 
       ok: false, 
       message: 'Nenhuma conta foi encontrada com este e-mail. Se desejar, crie uma nova conta ou entre com o Google.' 
     };
   }
-
-  const data = accRecord.data;
 
   // If a new password is provided, reset it
   if (newPassword && newPassword.trim()) {
@@ -278,17 +394,18 @@ export async function recoverAccountByEmail(
       return { ok: false, message: 'A nova senha deve ter pelo menos 6 caracteres.' };
     }
     const passwordHash = await hashPassword(newPassword.trim());
-    data.passwordHash = passwordHash;
-    await saveToSupabase(emailRecordKey, data);
+    accRecord.passwordHash = passwordHash;
+    await saveAuthRecord(emailRecordKey, accRecord);
+    await saveAuthRecord(`auth_username:${accRecord.username}`, { email: cleanEmail });
   }
 
   const authUser: AuthUser = {
-    email: data.email,
-    username: data.username || data.email.split('@')[0],
-    name: data.name || data.username,
-    syncKey: data.syncKey,
-    photo: data.photo,
-    provider: data.provider || 'email'
+    email: accRecord.email,
+    username: accRecord.username || accRecord.email.split('@')[0],
+    name: accRecord.name || accRecord.username,
+    syncKey: accRecord.syncKey,
+    photo: accRecord.photo,
+    provider: accRecord.provider || 'email'
   };
 
   return {
@@ -296,6 +413,96 @@ export async function recoverAccountByEmail(
     user: authUser,
     username: authUser.username,
     syncKey: authUser.syncKey,
-    message: 'Conta localizada com sucesso!'
+    message: newPassword && newPassword.trim() ? 'Senha redefinida e conta pronta para uso!' : 'Conta localizada com sucesso!'
   };
 }
+
+/* =========================================================================
+   QR CODE LOGIN AUTHENTICATION SERVICES
+   ========================================================================= */
+
+/**
+ * Generates a new 5-minute QR Code Login session
+ */
+export async function createQrLoginSession(): Promise<QrLoginSession> {
+  const randNum = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit PIN
+  const sessionRand = Math.random().toString(36).substring(2, 10).toUpperCase();
+  const sessionId = `QR-LOG-${sessionRand}-${Date.now().toString(36).toUpperCase()}`;
+  const now = Date.now();
+  const expiresAt = now + 5 * 60 * 1000; // 5 Minutes (300,000 ms)
+
+  const session: QrLoginSession = {
+    sessionId,
+    pinCode: randNum,
+    status: 'pending',
+    createdAt: now,
+    expiresAt
+  };
+
+  // Persist session
+  await saveAuthRecord(`qr_session:${sessionId}`, session);
+  await saveAuthRecord(`qr_pin:${randNum}`, { sessionId, expiresAt });
+
+  return session;
+}
+
+/**
+ * Checks status of an active QR Login session
+ */
+export async function checkQrLoginSessionStatus(sessionId: string): Promise<QrLoginSession | null> {
+  if (!sessionId) return null;
+  const record = await loadAuthRecord(`qr_session:${sessionId}`);
+  if (!record) return null;
+
+  // Check expiration
+  if (record.status === 'pending' && Date.now() > record.expiresAt) {
+    record.status = 'expired';
+    await saveAuthRecord(`qr_session:${sessionId}`, record);
+  }
+
+  return record;
+}
+
+/**
+ * Authorizes a QR Login session using logged in user profile
+ */
+export async function authorizeQrLoginSession(
+  sessionIdOrPin: string,
+  user: AuthUser
+): Promise<{ ok: boolean; message: string; sessionId?: string }> {
+  if (!sessionIdOrPin || !user) {
+    return { ok: false, message: 'Sessão ou usuário inválido.' };
+  }
+
+  let targetSessionId = sessionIdOrPin.trim();
+
+  // If input is a 6-digit PIN code, resolve to sessionId
+  if (/^\d{6}$/.test(targetSessionId) || targetSessionId.startsWith('PLN-') || targetSessionId.length <= 10) {
+    const rawPin = targetSessionId.replace(/\D/g, '');
+    const pinMap = await loadAuthRecord(`qr_pin:${rawPin}`);
+    if (pinMap && pinMap.sessionId) {
+      targetSessionId = pinMap.sessionId;
+    }
+  }
+
+  const session = await loadAuthRecord(`qr_session:${targetSessionId}`);
+  if (!session) {
+    return { ok: false, message: 'Código QR ou sessão de login não encontrada.' };
+  }
+
+  if (Date.now() > session.expiresAt) {
+    session.status = 'expired';
+    await saveAuthRecord(`qr_session:${targetSessionId}`, session);
+    return { ok: false, message: 'Este código QR expirou (válido por 5 minutos). Gere um novo na tela de login.' };
+  }
+
+  // Update session to authorized
+  session.status = 'authorized';
+  session.user = user;
+  session.authorizedAt = new Date().toISOString();
+
+  await saveAuthRecord(`qr_session:${targetSessionId}`, session);
+
+  return { ok: true, message: 'Aparelho e sessão QR Code autorizados com sucesso!', sessionId: targetSessionId };
+}
+

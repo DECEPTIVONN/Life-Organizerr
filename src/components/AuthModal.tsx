@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import QRCode from 'qrcode';
 import { 
   Zap, 
   User, 
@@ -16,7 +17,11 @@ import {
   Coins,
   Flame,
   Compass,
-  Link2
+  Link2,
+  QrCode,
+  Smartphone,
+  RefreshCw,
+  Clock
 } from 'lucide-react';
 import { 
   registerWithEmail, 
@@ -24,6 +29,9 @@ import {
   loginWithGoogleProfile, 
   isUsernameAvailable, 
   recoverAccountByEmail,
+  createQrLoginSession,
+  checkQrLoginSessionStatus,
+  QrLoginSession,
   AuthUser 
 } from '../lib/auth';
 import { saveGoogleOAuthTokens } from '../utils/googleToken';
@@ -34,8 +42,8 @@ interface AuthModalProps {
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
-  // Initial mode is 'welcome', giving user choice to 'login', 'signup', or 'forgot'
-  const [mode, setMode] = useState<'welcome' | 'login' | 'signup' | 'forgot'>('welcome');
+  // Mode is 'welcome', 'login', 'signup', 'forgot', or 'qrcode'
+  const [mode, setMode] = useState<'welcome' | 'login' | 'signup' | 'forgot' | 'qrcode'>('welcome');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -47,6 +55,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
   const [foundAccount, setFoundAccount] = useState<{ username: string; syncKey: string; user?: AuthUser } | null>(null);
   const [recoverySuccessMsg, setRecoverySuccessMsg] = useState<string | null>(null);
 
+  // QR Code Login states
+  const [qrSession, setQrSession] = useState<QrLoginSession | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string>('');
+  const [qrTimer, setQrTimer] = useState<number>(300); // 5 minutes (300 seconds)
+
   // Link existing account states
   const [linkSyncKeyInput, setLinkSyncKeyInput] = useState('');
   const [showLinkSection, setShowLinkSection] = useState(false);
@@ -55,7 +68,79 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
 
+  // Initialize and handle QR Code Login session
+  const startQrLogin = async () => {
+    setMode('qrcode');
+    setErrorMsg(null);
+    setLoading(true);
+    try {
+      const session = await createQrLoginSession();
+      setQrSession(session);
+      setQrTimer(300);
+
+      const qrPayload = `${window.location.origin}/?qr_session=${session.sessionId}`;
+      const url = await QRCode.toDataURL(qrPayload, {
+        width: 260,
+        margin: 2,
+        color: {
+          dark: '#09090b',
+          light: '#ffffff'
+        }
+      });
+      setQrDataUrl(url);
+    } catch (err) {
+      console.error("Error generating QR Code:", err);
+      setErrorMsg('Não foi possível gerar o código QR. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // QR Timer Countdown & Live Status Polling Effect
+  useEffect(() => {
+    if (mode !== 'qrcode' || !qrSession) return;
+
+    // Countdown tick
+    const timerInterval = setInterval(() => {
+      setQrTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(timerInterval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    // Poll status from storage / Supabase
+    const pollInterval = setInterval(async () => {
+      if (qrSession?.sessionId) {
+        const updated = await checkQrLoginSessionStatus(qrSession.sessionId);
+        if (updated) {
+          if (updated.status === 'authorized' && updated.user) {
+            clearInterval(pollInterval);
+            clearInterval(timerInterval);
+            onSuccess(updated.user, rememberMe);
+          } else if (updated.status === 'expired') {
+            clearInterval(pollInterval);
+          }
+        }
+      }
+    }, 1500);
+
+    return () => {
+      clearInterval(timerInterval);
+      clearInterval(pollInterval);
+    };
+  }, [mode, qrSession, onSuccess, rememberMe]);
+
   if (!isOpen) return null;
+
+  // Format MM:SS for countdown timer
+  const formatTime = (secs: number) => {
+    const m = Math.floor(secs / 60).toString().padStart(2, '0');
+    const s = (secs % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  };
 
   // Handle live username uniqueness check when typing in signup mode
   const handleUsernameChange = async (val: string) => {
@@ -275,6 +360,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
                 >
                   <span>Entrar na minha Conta</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={startQrLogin}
+                  className="w-full py-3 px-4 bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-500/40 text-emerald-400 font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2.5 transition-all shadow-md shadow-emerald-500/10 group"
+                >
+                  <QrCode className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
+                  <span>Entrar com QR Code</span>
                 </button>
 
                 <button
@@ -602,6 +696,119 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
                 </svg>
                 <span>Entrar com o Google</span>
               </button>
+
+              <button
+                type="button"
+                onClick={startQrLogin}
+                disabled={loading}
+                className="w-full mt-2 py-2.5 px-4 bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-500/30 text-xs font-semibold text-emerald-400 rounded-xl flex items-center justify-center gap-2.5 transition-all shadow-sm"
+              >
+                <QrCode className="w-4 h-4 text-emerald-400" />
+                <span>Entrar escaneando QR Code</span>
+              </button>
+            </div>
+          )}
+
+          {/* Mode Form (QR Code Login) */}
+          {mode === 'qrcode' && (
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-200">
+              <div className="flex items-center justify-between mb-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('login');
+                    setErrorMsg(null);
+                  }}
+                  className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition-colors"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Voltar</span>
+                </button>
+
+                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-[10px] font-bold text-emerald-400">
+                  <Clock className="w-3 h-3 text-emerald-400 animate-pulse" />
+                  <span>Válido por {formatTime(qrTimer)}</span>
+                </div>
+              </div>
+
+              <div className="bg-zinc-900/80 border border-zinc-800 rounded-2xl p-4 text-center space-y-3 relative overflow-hidden">
+                <p className="text-xs font-bold text-white flex items-center justify-center gap-2">
+                  <QrCode className="w-4 h-4 text-emerald-400" />
+                  Login sem Senha por QR Code
+                </p>
+                
+                <p className="text-[11px] text-zinc-400 leading-tight">
+                  Escaneie com a câmera do celular ou pelo Life Organizer já conectado.
+                </p>
+
+                {/* QR Display Card */}
+                <div className="relative mx-auto w-52 h-52 bg-white p-2.5 rounded-2xl shadow-xl flex items-center justify-center border-2 border-emerald-500/40 group">
+                  {loading ? (
+                    <div className="flex flex-col items-center gap-2 text-zinc-700">
+                      <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+                      <span className="text-[10px] font-medium">Gerando QR...</span>
+                    </div>
+                  ) : qrDataUrl ? (
+                    <div className="relative w-full h-full flex items-center justify-center">
+                      <img src={qrDataUrl} alt="QR Code Login" className="w-full h-full object-contain rounded-lg" />
+                      
+                      {/* Scanning laser line effect if active */}
+                      {qrTimer > 0 && (
+                        <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-emerald-500 to-transparent shadow-[0_0_12px_#10b981] animate-bounce pointer-events-none top-1/2 -translate-y-1/2" />
+                      )}
+
+                      {/* Expired overlay */}
+                      {qrTimer === 0 && (
+                        <div className="absolute inset-0 bg-zinc-950/90 backdrop-blur-sm rounded-lg flex flex-col items-center justify-center p-3 text-center">
+                          <AlertCircle className="w-8 h-8 text-amber-500 mb-1 animate-bounce" />
+                          <span className="text-xs font-bold text-white mb-2">QR Code Expirado</span>
+                          <button
+                            type="button"
+                            onClick={startQrLogin}
+                            className="py-1.5 px-3 bg-amber-500 hover:bg-amber-400 text-zinc-950 text-[11px] font-bold rounded-lg flex items-center gap-1.5 shadow-md transition-all"
+                          >
+                            <RefreshCw className="w-3.5 h-3.5" />
+                            <span>Gerar Novo</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+
+                {/* PIN Code Alternative */}
+                {qrSession && (
+                  <div className="bg-zinc-950 p-2.5 rounded-xl border border-zinc-800 flex items-center justify-between px-3">
+                    <div className="flex items-center gap-2">
+                      <Smartphone className="w-4 h-4 text-amber-400" />
+                      <span className="text-[11px] text-zinc-400">Código de Conexão:</span>
+                    </div>
+                    <span className="text-xs font-mono font-bold text-amber-400 tracking-wider bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                      PLN-{qrSession.pinCode}
+                    </span>
+                  </div>
+                )}
+
+                {/* Instructions */}
+                <div className="text-[10px] text-zinc-400 text-left space-y-1 bg-zinc-950/60 p-2.5 rounded-xl border border-zinc-800/80">
+                  <p className="text-zinc-300 font-semibold mb-1">Como conectar:</p>
+                  <p>1. Abra o Life Organizer no celular onde já está logado.</p>
+                  <p>2. Vá em <strong className="text-white">Configurações &gt; Dispositivos Conectados</strong>.</p>
+                  <p>3. Clique em <strong className="text-emerald-400">Conectar Novo Dispositivo</strong> e aponte a câmera ou digite o código acima.</p>
+                </div>
+              </div>
+
+              <div className="mt-3 text-center">
+                <button
+                  type="button"
+                  onClick={startQrLogin}
+                  disabled={loading}
+                  className="text-xs text-zinc-400 hover:text-emerald-400 flex items-center justify-center gap-1.5 mx-auto transition-colors"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+                  <span>Atualizar Código QR</span>
+                </button>
+              </div>
             </div>
           )}
 

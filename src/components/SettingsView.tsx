@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { setSupabaseConfig, testSupabaseConnection } from '../lib/supabase';
+import { authorizeQrLoginSession } from '../lib/auth';
 import { saveGoogleOAuthTokens, clearGoogleOAuthSession, refreshGoogleAccessToken } from '../utils/googleToken';
 
 interface SettingsViewProps {
@@ -1971,7 +1972,7 @@ export default function SettingsView({
         )}
       </AnimatePresence>
 
-      {/* Modal: Conectar Dispositivo (QR Code / Test Device) */}
+      {/* Modal: Conectar Dispositivo (QR Code / Pareamento Real) */}
       <AnimatePresence>
         {showConnectDeviceModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
@@ -1979,36 +1980,84 @@ export default function SettingsView({
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-zinc-950 border border-emerald-500/20 rounded-2xl p-6 max-w-sm w-full space-y-5 text-center shadow-2xl relative"
+              className="bg-zinc-950 border border-emerald-500/30 rounded-2xl p-5 max-w-sm w-full space-y-4 text-center shadow-2xl relative"
             >
               <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
-                <h3 className="text-xs font-black uppercase tracking-wider text-emerald-400">Conectar Novo Dispositivo</h3>
+                <div className="flex items-center gap-2">
+                  <QrCode className="h-4.5 w-4.5 text-emerald-400" />
+                  <h3 className="text-xs font-black uppercase tracking-wider text-white">Conectar Novo Dispositivo</h3>
+                </div>
                 <button
                   type="button"
                   onClick={() => setShowConnectDeviceModal(false)}
-                  className="text-zinc-500 hover:text-white p-1"
+                  className="text-zinc-500 hover:text-white p-1 transition-colors"
                 >
                   <X className="h-4 w-4" />
                 </button>
               </div>
 
-              {/* Simulated QR Code box */}
-              <div className="p-4 bg-white rounded-2xl mx-auto w-44 h-44 flex flex-col items-center justify-center shadow-inner relative group border-4 border-emerald-500/20">
-                <QrCode className="w-32 h-32 text-zinc-950" />
-                <span className="text-[8px] font-mono font-bold text-zinc-600 mt-1">Sincronização QR Code</span>
+              {/* Authorize Pin Form */}
+              <div className="space-y-3 bg-zinc-900/60 p-3.5 rounded-2xl border border-zinc-800 text-left">
+                <label className="block text-[11px] font-bold text-zinc-200">
+                  Digitar Código do Outro Aparelho (6 dígitos ou PLN-...):
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Ex: 482910"
+                    id="qrPinInput"
+                    className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 font-mono tracking-wider uppercase"
+                  />
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const inputEl = document.getElementById('qrPinInput') as HTMLInputElement;
+                      const pinVal = inputEl?.value.trim();
+                      if (!pinVal) return;
+
+                      const authRes = await authorizeQrLoginSession(pinVal, {
+                        email: userEmail || 'usuario@lifeorganizer.app',
+                        username: userHandle.replace(/^@/, '') || 'usuario',
+                        name: userName || 'Usuário',
+                        syncKey: syncKey || 'MBC-LOCAL',
+                        provider: 'email'
+                      });
+
+                      if (authRes.ok) {
+                        const newDev: ConnectedDevice = {
+                          id: `dev-qr-${Date.now()}`,
+                          name: 'Novo Aparelho Conectado',
+                          browser: 'Web Browser',
+                          os: 'Mobile/PC',
+                          isCurrent: false,
+                          lastActive: 'Agora mesmo',
+                          ip: '189.28.102.89',
+                          deviceType: 'mobile'
+                        };
+                        setConnectedDevices(prev => [...prev, newDev]);
+                        alert('✅ Sessão de login e aparelho autorizados com sucesso!');
+                        setShowConnectDeviceModal(false);
+                      } else {
+                        alert(`⚠️ ${authRes.message}`);
+                      }
+                    }}
+                    className="py-2 px-3 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold rounded-xl transition-all shadow-md shrink-0"
+                  >
+                    Autorizar
+                  </button>
+                </div>
+                <p className="text-[10px] text-zinc-400 leading-relaxed">
+                  Digite o código de 6 dígitos mostrado na tela de login QR Code do outro celular ou computador para autorizá-lo imediatamente.
+                </p>
               </div>
 
-              <div className="space-y-1">
-                <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider block">Código de Pareamento</span>
-                <span className="text-base font-mono font-black text-emerald-400 tracking-widest bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-xl inline-block">
-                  PLN-9482-SYNC
-                </span>
-              </div>
-
-              <div className="text-[10px] text-zinc-400 space-y-1 text-left bg-zinc-900/60 p-3 rounded-xl border border-zinc-900">
-                <p>1. Acesse o Planner TRONUS em outro celular ou PC.</p>
-                <p>2. Vá em Configurações &gt; Dispositivos Conectados.</p>
-                <p>3. Aponte a câmera ou insira o código acima.</p>
+              <div className="relative my-2">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-zinc-800" />
+                </div>
+                <div className="relative flex justify-center text-[9px] uppercase font-bold tracking-wider">
+                  <span className="px-2 bg-zinc-950 text-zinc-500">ou simular aparelho de teste</span>
+                </div>
               </div>
 
               {/* Action to test adding a connected device */}
@@ -2028,9 +2077,9 @@ export default function SettingsView({
                   setConnectedDevices(prev => [...prev, newDev]);
                   setShowConnectDeviceModal(false);
                 }}
-                className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md"
+                className="w-full py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 font-bold text-xs rounded-xl transition-all"
               >
-                Simular Conexão de Novo Aparelho
+                Simular Novo Aparelho
               </button>
             </motion.div>
           </div>
