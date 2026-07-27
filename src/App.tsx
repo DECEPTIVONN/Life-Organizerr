@@ -168,6 +168,10 @@ export default function App() {
     return localStorage.getItem('mbc_autoFullscreen') !== 'false';
   });
 
+  const [freeEditMode, setFreeEditMode] = useState(() => {
+    return localStorage.getItem('mbc_freeEditMode') === 'true';
+  });
+
   const [accountDeactivated, setAccountDeactivated] = useState(() => {
     return localStorage.getItem('mbc_accountDeactivated') === 'true';
   });
@@ -2137,6 +2141,7 @@ export default function App() {
             notes={notes}
             setNotes={setNotes}
             addXp={addXp}
+            freeEditMode={freeEditMode}
           />
         );
       case 'resumo':
@@ -2194,6 +2199,8 @@ export default function App() {
             setUserEmail={setUserEmail}
             userPassword={userPassword}
             setUserPassword={setUserPassword}
+            freeEditMode={freeEditMode}
+            setFreeEditMode={setFreeEditMode}
             autoFullscreen={autoFullscreen}
             setAutoFullscreen={setAutoFullscreen}
             setAccountDeactivated={setAccountDeactivated}

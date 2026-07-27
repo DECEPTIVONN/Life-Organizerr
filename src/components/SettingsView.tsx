@@ -52,6 +52,10 @@ interface SettingsViewProps {
   userPassword: string;
   setUserPassword: (pass: string) => void;
   
+  // Free Edit Mode
+  freeEditMode?: boolean;
+  setFreeEditMode?: (mode: boolean) => void;
+
   // Fullscreen
   autoFullscreen: boolean;
   setAutoFullscreen: (auto: boolean) => void;
@@ -150,6 +154,8 @@ export default function SettingsView({
   setUserHandle,
   userPassword,
   setUserPassword,
+  freeEditMode = false,
+  setFreeEditMode,
   autoFullscreen,
   setAutoFullscreen,
   setAccountDeactivated,
@@ -1683,7 +1689,40 @@ export default function SettingsView({
               <button onClick={navigateBack} className="p-1.5 hover:bg-zinc-900 rounded-xl text-zinc-400">
                 <ArrowLeft className="h-4.5 w-4.5" />
               </button>
-              <h3 className="text-xs font-black tracking-wider uppercase font-mono text-zinc-300">Exibição e PWA</h3>
+              <h3 className="text-xs font-black tracking-wider uppercase font-mono text-zinc-300">Exibição e Preferências de Edição</h3>
+            </div>
+
+            {/* Modo de Edição Livre */}
+            <div className="p-4 bg-zinc-950 border border-zinc-900 rounded-2xl flex items-center justify-between">
+              <div className="space-y-0.5 flex-1 pr-4">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-xs font-bold text-zinc-200">Modo de Edição Livre (Tempo Real)</h4>
+                  {freeEditMode && (
+                    <span className="text-[8px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-mono uppercase">
+                      Ativo
+                    </span>
+                  )}
+                </div>
+                <p className="text-[10px] text-zinc-500 font-mono leading-normal">
+                  Salva as alterações automaticamente em tempo real sem a necessidade de clicar no botão Salvar.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const updated = !freeEditMode;
+                  if (setFreeEditMode) setFreeEditMode(updated);
+                  localStorage.setItem('mbc_freeEditMode', String(updated));
+                  addXp(10);
+                }}
+                className={`px-3 py-1.5 rounded-lg text-[9px] font-mono font-bold uppercase transition-all ${
+                  freeEditMode 
+                    ? 'bg-orange-500/15 text-orange-400 border border-orange-500/20' 
+                    : 'bg-zinc-900 border border-zinc-800 text-zinc-500'
+                }`}
+              >
+                {freeEditMode ? 'Ativo' : 'Inativo (Padrão)'}
+              </button>
             </div>
 
             {/* Toggle Fullscreen behavior */}

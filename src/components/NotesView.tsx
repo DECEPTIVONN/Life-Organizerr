@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   BookOpen, 
   Search, 
@@ -12,7 +12,9 @@ import {
   CalendarDays,
   Archive,
   Bell,
-  Clock
+  Clock,
+  ChevronDown,
+  Check
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Note } from '../types';
@@ -21,9 +23,10 @@ interface NotesViewProps {
   notes: Note[];
   setNotes: React.Dispatch<React.SetStateAction<Note[]>>;
   addXp: (amount: number) => void;
+  freeEditMode?: boolean;
 }
 
-export default function NotesView({ notes, setNotes, addXp }: NotesViewProps) {
+export default function NotesView({ notes, setNotes, addXp, freeEditMode = false }: NotesViewProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'active' | 'archived'>('active');
@@ -31,6 +34,7 @@ export default function NotesView({ notes, setNotes, addXp }: NotesViewProps) {
   // Note Form / Selection states
   const [activeNote, setActiveNote] = useState<Note | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [showMobileReminderDropdown, setShowMobileReminderDropdown] = useState(false);
   
   // Form input states
   const [title, setTitle] = useState('');
@@ -39,6 +43,43 @@ export default function NotesView({ notes, setNotes, addXp }: NotesViewProps) {
   const [reminderTime, setReminderTime] = useState('');
   const [reminderDate, setReminderDate] = useState('');
   const [reminderRecurrence, setReminderRecurrence] = useState<'none' | 'daily' | 'weekly' | 'monthly'>('none');
+
+  // Real-time auto-save effect when freeEditMode is active
+  useEffect(() => {
+    if (!freeEditMode || !isEditing || !activeNote) return;
+
+    const parsedTags = tagsInput
+      .split(',')
+      .map(t => t.trim())
+      .filter(t => t.length > 0);
+
+    const updatedNotes = notes.map(n => {
+      if (n.id === activeNote.id) {
+        return {
+          ...n,
+          title: title.trim() || 'Nota sem título',
+          content,
+          tags: parsedTags,
+          reminderTime: reminderTime.trim() || undefined,
+          reminderDate: reminderDate.trim() || undefined,
+          reminderRecurrence,
+          updatedAt: new Date().toLocaleDateString('pt-BR')
+        };
+      }
+      return n;
+    });
+
+    setNotes(updatedNotes);
+    setActiveNote(prev => prev ? {
+      ...prev,
+      title: title.trim() || 'Nota sem título',
+      content,
+      tags: parsedTags,
+      reminderTime: reminderTime.trim() || undefined,
+      reminderDate: reminderDate.trim() || undefined,
+      reminderRecurrence
+    } : null);
+  }, [title, content, tagsInput, reminderTime, reminderDate, reminderRecurrence, freeEditMode, isEditing]);
 
   // Collect all unique tags for filter row based on active view mode
   const allTags = Array.from(
@@ -413,17 +454,23 @@ export default function NotesView({ notes, setNotes, addXp }: NotesViewProps) {
 
                   {isEditing ? (
                     <>
+                      {freeEditMode && (
+                        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+                          <Check className="h-3.5 w-3.5 text-emerald-400" />
+                          Edição Livre (Tempo Real)
+                        </span>
+                      )}
                       <button
                         onClick={() => setIsEditing(false)}
                         className="text-xs text-gray-400 hover:text-white px-3.5 py-1.5 transition-colors"
                       >
-                        Descartar
+                        Concluir / Voltar
                       </button>
                       <button
                         onClick={handleSaveNote}
                         className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold px-4 py-1.5 rounded-lg flex items-center gap-1.5 transition-all shadow-[0_2px_12px_rgba(249,115,22,0.3)]"
                       >
-                        <Save className="h-4 w-4" /> Salvar Nota (+20 XP)
+                        <Save className="h-4 w-4" /> {freeEditMode ? 'Consolidar (+20 XP)' : 'Salvar Nota (+20 XP)'}
                       </button>
                     </>
                   ) : (
@@ -452,7 +499,102 @@ export default function NotesView({ notes, setNotes, addXp }: NotesViewProps) {
                       />
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Mobile: Unified Dropdown for Horário, Data and Recorrência */}
+                    <div className="block md:hidden">
+                      <label className="text-[10px] text-gray-500 font-bold block mb-1.5 uppercase tracking-wider flex items-center gap-1">
+                        <Bell className="h-3 w-3 text-orange-500" /> Horário, Data e Recorrência
+                      </label>
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setShowMobileReminderDropdown(!showMobileReminderDropdown)}
+                          className="w-full bg-zinc-950/90 border border-zinc-800 rounded-xl px-4 py-3 text-xs text-white flex items-center justify-between gap-2 focus:outline-none focus:border-orange-500/40"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Clock className="h-4 w-4 text-orange-500 shrink-0" />
+                            <span className="truncate font-mono">
+                              {reminderTime || reminderDate || reminderRecurrence !== 'none' ? (
+                                <span className="text-orange-400 font-bold">
+                                  {[
+                                    reminderTime ? `⏰ ${reminderTime}` : null,
+                                    reminderDate ? `📅 ${reminderDate}` : null,
+                                    reminderRecurrence !== 'none' ? `🔄 ${
+                                      reminderRecurrence === 'daily' ? 'Diário' :
+                                      reminderRecurrence === 'weekly' ? 'Semanal' : 'Mensal'
+                                    }` : null
+                                  ].filter(Boolean).join(' | ')}
+                                </span>
+                              ) : (
+                                <span className="text-gray-400 font-sans">Opções de Agendamento (Toque para abrir)</span>
+                              )}
+                            </span>
+                          </div>
+                          <ChevronDown className={`h-4 w-4 text-gray-400 shrink-0 transition-transform duration-200 ${showMobileReminderDropdown ? 'rotate-180 text-orange-500' : ''}`} />
+                        </button>
+
+                        <AnimatePresence>
+                          {showMobileReminderDropdown && (
+                            <motion.div
+                              initial={{ opacity: 0, y: -6 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -6 }}
+                              className="mt-2 bg-zinc-950 border border-zinc-800 rounded-xl p-4 space-y-3.5 shadow-2xl z-30 relative"
+                            >
+                              <div>
+                                <label className="text-[10px] text-gray-400 font-bold block mb-1 uppercase tracking-wider flex items-center gap-1">
+                                  <Bell className="h-3 w-3 text-orange-500" /> Horário (Notificação)
+                                </label>
+                                <input
+                                  type="time"
+                                  value={reminderTime}
+                                  onChange={(e) => setReminderTime(e.target.value)}
+                                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500 font-mono"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="text-[10px] text-gray-400 font-bold block mb-1 uppercase tracking-wider flex items-center gap-1">
+                                  <CalendarDays className="h-3 w-3 text-orange-500" /> Data (Opcional)
+                                </label>
+                                <input
+                                  type="date"
+                                  value={reminderDate}
+                                  onChange={(e) => setReminderDate(e.target.value)}
+                                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500 font-mono"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="text-[10px] text-gray-400 font-bold block mb-1 uppercase tracking-wider flex items-center gap-1">
+                                  <Clock className="h-3 w-3 text-orange-500" /> Recorrência
+                                </label>
+                                <select
+                                  value={reminderRecurrence}
+                                  onChange={(e) => setReminderRecurrence(e.target.value as any)}
+                                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500 font-mono"
+                                >
+                                  <option value="none">Nenhuma (Apenas Data)</option>
+                                  <option value="daily">Diário</option>
+                                  <option value="weekly">Semanal</option>
+                                  <option value="monthly">Mensal</option>
+                                </select>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => setShowMobileReminderDropdown(false)}
+                                className="w-full py-2 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/30 text-orange-400 text-xs font-bold rounded-lg transition-colors"
+                              >
+                                Confirmar Opções
+                              </button>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </div>
+
+                    {/* Desktop: Grid of 3 columns */}
+                    <div className="hidden md:grid md:grid-cols-3 gap-4">
                       <div>
                         <label className="text-[10px] text-gray-500 font-bold block mb-1.5 uppercase tracking-wider flex items-center gap-1">
                           <Bell className="h-3 w-3 text-orange-500" /> Horário (Notificação)
