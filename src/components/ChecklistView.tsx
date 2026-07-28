@@ -15,6 +15,8 @@ import {
   List,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   Book,
   BookOpen,
   Calendar,
@@ -37,7 +39,7 @@ import {
   Tag
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { DailyTask, SubTask, BookTracker, BibleTracker, RoutineItem, YearlyBook, WeeklyReview } from '../types';
+import { DailyTask, SubTask, BookTracker, BibleTracker, RoutineItem, YearlyBook, WeeklyReview, CalendarNote } from '../types';
 import { syncBookWithYearlyBooks, calculateReadingInterval, formatDateBR } from '../utils/bookUtils';
 
 interface ChecklistViewProps {
@@ -60,6 +62,8 @@ interface ChecklistViewProps {
   setBooks?: React.Dispatch<React.SetStateAction<YearlyBook[]>>;
   weeklyReviews?: WeeklyReview[];
   setWeeklyReviews?: React.Dispatch<React.SetStateAction<WeeklyReview[]>>;
+  calendarNotes?: CalendarNote[];
+  setCalendarNotes?: React.Dispatch<React.SetStateAction<CalendarNote[]>>;
 }
 
 // Bible total chapters standard (1189 is standard for Protestant bible)
@@ -163,13 +167,72 @@ export default function ChecklistView({
   books: propBooks,
   setBooks: propSetBooks,
   weeklyReviews: propWeeklyReviews,
-  setWeeklyReviews: propSetWeeklyReviews
+  setWeeklyReviews: propSetWeeklyReviews,
+  calendarNotes,
+  setCalendarNotes
 }: ChecklistViewProps) {
   const [localBooks, setLocalBooks] = useState<YearlyBook[]>([]);
   const actualBooks = propBooks || localBooks;
   const actualSetBooks = propSetBooks || setLocalBooks;
   const actualWeeklyReviews = propWeeklyReviews;
   const actualSetWeeklyReviews = propSetWeeklyReviews;
+
+  const todayStr = getTodayDateStr();
+  const [selectedDate, setSelectedDate] = useState<string>(todayStr);
+  const isToday = selectedDate === todayStr;
+
+  // Active tasks for selectedDate
+  const activeTasks = (() => {
+    if (selectedDate === todayStr) {
+      return dailyTasks;
+    }
+    const note = calendarNotes?.find(n => n.date === selectedDate);
+    if (note && note.checklist && note.checklist.length > 0) {
+      return note.checklist;
+    }
+    return dailyTasks.map(t => ({
+      ...t,
+      completed: false,
+      subtasks: t.subtasks?.map(s => ({ ...s, completed: false }))
+    }));
+  })();
+
+  const updateActiveTasks = (updater: (prev: DailyTask[]) => DailyTask[]) => {
+    if (selectedDate === todayStr) {
+      setDailyTasks(updater);
+    } else if (setCalendarNotes) {
+      setCalendarNotes(prevNotes => {
+        const existingIdx = prevNotes.findIndex(n => n.date === selectedDate);
+        const currentList = existingIdx !== -1 && prevNotes[existingIdx].checklist && prevNotes[existingIdx].checklist.length > 0
+          ? prevNotes[existingIdx].checklist!
+          : dailyTasks.map(t => ({ ...t, completed: false, subtasks: t.subtasks?.map(s => ({ ...s, completed: false })) }));
+        
+        const newTasks = updater(currentList);
+        
+        if (existingIdx !== -1) {
+          const updated = [...prevNotes];
+          updated[existingIdx] = {
+            ...updated[existingIdx],
+            isDailyRecord: true,
+            checklist: newTasks
+          };
+          return updated;
+        } else {
+          return [
+            ...prevNotes,
+            {
+              id: 'cn-' + Math.random().toString(36).substring(2, 9),
+              date: selectedDate,
+              title: `Registro Diário (${selectedDate})`,
+              content: '',
+              isDailyRecord: true,
+              checklist: newTasks
+            }
+          ];
+        }
+      });
+    }
+  };
   const [newTaskText, setNewTaskText] = useState('');
   const [newTaskCategory, setNewTaskCategory] = useState('O Básico');
   const [newTaskIsRecurring, setNewTaskIsRecurring] = useState(true);
@@ -588,34 +651,37 @@ export default function ChecklistView({
   // ----------------------------------------------------
 
   const handleResetForNewDay = () => {
-    if (window.confirm("Deseja iniciar um novo dia? Isso irá desmarcar todas as tarefas e etapas do checklist diário.")) {
-      setDailyTasks(prev => 
+    if (window.confirm("Deseja redefinir o checklist do dia selecionado? Isso irá desmarcar todas as tarefas e etapas.")) {
+      updateActiveTasks(prev => 
         prev.map(t => ({
           ...t,
           completed: false,
           subtasks: t.subtasks?.map(s => ({ ...s, completed: false }))
         }))
       );
-      // Reset chapters read today for the Bible tracker
-      setBibleTracker(prev => ({
-        ...prev,
-        chaptersReadToday: 0
-      }));
+      if (isToday) {
+        setBibleTracker(prev => ({
+          ...prev,
+          chaptersReadToday: 0
+        }));
+      }
     }
   };
 
   // Grouped stats calculation
-  const totalTasks = dailyTasks.length;
-  const completedTasks = dailyTasks.filter(t => t.completed).length;
+  const totalTasks = activeTasks.length;
+  const completedTasks = activeTasks.filter(t => t.completed).length;
   const isComboComplete = totalTasks > 0 && completedTasks === totalTasks;
-  const xpEarnedToday = dailyTasks
+  const xpEarnedToday = activeTasks
     .filter(t => t.completed)
     .reduce((acc, t) => acc + t.xpReward, 0) + (isComboComplete ? 25 : 0);
 
-  const formattedDate = new Date().toLocaleDateString('pt-BR', {
+  const dateObj = parseLocalDate(selectedDate);
+  const formattedDate = dateObj.toLocaleDateString('pt-BR', {
     weekday: 'long',
     day: 'numeric',
-    month: 'long'
+    month: 'long',
+    year: 'numeric'
   });
 
   const handleAddTask = (e: React.FormEvent) => {
@@ -637,10 +703,10 @@ export default function ChecklistView({
       isRecurring: newTaskIsRecurring,
       period: newTaskPeriod,
       subtasks: mappedSubtasks,
-      createdDate: getTodayDateStr()
+      createdDate: selectedDate
     };
 
-    setDailyTasks([...dailyTasks, newTask]);
+    updateActiveTasks(prev => [...prev, newTask]);
     setNewTaskText('');
     setNewTaskSubtasks([]);
     setCurrentSubtaskText('');
@@ -651,7 +717,7 @@ export default function ChecklistView({
     if (completed) {
       addXp(-xpReward);
     }
-    setDailyTasks(dailyTasks.filter(t => t.id !== id));
+    updateActiveTasks(prev => prev.filter(t => t.id !== id));
   };
 
   // Helper Handlers for Editing Task Modal
@@ -702,7 +768,7 @@ export default function ChecklistView({
       Notification.requestPermission().catch(() => {});
     }
 
-    setDailyTasks(prevTasks =>
+    updateActiveTasks(prevTasks =>
       prevTasks.map(t => {
         if (t.id === editingTask.id) {
           return {
@@ -730,7 +796,7 @@ export default function ChecklistView({
   };
 
   const handleToggleTask = (id: string) => {
-    setDailyTasks(prevTasks => {
+    updateActiveTasks(prevTasks => {
       const task = prevTasks.find(t => t.id === id);
       if (!task) return prevTasks;
 
@@ -764,7 +830,7 @@ export default function ChecklistView({
   };
 
   const handleToggleSubtask = (taskId: string, subtaskId: string) => {
-    setDailyTasks(prevTasks => {
+    updateActiveTasks(prevTasks => {
       return prevTasks.map(t => {
         if (t.id !== taskId) return t;
         if (!t.subtasks) return t;
@@ -1072,9 +1138,9 @@ export default function ChecklistView({
   };
 
   // Grouping tasks for rendering
-  const morningTasks = dailyTasks.filter(t => t.period === 'manha');
-  const nightTasks = dailyTasks.filter(t => t.period === 'noite');
-  const generalTasks = dailyTasks.filter(t => !t.period || t.period === 'geral');
+  const morningTasks = activeTasks.filter(t => t.period === 'manha');
+  const nightTasks = activeTasks.filter(t => t.period === 'noite');
+  const generalTasks = activeTasks.filter(t => !t.period || t.period === 'geral');
 
   // Modular renderer for a checklist task item row
   function renderTaskRow(task: DailyTask) {
@@ -1301,6 +1367,76 @@ export default function ChecklistView({
 
       {activeTab === 'checklist' ? (
         <>
+          {/* Date Selector Header Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-[#111115] border border-zinc-800/80 rounded-2xl p-3.5 shadow-md">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const d = parseLocalDate(selectedDate);
+                  d.setDate(d.getDate() - 1);
+                  const prevStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                  setSelectedDate(prevStr);
+                }}
+                className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-xl border border-zinc-800 transition-all flex items-center gap-1 text-xs font-bold"
+                title="Dia Anterior"
+              >
+                <ChevronLeft className="h-4 w-4 text-orange-500" />
+                <span className="hidden sm:inline">Dia Anterior</span>
+              </button>
+
+              <div className="relative flex items-center">
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
+                  className="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs font-mono font-bold text-white focus:outline-none focus:border-orange-500/50 cursor-pointer"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const d = parseLocalDate(selectedDate);
+                  d.setDate(d.getDate() + 1);
+                  const nextStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                  setSelectedDate(nextStr);
+                }}
+                className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-xl border border-zinc-800 transition-all flex items-center gap-1 text-xs font-bold"
+                title="Próximo Dia"
+              >
+                <span className="hidden sm:inline">Próximo Dia</span>
+                <ChevronRight className="h-4 w-4 text-orange-500" />
+              </button>
+
+              {!isToday && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedDate(todayStr)}
+                  className="px-3 py-1.5 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+                >
+                  <Calendar className="h-3.5 w-3.5" /> Ir para Hoje
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 text-xs">
+              {isToday ? (
+                <span className="px-3 py-1 bg-orange-500/10 border border-orange-500/20 text-orange-400 font-mono font-bold rounded-lg uppercase text-[10px] flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-orange-500 animate-pulse" />
+                  HOJE ({formatDateBR(selectedDate)})
+                </span>
+              ) : selectedDate < todayStr ? (
+                <span className="px-3 py-1 bg-blue-500/10 border border-blue-500/20 text-blue-400 font-mono font-bold rounded-lg uppercase text-[10px] flex items-center gap-1.5">
+                  <Clock className="h-3 w-3" /> HISTÓRICO SALVO ({formatDateBR(selectedDate)})
+                </span>
+              ) : (
+                <span className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono font-bold rounded-lg uppercase text-[10px] flex items-center gap-1.5">
+                  <Sparkles className="h-3 w-3" /> PLANEJAMENTO ({formatDateBR(selectedDate)})
+                </span>
+              )}
+            </div>
+          </div>
 
       {/* 3. Daily Progress Panel */}
       <div className="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5 flex items-center justify-between">
@@ -1334,7 +1470,7 @@ export default function ChecklistView({
             Rotinas e Checklist Diário
           </h2>
           <div className="flex items-center gap-2">
-            {dailyTasks.length > 0 && (
+            {activeTasks.length > 0 && (
               <button
                 type="button"
                 onClick={handleResetForNewDay}

@@ -339,6 +339,30 @@ export default function App() {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
           if (needsReset) {
+            if (lastReset) {
+              try {
+                const savedNotesStr = localStorage.getItem('mbc_calendarNotes') || '[]';
+                const pastNotes: any[] = JSON.parse(savedNotesStr);
+                const existingIdx = pastNotes.findIndex(n => n.date === lastReset);
+                if (existingIdx !== -1) {
+                  pastNotes[existingIdx].checklist = parsed;
+                  pastNotes[existingIdx].isDailyRecord = true;
+                } else {
+                  pastNotes.push({
+                    id: 'cn-' + Math.random().toString(36).substring(2, 9),
+                    date: lastReset,
+                    title: `Registro Diário (${lastReset})`,
+                    content: '',
+                    isDailyRecord: true,
+                    checklist: parsed
+                  });
+                }
+                localStorage.setItem('mbc_calendarNotes', JSON.stringify(pastNotes));
+              } catch (e) {
+                console.error("Failed to archive previous daily tasks:", e);
+              }
+            }
+
             const resetTasks = parsed.map((t: DailyTask) => ({
               ...t,
               completed: false,
@@ -1644,13 +1668,73 @@ export default function App() {
   useEffect(() => { localStorage.setItem('mbc_documents', JSON.stringify(documents)); }, [documents]);
   useEffect(() => { localStorage.setItem('mbc_notes', JSON.stringify(notes)); }, [notes]);
 
+  // --- Sync today's dailyTasks with calendarNotes for today's date ---
+  useEffect(() => {
+    const d = new Date();
+    const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    setCalendarNotes(prevNotes => {
+      const existingIdx = prevNotes.findIndex(n => n.date === todayStr);
+      if (existingIdx !== -1) {
+        if (JSON.stringify(prevNotes[existingIdx].checklist) === JSON.stringify(dailyTasks)) {
+          return prevNotes;
+        }
+        const updated = [...prevNotes];
+        updated[existingIdx] = {
+          ...updated[existingIdx],
+          isDailyRecord: true,
+          checklist: dailyTasks
+        };
+        return updated;
+      } else {
+        return [
+          ...prevNotes,
+          {
+            id: 'cn-' + Math.random().toString(36).substring(2, 9),
+            date: todayStr,
+            title: `Registro Diário (${todayStr})`,
+            content: '',
+            isDailyRecord: true,
+            checklist: dailyTasks
+          }
+        ];
+      }
+    });
+  }, [dailyTasks]);
+
   // --- Automatic Daily Reset Effect for Daily Tasks ---
   useEffect(() => {
     const checkDailyReset = () => {
       const d = new Date();
       const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       const lastReset = localStorage.getItem('mbc_last_daily_reset');
-      if (lastReset !== todayStr) {
+      if (lastReset && lastReset !== todayStr) {
+        // Archive previous day's checklist before resetting
+        setCalendarNotes(prevNotes => {
+          const existingIdx = prevNotes.findIndex(n => n.date === lastReset);
+          if (existingIdx !== -1) {
+            const updated = [...prevNotes];
+            updated[existingIdx] = {
+              ...updated[existingIdx],
+              isDailyRecord: true,
+              checklist: dailyTasks
+            };
+            return updated;
+          } else {
+            return [
+              ...prevNotes,
+              {
+                id: 'cn-' + Math.random().toString(36).substring(2, 9),
+                date: lastReset,
+                title: `Registro Diário (${lastReset})`,
+                content: '',
+                isDailyRecord: true,
+                checklist: dailyTasks
+              }
+            ];
+          }
+        });
+
+        // Reset tasks for the new todayStr
         setDailyTasks(prev => prev.map(t => ({
           ...t,
           completed: false,
@@ -1679,7 +1763,7 @@ export default function App() {
       window.removeEventListener('focus', checkDailyReset);
       clearInterval(interval);
     };
-  }, []);
+  }, [dailyTasks]);
 
   // --- Auto-seeder Effect for First Load ---
   useEffect(() => {
@@ -2040,6 +2124,8 @@ export default function App() {
             setBooks={setBooks}
             weeklyReviews={weeklyReviews}
             setWeeklyReviews={setWeeklyReviews}
+            calendarNotes={calendarNotes}
+            setCalendarNotes={setCalendarNotes}
           />
         );
       case 'rotina':
