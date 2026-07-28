@@ -39,6 +39,19 @@ import { motion, AnimatePresence } from 'motion/react';
 import { setSupabaseConfig, testSupabaseConnection } from '../lib/supabase';
 import { authorizeQrLoginSession } from '../lib/auth';
 import { saveGoogleOAuthTokens, clearGoogleOAuthSession, refreshGoogleAccessToken } from '../utils/googleToken';
+import {
+  ConnectedDevice,
+  syncAndRegisterCurrentDevice,
+  fetchAccountDevices,
+  updateConnectedDevice,
+  removeConnectedDevice,
+  saveAccountDevices,
+  getAccountKey,
+  formatLastActiveTime,
+  detectDeviceDetails
+} from '../lib/devices';
+
+export type { ConnectedDevice };
 
 interface SettingsViewProps {
   userName: string;
@@ -98,41 +111,6 @@ type SettingsScreen =
   | 'dispositivos_conectados'
   | 'notificacoes' 
   | 'exibicao';
-
-export interface ConnectedDevice {
-  id: string;
-  name: string;
-  customName?: string;
-  browser: string;
-  os: string;
-  isCurrent: boolean;
-  lastActive: string;
-  ip?: string;
-  deviceType: 'desktop' | 'mobile' | 'tablet';
-}
-
-const detectDeviceDetails = () => {
-  if (typeof navigator === 'undefined') {
-    return { browser: 'Microsoft Edge', os: 'Windows', fullName: 'Microsoft Edge (Windows)' };
-  }
-  const ua = navigator.userAgent;
-  let browser = 'Microsoft Edge';
-  let os = 'Windows';
-
-  if (ua.includes('Edg/')) browser = 'Microsoft Edge';
-  else if (ua.includes('Chrome/')) browser = 'Google Chrome';
-  else if (ua.includes('Safari/') && !ua.includes('Chrome')) browser = 'Apple Safari';
-  else if (ua.includes('Firefox/')) browser = 'Mozilla Firefox';
-  else if (ua.includes('OPR/') || ua.includes('Opera/')) browser = 'Opera';
-
-  if (ua.includes('Windows')) os = 'Windows';
-  else if (ua.includes('Mac OS')) os = 'macOS';
-  else if (ua.includes('Android')) os = 'Android';
-  else if (ua.includes('iPhone') || ua.includes('iPad')) os = 'iOS';
-  else if (ua.includes('Linux')) os = 'Linux';
-
-  return { browser, os, fullName: `${browser} (${os})` };
-};
 
 const AVATAR_PRESETS = [
   'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=150', // Atleta clássico
@@ -251,10 +229,8 @@ export default function SettingsView({
       } catch (e) {}
     }
 
-    const { browser, os, fullName } = detectDeviceDetails();
-    const now = new Date();
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    const { browser, os, fullName, deviceType } = detectDeviceDetails();
+    const nowTs = Date.now();
 
     return [
       {
@@ -263,9 +239,10 @@ export default function SettingsView({
         browser,
         os,
         isCurrent: true,
-        lastActive: `hoje às ${timeStr}`,
+        lastActiveTimestamp: nowTs,
+        lastActive: formatLastActiveTime(nowTs, true),
         ip: '189.28.102.44',
-        deviceType: os === 'Android' || os === 'iOS' ? 'mobile' : 'desktop'
+        deviceType
       }
     ];
   });
@@ -274,9 +251,33 @@ export default function SettingsView({
   const [showConnectDeviceModal, setShowConnectDeviceModal] = useState(false);
   const [editDeviceCustomName, setEditDeviceCustomName] = useState('');
 
+  // Sync and update connected devices in real time
   useEffect(() => {
-    localStorage.setItem('mbc_connected_devices', JSON.stringify(connectedDevices));
-  }, [connectedDevices]);
+    let isMounted = true;
+
+    const performSync = async () => {
+      try {
+        const updated = await syncAndRegisterCurrentDevice();
+        if (isMounted) {
+          setConnectedDevices(updated);
+        }
+      } catch (err) {
+        console.warn('Connected devices sync error:', err);
+      }
+    };
+
+    performSync();
+
+    // Re-sync and re-evaluate active timers every 8 seconds
+    const interval = setInterval(() => {
+      performSync();
+    }, 8000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [userEmail, syncKey]);
   const [googleToken, setGoogleToken] = useState<string | null>(() => {
     return localStorage.getItem('google_calendar_token');
   });
@@ -1956,8 +1957,10 @@ export default function SettingsView({
                   />
                   <button
                     type="button"
-                    onClick={() => {
-                      setConnectedDevices(prev => prev.map(d => d.id === editingDevice.id ? { ...d, customName: editDeviceCustomName } : d));
+                    onClick={async () => {
+                      if (!editingDevice) return;
+                      const updated = await updateConnectedDevice(editingDevice.id, { customName: editDeviceCustomName });
+                      setConnectedDevices(updated);
                       setEditingDevice(prev => prev ? { ...prev, customName: editDeviceCustomName } : null);
                     }}
                     className="px-3 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 font-bold text-xs rounded-xl border border-emerald-500/30 transition-all"
@@ -1972,7 +1975,7 @@ export default function SettingsView({
                 <div className="flex items-center gap-3 p-3 bg-zinc-900/60 border border-zinc-900 rounded-xl">
                   <Clock className="h-4 w-4 text-zinc-500 shrink-0" />
                   <span className="text-xs text-zinc-300 font-mono">
-                    Última sessão ativa {editingDevice.lastActive}
+                    Última sessão ativa {formatLastActiveTime(editingDevice.lastActiveTimestamp || editingDevice.lastActive, editingDevice.isCurrent)}
                   </span>
                 </div>
 
@@ -1994,8 +1997,10 @@ export default function SettingsView({
               {/* Disconnect Red Button */}
               <button
                 type="button"
-                onClick={() => {
-                  setConnectedDevices(prev => prev.filter(d => d.id !== editingDevice.id));
+                onClick={async () => {
+                  if (!editingDevice) return;
+                  const updated = await removeConnectedDevice(editingDevice.id);
+                  setConnectedDevices(updated);
                   setEditingDevice(null);
                 }}
                 className="w-full py-2.5 bg-red-950/20 hover:bg-red-950/40 border border-red-900/40 text-red-400 font-bold text-xs uppercase tracking-wider rounded-xl transition-all"
@@ -2063,17 +2068,23 @@ export default function SettingsView({
                       });
 
                       if (authRes.ok) {
+                        const nowTs = Date.now();
                         const newDev: ConnectedDevice = {
-                          id: `dev-qr-${Date.now()}`,
+                          id: `dev-qr-${nowTs}`,
                           name: 'Novo Aparelho Conectado',
                           browser: 'Web Browser',
                           os: 'Mobile/PC',
                           isCurrent: false,
-                          lastActive: 'Agora mesmo',
+                          lastActiveTimestamp: nowTs,
+                          lastActive: formatLastActiveTime(nowTs, false),
                           ip: '189.28.102.89',
                           deviceType: 'mobile'
                         };
-                        setConnectedDevices(prev => [...prev, newDev]);
+                        const accKey = getAccountKey();
+                        const currentDevs = await fetchAccountDevices();
+                        const newList = [newDev, ...currentDevs.filter(d => d.id !== newDev.id)];
+                        await saveAccountDevices(accKey, newList);
+                        setConnectedDevices(newList);
                         alert('✅ Sessão de login e aparelho autorizados com sucesso!');
                         setShowConnectDeviceModal(false);
                       } else {
@@ -2102,18 +2113,24 @@ export default function SettingsView({
               {/* Action to test adding a connected device */}
               <button
                 type="button"
-                onClick={() => {
+                onClick={async () => {
+                  const nowTs = Date.now();
                   const newDev: ConnectedDevice = {
-                    id: `dev-test-${Date.now()}`,
+                    id: `dev-test-${nowTs}`,
                     name: 'Safari (iPhone 15 Pro)',
                     browser: 'Apple Safari',
                     os: 'iOS 17.5',
                     isCurrent: false,
-                    lastActive: 'hoje às ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    lastActiveTimestamp: nowTs,
+                    lastActive: formatLastActiveTime(nowTs, false),
                     ip: '189.28.102.89',
                     deviceType: 'mobile'
                   };
-                  setConnectedDevices(prev => [...prev, newDev]);
+                  const accKey = getAccountKey();
+                  const currentDevs = await fetchAccountDevices();
+                  const newList = [newDev, ...currentDevs.filter(d => d.id !== newDev.id)];
+                  await saveAccountDevices(accKey, newList);
+                  setConnectedDevices(newList);
                   setShowConnectDeviceModal(false);
                 }}
                 className="w-full py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 font-bold text-xs rounded-xl transition-all"

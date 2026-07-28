@@ -17,6 +17,7 @@ import Sidebar from './components/Sidebar';
 import LockScreen from './components/LockScreen';
 import { AuthModal } from './components/AuthModal';
 import { AuthUser } from './lib/auth';
+import { syncAndRegisterCurrentDevice } from './lib/devices';
 import DashboardView from './components/DashboardView';
 import ChecklistView from './components/ChecklistView';
 import FinancesView from './components/FinancesView';
@@ -1039,6 +1040,17 @@ export default function App() {
       localStorage.removeItem('mbc_sync_key');
     }
   }, [syncKey]);
+
+  // --- Background Device Registration & Heartbeat ---
+  useEffect(() => {
+    syncAndRegisterCurrentDevice().catch(() => {});
+
+    const heartbeatInterval = setInterval(() => {
+      syncAndRegisterCurrentDevice().catch(() => {});
+    }, 20000);
+
+    return () => clearInterval(heartbeatInterval);
+  }, [userEmail, syncKey]);
 
   // --- Central Notification Scheduler ---
   const notifiedKeysRef = useRef<Set<string>>(new Set());

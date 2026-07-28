@@ -34,7 +34,7 @@ function cleanString(str: string): string {
 /**
  * Dual persistence helper: Saves to both Supabase and LocalStorage
  */
-async function saveAuthRecord(key: string, payload: any): Promise<boolean> {
+export async function saveAuthRecord(key: string, payload: any): Promise<boolean> {
   // 1. Always persist to localStorage for instant local access and offline reliability
   try {
     localStorage.setItem(`mbc_auth:${key}`, JSON.stringify({ data: payload, updated_at: new Date().toISOString() }));
@@ -67,7 +67,7 @@ async function saveAuthRecord(key: string, payload: any): Promise<boolean> {
 /**
  * Dual persistence helper: Loads from Supabase or LocalStorage fallback
  */
-async function loadAuthRecord(key: string): Promise<any | null> {
+export async function loadAuthRecord(key: string): Promise<any | null> {
   // 1. Try Supabase
   const supaRecord = await loadFromSupabase(key);
   if (supaRecord && supaRecord.data) {
