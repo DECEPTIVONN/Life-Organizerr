@@ -925,15 +925,6 @@ export default function Sidebar({
                   <div className="text-[11px] font-bold leading-none">{item.label}</div>
                   <div className="text-[8px] text-zinc-500 mt-1 font-mono">{item.desc}</div>
                 </div>
-
-                {/* Micro badge indicator on hover or active */}
-                {isActive && isExpanded && (
-                  <motion.div 
-                    layoutId="desktopActiveDot"
-                    className="w-1.5 h-1.5 bg-orange-500 rounded-full shadow-[0_0_6px_#f97316] ml-auto flex-shrink-0"
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  />
-                )}
               </button>
             );
           })}
@@ -948,7 +939,7 @@ export default function Sidebar({
               className={`flex items-center rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-900/40 border border-transparent transition-all group duration-200 w-full ${
                 isExpanded ? 'px-3 py-2 justify-start gap-3' : 'p-2 justify-center h-10 w-10'
               }`}
-              title="Sincronizar com Supabase"
+              title="Sincronização na Nuvem"
             >
               <Cloud className={`h-4 w-4 flex-shrink-0 group-hover:scale-110 transition-all ${
                 syncKey 
@@ -984,29 +975,16 @@ export default function Sidebar({
             {appLockEnabled && onLockApp && (
               <button
                 onClick={onLockApp}
-                className={`flex items-center rounded-xl text-zinc-400 hover:text-red-400 hover:bg-red-500/10 border border-transparent transition-all group duration-200 w-full ${
+                className={`flex items-center rounded-xl text-zinc-400 hover:text-orange-400 hover:bg-orange-500/10 border border-transparent hover:border-orange-500/20 transition-all group duration-200 w-full ${
                   isExpanded ? 'px-3 py-2 justify-start gap-3' : 'p-2 justify-center h-10 w-10'
                 }`}
-                title="Trancar App"
+                title="Trancar App (PIN)"
               >
-                <Lock className="h-4 w-4 text-zinc-500 group-hover:text-red-400 flex-shrink-0 group-hover:scale-110 transition-all" />
+                <div className="p-1 bg-orange-500/10 rounded-lg border border-orange-500/20 group-hover:bg-orange-500/20 group-hover:border-orange-500/40 transition-all flex items-center justify-center flex-shrink-0 shadow-[0_0_8px_rgba(249,115,22,0.15)]">
+                  <Lock className="h-3.5 w-3.5 text-orange-400 group-hover:scale-110 transition-all" />
+                </div>
                 <span className={`text-[11px] font-bold leading-none transition-all duration-300 ${isExpanded ? 'opacity-100 block' : 'opacity-0 hidden w-0 overflow-hidden'}`}>
                   Trancar App
-                </span>
-              </button>
-            )}
-
-            {onLogout && (
-              <button
-                onClick={onLogout}
-                className={`flex items-center rounded-xl text-zinc-400 hover:text-red-400 hover:bg-red-500/10 border border-transparent transition-all group duration-200 w-full ${
-                  isExpanded ? 'px-3 py-2 justify-start gap-3' : 'p-2 justify-center h-10 w-10'
-                }`}
-                title="Sair da Conta"
-              >
-                <LogOut className="h-4 w-4 text-zinc-500 group-hover:text-red-400 flex-shrink-0 group-hover:scale-110 transition-all" />
-                <span className={`text-[11px] font-bold leading-none transition-all duration-300 ${isExpanded ? 'opacity-100 block' : 'opacity-0 hidden w-0 overflow-hidden'}`}>
-                  Sair da Conta
                 </span>
               </button>
             )}

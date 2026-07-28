@@ -1262,7 +1262,7 @@ export default function SettingsView({
                 disabled={syncConnecting || !customSyncInput.trim()}
                 className="w-full py-2.5 bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 font-bold text-xs text-orange-500 uppercase tracking-wider rounded-xl transition-all"
               >
-                {syncConnecting ? 'Conectando ao Supabase...' : 'Conectar Chave Cloud'}
+                {syncConnecting ? 'Conectando à Nuvem...' : 'Conectar Chave Cloud'}
               </button>
             </form>
 
@@ -1277,64 +1277,6 @@ export default function SettingsView({
                 </button>
               </div>
             )}
-
-            {/* --- SUPABASE DATABASE INTEGRATION SECTION --- */}
-            <div className="border-t border-zinc-900/80 my-5 pt-5 space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Cloud className="h-4 w-4 text-emerald-400 shadow-[0_0_8px_#10b981]" />
-                  <h4 className="text-xs font-black uppercase tracking-wider text-zinc-300 font-sans">Banco de Dados Supabase</h4>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowSupabaseModal(true)}
-                  className="text-[10px] font-mono text-emerald-400 hover:underline flex items-center gap-1"
-                >
-                  <HelpCircle className="h-3 w-3" /> Script SQL
-                </button>
-              </div>
-
-              <p className="text-[10px] text-zinc-500 font-sans leading-relaxed">
-                Conecte seu próprio banco PostgreSQL no Supabase para sincronização em nuvem ilimitada e sem restrições de cota diária.
-              </p>
-
-              {supabaseFeedback && (
-                <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-mono rounded-xl">
-                  {supabaseFeedback}
-                </div>
-              )}
-
-              <form onSubmit={handleSaveSupabaseConfig} className="space-y-3">
-                <div className="space-y-1">
-                  <label className="text-[10px] text-zinc-500 font-mono font-bold uppercase block">Supabase Project URL</label>
-                  <input
-                    type="text"
-                    value={supabaseUrl}
-                    onChange={(e) => setSupabaseUrl(e.target.value)}
-                    placeholder="https://xyzcompany.supabase.co"
-                    className="w-full bg-zinc-950 border border-zinc-900 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500/40 font-mono"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[10px] text-zinc-500 font-mono font-bold uppercase block">Supabase Anon Key</label>
-                  <input
-                    type="password"
-                    value={supabaseAnonKey}
-                    onChange={(e) => setSupabaseAnonKey(e.target.value)}
-                    placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6..."
-                    className="w-full bg-zinc-950 border border-zinc-900 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500/40 font-mono"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full py-2.5 bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-800/50 font-bold text-xs text-emerald-400 uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-emerald-950/30"
-                >
-                  Salvar Conexão Supabase
-                </button>
-              </form>
-            </div>
 
             {/* Dispositivos Conectados Shortcut in Seguridad */}
             <div className="p-4 bg-[#111115] border border-zinc-900 rounded-2xl space-y-3">
@@ -1360,13 +1302,20 @@ export default function SettingsView({
 
             {/* --- APP LOCK CONFIGURATION SECTION --- */}
             <div className="border-t border-zinc-900/80 my-5 pt-5 space-y-4">
-              <div className="flex items-center gap-2">
-                <Lock className="h-4 w-4 text-orange-500 shadow-[0_0_8px_#f97316]" />
-                <h4 className="text-xs font-black uppercase tracking-wider text-zinc-300 font-sans">Bloqueio do App (PIN / Tela de Bloqueio)</h4>
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-gradient-to-br from-orange-500/20 via-amber-500/10 to-transparent rounded-xl border border-orange-500/30 flex items-center justify-center shadow-[0_0_15px_rgba(249,115,22,0.15)] flex-shrink-0">
+                  <Lock className="h-5 w-5 text-orange-400 stroke-[2.2]" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-wider text-zinc-200 font-sans flex items-center gap-2">
+                    <span>Bloqueio do App</span>
+                    <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20">PIN / TELA DE BLOQUEIO</span>
+                  </h4>
+                  <p className="text-[10px] text-zinc-500 font-sans mt-0.5">
+                    Configure uma <strong className="text-zinc-300">Senha de Bloqueio do App</strong> para trancar a tela do Planner quando estiver inativo.
+                  </p>
+                </div>
               </div>
-              <p className="text-[10px] text-zinc-500 font-sans leading-relaxed">
-                Configure uma <strong className="text-zinc-300">Senha de Bloqueio do App</strong> para trancar a tela do Planner quando estiver inativo. Esta senha é separada da sua senha de login do usuário.
-              </p>
 
               {/* Toggle Bloqueio */}
               <div className="flex items-center justify-between p-4 bg-[#111115] border border-zinc-900 rounded-2xl">
@@ -2137,88 +2086,6 @@ export default function SettingsView({
               >
                 Simular Novo Aparelho
               </button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Supabase SQL Setup Modal */}
-      <AnimatePresence>
-        {showSupabaseModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-zinc-950 border border-emerald-500/20 rounded-2xl p-6 max-w-lg w-full space-y-4 text-left shadow-2xl"
-            >
-              <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
-                <div className="flex items-center gap-2">
-                  <Cloud className="h-5 w-5 text-emerald-400" />
-                  <h3 className="text-sm font-black text-white uppercase tracking-wider">Como Configurar a Tabela no Supabase</h3>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowSupabaseModal(false)}
-                  className="text-zinc-500 hover:text-white p-1 transition-colors"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-
-              <div className="space-y-3 text-xs text-zinc-300">
-                <p>
-                  1. Acesse seu painel no Supabase (<a href="https://supabase.com" target="_blank" rel="noreferrer" className="text-emerald-400 underline">supabase.com</a>).
-                </p>
-                <p>
-                  2. Abra o <strong>SQL Editor</strong> no menu lateral e execute o comando abaixo para criar a tabela de sincronização:
-                </p>
-
-                <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl font-mono text-[11px] text-emerald-300 overflow-x-auto select-all">
-                  <pre>{`-- 1. Criar a tabela se não existir
-create table if not exists public.user_sync (
-  sync_key text primary key,
-  data jsonb not null,
-  updated_at timestamp with time zone default now()
-);
-
--- 2. Conceder permissões de acesso às funções API do Supabase (anon)
-grant all on table public.user_sync to anon;
-grant all on table public.user_sync to authenticated;
-
--- 3. Habilitar a RLS (Row Level Security)
-alter table public.user_sync enable row level security;
-
--- 4. Limpar políticas antigas se existirem
-drop policy if exists "Permitir leitura e escrita por sync_key" on public.user_sync;
-drop policy if exists "Acesso público por chave" on public.user_sync;
-
--- 5. Criar política de segurança permitindo acesso via chave pública (anon)
-create policy "Permitir leitura e escrita por sync_key"
-  on public.user_sync
-  for all
-  to public
-  using (true)
-  with check (true);
-
--- 6. Habilitar sincronização em tempo real (Realtime)
-alter publication supabase_realtime add table public.user_sync;`}</pre>
-                </div>
-
-                <p className="text-[10px] text-zinc-500">
-                  3. Copie a sua <strong>Project URL</strong> e <strong>anon / public key</strong> em <em>Project Settings &gt; API</em> e cole nos campos do Planner.
-                </p>
-              </div>
-
-              <div className="flex justify-end pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowSupabaseModal(false)}
-                  className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-600/20"
-                >
-                  Entendi
-                </button>
-              </div>
             </motion.div>
           </div>
         )}

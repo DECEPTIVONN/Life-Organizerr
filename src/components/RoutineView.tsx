@@ -63,16 +63,16 @@ export default function RoutineView({
     return new Date().getDay();
   });
   const [isAdding, setIsAdding] = useState(false);
-  const [time, setTime] = useState('08:00');
-  const [reminderTime, setReminderTime] = useState('08:00');
+  const [time, setTime] = useState('07:30 - 08:43');
+  const [reminderTime, setReminderTime] = useState('07:30');
   const [taskText, setTaskText] = useState('');
   const [isEveryDay, setIsEveryDay] = useState(false);
   const [viewMode, setViewMode] = useState<'lista' | 'quadro'>('lista');
 
   // Edit / Clear states
   const [editingItem, setEditingItem] = useState<RoutineItem | null>(null);
-  const [editTime, setEditTime] = useState('08:00');
-  const [editReminderTime, setEditReminderTime] = useState('08:00');
+  const [editTime, setEditTime] = useState('07:30 - 08:43');
+  const [editReminderTime, setEditReminderTime] = useState('07:30');
   const [editTaskText, setEditTaskText] = useState('');
   const [editIsEveryDay, setEditIsEveryDay] = useState(false);
   const [editSelectedDay, setEditSelectedDay] = useState<number>(1);
@@ -508,47 +508,81 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
               </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-              <div className="md:col-span-1">
-                <label className="text-[10px] text-gray-400 font-bold block mb-1 uppercase">Horário</label>
-                <input
-                  type="time"
-                  required
-                  value={time}
-                  onChange={(e) => {
-                    setTime(e.target.value);
-                    if (!reminderTime || reminderTime === time) {
-                      setReminderTime(e.target.value);
-                    }
-                  }}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono"
-                />
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
+                <div className="md:col-span-2 space-y-1">
+                  <label className="text-[10px] text-gray-400 font-bold block uppercase flex items-center justify-between">
+                    <span>Horário da Atividade</span>
+                    <span className="text-[9px] text-orange-400 font-mono font-normal">Livre (ex: 7:30 - 8:43)</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={time}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setTime(val);
+                      // Auto-extract first time for notification reminder if not customized
+                      const firstTimeMatch = val.match(/\d{1,2}:\d{2}/);
+                      if (firstTimeMatch) {
+                        setReminderTime(firstTimeMatch[0]);
+                      }
+                    }}
+                    placeholder="Ex: 7:30 - 8:43 ou 08:00"
+                    className="w-full bg-zinc-950 border border-zinc-800 focus:border-orange-500/50 rounded-lg px-3 py-2 text-xs text-white outline-none font-mono placeholder:text-zinc-600"
+                  />
+                </div>
+
+                <div className="md:col-span-1 space-y-1">
+                  <label className="text-[10px] text-gray-400 font-bold uppercase flex items-center gap-1">
+                    <Bell className="h-3 w-3 text-orange-500" /> Alarme
+                  </label>
+                  <input
+                    type="time"
+                    value={reminderTime}
+                    onChange={(e) => setReminderTime(e.target.value)}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono"
+                    title="Horário da notificação no navegador"
+                  />
+                </div>
+
+                <div className="md:col-span-3 space-y-1">
+                  <label className="text-[10px] text-gray-400 font-bold block uppercase">Descrição da Atividade</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ex: Meditação, Leitura de livros, Estudar inglês..."
+                    value={taskText}
+                    onChange={(e) => setTaskText(e.target.value)}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50"
+                    maxLength={60}
+                  />
+                </div>
               </div>
 
-              <div className="md:col-span-1">
-                <label className="text-[10px] text-gray-400 font-bold mb-1 uppercase flex items-center gap-1">
-                  <Bell className="h-3 w-3 text-orange-500" /> Notificação
-                </label>
-                <input
-                  type="time"
-                  value={reminderTime}
-                  onChange={(e) => setReminderTime(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono"
-                  title="Horário do alarme / notificação no navegador"
-                />
-              </div>
-
-              <div className="md:col-span-3">
-                <label className="text-[10px] text-gray-400 font-bold block mb-1 uppercase">Descrição da Atividade</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ex: Meditação, Leitura de livros, Estudar inglês..."
-                  value={taskText}
-                  onChange={(e) => setTaskText(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50"
-                  maxLength={60}
-                />
+              {/* Quick Presets for Custom Time Intervals */}
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mr-1">Atalhos de Horário:</span>
+                {['7:30 - 8:43', '07:30 - 08:43', '08:00 - 09:00', '09:00 - 10:30', '14:00 - 15:30', '19:00 - 20:00'].map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => {
+                      setTime(preset);
+                      const firstTimeMatch = preset.match(/\d{1,2}:\d{2}/);
+                      if (firstTimeMatch) {
+                        setReminderTime(firstTimeMatch[0]);
+                      }
+                    }}
+                    className={`px-2 py-0.5 text-[10px] font-mono rounded-md border transition-all ${
+                      time === preset
+                        ? 'bg-orange-500/20 border-orange-500/50 text-orange-400 font-bold'
+                        : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'
+                    }`}
+                  >
+                    {preset}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -1702,30 +1736,65 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1.5">
-                      Horário Atividade
-                    </label>
-                    <input
-                      type="time"
-                      value={editTime}
-                      onChange={(e) => setEditTime(e.target.value)}
-                      className="w-full bg-zinc-900 border border-zinc-800 focus:border-orange-500/50 rounded-xl px-3.5 py-2.5 text-xs text-white outline-none transition-all"
-                      required
-                    />
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1 flex items-center justify-between">
+                        <span>Horário Atividade</span>
+                        <span className="text-[9px] text-orange-400 font-mono">Ex: 7:30 - 8:43</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={editTime}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setEditTime(val);
+                          const firstTimeMatch = val.match(/\d{1,2}:\d{2}/);
+                          if (firstTimeMatch) {
+                            setEditReminderTime(firstTimeMatch[0]);
+                          }
+                        }}
+                        placeholder="Ex: 7:30 - 8:43 ou 08:00"
+                        className="w-full bg-zinc-900 border border-zinc-800 focus:border-orange-500/50 rounded-xl px-3.5 py-2.5 text-xs text-white outline-none font-mono placeholder:text-zinc-600 transition-all"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1 flex items-center gap-1">
+                        <Bell className="h-3 w-3 text-orange-500" /> Alarme
+                      </label>
+                      <input
+                        type="time"
+                        value={editReminderTime}
+                        onChange={(e) => setEditReminderTime(e.target.value)}
+                        className="w-full bg-zinc-900 border border-zinc-800 focus:border-orange-500/50 rounded-xl px-3.5 py-2.5 text-xs text-white outline-none font-mono transition-all"
+                      />
+                    </div>
                   </div>
 
-                  <div>
-                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1.5 flex items-center gap-1">
-                      <Bell className="h-3 w-3 text-orange-500" /> Notificação
-                    </label>
-                    <input
-                      type="time"
-                      value={editReminderTime}
-                      onChange={(e) => setEditReminderTime(e.target.value)}
-                      className="w-full bg-zinc-900 border border-zinc-800 focus:border-orange-500/50 rounded-xl px-3.5 py-2.5 text-xs text-white outline-none transition-all"
-                    />
+                  {/* Preset buttons inside edit modal */}
+                  <div className="flex flex-wrap gap-1.5 pt-0.5">
+                    {['7:30 - 8:43', '07:30 - 08:43', '08:00 - 09:00', '14:00 - 15:30'].map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => {
+                          setEditTime(preset);
+                          const firstTimeMatch = preset.match(/\d{1,2}:\d{2}/);
+                          if (firstTimeMatch) {
+                            setEditReminderTime(firstTimeMatch[0]);
+                          }
+                        }}
+                        className={`px-2 py-0.5 text-[10px] font-mono rounded-md border transition-all ${
+                          editTime === preset
+                            ? 'bg-orange-500/20 border-orange-500/50 text-orange-400 font-bold'
+                            : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+                        }`}
+                      >
+                        {preset}
+                      </button>
+                    ))}
                   </div>
                 </div>
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, ShieldAlert, X, Info, Lock } from 'lucide-react';
+import { Eye, EyeOff, ShieldAlert, X, Info, Lock, ShieldCheck, KeyRound } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface LockScreenProps {
@@ -89,7 +89,13 @@ export default function LockScreen({
       >
         {/* Subtle holographic watermark background matching premium design */}
         <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
-          <Lock className="w-80 h-80 text-white stroke-[0.5]" />
+          <Lock className="w-80 h-80 text-orange-500 stroke-[0.5]" />
+        </div>
+
+        {/* Security Shield Lock Badge Indicator */}
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-zinc-950/80 border border-orange-500/30 rounded-full mb-6 shadow-[0_0_20px_rgba(249,115,22,0.15)] backdrop-blur-md">
+          <ShieldCheck className="h-4 w-4 text-orange-400" />
+          <span className="text-[10px] font-mono font-bold tracking-widest text-orange-400 uppercase">TELA DE BLOQUEIO ATIVA</span>
         </div>
 
         {/* User profile picture framed with a sleek double border and state glow */}
@@ -128,8 +134,8 @@ export default function LockScreen({
             <div className="absolute -inset-0.5 bg-gradient-to-r from-orange-500/10 via-purple-600/10 to-amber-500/10 rounded-2xl blur opacity-60 group-focus-within:opacity-100 transition duration-500" />
             
             {/* Premium key icon on the left */}
-            <div className="absolute left-4.5 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-orange-500/80 transition-colors duration-300 z-20 pointer-events-none">
-              <Lock className="h-4 w-4 stroke-[2]" />
+            <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-orange-400 p-1 bg-orange-500/10 rounded-lg border border-orange-500/20 group-focus-within:border-orange-500/40 group-focus-within:bg-orange-500/20 transition-all duration-300 z-20 pointer-events-none flex items-center justify-center">
+              <KeyRound className="h-3.5 w-3.5 stroke-[2]" />
             </div>
 
             <input

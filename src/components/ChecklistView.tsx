@@ -2393,44 +2393,62 @@ export default function ChecklistView({
                     </div>
 
                     {/* Início & Fim */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider block">Início</label>
-                        <select
-                          value={cellStartTime}
-                          onChange={(e) => {
-                            setCellStartTime(e.target.value);
-                            // Auto-adjust end time if it's <= new start time
-                            const startIdx = HOURS.indexOf(e.target.value);
-                            const endIdx = HOURS.indexOf(cellEndTime);
-                            if (startIdx !== -1 && endIdx !== -1 && endIdx <= startIdx) {
-                              setCellEndTime(getNextHour(e.target.value));
-                            }
-                          }}
-                          className="w-full bg-zinc-900 border border-zinc-850 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500/50 transition-colors"
-                        >
-                          {HOURS.map(h => (
-                            <option key={h} value={h}>{h}</option>
-                          ))}
-                        </select>
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider block flex items-center justify-between">
+                            <span>Início</span>
+                            <span className="text-[9px] text-orange-400 font-mono font-normal">ex: 07:30</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={cellStartTime}
+                            onChange={(e) => setCellStartTime(e.target.value)}
+                            placeholder="07:30"
+                            className="w-full bg-zinc-900 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono transition-colors"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider block flex items-center justify-between">
+                            <span>Fim</span>
+                            <span className="text-[9px] text-orange-400 font-mono font-normal">ex: 08:43</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={cellEndTime}
+                            onChange={(e) => setCellEndTime(e.target.value)}
+                            placeholder="08:43"
+                            className="w-full bg-zinc-900 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono transition-colors"
+                          />
+                        </div>
                       </div>
 
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider block">Fim</label>
-                        <select
-                          value={cellEndTime}
-                          onChange={(e) => setCellEndTime(e.target.value)}
-                          className="w-full bg-zinc-900 border border-zinc-850 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500/50 transition-colors"
-                        >
-                          {/* Filter hours to only show those strictly after start time */}
-                          {HOURS.map((h, idx) => {
-                            const startIdx = HOURS.indexOf(cellStartTime);
-                            if (startIdx === -1 || idx > startIdx) {
-                              return <option key={h} value={h}>{h}</option>;
-                            }
-                            return null;
-                          })}
-                        </select>
+                      {/* Quick Presets for Custom Intervals */}
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider self-center">Atalhos:</span>
+                        {[
+                          { label: '7:30 - 8:43', start: '07:30', end: '08:43' },
+                          { label: '08:00 - 09:00', start: '08:00', end: '09:00' },
+                          { label: '09:00 - 10:30', start: '09:00', end: '10:30' },
+                          { label: '14:00 - 15:30', start: '14:00', end: '15:30' }
+                        ].map((preset) => (
+                          <button
+                            key={preset.label}
+                            type="button"
+                            onClick={() => {
+                              setCellStartTime(preset.start);
+                              setCellEndTime(preset.end);
+                            }}
+                            className={`px-2 py-0.5 text-[9px] font-mono rounded border transition-all ${
+                              cellStartTime === preset.start && cellEndTime === preset.end
+                                ? 'bg-orange-500/20 border-orange-500/50 text-orange-400 font-bold'
+                                : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+                            }`}
+                          >
+                            {preset.label}
+                          </button>
+                        ))}
                       </div>
                     </div>
 
