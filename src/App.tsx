@@ -169,6 +169,10 @@ export default function App() {
     return localStorage.getItem('mbc_autoFullscreen') !== 'false';
   });
 
+  const [showChecklistDateSelector, setShowChecklistDateSelector] = useState(() => {
+    return localStorage.getItem('mbc_show_checklist_date_selector') === 'true';
+  });
+
   const [freeEditMode, setFreeEditMode] = useState(() => {
     return localStorage.getItem('mbc_freeEditMode') === 'true';
   });
@@ -2126,6 +2130,7 @@ export default function App() {
             setWeeklyReviews={setWeeklyReviews}
             calendarNotes={calendarNotes}
             setCalendarNotes={setCalendarNotes}
+            showDateSelector={showChecklistDateSelector}
           />
         );
       case 'rotina':
@@ -2303,6 +2308,8 @@ export default function App() {
             setFreeEditMode={setFreeEditMode}
             autoFullscreen={autoFullscreen}
             setAutoFullscreen={setAutoFullscreen}
+            showDateSelector={showChecklistDateSelector}
+            setShowDateSelector={setShowChecklistDateSelector}
             setAccountDeactivated={setAccountDeactivated}
             onLogout={handleLogout}
             syncKey={syncKey}

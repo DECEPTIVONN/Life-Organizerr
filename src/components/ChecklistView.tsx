@@ -64,6 +64,7 @@ interface ChecklistViewProps {
   setWeeklyReviews?: React.Dispatch<React.SetStateAction<WeeklyReview[]>>;
   calendarNotes?: CalendarNote[];
   setCalendarNotes?: React.Dispatch<React.SetStateAction<CalendarNote[]>>;
+  showDateSelector?: boolean;
 }
 
 // Bible total chapters standard (1189 is standard for Protestant bible)
@@ -169,7 +170,8 @@ export default function ChecklistView({
   weeklyReviews: propWeeklyReviews,
   setWeeklyReviews: propSetWeeklyReviews,
   calendarNotes,
-  setCalendarNotes
+  setCalendarNotes,
+  showDateSelector = false
 }: ChecklistViewProps) {
   const [localBooks, setLocalBooks] = useState<YearlyBook[]>([]);
   const actualBooks = propBooks || localBooks;
@@ -1368,75 +1370,77 @@ export default function ChecklistView({
       {activeTab === 'checklist' ? (
         <>
           {/* Date Selector Header Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-[#111115] border border-zinc-800/80 rounded-2xl p-3.5 shadow-md">
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  const d = parseLocalDate(selectedDate);
-                  d.setDate(d.getDate() - 1);
-                  const prevStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                  setSelectedDate(prevStr);
-                }}
-                className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-xl border border-zinc-800 transition-all flex items-center gap-1 text-xs font-bold"
-                title="Dia Anterior"
-              >
-                <ChevronLeft className="h-4 w-4 text-orange-500" />
-                <span className="hidden sm:inline">Dia Anterior</span>
-              </button>
-
-              <div className="relative flex items-center">
-                <input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
-                  className="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs font-mono font-bold text-white focus:outline-none focus:border-orange-500/50 cursor-pointer"
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  const d = parseLocalDate(selectedDate);
-                  d.setDate(d.getDate() + 1);
-                  const nextStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                  setSelectedDate(nextStr);
-                }}
-                className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-xl border border-zinc-800 transition-all flex items-center gap-1 text-xs font-bold"
-                title="Próximo Dia"
-              >
-                <span className="hidden sm:inline">Próximo Dia</span>
-                <ChevronRight className="h-4 w-4 text-orange-500" />
-              </button>
-
-              {!isToday && (
+          {showDateSelector && (
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-[#111115] border border-zinc-800/80 rounded-2xl p-3.5 shadow-md">
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setSelectedDate(todayStr)}
-                  className="px-3 py-1.5 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+                  onClick={() => {
+                    const d = parseLocalDate(selectedDate);
+                    d.setDate(d.getDate() - 1);
+                    const prevStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                    setSelectedDate(prevStr);
+                  }}
+                  className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-xl border border-zinc-800 transition-all flex items-center gap-1 text-xs font-bold"
+                  title="Dia Anterior"
                 >
-                  <Calendar className="h-3.5 w-3.5" /> Ir para Hoje
+                  <ChevronLeft className="h-4 w-4 text-orange-500" />
+                  <span className="hidden sm:inline">Dia Anterior</span>
                 </button>
-              )}
-            </div>
 
-            <div className="flex items-center gap-2 text-xs">
-              {isToday ? (
-                <span className="px-3 py-1 bg-orange-500/10 border border-orange-500/20 text-orange-400 font-mono font-bold rounded-lg uppercase text-[10px] flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-orange-500 animate-pulse" />
-                  HOJE ({formatDateBR(selectedDate)})
-                </span>
-              ) : selectedDate < todayStr ? (
-                <span className="px-3 py-1 bg-blue-500/10 border border-blue-500/20 text-blue-400 font-mono font-bold rounded-lg uppercase text-[10px] flex items-center gap-1.5">
-                  <Clock className="h-3 w-3" /> HISTÓRICO SALVO ({formatDateBR(selectedDate)})
-                </span>
-              ) : (
-                <span className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono font-bold rounded-lg uppercase text-[10px] flex items-center gap-1.5">
-                  <Sparkles className="h-3 w-3" /> PLANEJAMENTO ({formatDateBR(selectedDate)})
-                </span>
-              )}
+                <div className="relative flex items-center">
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
+                    className="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs font-mono font-bold text-white focus:outline-none focus:border-orange-500/50 cursor-pointer"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const d = parseLocalDate(selectedDate);
+                    d.setDate(d.getDate() + 1);
+                    const nextStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                    setSelectedDate(nextStr);
+                  }}
+                  className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-xl border border-zinc-800 transition-all flex items-center gap-1 text-xs font-bold"
+                  title="Próximo Dia"
+                >
+                  <span className="hidden sm:inline">Próximo Dia</span>
+                  <ChevronRight className="h-4 w-4 text-orange-500" />
+                </button>
+
+                {!isToday && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDate(todayStr)}
+                    className="px-3 py-1.5 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+                  >
+                    <Calendar className="h-3.5 w-3.5" /> Ir para Hoje
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 text-xs">
+                {isToday ? (
+                  <span className="px-3 py-1 bg-orange-500/10 border border-orange-500/20 text-orange-400 font-mono font-bold rounded-lg uppercase text-[10px] flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-orange-500 animate-pulse" />
+                    HOJE ({formatDateBR(selectedDate)})
+                  </span>
+                ) : selectedDate < todayStr ? (
+                  <span className="px-3 py-1 bg-blue-500/10 border border-blue-500/20 text-blue-400 font-mono font-bold rounded-lg uppercase text-[10px] flex items-center gap-1.5">
+                    <Clock className="h-3 w-3" /> HISTÓRICO SALVO ({formatDateBR(selectedDate)})
+                  </span>
+                ) : (
+                  <span className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono font-bold rounded-lg uppercase text-[10px] flex items-center gap-1.5">
+                    <Sparkles className="h-3 w-3" /> PLANEJAMENTO ({formatDateBR(selectedDate)})
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
       {/* 3. Daily Progress Panel */}
       <div className="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5 flex items-center justify-between">

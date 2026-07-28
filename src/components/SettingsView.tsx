@@ -73,6 +73,10 @@ interface SettingsViewProps {
   autoFullscreen: boolean;
   setAutoFullscreen: (auto: boolean) => void;
   
+  // Date Selector in Missões Diárias
+  showDateSelector?: boolean;
+  setShowDateSelector?: (show: boolean) => void;
+  
   // Account Status
   setAccountDeactivated: (deactivated: boolean) => void;
   onLogout?: () => void;
@@ -136,6 +140,8 @@ export default function SettingsView({
   setFreeEditMode,
   autoFullscreen,
   setAutoFullscreen,
+  showDateSelector = false,
+  setShowDateSelector,
   setAccountDeactivated,
   onLogout,
   syncKey,
@@ -1696,6 +1702,32 @@ export default function SettingsView({
                 }`}
               >
                 {autoFullscreen ? 'Ativo' : 'Inativo'}
+              </button>
+            </div>
+
+            {/* Toggle Date Selector in Missões Diárias */}
+            <div className="p-4 bg-zinc-950 border border-zinc-900 rounded-2xl flex items-center justify-between">
+              <div className="space-y-0.5 flex-1 pr-4">
+                <h4 className="text-xs font-bold text-zinc-200">Navegador e Seletor de Datas (Missões Diárias)</h4>
+                <p className="text-[10px] text-zinc-500 font-mono leading-normal">Exibir o seletor/navegador de datas no topo do Checklist de Missões Diárias.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (setShowDateSelector) {
+                    const updated = !showDateSelector;
+                    setShowDateSelector(updated);
+                    localStorage.setItem('mbc_show_checklist_date_selector', String(updated));
+                    addXp(10);
+                  }
+                }}
+                className={`px-3 py-1.5 rounded-lg text-[9px] font-mono font-bold uppercase transition-all ${
+                  showDateSelector 
+                    ? 'bg-orange-500/15 text-orange-400 border border-orange-500/20' 
+                    : 'bg-zinc-900 border border-zinc-800 text-zinc-500'
+                }`}
+              >
+                {showDateSelector ? 'Habilitado' : 'Desabilitado'}
               </button>
             </div>
 
