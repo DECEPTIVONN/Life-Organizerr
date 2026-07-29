@@ -596,6 +596,22 @@ export default function Sidebar({
         style={{ width: `${scrollProgress}%` }}
       />
 
+      {/* DESKTOP RIGHT EDGE PROGRESSIVE VERTICAL SCROLLBAR TRACK */}
+      <div 
+        onClick={(e) => handleScrollTrackInteraction(e.clientY)}
+        onMouseDown={(e) => {
+          setIsDraggingScrollTrack(true);
+          handleScrollTrackInteraction(e.clientY);
+        }}
+        className="hidden lg:flex fixed top-0 right-0 w-2.5 hover:w-3.5 h-full bg-zinc-900/40 hover:bg-zinc-800/80 transition-all duration-150 z-50 cursor-pointer group flex-col justify-start overflow-hidden select-none"
+        title={`Progresso da página: ${Math.round(scrollProgress)}% • Clique ou arraste para navegar`}
+      >
+        <div 
+          className="w-full bg-gradient-to-b from-orange-500 via-amber-500 to-orange-400 shadow-[0_0_12px_#f97316] transition-all duration-75 relative rounded-b-full"
+          style={{ height: `${scrollProgress}%` }}
+        />
+      </div>
+
       {/* 2. MOBILE HEADER BAR (TOP UTILITIES) */}
       <div className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-[#09090b]/90 backdrop-blur-md border-b border-zinc-900/60 flex items-center justify-between px-4 z-40 select-none">
 
@@ -1058,22 +1074,6 @@ export default function Sidebar({
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        {/* Desktop Progressive Vertical Scroll Line on Sidebar Right Edge (Interactive Scrollbar Track) */}
-        <div 
-          onClick={(e) => handleScrollTrackInteraction(e.clientY)}
-          onMouseDown={(e) => {
-            setIsDraggingScrollTrack(true);
-            handleScrollTrackInteraction(e.clientY);
-          }}
-          className="absolute top-0 right-0 w-2.5 hover:w-3.5 h-full bg-zinc-900/40 hover:bg-zinc-800/80 transition-all duration-150 z-40 cursor-pointer group flex flex-col justify-start overflow-hidden"
-          title={`Progresso da página: ${Math.round(scrollProgress)}% • Clique ou arraste para navegar`}
-        >
-          <div 
-            className="w-full bg-gradient-to-b from-orange-500 via-amber-500 to-orange-400 shadow-[0_0_12px_#f97316] transition-all duration-75 relative rounded-b-full"
-            style={{ height: `${scrollProgress}%` }}
-          />
-        </div>
-
         {/* User Mini profile with Leveling details - aligned with Pin button when expanded, and perfectly centered when collapsed */}
         <div className={`border-b border-zinc-900/60 bg-[#07070a]/40 overflow-hidden relative transition-all duration-300 ${
           isExpanded ? 'p-4' : 'py-5 px-0 flex flex-col items-center justify-center'
