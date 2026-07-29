@@ -193,6 +193,31 @@ export default function Sidebar({
 
   // Real-time page scroll progress tracking for progressive navbars
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [isDraggingScrollTrack, setIsDraggingScrollTrack] = useState(false);
+
+  const handleScrollTrackInteraction = (clientY: number) => {
+    const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+    if (scrollHeight <= 0) return;
+    const windowHeight = window.innerHeight;
+    const pct = Math.min(1, Math.max(0, clientY / windowHeight));
+    window.scrollTo({ top: scrollHeight * pct });
+  };
+
+  useEffect(() => {
+    if (!isDraggingScrollTrack) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      handleScrollTrackInteraction(e.clientY);
+    };
+    const handleMouseUp = () => {
+      setIsDraggingScrollTrack(false);
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDraggingScrollTrack]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -1033,10 +1058,18 @@ export default function Sidebar({
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        {/* Desktop Progressive Vertical Scroll Line on Sidebar Right Edge */}
-        <div className="absolute top-0 right-0 w-[3px] h-full bg-zinc-900/40 pointer-events-none z-30 overflow-hidden">
+        {/* Desktop Progressive Vertical Scroll Line on Sidebar Right Edge (Interactive Scrollbar Track) */}
+        <div 
+          onClick={(e) => handleScrollTrackInteraction(e.clientY)}
+          onMouseDown={(e) => {
+            setIsDraggingScrollTrack(true);
+            handleScrollTrackInteraction(e.clientY);
+          }}
+          className="absolute top-0 right-0 w-2.5 hover:w-3.5 h-full bg-zinc-900/40 hover:bg-zinc-800/80 transition-all duration-150 z-40 cursor-pointer group flex flex-col justify-start overflow-hidden"
+          title={`Progresso da página: ${Math.round(scrollProgress)}% • Clique ou arraste para navegar`}
+        >
           <div 
-            className="w-full bg-gradient-to-b from-orange-500 via-amber-500 to-orange-400 shadow-[0_0_12px_#f97316] transition-all duration-75 rounded-b-full"
+            className="w-full bg-gradient-to-b from-orange-500 via-amber-500 to-orange-400 shadow-[0_0_12px_#f97316] transition-all duration-75 relative rounded-b-full"
             style={{ height: `${scrollProgress}%` }}
           />
         </div>

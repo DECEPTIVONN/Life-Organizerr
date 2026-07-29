@@ -49,6 +49,19 @@
   scrollbar-color: #27272a #070709;
 }
 
+/* On Desktop (lg screen), replace native browser scrollbar with the vertical navbar progress track */
+@media (min-width: 1024px) {
+  html, body {
+    scrollbar-width: none !important;
+  }
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+}
+
 /* Remove default number input spinner controls across browser engines */
 input[type=number]::-webkit-inner-spin-button, 
 input[type=number]::-webkit-outer-spin-button { 
