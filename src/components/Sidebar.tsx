@@ -573,11 +573,6 @@ export default function Sidebar({
 
       {/* 2. MOBILE HEADER BAR (TOP UTILITIES) */}
       <div className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-[#09090b]/90 backdrop-blur-md border-b border-zinc-900/60 flex items-center justify-between px-4 z-40 select-none">
-        {/* Mobile Top Navbar Progressive Scroll Fill Line */}
-        <div 
-          className="absolute bottom-0 left-0 h-[2.5px] bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 shadow-[0_0_8px_#f97316] transition-all duration-75 pointer-events-none"
-          style={{ width: `${scrollProgress}%` }}
-        />
 
         {/* Left Side: User Image only */}
         <button 
@@ -759,13 +754,6 @@ export default function Sidebar({
 
       {/* 3. MOBILE CURVED FUTURISTIC BOTTOM NAV BAR */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 h-[92px] pointer-events-none z-40">
-        {/* Mobile Bottom Navbar Progressive Page Scroll Indicator Line */}
-        <div className="absolute top-0 left-0 right-0 h-[3px] bg-zinc-950/80 overflow-hidden pointer-events-none z-50">
-          <div 
-            className="h-full bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 shadow-[0_0_10px_#f97316] transition-all duration-75"
-            style={{ width: `${scrollProgress}%` }}
-          />
-        </div>
 
         {/* SVG background with neon glowing stroke and dark filled area */}
         <div className="absolute inset-0 pointer-events-auto">
