@@ -113,12 +113,14 @@ export default function Sidebar({
   // Sync state
   const [showSyncModal, setShowSyncModal] = useState(false);
 
-  // Long-press state for mobile navbar "Notas" tab (2s hold opens Radial Reminders Menu)
+  // Long-press state for mobile navbar "Notas" tab (69ms hold opens Lembretes & Timer Menu)
   const [radialMenuOpen, setRadialMenuOpen] = useState(false);
   const [pressProgress, setPressProgress] = useState(0);
   const longPressTimerRef = useRef<any>(null);
   const progressAnimRef = useRef<any>(null);
   const pressStartTsRef = useRef<number>(0);
+
+  const HOLD_DURATION = 69; // 69ms hold time
 
   const startNotasLongPress = () => {
     pressStartTsRef.current = Date.now();
@@ -126,10 +128,10 @@ export default function Sidebar({
 
     const updateProgress = () => {
       const elapsed = Date.now() - pressStartTsRef.current;
-      const pct = Math.min(100, (elapsed / 2000) * 100);
+      const pct = Math.min(100, (elapsed / HOLD_DURATION) * 100);
       setPressProgress(pct);
 
-      if (elapsed < 2000) {
+      if (elapsed < HOLD_DURATION) {
         progressAnimRef.current = requestAnimationFrame(updateProgress);
       }
     };
@@ -138,12 +140,12 @@ export default function Sidebar({
 
     longPressTimerRef.current = setTimeout(() => {
       if (typeof navigator !== 'undefined' && navigator.vibrate) {
-        try { navigator.vibrate(60); } catch (err) {}
+        try { navigator.vibrate(40); } catch (err) {}
       }
       setRadialMenuOpen(true);
       setPressProgress(0);
       if (progressAnimRef.current) cancelAnimationFrame(progressAnimRef.current);
-    }, 2000);
+    }, HOLD_DURATION);
   };
 
   const cancelNotasLongPress = (wasClicked = false) => {
@@ -159,7 +161,7 @@ export default function Sidebar({
     const elapsed = Date.now() - pressStartTsRef.current;
     setPressProgress(0);
 
-    if (elapsed < 2000 && wasClicked && !radialMenuOpen) {
+    if (elapsed < HOLD_DURATION && wasClicked && !radialMenuOpen) {
       setActiveTab('notas');
       setMobileMenuOpen(false);
     }
@@ -903,86 +905,83 @@ export default function Sidebar({
         </div>
       </div>
 
-      {/* RADIAL QUICK ACTION MENU FOR LEMBRETES (Triggered by 2s Long Press on "Notas" in Mobile Navbar) */}
+      {/* QUICK ACTION POPOVER FOR LEMBRETES & TIMER (Triggered by hold on "Notas" in Mobile Navbar) */}
       {radialMenuOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center pb-20 bg-black/80 backdrop-blur-md animate-in fade-in duration-200 lg:hidden">
+        <div className="fixed inset-0 z-50 flex items-end justify-end p-4 pb-20 bg-black/60 backdrop-blur-sm lg:hidden animate-in fade-in duration-150">
           {/* Backdrop Click to Close */}
           <div 
             className="absolute inset-0" 
             onClick={() => setRadialMenuOpen(false)} 
           />
 
-          <div className="relative z-10 flex flex-col items-center justify-center space-y-4">
-            {/* Radial Arc Container matching user images */}
-            <div className="relative w-80 h-52 bg-gradient-to-t from-red-600/90 via-red-500/80 to-pink-600/70 rounded-t-full shadow-[0_0_60px_rgba(239,68,68,0.7)] border-t border-x border-red-400/40 p-4 flex flex-col items-center justify-end overflow-visible animate-in zoom-in-95 duration-200">
-              
-              {/* Radial Arc Action Bubbles */}
-              {/* Bubble A (Far Left): Lembretes Tab */}
-              <button
-                onClick={() => {
-                  setActiveTab('lembretes');
-                  setRadialMenuOpen(false);
-                }}
-                className="absolute left-4 top-16 w-14 h-14 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-500 text-white shadow-xl shadow-purple-600/50 border-2 border-purple-300 flex flex-col items-center justify-center hover:scale-110 active:scale-95 transition-all cursor-pointer group"
-                title="Aba de Lembretes"
-              >
-                <Bell className="h-5 w-5 text-white" />
-                <span className="text-[9px] font-black uppercase tracking-tighter mt-0.5">Lembretes</span>
-              </button>
-
-              {/* Bubble Play (Top Left): Timer Rápido */}
-              <button
-                onClick={() => {
-                  setActiveTab('lembretes');
-                  setRadialMenuOpen(false);
-                }}
-                className="absolute left-20 top-4 w-14 h-14 rounded-full bg-gradient-to-tr from-indigo-600 to-blue-500 text-white shadow-xl shadow-indigo-600/50 border-2 border-indigo-300 flex flex-col items-center justify-center hover:scale-110 active:scale-95 transition-all cursor-pointer group"
-                title="Timer 5 min"
-              >
-                <Timer className="h-5 w-5 text-white" />
-                <span className="text-[9px] font-black uppercase tracking-tighter mt-0.5">Timer</span>
-              </button>
-
-              {/* Bubble B (Top Right): Horário Agendado */}
-              <button
-                onClick={() => {
-                  setActiveTab('lembretes');
-                  setRadialMenuOpen(false);
-                }}
-                className="absolute right-20 top-4 w-14 h-14 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-500 text-white shadow-xl shadow-blue-600/50 border-2 border-blue-300 flex flex-col items-center justify-center hover:scale-110 active:scale-95 transition-all cursor-pointer group"
-                title="Agendamentos"
-              >
-                <Clock className="h-5 w-5 text-white" />
-                <span className="text-[9px] font-black uppercase tracking-tighter mt-0.5">Horário</span>
-              </button>
-
-              {/* Bubble Red (Far Right): Banco de Notas */}
-              <button
-                onClick={() => {
-                  setActiveTab('notas');
-                  setRadialMenuOpen(false);
-                }}
-                className="absolute right-4 top-16 w-14 h-14 rounded-full bg-gradient-to-tr from-rose-600 to-red-500 text-white shadow-xl shadow-rose-600/50 border-2 border-rose-300 flex flex-col items-center justify-center hover:scale-110 active:scale-95 transition-all cursor-pointer group"
-                title="Banco de Notas"
-              >
-                <BookOpen className="h-5 w-5 text-white" />
-                <span className="text-[9px] font-black uppercase tracking-tighter mt-0.5">Notas</span>
-              </button>
-
-              {/* Central Bottom Ring Close Button */}
+          {/* Right-aligned Floating Card */}
+          <div className="relative z-10 w-64 bg-zinc-900/95 border border-zinc-800 rounded-2xl p-3.5 shadow-2xl shadow-black/80 backdrop-blur-xl animate-in slide-in-from-bottom-3 zoom-in-95 duration-150 space-y-2.5">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse shadow-[0_0_8px_#f97316]" />
+                <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-zinc-300">
+                  Atalhos Rápidos
+                </span>
+              </div>
               <button
                 onClick={() => setRadialMenuOpen(false)}
-                className="w-14 h-14 rounded-full bg-red-500 border-4 border-white/80 shadow-2xl flex items-center justify-center text-white font-black hover:scale-105 active:scale-95 transition-all cursor-pointer z-20"
-                title="Fechar Menu Radial"
+                className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800/80 transition-colors"
+                title="Fechar"
               >
-                <div className="w-5 h-5 rounded-full border-2 border-white flex items-center justify-center">
-                  <X className="h-3 w-3 text-white" />
-                </div>
+                <X className="h-3.5 w-3.5" />
               </button>
             </div>
 
-            <div className="px-4 py-1.5 rounded-full bg-zinc-900/90 border border-zinc-800 text-white text-xs font-mono font-bold tracking-wider uppercase text-center shadow-lg">
-              ⚡ Atalhos Rápido • Selecione uma opção
+            {/* Actions Grid */}
+            <div className="space-y-2">
+              {/* Option 1: Lembretes */}
+              <button
+                onClick={() => {
+                  setActiveTab('lembretes');
+                  setRadialMenuOpen(false);
+                }}
+                className="w-full p-2.5 rounded-xl bg-zinc-800/60 hover:bg-zinc-800 border border-zinc-700/50 hover:border-orange-500/60 text-white font-bold text-xs flex items-center justify-between transition-all cursor-pointer group shadow-sm"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400 group-hover:scale-110 transition-transform">
+                    <Bell className="h-4 w-4" />
+                  </div>
+                  <div className="text-left">
+                    <div className="text-xs font-bold text-zinc-100 group-hover:text-orange-400 transition-colors">
+                      Lembretes
+                    </div>
+                    <div className="text-[10px] text-zinc-400 font-normal">
+                      Ver e gerenciar alertas
+                    </div>
+                  </div>
+                </div>
+                <div className="w-1.5 h-1.5 rounded-full bg-orange-500/40 group-hover:bg-orange-500 transition-colors" />
+              </button>
+
+              {/* Option 2: Timer */}
+              <button
+                onClick={() => {
+                  setActiveTab('lembretes');
+                  setRadialMenuOpen(false);
+                }}
+                className="w-full p-2.5 rounded-xl bg-zinc-800/60 hover:bg-zinc-800 border border-zinc-700/50 hover:border-amber-500/60 text-white font-bold text-xs flex items-center justify-between transition-all cursor-pointer group shadow-sm"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 group-hover:scale-110 transition-transform">
+                    <Timer className="h-4 w-4" />
+                  </div>
+                  <div className="text-left">
+                    <div className="text-xs font-bold text-zinc-100 group-hover:text-amber-400 transition-colors">
+                      Timer
+                    </div>
+                    <div className="text-[10px] text-zinc-400 font-normal">
+                      Contagem regressiva
+                    </div>
+                  </div>
+                </div>
+                <div className="w-1.5 h-1.5 rounded-full bg-amber-500/40 group-hover:bg-amber-500 transition-colors" />
+              </button>
             </div>
           </div>
         </div>
