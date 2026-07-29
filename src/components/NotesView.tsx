@@ -70,23 +70,29 @@ export default function NotesView({ notes, setNotes, addXp, freeEditMode = false
 
   const handleCreateNewNote = () => {
     const today = new Date().toLocaleDateString('pt-BR');
+    const initialTags = selectedTag ? [selectedTag] : [];
+    
     const newNote: Note = {
-      id: Math.random().toString(36).substring(2, 9),
+      id: 'note-' + Math.random().toString(36).substring(2, 9),
       title: 'Nota sem título',
       content: '',
-      tags: [],
+      tags: initialTags,
       createdAt: today,
       updatedAt: today,
       archived: false
     };
 
-    setNotes([newNote, ...notes]);
+    setNotes(prev => [newNote, ...prev]);
     setActiveNote(newNote);
     setIsEditing(true);
     
+    // Ensure the new note is immediately visible by clearing filters
+    setViewMode('active');
+    setSearchTerm('');
+
     setTitle('Nota sem título');
     setContent('');
-    setTagsInput('');
+    setTagsInput(initialTags.join(', '));
     setReminderTime('');
     setReminderDate('');
     setReminderRecurrence('none');
@@ -103,30 +109,71 @@ export default function NotesView({ notes, setNotes, addXp, freeEditMode = false
       .map(t => t.trim())
       .filter(t => t.length > 0);
 
-    const updatedNotes = notes.map(n => {
+    const updatedTitle = title.trim() || 'Nota sem título';
+    const updatedDate = new Date().toLocaleDateString('pt-BR');
+
+    setNotes(prev => prev.map(n => {
       if (n.id === activeNote.id) {
         return {
           ...n,
-          title: title.trim() || 'Nota sem título',
+          title: updatedTitle,
           content,
           tags: parsedTags,
           reminderTime: reminderTime.trim() || undefined,
           reminderDate: reminderDate.trim() || undefined,
           reminderRecurrence,
-          updatedAt: new Date().toLocaleDateString('pt-BR')
+          updatedAt: updatedDate
         };
       }
       return n;
-    });
+    }));
 
-    setNotes(updatedNotes);
     setIsEditing(false);
     
     // Refresh active note
-    setActiveNote(updatedNotes.find(n => n.id === activeNote.id) || null);
+    setActiveNote(prev => prev ? {
+      ...prev,
+      title: updatedTitle,
+      content,
+      tags: parsedTags,
+      reminderTime: reminderTime.trim() || undefined,
+      reminderDate: reminderDate.trim() || undefined,
+      reminderRecurrence,
+      updatedAt: updatedDate
+    } : null);
     
     // Reward XP
     addXp(20);
+  };
+
+  const handleCloseEditorModal = () => {
+    if (activeNote) {
+      const parsedTags = tagsInput
+        .split(',')
+        .map(t => t.trim())
+        .filter(t => t.length > 0);
+
+      const updatedTitle = title.trim() || 'Nota sem título';
+      const updatedDate = new Date().toLocaleDateString('pt-BR');
+
+      setNotes(prev => prev.map(n => {
+        if (n.id === activeNote.id) {
+          return {
+            ...n,
+            title: updatedTitle,
+            content,
+            tags: parsedTags,
+            reminderTime: reminderTime.trim() || undefined,
+            reminderDate: reminderDate.trim() || undefined,
+            reminderRecurrence,
+            updatedAt: updatedDate
+          };
+        }
+        return n;
+      }));
+    }
+    setActiveNote(null);
+    setIsEditing(false);
   };
 
   const handleDeleteNote = (id: string, e: React.MouseEvent) => {
@@ -390,10 +437,7 @@ export default function NotesView({ notes, setNotes, addXp, freeEditMode = false
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-900 pb-4">
                 <div className="flex items-center gap-3">
                   <button
-                    onClick={() => {
-                      setActiveNote(null);
-                      setIsEditing(false);
-                    }}
+                    onClick={handleCloseEditorModal}
                     className="p-2 bg-zinc-900 hover:bg-zinc-800 rounded-xl text-gray-400 hover:text-white transition-colors flex items-center justify-center border border-zinc-800/40"
                     title="Fechar nota e voltar ao painel"
                   >

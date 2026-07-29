@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Calendar, 
   ChevronLeft, 
@@ -458,6 +458,9 @@ export default function CalendarView({
   const [foodAfternoon, setFoodAfternoon] = useState('');
   const [foodNight, setFoodNight] = useState('');
   const [waterLiters, setWaterLiters] = useState<number>(0);
+
+  // Track loaded date to prevent state re-initialization during real-time typing
+  const loadedDateRef = useRef<string | null>(null);
   const [savingStatus, setSavingStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
   // --- Monthly Review (Review Mensal) States ---
@@ -1254,8 +1257,15 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
   // Find record for current selected day
   const activeRecord = notes.find(n => n.date === selectedDateStr);
 
-  // Sync inputs when activeRecord changes
+  // Sync inputs when selectedDateStr changes or when first loading
   useEffect(() => {
+    // Avoid re-initialization if data for selectedDateStr is already loaded into local input states
+    if (loadedDateRef.current === selectedDateStr && activeRecord) {
+      return;
+    }
+
+    loadedDateRef.current = selectedDateStr;
+
     if (activeRecord && activeRecord.isDailyRecord) {
       setJournalText(activeRecord.journalText || '');
       setGratitudeText(
@@ -1338,7 +1348,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
       setAlterEgoText('');
       setSavingStatus('idle');
     }
-  }, [selectedDateStr, activeRecord?.id, activeRecord?.isDailyRecord, templateGratitude, templateDecrees, templatePrayer, dailyTasks, bookTracker, bibleTracker]);
+  }, [selectedDateStr, activeRecord?.id, templateGratitude, templateDecrees, templatePrayer]);
 
   // Handle Master Templates state editing initiation
   const handleOpenTemplateSettings = () => {
@@ -1650,47 +1660,51 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
     }, 400);
   };
 
-  // Real-time auto-save for Espaço Diário & Fé in CalendarView when freeEditMode is active
+  // Real-time auto-save for Espaço Diário & Fé in CalendarView when freeEditMode is active (debounced)
   useEffect(() => {
     if (!freeEditMode || !selectedDateStr) return;
 
-    const finalGratitude = gratitudeText.trim() ? gratitudeText : templateGratitude;
-    const finalDecrees = decreesText.trim() ? decreesText : templateDecrees;
-    const finalPrayer = prayerText.trim() ? prayerText : templatePrayer;
+    const timer = setTimeout(() => {
+      const finalGratitude = gratitudeText.trim() ? gratitudeText : templateGratitude;
+      const finalDecrees = decreesText.trim() ? decreesText : templateDecrees;
+      const finalPrayer = prayerText.trim() ? prayerText : templatePrayer;
 
-    setNotes(prev => {
-      const idx = prev.findIndex(n => n.date === selectedDateStr);
-      const updatedRecord: CalendarNote = {
-        id: idx !== -1 ? prev[idx].id : 'rec-' + Math.random().toString(36).substring(2, 9),
-        date: selectedDateStr,
-        title: 'Registro de ' + formatShortDate(selectedDateStr),
-        content: journalText ? (journalText.substring(0, 40) + (journalText.length > 40 ? '...' : '')) : 'Diário, Checklist & Fé',
-        isDailyRecord: true,
-        journalText,
-        gratitudeText: finalGratitude,
-        decreesText: finalDecrees,
-        prayerText: finalPrayer,
-        checklist: dayChecklist,
-        alterEgoWinner,
-        alterEgoText,
-        sleepBedTime,
-        sleepWakeTime,
-        foodMorning,
-        foodAfternoon,
-        foodNight,
-        waterLiters,
-        reminderTime: noteReminderTime.trim() || undefined
-      };
+      setNotes(prev => {
+        const idx = prev.findIndex(n => n.date === selectedDateStr);
+        const updatedRecord: CalendarNote = {
+          id: idx !== -1 ? prev[idx].id : 'rec-' + selectedDateStr,
+          date: selectedDateStr,
+          title: 'Registro de ' + formatShortDate(selectedDateStr),
+          content: journalText ? (journalText.substring(0, 40) + (journalText.length > 40 ? '...' : '')) : 'Diário, Checklist & Fé',
+          isDailyRecord: true,
+          journalText,
+          gratitudeText: finalGratitude,
+          decreesText: finalDecrees,
+          prayerText: finalPrayer,
+          checklist: dayChecklist,
+          alterEgoWinner,
+          alterEgoText,
+          sleepBedTime,
+          sleepWakeTime,
+          foodMorning,
+          foodAfternoon,
+          foodNight,
+          waterLiters,
+          reminderTime: noteReminderTime.trim() || undefined
+        };
 
-      if (idx !== -1) {
-        if (JSON.stringify(prev[idx]) === JSON.stringify(updatedRecord)) return prev;
-        const copy = [...prev];
-        copy[idx] = updatedRecord;
-        return copy;
-      } else {
-        return [...prev, updatedRecord];
-      }
-    });
+        if (idx !== -1) {
+          if (JSON.stringify(prev[idx]) === JSON.stringify(updatedRecord)) return prev;
+          const copy = [...prev];
+          copy[idx] = updatedRecord;
+          return copy;
+        } else {
+          return [...prev, updatedRecord];
+        }
+      });
+    }, 350);
+
+    return () => clearTimeout(timer);
   }, [
     freeEditMode,
     selectedDateStr,
