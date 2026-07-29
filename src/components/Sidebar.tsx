@@ -38,6 +38,8 @@ import {
   User,
   Layers,
   Lock,
+  Bell,
+  Timer,
   LogOut
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -110,6 +112,59 @@ export default function Sidebar({
   
   // Sync state
   const [showSyncModal, setShowSyncModal] = useState(false);
+
+  // Long-press state for mobile navbar "Notas" tab (2s hold opens Radial Reminders Menu)
+  const [radialMenuOpen, setRadialMenuOpen] = useState(false);
+  const [pressProgress, setPressProgress] = useState(0);
+  const longPressTimerRef = useRef<any>(null);
+  const progressAnimRef = useRef<any>(null);
+  const pressStartTsRef = useRef<number>(0);
+
+  const startNotasLongPress = () => {
+    pressStartTsRef.current = Date.now();
+    setPressProgress(0);
+
+    const updateProgress = () => {
+      const elapsed = Date.now() - pressStartTsRef.current;
+      const pct = Math.min(100, (elapsed / 2000) * 100);
+      setPressProgress(pct);
+
+      if (elapsed < 2000) {
+        progressAnimRef.current = requestAnimationFrame(updateProgress);
+      }
+    };
+
+    progressAnimRef.current = requestAnimationFrame(updateProgress);
+
+    longPressTimerRef.current = setTimeout(() => {
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        try { navigator.vibrate(60); } catch (err) {}
+      }
+      setRadialMenuOpen(true);
+      setPressProgress(0);
+      if (progressAnimRef.current) cancelAnimationFrame(progressAnimRef.current);
+    }, 2000);
+  };
+
+  const cancelNotasLongPress = (wasClicked = false) => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    if (progressAnimRef.current) {
+      cancelAnimationFrame(progressAnimRef.current);
+      progressAnimRef.current = null;
+    }
+
+    const elapsed = Date.now() - pressStartTsRef.current;
+    setPressProgress(0);
+
+    if (elapsed < 2000 && wasClicked && !radialMenuOpen) {
+      setActiveTab('notas');
+      setMobileMenuOpen(false);
+    }
+  };
+
 
   // Listen to Fullscreen changes and save to localStorage
   useEffect(() => {
@@ -199,6 +254,7 @@ export default function Sidebar({
     { id: 'anuais', label: 'Anuais', desc: 'Pastas, diários & livros', icon: Layers },
     { id: 'documentos', label: 'Arquivamento', desc: 'Documentos e PDFs', icon: Archive },
     { id: 'notas', label: 'Banco de Notas', desc: 'Segundo cérebro', icon: BookOpen },
+    { id: 'lembretes', label: 'Lembretes Rápido', desc: 'Timers e Alertas', icon: Bell },
     { id: 'perfil', label: 'Perfil de Foco', desc: 'Status e conquistas', icon: User },
     { id: 'configuracoes', label: 'Configurações', desc: 'Ajustes do sistema', icon: Settings },
   ];
@@ -790,14 +846,42 @@ export default function Sidebar({
             )}
           </button>
 
-          {/* Item 5: Notas */}
+          {/* Item 5: Notas (Com Long-Press de 2s para Lembretes Rápido) */}
           <button 
-            onClick={() => {
-              setActiveTab('notas');
-              setMobileMenuOpen(false);
-            }}
-            className="relative flex flex-col items-center justify-center w-14 h-14 group cursor-pointer"
+            onTouchStart={startNotasLongPress}
+            onTouchEnd={() => cancelNotasLongPress(true)}
+            onTouchCancel={() => cancelNotasLongPress(false)}
+            onMouseDown={startNotasLongPress}
+            onMouseUp={() => cancelNotasLongPress(true)}
+            onMouseLeave={() => cancelNotasLongPress(false)}
+            className="relative flex flex-col items-center justify-center w-14 h-14 group cursor-pointer select-none"
+            title="Segure 2s para Lembretes Rápidos"
           >
+            {/* Visual holding progress ring */}
+            {pressProgress > 0 && (
+              <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none z-20">
+                <circle
+                  cx="28"
+                  cy="28"
+                  r="22"
+                  stroke="rgba(249, 115, 22, 0.2)"
+                  strokeWidth="3"
+                  fill="none"
+                />
+                <circle
+                  cx="28"
+                  cy="28"
+                  r="22"
+                  stroke="#f97316"
+                  strokeWidth="3"
+                  fill="none"
+                  strokeDasharray="138"
+                  strokeDashoffset={138 - (138 * pressProgress) / 100}
+                  strokeLinecap="round"
+                />
+              </svg>
+            )}
+
             <div 
               className={`transition-all duration-300 ${
                 activeTab === 'notas' && !mobileMenuOpen
@@ -818,6 +902,91 @@ export default function Sidebar({
           </button>
         </div>
       </div>
+
+      {/* RADIAL QUICK ACTION MENU FOR LEMBRETES (Triggered by 2s Long Press on "Notas" in Mobile Navbar) */}
+      {radialMenuOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center pb-20 bg-black/80 backdrop-blur-md animate-in fade-in duration-200 lg:hidden">
+          {/* Backdrop Click to Close */}
+          <div 
+            className="absolute inset-0" 
+            onClick={() => setRadialMenuOpen(false)} 
+          />
+
+          <div className="relative z-10 flex flex-col items-center justify-center space-y-4">
+            {/* Radial Arc Container matching user images */}
+            <div className="relative w-80 h-52 bg-gradient-to-t from-red-600/90 via-red-500/80 to-pink-600/70 rounded-t-full shadow-[0_0_60px_rgba(239,68,68,0.7)] border-t border-x border-red-400/40 p-4 flex flex-col items-center justify-end overflow-visible animate-in zoom-in-95 duration-200">
+              
+              {/* Radial Arc Action Bubbles */}
+              {/* Bubble A (Far Left): Lembretes Tab */}
+              <button
+                onClick={() => {
+                  setActiveTab('lembretes');
+                  setRadialMenuOpen(false);
+                }}
+                className="absolute left-4 top-16 w-14 h-14 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-500 text-white shadow-xl shadow-purple-600/50 border-2 border-purple-300 flex flex-col items-center justify-center hover:scale-110 active:scale-95 transition-all cursor-pointer group"
+                title="Aba de Lembretes"
+              >
+                <Bell className="h-5 w-5 text-white" />
+                <span className="text-[9px] font-black uppercase tracking-tighter mt-0.5">Lembretes</span>
+              </button>
+
+              {/* Bubble Play (Top Left): Timer Rápido */}
+              <button
+                onClick={() => {
+                  setActiveTab('lembretes');
+                  setRadialMenuOpen(false);
+                }}
+                className="absolute left-20 top-4 w-14 h-14 rounded-full bg-gradient-to-tr from-indigo-600 to-blue-500 text-white shadow-xl shadow-indigo-600/50 border-2 border-indigo-300 flex flex-col items-center justify-center hover:scale-110 active:scale-95 transition-all cursor-pointer group"
+                title="Timer 5 min"
+              >
+                <Timer className="h-5 w-5 text-white" />
+                <span className="text-[9px] font-black uppercase tracking-tighter mt-0.5">Timer</span>
+              </button>
+
+              {/* Bubble B (Top Right): Horário Agendado */}
+              <button
+                onClick={() => {
+                  setActiveTab('lembretes');
+                  setRadialMenuOpen(false);
+                }}
+                className="absolute right-20 top-4 w-14 h-14 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-500 text-white shadow-xl shadow-blue-600/50 border-2 border-blue-300 flex flex-col items-center justify-center hover:scale-110 active:scale-95 transition-all cursor-pointer group"
+                title="Agendamentos"
+              >
+                <Clock className="h-5 w-5 text-white" />
+                <span className="text-[9px] font-black uppercase tracking-tighter mt-0.5">Horário</span>
+              </button>
+
+              {/* Bubble Red (Far Right): Banco de Notas */}
+              <button
+                onClick={() => {
+                  setActiveTab('notas');
+                  setRadialMenuOpen(false);
+                }}
+                className="absolute right-4 top-16 w-14 h-14 rounded-full bg-gradient-to-tr from-rose-600 to-red-500 text-white shadow-xl shadow-rose-600/50 border-2 border-rose-300 flex flex-col items-center justify-center hover:scale-110 active:scale-95 transition-all cursor-pointer group"
+                title="Banco de Notas"
+              >
+                <BookOpen className="h-5 w-5 text-white" />
+                <span className="text-[9px] font-black uppercase tracking-tighter mt-0.5">Notas</span>
+              </button>
+
+              {/* Central Bottom Ring Close Button */}
+              <button
+                onClick={() => setRadialMenuOpen(false)}
+                className="w-14 h-14 rounded-full bg-red-500 border-4 border-white/80 shadow-2xl flex items-center justify-center text-white font-black hover:scale-105 active:scale-95 transition-all cursor-pointer z-20"
+                title="Fechar Menu Radial"
+              >
+                <div className="w-5 h-5 rounded-full border-2 border-white flex items-center justify-center">
+                  <X className="h-3 w-3 text-white" />
+                </div>
+              </button>
+            </div>
+
+            <div className="px-4 py-1.5 rounded-full bg-zinc-900/90 border border-zinc-800 text-white text-xs font-mono font-bold tracking-wider uppercase text-center shadow-lg">
+              ⚡ Atalhos Rápido • Selecione uma opção
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 4. DESKTOP SIDEBAR HUD (RESPONSIVE COLLAPSIBLE & PINNABLE) */}
       <aside 

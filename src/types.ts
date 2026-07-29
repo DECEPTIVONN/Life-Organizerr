@@ -196,7 +196,23 @@ export interface YearlyBook {
   startDate?: string;
   endDate?: string;
   readingInterval?: string; // dd/mm/yyyy - dd/mm/yyyy
+}export interface QuickReminder {
+  id: string;
+  title: string;
+  description?: string;
+  mode: 'timer' | 'cronometer';
+  durationSeconds?: number;
+  targetTimestamp?: number;
+  paused?: boolean;
+  remainingSecondsWhenPaused?: number;
+  scheduledDate?: string;
+  scheduledTime?: string;
+  recurrence?: 'none' | 'daily' | 'workdays' | 'weekly';
+  category?: 'Foco' | 'Saúde' | 'Trabalho' | 'Estudo' | 'Pessoal';
+  priority?: 'baixa' | 'media' | 'alta';
+  soundEnabled?: boolean;
+  status: 'active' | 'triggered' | 'completed' | 'paused';
+  createdAt: string;
+  triggeredAt?: string;
 }
-
-
 

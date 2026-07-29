@@ -31,6 +31,7 @@ import ProfileView from './components/ProfileView';
 import LifeSummaryView, { LifeSummaryState, defaultState, mergeWithDefaults } from './components/LifeSummaryView';
 import HabitsTrackerView from './components/HabitsTrackerView';
 import AnuaisView from './components/AnuaisView';
+import RemindersView from './components/RemindersView';
 import { saveToSupabase, loadFromSupabase, loadMetadataFromSupabase, getSupabaseClient } from './lib/supabase';
 
 // Types
@@ -49,7 +50,8 @@ import {
   TimelineGoal,
   FutureEvent,
   Habit,
-  YearlyBook
+  YearlyBook,
+  QuickReminder
 } from './types';
 
 
@@ -184,6 +186,39 @@ export default function App() {
   const [activeTab, setActiveTab] = useState(() => {
     return localStorage.getItem('mbc_activeTab') || 'dashboard';
   });
+
+  const [reminders, setReminders] = useState<QuickReminder[]>(() => {
+    try {
+      const saved = localStorage.getItem('mbc_reminders');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error('Error loading reminders:', e);
+    }
+    return [
+      {
+        id: 'rem-demo-1',
+        title: 'Beber 500ml de Água 💧',
+        mode: 'timer',
+        durationSeconds: 300,
+        targetTimestamp: Date.now() + 300000,
+        paused: false,
+        category: 'Saúde',
+        priority: 'media',
+        soundEnabled: true,
+        status: 'active',
+        createdAt: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      }
+    ];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('mbc_reminders', JSON.stringify(reminders));
+    } catch (e) {
+      console.error('Error saving reminders:', e);
+    }
+  }, [reminders]);
+
 
   // --- Lifted Navigation Sub-States ---
   const [checklistActiveTab, setChecklistActiveTab] = useState<'checklist' | 'rotina'>('checklist');
@@ -2275,6 +2310,14 @@ export default function App() {
             setNotes={setNotes}
             addXp={addXp}
             freeEditMode={freeEditMode}
+          />
+        );
+      case 'lembretes':
+        return (
+          <RemindersView 
+            reminders={reminders}
+            setReminders={setReminders}
+            addXp={addXp}
           />
         );
       case 'resumo':
