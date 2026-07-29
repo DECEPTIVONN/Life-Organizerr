@@ -191,6 +191,41 @@ export default function Sidebar({
     };
   }, []);
 
+  // Real-time page scroll progress tracking for progressive navbars
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+      if (scrollHeight > 0) {
+        const pct = Math.min(100, Math.max(0, (scrollTop / scrollHeight) * 100));
+        setScrollProgress(pct);
+      } else {
+        setScrollProgress(0);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll, { passive: true });
+
+    // Recalculate on DOM updates (e.g. content loading or tab switching)
+    const observer = new ResizeObserver(() => {
+      handleScroll();
+    });
+    if (document.body) {
+      observer.observe(document.body);
+    }
+
+    handleScroll();
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+      observer.disconnect();
+    };
+  }, [activeTab]);
+
   // Listen to PWA install prompt
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -529,15 +564,21 @@ export default function Sidebar({
 
   return (
     <>
-      {/* 1. GAMIFIED PROGRESS BAR (TOP OF THE SCREEN) */}
+      {/* 1. PROGRESSIVE PAGE SCROLL BAR (TOP OF THE SCREEN) */}
       <div 
         id="progressBar" 
-        className="fixed top-0 left-0 h-1 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 z-50 transition-all duration-300 shadow-[0_0_8px_#f97316]"
-        style={{ width: `${progressPercent}%` }}
+        className="fixed top-0 left-0 h-1 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 z-50 transition-all duration-75 shadow-[0_0_10px_#f97316]"
+        style={{ width: `${scrollProgress}%` }}
       />
 
       {/* 2. MOBILE HEADER BAR (TOP UTILITIES) */}
       <div className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-[#09090b]/90 backdrop-blur-md border-b border-zinc-900/60 flex items-center justify-between px-4 z-40 select-none">
+        {/* Mobile Top Navbar Progressive Scroll Fill Line */}
+        <div 
+          className="absolute bottom-0 left-0 h-[2.5px] bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 shadow-[0_0_8px_#f97316] transition-all duration-75 pointer-events-none"
+          style={{ width: `${scrollProgress}%` }}
+        />
+
         {/* Left Side: User Image only */}
         <button 
           onClick={() => setActiveTab('perfil')}
@@ -718,6 +759,14 @@ export default function Sidebar({
 
       {/* 3. MOBILE CURVED FUTURISTIC BOTTOM NAV BAR */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 h-[92px] pointer-events-none z-40">
+        {/* Mobile Bottom Navbar Progressive Page Scroll Indicator Line */}
+        <div className="absolute top-0 left-0 right-0 h-[3px] bg-zinc-950/80 overflow-hidden pointer-events-none z-50">
+          <div 
+            className="h-full bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 shadow-[0_0_10px_#f97316] transition-all duration-75"
+            style={{ width: `${scrollProgress}%` }}
+          />
+        </div>
+
         {/* SVG background with neon glowing stroke and dark filled area */}
         <div className="absolute inset-0 pointer-events-auto">
           <svg 
@@ -996,6 +1045,14 @@ export default function Sidebar({
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
+        {/* Desktop Progressive Vertical Scroll Line on Sidebar Right Edge */}
+        <div className="absolute top-0 right-0 w-[3px] h-full bg-zinc-900/40 pointer-events-none z-30 overflow-hidden">
+          <div 
+            className="w-full bg-gradient-to-b from-orange-500 via-amber-500 to-orange-400 shadow-[0_0_12px_#f97316] transition-all duration-75 rounded-b-full"
+            style={{ height: `${scrollProgress}%` }}
+          />
+        </div>
+
         {/* User Mini profile with Leveling details - aligned with Pin button when expanded, and perfectly centered when collapsed */}
         <div className={`border-b border-zinc-900/60 bg-[#07070a]/40 overflow-hidden relative transition-all duration-300 ${
           isExpanded ? 'p-4' : 'py-5 px-0 flex flex-col items-center justify-center'
@@ -1030,23 +1087,51 @@ export default function Sidebar({
             )}
           </div>
 
-          {isExpanded && (
+          {isExpanded ? (
             <motion.div 
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
-              className="mt-3 space-y-2 w-full"
+              className="mt-3 space-y-2.5 w-full"
             >
               {/* Experience progress micro bar */}
-              <div className="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden border border-zinc-800">
-                <div className="bg-gradient-to-r from-orange-500 to-amber-500 h-full rounded-full" style={{ width: `${progressPercent}%` }} />
+              <div>
+                <div className="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden border border-zinc-800">
+                  <div className="bg-gradient-to-r from-orange-500 to-amber-500 h-full rounded-full" style={{ width: `${progressPercent}%` }} />
+                </div>
+                <div className="flex items-center justify-between text-[8px] font-mono text-gray-500 mt-1">
+                  <span>{xpInCurrentLevel} / 1000 XP</span>
+                  <span className="text-orange-500 flex items-center gap-0.5 font-bold">
+                    <Flame className="h-2.5 w-2.5" /> {streak} dias
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center justify-between text-[8px] font-mono text-gray-500">
-                <span>{xpInCurrentLevel} / 1000 XP</span>
-                <span className="text-orange-500 flex items-center gap-0.5 font-bold">
-                  <Flame className="h-2.5 w-2.5" /> {streak} dias
-                </span>
+
+              {/* Page Scroll Progress Indicator in Desktop Sidebar */}
+              <div className="pt-2 border-t border-zinc-900/60 flex flex-col gap-1">
+                <div className="flex items-center justify-between text-[8px] font-mono text-zinc-400">
+                  <span className="flex items-center gap-1 font-bold text-zinc-300">
+                    <Compass className="h-2.5 w-2.5 text-orange-500" /> Progresso Página
+                  </span>
+                  <span className="text-orange-400 font-bold">{Math.round(scrollProgress)}%</span>
+                </div>
+                <div className="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden border border-zinc-800/80">
+                  <div 
+                    className="bg-gradient-to-r from-orange-500 to-amber-500 h-full rounded-full transition-all duration-75 shadow-[0_0_6px_#f97316]" 
+                    style={{ width: `${scrollProgress}%` }} 
+                  />
+                </div>
               </div>
             </motion.div>
+          ) : (
+            <div 
+              className="w-10 h-1 bg-zinc-900 rounded-full overflow-hidden mt-3 border border-zinc-800"
+              title={`Progresso da página: ${Math.round(scrollProgress)}%`}
+            >
+              <div 
+                className="bg-orange-500 h-full rounded-full transition-all duration-75 shadow-[0_0_6px_#f97316]" 
+                style={{ width: `${scrollProgress}%` }} 
+              />
+            </div>
           )}
         </div>
 
