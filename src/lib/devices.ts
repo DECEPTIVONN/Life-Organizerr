@@ -207,6 +207,8 @@ export async function fetchAccountDevices(): Promise<ConnectedDevice[]> {
   });
 }
 
+let lastDeviceSyncTs = 0;
+
 /**
  * Registers or updates current device session and syncs back to cloud / shared persistence
  */
@@ -215,6 +217,16 @@ export async function syncAndRegisterCurrentDevice(customName?: string): Promise
   const currentDevId = getOrCreateDeviceId();
   const { browser, os, fullName, deviceType } = detectDeviceDetails();
   const nowTs = Date.now();
+
+  // Throttle background updates if no customName change and synced less than 3 minutes ago
+  if (!customName && lastDeviceSyncTs > 0 && (nowTs - lastDeviceSyncTs < 180000)) {
+    const savedLocal = localStorage.getItem('mbc_connected_devices');
+    if (savedLocal) {
+      try {
+        return JSON.parse(savedLocal);
+      } catch (e) {}
+    }
+  }
 
   // Load current device list from cloud / local
   const existingDevices = await fetchAccountDevices();
@@ -261,6 +273,7 @@ export async function syncAndRegisterCurrentDevice(customName?: string): Promise
 
   // Save to all persistence tiers
   await saveAccountDevices(accountKey, updatedList);
+  lastDeviceSyncTs = nowTs;
 
   return updatedList;
 }

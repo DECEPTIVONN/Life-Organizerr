@@ -31,7 +31,7 @@ import ProfileView from './components/ProfileView';
 import LifeSummaryView, { LifeSummaryState, defaultState, mergeWithDefaults } from './components/LifeSummaryView';
 import HabitsTrackerView from './components/HabitsTrackerView';
 import AnuaisView from './components/AnuaisView';
-import { saveToSupabase, loadFromSupabase, getSupabaseClient } from './lib/supabase';
+import { saveToSupabase, loadFromSupabase, loadMetadataFromSupabase, getSupabaseClient } from './lib/supabase';
 
 // Types
 import { 
@@ -1003,6 +1003,7 @@ export default function App() {
 
   // Keep track of the last serialized state pushed to or pulled from Firestore to prevent infinite loops
   const lastSyncedStateRef = useRef<string>('');
+  const lastRemoteUpdatedAtRef = useRef<string | null>(null);
 
   // Keep a reference to the latest local state to solve stale closure issues in the onSnapshot listener
   const latestStateRef = useRef({
@@ -1075,7 +1076,7 @@ export default function App() {
 
     const heartbeatInterval = setInterval(() => {
       syncAndRegisterCurrentDevice().catch(() => {});
-    }, 20000);
+    }, 300000);
 
     return () => clearInterval(heartbeatInterval);
   }, [userEmail, syncKey]);
@@ -1324,8 +1325,20 @@ export default function App() {
     async function checkRemoteData(isInitial = false) {
       if (isInitial) setSyncStatus('syncing');
       try {
+        // Bandwidth Optimization: If not initial load, perform a lightweight check of updated_at metadata first (~50 bytes)
+        if (!isInitial) {
+          const meta = await loadMetadataFromSupabase(syncKey);
+          if (meta && meta.updated_at && lastRemoteUpdatedAtRef.current === meta.updated_at) {
+            if (isSubscribed) setSyncStatus('synced');
+            return; // No data change on server! Saved full payload bandwidth.
+          }
+        }
+
         const remoteRecord = await loadFromSupabase(syncKey);
         if (remoteRecord && remoteRecord.data && isSubscribed) {
+          if (remoteRecord.updated_at) {
+            lastRemoteUpdatedAtRef.current = remoteRecord.updated_at;
+          }
           applyIncomingData(remoteRecord.data);
         }
         if (isSubscribed) setSyncStatus('synced');
@@ -1360,6 +1373,9 @@ export default function App() {
             },
             (payload: any) => {
               if (payload?.new?.data && isSubscribed) {
+                if (payload.new.updated_at) {
+                  lastRemoteUpdatedAtRef.current = payload.new.updated_at;
+                }
                 applyIncomingData(payload.new.data);
                 setSyncStatus('synced');
               }
@@ -1371,16 +1387,27 @@ export default function App() {
       }
     }
 
-    // 3. Fallback Polling every 4 seconds for instant cross-device updates
+    // 3. Fallback Polling every 30 seconds when tab is active (using lightweight metadata check)
     const pollingInterval = setInterval(() => {
-      if (isSubscribed) {
+      if (isSubscribed && document.visibilityState === 'visible') {
         checkRemoteData(false);
       }
-    }, 4000);
+    }, 30000);
+
+    // 4. Trigger lightweight metadata check when tab comes back into focus
+    const handleFocus = () => {
+      if (isSubscribed && document.visibilityState === 'visible') {
+        checkRemoteData(false);
+      }
+    };
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
 
     return () => {
       isSubscribed = false;
       clearInterval(pollingInterval);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
       if (client && channel) {
         client.removeChannel(channel);
       }
@@ -1437,6 +1464,7 @@ export default function App() {
           const supOk = await saveToSupabase(syncKey, cleanCurrentData);
           if (supOk) {
             lastSyncedStateRef.current = currentSerialized;
+            lastRemoteUpdatedAtRef.current = nowIso;
             setSyncStatus('synced');
           } else {
             setSyncStatus('error');
@@ -1449,7 +1477,7 @@ export default function App() {
         console.error('Error saving to Supabase:', err);
         setSyncStatus('error');
       }
-    }, 1000);
+    }, 2500);
 
     return () => clearTimeout(timeoutId);
   }, [

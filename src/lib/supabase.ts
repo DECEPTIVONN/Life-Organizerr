@@ -121,3 +121,26 @@ export async function loadFromSupabase(syncKey: string): Promise<any | null> {
   }
 }
 
+export async function loadMetadataFromSupabase(syncKey: string): Promise<{ updated_at?: string } | null> {
+  const client = getSupabaseClient();
+  if (!client) return null;
+
+  try {
+    const { data, error } = await client
+      .from('user_sync')
+      .select('updated_at')
+      .eq('sync_key', syncKey)
+      .maybeSingle();
+
+    if (error) {
+      console.warn('Supabase load metadata error:', error);
+      return null;
+    }
+    return data;
+  } catch (err) {
+    console.error('Supabase load metadata exception:', err);
+    return null;
+  }
+}
+
+
