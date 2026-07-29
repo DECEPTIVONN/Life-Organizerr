@@ -32,7 +32,15 @@ import {
   User,
   LogIn,
   LogOut,
-  Bell
+  Bell,
+  RefreshCw,
+  Maximize2,
+  MoreHorizontal,
+  SlidersHorizontal,
+  ArrowUpDown,
+  Filter,
+  ExternalLink,
+  Globe
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CalendarNote, DailyTask, SubTask, MonthlyReview, BookTracker, BibleTracker, RoutineItem, WeeklyReview, FutureEvent } from '../types';
@@ -210,19 +218,154 @@ export default function CalendarView({
   const [editEventDate, setEditEventDate] = useState('');
   const [editEventTag, setEditEventTag] = useState('');
 
-  const TAG_OPTIONS = ['Viagem', 'Trabalho', 'Estudos', 'Pessoal', 'Importante', 'Lazer', 'Espiritual', 'Família'];
+  const [openModalEvent, setOpenModalEvent] = useState<FutureEvent | null>(null);
+  const [openModalNotes, setOpenModalNotes] = useState('');
+  const [isSyncingGoogle5, setIsSyncingGoogle5] = useState(false);
+  const [filterTagUpcoming, setFilterTagUpcoming] = useState('Todas');
+  const [searchQueryUpcoming, setSearchQueryUpcoming] = useState('');
+
+  const TAG_OPTIONS = [
+    'ANIVERSÁRIO', 
+    'GAME', 
+    'NATAL', 
+    'AGENDA GOOGLE', 
+    'Viagem', 
+    'Trabalho', 
+    'Estudos', 
+    'Pessoal', 
+    'Importante', 
+    'Lazer', 
+    'Espiritual', 
+    'Família'
+  ];
 
   const getTagColor = (tag: string) => {
-    switch (tag) {
-      case 'Viagem': return 'bg-blue-500/10 border border-blue-500/20 text-blue-400';
-      case 'Trabalho': return 'bg-orange-500/10 border border-orange-500/20 text-orange-400';
-      case 'Estudos': return 'bg-purple-500/10 border border-purple-500/20 text-purple-400';
-      case 'Pessoal': return 'bg-green-500/10 border border-green-500/20 text-green-400';
-      case 'Importante': return 'bg-rose-500/10 border border-rose-500/20 text-rose-400';
-      case 'Lazer': return 'bg-amber-500/10 border border-amber-500/20 text-amber-400';
-      case 'Espiritual': return 'bg-yellow-500/10 border border-yellow-500/20 text-yellow-400';
-      case 'Família': return 'bg-indigo-500/10 border border-indigo-500/20 text-indigo-400';
-      default: return 'bg-zinc-500/10 border border-zinc-500/20 text-zinc-400';
+    switch (tag?.toUpperCase()) {
+      case 'ANIVERSÁRIO':
+        return 'bg-[#153e2b] text-[#4ade80] border border-[#166534] font-semibold';
+      case 'GAME':
+      case 'JOGOS':
+        return 'bg-[#3b1764] text-[#c084fc] border border-[#6b21a8] font-semibold';
+      case 'NATAL':
+      case 'FESTA':
+        return 'bg-[#4c0519] text-[#fb7185] border border-[#9f1239] font-semibold';
+      case 'AGENDA GOOGLE':
+      case 'GOOGLE AGENDA':
+      case 'GOOGLE':
+        return 'bg-[#431407] text-[#fb923c] border border-[#9a3412] font-semibold';
+      case 'VIAGEM':
+        return 'bg-[#1e3a8a] text-[#60a5fa] border border-[#1d4ed8] font-semibold';
+      case 'TRABALHO':
+        return 'bg-[#451a03] text-[#f87171] border border-[#78350f] font-semibold';
+      case 'ESTUDOS':
+        return 'bg-[#31104b] text-[#e879f9] border border-[#701a75] font-semibold';
+      case 'PESSOAL':
+        return 'bg-[#134e4a] text-[#2dd4bf] border border-[#0f766e] font-semibold';
+      case 'IMPORTANTE':
+        return 'bg-[#7f1d1d] text-[#fca5a5] border border-[#b91c1c] font-semibold';
+      default:
+        return 'bg-[#18181b] text-[#a1a1aa] border border-[#27272a] font-semibold';
+    }
+  };
+
+  const formatEventDateLong = (dateStr: string) => {
+    if (!dateStr) return '';
+    try {
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        const year = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1;
+        const day = parseInt(parts[2], 10);
+        const d = new Date(year, month, day);
+        return d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
+      }
+      return dateStr;
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const handleSyncNext5GoogleEvents = async () => {
+    let tok = googleToken;
+    if (!tok) {
+      tok = await refreshGoogleAccessToken();
+      if (tok) setGoogleToken(tok);
+    }
+    if (!tok) {
+      await handleGoogleLogin();
+      return;
+    }
+
+    setIsSyncingGoogle5(true);
+    try {
+      const todayStr = getTodayDateStr();
+      const timeMin = new Date().toISOString();
+      let response = await fetch(`/api/calendar/events?timeMin=${encodeURIComponent(timeMin)}`, {
+        headers: { Authorization: `Bearer ${tok}` }
+      });
+
+      if (!response.ok && response.status === 401) {
+        const newToken = await refreshGoogleAccessToken();
+        if (newToken) {
+          tok = newToken;
+          setGoogleToken(newToken);
+          response = await fetch(`/api/calendar/events?timeMin=${encodeURIComponent(timeMin)}`, {
+            headers: { Authorization: `Bearer ${newToken}` }
+          });
+        }
+      }
+
+      if (!response.ok) {
+        throw new Error('Não foi possível buscar eventos do Google Agenda.');
+      }
+
+      const data = await response.json();
+      const items: any[] = data.items || [];
+      
+      const upcoming = items
+        .filter(ev => {
+          const evDate = ev.start?.date || (ev.start?.dateTime ? ev.start.dateTime.slice(0, 10) : '');
+          return evDate >= todayStr;
+        })
+        .sort((a, b) => {
+          const dateA = a.start?.date || a.start?.dateTime || '';
+          const dateB = b.start?.date || b.start?.dateTime || '';
+          return dateA.localeCompare(dateB);
+        })
+        .slice(0, 5);
+
+      if (upcoming.length === 0) {
+        alert('Nenhum evento futuro próximo encontrado no seu Google Agenda.');
+        return;
+      }
+
+      const convertedEvents: FutureEvent[] = upcoming.map(ev => ({
+        id: 'gcal-' + (ev.id || Math.random().toString(36).substring(2, 9)),
+        name: ev.summary || 'Evento Google Agenda',
+        date: ev.start?.date || (ev.start?.dateTime ? ev.start.dateTime.slice(0, 10) : todayStr),
+        tags: ['AGENDA GOOGLE']
+      }));
+
+      setFutureEvents(prev => {
+        const updated = [...prev];
+        convertedEvents.forEach(cEv => {
+          const existingIdx = updated.findIndex(e => e.name === cEv.name && e.date === cEv.date);
+          if (existingIdx >= 0) {
+            updated[existingIdx] = cEv;
+          } else {
+            updated.push(cEv);
+          }
+        });
+        return updated.sort((a, b) => a.date.localeCompare(b.date));
+      });
+
+      addXp(20);
+      alert(`${upcoming.length} próximos eventos do Google Agenda importados com sucesso!`);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || 'Erro ao sincronizar eventos do Google Agenda.');
+    } finally {
+      setIsSyncingGoogle5(false);
     }
   };
 
@@ -3187,145 +3330,282 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
 
       </div>
 
-      {/* O que vem por aí (Future Events Planner) */}
+      {/* O que vem por aí (Future Events Planner - Enhanced Notion Style) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6 text-left">
         {/* Left Panel: Table or Cards */}
-        <div className="lg:col-span-8 bg-[#0a0a0c]/60 border border-zinc-800 rounded-3xl p-6 relative overflow-hidden backdrop-blur-md">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-zinc-850 pb-5 mb-6">
+        <div className="lg:col-span-8 bg-[#0a0a0d] border border-zinc-800/90 rounded-2xl p-5 relative overflow-hidden shadow-2xl">
+          
+          {/* Header Bar matching image design */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-800/80 pb-4 mb-4">
+            
+            {/* Left side: View switcher tabs in dark capsule */}
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-orange-500/10 border border-orange-500/20 text-orange-500 rounded-xl shadow-lg shadow-orange-500/5">
-                <CalendarDays className="h-5 w-5" />
-              </div>
-              <div>
-                <h2 className="text-base font-extrabold text-white tracking-tight">O que vem por aí</h2>
-                <p className="text-xs text-zinc-500">Mapeie marcos e compromissos relevantes no horizonte</p>
+              <div className="flex items-center bg-[#121216] border border-zinc-800/90 p-1 rounded-xl">
+                <button
+                  onClick={() => setUpcomingView('table')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    upcomingView === 'table'
+                      ? 'bg-zinc-800/90 text-white shadow'
+                      : 'text-zinc-400 hover:text-zinc-200'
+                  }`}
+                >
+                  <Table className="h-3.5 w-3.5 text-zinc-300" />
+                  Tabela
+                </button>
+                <button
+                  onClick={() => setUpcomingView('calendar')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    upcomingView === 'calendar'
+                      ? 'bg-zinc-800/90 text-white shadow'
+                      : 'text-zinc-400 hover:text-zinc-200'
+                  }`}
+                >
+                  <CalendarDays className="h-3.5 w-3.5 text-zinc-300" />
+                  Calendário
+                </button>
               </div>
             </div>
-            
-            {/* Tab switchers */}
-            <div className="flex bg-zinc-950/80 p-1 rounded-xl border border-zinc-850 self-end sm:self-auto">
-              <button
-                onClick={() => setUpcomingView('table')}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
-                  upcomingView === 'table'
-                    ? 'bg-zinc-850 text-white shadow-lg shadow-black/50'
-                    : 'text-zinc-500 hover:text-zinc-300'
-                }`}
+
+            {/* Right side: Action toolbar icons & Primary Blue Button */}
+            <div className="flex items-center gap-1.5 self-end md:self-auto">
+              <button 
+                onClick={() => setFilterTagUpcoming(filterTagUpcoming === 'Todas' ? 'ANIVERSÁRIO' : 'Todas')}
+                className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800/60 rounded-lg transition-colors"
+                title="Filtrar"
               >
-                <Table className="h-3.5 w-3.5" /> Tabela
+                <Sliders className="h-4 w-4" />
               </button>
-              <button
-                onClick={() => setUpcomingView('calendar')}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
-                  upcomingView === 'calendar'
-                    ? 'bg-zinc-850 text-white shadow-lg shadow-black/50'
-                    : 'text-zinc-500 hover:text-zinc-300'
-                }`}
+              <button 
+                className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800/60 rounded-lg transition-colors"
+                title="Ordenar"
               >
-                <Clock className="h-3.5 w-3.5" /> Agenda do Futuro
+                <ArrowUpDown className="h-4 w-4" />
+              </button>
+              <button 
+                className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800/60 rounded-lg transition-colors"
+                title="Ação Rápida"
+              >
+                <Zap className="h-4 w-4" />
+              </button>
+              <button 
+                className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800/60 rounded-lg transition-colors"
+                title="Destaques AI"
+              >
+                <Sparkles className="h-4 w-4 text-amber-400/80" />
+              </button>
+              <button 
+                className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800/60 rounded-lg transition-colors"
+                title="Buscar"
+              >
+                <Search className="h-4 w-4" />
+              </button>
+              <button 
+                className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800/60 rounded-lg transition-colors"
+                title="Expandir"
+              >
+                <Maximize2 className="h-4 w-4" />
+              </button>
+              <button 
+                className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800/60 rounded-lg transition-colors"
+                title="Opções"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </button>
+
+              {/* Blue Primary Button "Nova v" */}
+              <button
+                onClick={() => {
+                  const name = prompt("Nome do novo evento:");
+                  if (name) {
+                    const date = prompt("Data do evento (AAAA-MM-DD):", getTodayDateStr());
+                    if (date) {
+                      setFutureEvents(prev => [...prev, {
+                        id: 'fe-' + Math.random().toString(36).substring(2, 9),
+                        name,
+                        date,
+                        tags: ['Viagem']
+                      }].sort((a, b) => a.date.localeCompare(b.date)));
+                    }
+                  }
+                }}
+                className="bg-[#1d4ed8] hover:bg-[#2563eb] text-white text-xs font-extrabold px-3.5 py-1.5 rounded-lg flex items-center gap-1 shadow-md shadow-blue-600/20 transition-all ml-1 cursor-pointer"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Nova
+                <ChevronDown className="h-3 w-3 ml-0.5 opacity-80" />
               </button>
             </div>
           </div>
 
+          {/* Sub-bar: Filters & Google Agenda Sync button */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 mb-2 text-xs border-b border-zinc-800/50">
+            <div className="flex items-center gap-2">
+              <span className="text-zinc-400 font-semibold flex items-center gap-1.5 bg-zinc-900/80 px-2.5 py-1 rounded-md border border-zinc-800">
+                <CalendarDays className="h-3.5 w-3.5 text-zinc-400" /> Date
+                <ChevronDown className="h-3 w-3 text-zinc-500" />
+              </span>
+              <button 
+                onClick={handleSyncNext5GoogleEvents}
+                disabled={isSyncingGoogle5}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 font-bold text-[11px] transition-all cursor-pointer"
+                title="Buscar próximos 5 eventos do Google Agenda"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${isSyncingGoogle5 ? 'animate-spin' : ''}`} />
+                {isSyncingGoogle5 ? 'Buscando...' : 'Puxar Próximos 5 da Agenda Google'}
+              </button>
+            </div>
+
+            {freeEditMode && (
+              <span className="text-[11px] font-mono text-emerald-400/90 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded">
+                ⚡ Edição Livre Ativa (Clique para alterar inline)
+              </span>
+            )}
+          </div>
+
           {upcomingView === 'table' ? (
             <div className="space-y-4">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs text-zinc-300">
+              <div className="overflow-x-auto rounded-xl border border-zinc-800/80 bg-zinc-950/40">
+                <table className="w-full text-left text-xs text-zinc-300 divide-y divide-zinc-800/70 border-collapse">
                   <thead>
-                    <tr className="border-b border-zinc-850 text-zinc-500 font-bold uppercase tracking-wider text-[10px]">
-                      <th className="pb-3 px-3">Nome do Evento</th>
-                      <th className="pb-3 px-3">
+                    <tr className="bg-[#111115] text-zinc-400 font-bold text-[11px] tracking-wide uppercase">
+                      <th className="py-2.5 px-3 border-r border-zinc-800/60 min-w-[200px]">
                         <span className="flex items-center gap-1.5">
-                          <CalendarDays className="h-3.5 w-3.5 text-orange-500" />
-                          Data Prevista
+                          <span className="text-zinc-500 font-serif lowercase">Aa</span>
+                          Nome do Evento
                         </span>
                       </th>
-                      <th className="pb-3 px-3">
+                      <th className="py-2.5 px-3 border-r border-zinc-800/60 min-w-[170px]">
                         <span className="flex items-center gap-1.5">
-                          <Tag className="h-3.5 w-3.5 text-orange-500" />
-                          Categoria
+                          <CalendarDays className="h-3.5 w-3.5 text-zinc-400" />
+                          Data
                         </span>
                       </th>
-                      <th className="pb-3 px-3 text-right">Ações</th>
+                      <th className="py-2.5 px-3 border-r border-zinc-800/60 min-w-[140px]">
+                        <span className="flex items-center gap-1.5">
+                          <Tag className="h-3.5 w-3.5 text-zinc-400" />
+                          Tags
+                        </span>
+                      </th>
+                      <th className="py-2.5 px-2 text-center w-10 border-r border-zinc-800/60 text-zinc-500">
+                        +
+                      </th>
+                      <th className="py-2.5 px-2 text-right w-12 text-zinc-500">
+                        ...
+                      </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-zinc-850/40">
+                  <tbody className="divide-y divide-zinc-800/50 bg-[#0c0c0f]">
                     {futureEvents.map(ev => {
                       const isEditing = editingEventId === ev.id;
                       return (
-                        <tr key={ev.id} className="hover:bg-zinc-900/20 transition-colors group">
-                          <td className="py-3 px-3 font-semibold text-white">
+                        <tr key={ev.id} className="hover:bg-zinc-900/40 transition-colors group">
+                          {/* Name + ABRIR button */}
+                          <td className="py-2.5 px-3 border-r border-zinc-800/60 font-semibold text-white">
                             {isEditing ? (
                               <input
                                 type="text"
                                 value={editEventName}
                                 onChange={(e) => setEditEventName(e.target.value)}
-                                className="w-full max-w-xs bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-white text-xs focus:outline-none focus:border-orange-500"
+                                className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-white text-xs focus:outline-none focus:border-blue-500"
                               />
                             ) : (
-                              ev.name
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <FileText className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
+                                  <span 
+                                    className="truncate cursor-pointer hover:text-blue-400"
+                                    onClick={() => freeEditMode ? handleStartEditEvent(ev) : setOpenModalEvent(ev)}
+                                  >
+                                    {ev.name}
+                                  </span>
+                                </div>
+                                <button
+                                  onClick={() => setOpenModalEvent(ev)}
+                                  className="px-2 py-0.5 bg-[#18181b] hover:bg-zinc-800 border border-zinc-700/80 text-[10px] font-bold font-mono text-zinc-300 hover:text-white rounded uppercase tracking-wider shrink-0 transition-all shadow-sm cursor-pointer"
+                                >
+                                  ABRIR
+                                </button>
+                              </div>
                             )}
                           </td>
-                          <td className="py-3 px-3 text-zinc-400 font-mono">
+
+                          {/* Date formatted as 10 de dezembro de 2026 */}
+                          <td className="py-2.5 px-3 border-r border-zinc-800/60 text-zinc-300 font-medium">
                             {isEditing ? (
                               <input
                                 type="date"
                                 value={editEventDate}
                                 onChange={(e) => setEditEventDate(e.target.value)}
-                                className="bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-white text-xs focus:outline-none focus:border-orange-500"
+                                className="bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-white text-xs focus:outline-none focus:border-blue-500"
                               />
                             ) : (
-                              new Date(ev.date + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                              <span 
+                                className="cursor-pointer hover:text-white"
+                                onClick={() => freeEditMode && handleStartEditEvent(ev)}
+                              >
+                                {formatEventDateLong(ev.date)}
+                              </span>
                             )}
                           </td>
-                          <td className="py-3 px-3">
+
+                          {/* Tags pill badge */}
+                          <td className="py-2.5 px-3 border-r border-zinc-800/60">
                             {isEditing ? (
                               <select
                                 value={editEventTag}
                                 onChange={(e) => setEditEventTag(e.target.value)}
-                                className="bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-white text-xs focus:outline-none focus:border-orange-500"
+                                className="bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-white text-xs focus:outline-none focus:border-blue-500"
                               >
                                 {TAG_OPTIONS.map(opt => (
                                   <option key={opt} value={opt}>{opt}</option>
                                 ))}
                               </select>
                             ) : (
-                              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold border ${getTagColor(ev.tags[0])}`}>
-                                {ev.tags[0]}
+                              <span 
+                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] uppercase tracking-wider font-extrabold border ${getTagColor(ev.tags[0])} shadow-sm cursor-pointer`}
+                                onClick={() => freeEditMode && handleStartEditEvent(ev)}
+                              >
+                                {ev.tags[0] || 'Viagem'}
                               </span>
                             )}
                           </td>
-                          <td className="py-3 px-3 text-right">
+
+                          {/* Add property icon column */}
+                          <td className="py-2.5 px-2 text-center border-r border-zinc-800/60 text-zinc-600 hover:text-zinc-300 cursor-pointer">
+                            +
+                          </td>
+
+                          {/* Actions column */}
+                          <td className="py-2.5 px-2 text-right">
                             {isEditing ? (
-                              <div className="flex justify-end gap-1.5">
+                              <div className="flex justify-end gap-1">
                                 <button
                                   onClick={() => handleSaveEditEvent(ev.id)}
-                                  className="p-1.5 text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors"
+                                  className="p-1 text-emerald-400 hover:bg-emerald-500/10 rounded"
                                   title="Salvar"
                                 >
-                                  <Check className="h-4 w-4" />
+                                  <Check className="h-3.5 w-3.5" />
                                 </button>
                                 <button
                                   onClick={() => setEditingEventId(null)}
-                                  className="p-1.5 text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                                  className="p-1 text-rose-400 hover:bg-rose-500/10 rounded"
                                   title="Cancelar"
                                 >
-                                  <X className="h-4 w-4" />
+                                  <X className="h-3.5 w-3.5" />
                                 </button>
                               </div>
                             ) : (
-                              <div className="flex justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button
                                   onClick={() => handleStartEditEvent(ev)}
-                                  className="p-1.5 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
+                                  className="p-1 text-zinc-400 hover:text-white rounded"
                                   title="Editar"
                                 >
                                   <Edit2 className="h-3.5 w-3.5" />
                                 </button>
                                 <button
                                   onClick={() => handleDeleteFutureEvent(ev.id)}
-                                  className="p-1.5 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                                  className="p-1 text-zinc-400 hover:text-rose-400 rounded"
                                   title="Excluir"
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
@@ -3336,52 +3616,46 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                         </tr>
                       );
                     })}
-                    {futureEvents.length === 0 && (
-                      <tr>
-                        <td colSpan={4} className="py-10 text-center text-zinc-500">
-                          Nenhum compromisso agendado. Adicione um evento futuro abaixo!
-                        </td>
-                      </tr>
-                    )}
+
+                    {/* Inline "+ Nova linha" bottom row matching Notion */}
+                    <tr className="bg-[#0a0a0d] hover:bg-zinc-900/30 transition-colors">
+                      <td colSpan={5} className="p-0">
+                        <form onSubmit={handleAddFutureEvent} className="flex items-center gap-2 px-3 py-2 text-xs text-zinc-500">
+                          <Plus className="h-3.5 w-3.5 text-zinc-500" />
+                          <input
+                            type="text"
+                            placeholder="Nova linha..."
+                            value={newEventName}
+                            onChange={(e) => setNewEventName(e.target.value)}
+                            className="bg-transparent border-none text-white text-xs placeholder-zinc-500 focus:outline-none flex-1 py-1"
+                          />
+                          <input
+                            type="date"
+                            value={newEventDate}
+                            onChange={(e) => setNewEventDate(e.target.value)}
+                            className="bg-zinc-900/90 border border-zinc-800 rounded px-2 py-1 text-white text-xs focus:outline-none"
+                          />
+                          <select
+                            value={newEventTag}
+                            onChange={(e) => setNewEventTag(e.target.value)}
+                            className="bg-zinc-900/90 border border-zinc-800 rounded px-2 py-1 text-zinc-300 text-xs focus:outline-none"
+                          >
+                            {TAG_OPTIONS.map(opt => (
+                              <option key={opt} value={opt}>{opt}</option>
+                            ))}
+                          </select>
+                          <button
+                            type="submit"
+                            className="bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold px-3 py-1 rounded transition-colors"
+                          >
+                            Adicionar
+                          </button>
+                        </form>
+                      </td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
-
-              {/* Inline adding form */}
-              <form onSubmit={handleAddFutureEvent} className="flex flex-col sm:flex-row gap-2 border-t border-zinc-850 pt-5 mt-4">
-                <input
-                  type="text"
-                  placeholder="+ Planejar novo compromisso relevante (ex: Viagem, Exame, Evento...)"
-                  value={newEventName}
-                  onChange={(e) => setNewEventName(e.target.value)}
-                  className="flex-1 bg-zinc-950/80 border border-zinc-850 rounded-xl px-4 py-3 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500/50"
-                  required
-                />
-                <div className="flex gap-2 text-left">
-                  <input
-                    type="date"
-                    value={newEventDate}
-                    onChange={(e) => setNewEventDate(e.target.value)}
-                    className="bg-zinc-950/80 border border-zinc-850 rounded-xl px-3 py-3 text-xs text-white focus:outline-none focus:border-orange-500/50"
-                    required
-                  />
-                  <select
-                    value={newEventTag}
-                    onChange={(e) => setNewEventTag(e.target.value)}
-                    className="bg-zinc-950/80 border border-zinc-850 rounded-xl px-3 py-3 text-xs text-zinc-400 focus:outline-none focus:border-orange-500/50"
-                  >
-                    {TAG_OPTIONS.map(opt => (
-                      <option key={opt} value={opt}>{opt}</option>
-                    ))}
-                  </select>
-                  <button
-                    type="submit"
-                    className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs px-5 py-3 rounded-xl flex items-center gap-1.5 transition-colors shrink-0"
-                  >
-                    <Plus className="h-4 w-4" /> Planejar
-                  </button>
-                </div>
-              </form>
             </div>
           ) : (
             /* Cards View */
@@ -3495,6 +3769,101 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
           </div>
         </div>
       </div>
+
+      {/* Future Event Detail Modal (ABRIR) */}
+      <AnimatePresence>
+        {openModalEvent && (
+          <div className="fixed inset-0 z-50 bg-[#040405]/90 backdrop-blur-sm flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 15 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 15 }}
+              className="bg-[#0e0e12] border border-zinc-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl text-left relative"
+            >
+              <div className="flex justify-between items-start mb-4 border-b border-zinc-800/80 pb-3">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-blue-400" />
+                  <h3 className="text-sm font-extrabold text-white tracking-tight">Detalhes do Evento</h3>
+                </div>
+                <button
+                  onClick={() => setOpenModalEvent(null)}
+                  className="p-1 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="space-y-4 text-xs">
+                <div>
+                  <label className="block text-[11px] font-bold text-zinc-400 mb-1">Nome do Evento</label>
+                  <input
+                    type="text"
+                    value={openModalEvent.name}
+                    onChange={(e) => setOpenModalEvent({ ...openModalEvent, name: e.target.value })}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-white font-semibold focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-zinc-400 mb-1">Data Prevista</label>
+                    <input
+                      type="date"
+                      value={openModalEvent.date}
+                      onChange={(e) => setOpenModalEvent({ ...openModalEvent, date: e.target.value })}
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-white font-medium focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-zinc-400 mb-1">Tag / Categoria</label>
+                    <select
+                      value={openModalEvent.tags[0] || 'Viagem'}
+                      onChange={(e) => setOpenModalEvent({ ...openModalEvent, tags: [e.target.value] })}
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-white font-medium focus:outline-none focus:border-blue-500"
+                    >
+                      {TAG_OPTIONS.map(opt => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-zinc-400 mb-1">Data Formatada</label>
+                  <p className="text-zinc-300 font-medium bg-zinc-950/60 p-2.5 rounded-lg border border-zinc-800/80">
+                    📅 {formatEventDateLong(openModalEvent.date)}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-zinc-400 mb-1">Ações do Evento</label>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <button
+                      onClick={() => {
+                        setFutureEvents(prev => prev.map(ev => ev.id === openModalEvent.id ? openModalEvent : ev));
+                        setOpenModalEvent(null);
+                        addXp(10);
+                      }}
+                      className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <Save className="h-3.5 w-3.5" /> Salvar Alterações
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleDeleteFutureEvent(openModalEvent.id);
+                        setOpenModalEvent(null);
+                      }}
+                      className="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 font-bold py-2 px-3 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Weekly Review Modal Overlay */}
       <AnimatePresence>
