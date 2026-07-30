@@ -1872,15 +1872,12 @@ export default function App() {
     }
   }, []);
 
-  // --- Auto-fullscreen on first user interaction (especially mobile force-trigger) ---
+  // --- Auto-fullscreen on first user interaction (mouse or touch) whenever enabled ---
   useEffect(() => {
+    if (!autoFullscreen || document.fullscreenElement) return;
+
     const handleUserInteraction = () => {
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      const preferred = localStorage.getItem('mbc_fullscreen') === 'true';
-      const autoFullscreenEnabled = localStorage.getItem('mbc_autoFullscreen') !== 'false';
-      
-      // Auto-trigger on mobile, or check preference on desktop, only if enabled
-      if (autoFullscreenEnabled && (isMobile || preferred) && !document.fullscreenElement) {
+      if (!document.fullscreenElement) {
         try {
           const docEl = document.documentElement as any;
           if (docEl.requestFullscreen) {
@@ -1890,27 +1887,27 @@ export default function App() {
           } else if (docEl.msRequestFullscreen) {
             docEl.msRequestFullscreen();
           }
-          
-          // Save preference since it's active now
           localStorage.setItem('mbc_fullscreen', 'true');
         } catch (err) {
-          console.error('Falha ao acionar tela cheia automaticamente', err);
+          console.error('Falha ao acionar tela cheia automaticamente:', err);
         }
       }
       
-      // Clean up after first user interaction
-      document.removeEventListener('click', handleUserInteraction);
-      document.removeEventListener('touchstart', handleUserInteraction);
+      document.removeEventListener('click', handleUserInteraction, true);
+      document.removeEventListener('touchstart', handleUserInteraction, true);
+      document.removeEventListener('pointerdown', handleUserInteraction, true);
     };
 
-    document.addEventListener('click', handleUserInteraction);
-    document.addEventListener('touchstart', handleUserInteraction);
+    document.addEventListener('click', handleUserInteraction, true);
+    document.addEventListener('touchstart', handleUserInteraction, true);
+    document.addEventListener('pointerdown', handleUserInteraction, true);
 
     return () => {
-      document.removeEventListener('click', handleUserInteraction);
-      document.removeEventListener('touchstart', handleUserInteraction);
+      document.removeEventListener('click', handleUserInteraction, true);
+      document.removeEventListener('touchstart', handleUserInteraction, true);
+      document.removeEventListener('pointerdown', handleUserInteraction, true);
     };
-  }, []);
+  }, [autoFullscreen]);
 
   // --- Level-Up Detection Effect ---
   useEffect(() => {

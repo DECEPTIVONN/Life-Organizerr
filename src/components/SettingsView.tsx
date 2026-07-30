@@ -1693,6 +1693,21 @@ export default function SettingsView({
                   const updated = !autoFullscreen;
                   setAutoFullscreen(updated);
                   localStorage.setItem('mbc_autoFullscreen', String(updated));
+                  if (updated && !document.fullscreenElement) {
+                    try {
+                      const docEl = document.documentElement as any;
+                      if (docEl.requestFullscreen) {
+                        docEl.requestFullscreen();
+                      } else if (docEl.webkitRequestFullscreen) {
+                        docEl.webkitRequestFullscreen();
+                      } else if (docEl.msRequestFullscreen) {
+                        docEl.msRequestFullscreen();
+                      }
+                      localStorage.setItem('mbc_fullscreen', 'true');
+                    } catch (e) {
+                      console.error('Falha ao acionar tela cheia:', e);
+                    }
+                  }
                   addXp(10);
                 }}
                 className={`px-3 py-1.5 rounded-lg text-[9px] font-mono font-bold uppercase transition-all ${
