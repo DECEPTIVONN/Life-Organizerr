@@ -115,16 +115,25 @@ export default function Sidebar({
 
   // Long-press state for mobile navbar "Notas" tab (69ms hold opens Lembretes & Timer Menu)
   const [radialMenuOpen, setRadialMenuOpen] = useState(false);
+  const [selectedShortcut, setSelectedShortcut] = useState<'timer' | 'cronometro'>('timer');
   const [pressProgress, setPressProgress] = useState(0);
   const longPressTimerRef = useRef<any>(null);
   const progressAnimRef = useRef<any>(null);
   const pressStartTsRef = useRef<number>(0);
+  const touchStartYRef = useRef<number | null>(null);
 
   const HOLD_DURATION = 69; // 69ms hold time
 
-  const startNotasLongPress = () => {
+  const startNotasLongPress = (e?: React.TouchEvent | React.MouseEvent) => {
     pressStartTsRef.current = Date.now();
     setPressProgress(0);
+    setSelectedShortcut('timer');
+
+    if (e && 'touches' in e && e.touches.length > 0) {
+      touchStartYRef.current = e.touches[0].clientY;
+    } else if (e && 'clientY' in e) {
+      touchStartYRef.current = (e as React.MouseEvent).clientY;
+    }
 
     const updateProgress = () => {
       const elapsed = Date.now() - pressStartTsRef.current;
@@ -146,6 +155,17 @@ export default function Sidebar({
       setPressProgress(0);
       if (progressAnimRef.current) cancelAnimationFrame(progressAnimRef.current);
     }, HOLD_DURATION);
+  };
+
+  const handleTouchMoveShortcut = (e: React.TouchEvent) => {
+    if (touchStartYRef.current === null || e.touches.length === 0) return;
+    const currentY = e.touches[0].clientY;
+    const deltaY = touchStartYRef.current - currentY; // positive when sliding UP
+    if (deltaY > 15) {
+      setSelectedShortcut('cronometro');
+    } else if (deltaY < 5) {
+      setSelectedShortcut('timer');
+    }
   };
 
   const cancelNotasLongPress = (wasClicked = false) => {
@@ -985,72 +1005,84 @@ export default function Sidebar({
 
       {/* QUICK ACTION POPOVER FOR LEMBRETES & TIMER (Triggered by hold on "Notas" in Mobile Navbar) */}
       {radialMenuOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-end p-4 pb-20 bg-black/60 backdrop-blur-sm lg:hidden animate-in fade-in duration-150">
+        <div 
+          onTouchMove={handleTouchMoveShortcut}
+          className="fixed inset-0 z-50 flex items-end justify-end p-4 pb-20 bg-black/60 backdrop-blur-sm lg:hidden animate-in fade-in duration-150 select-none"
+        >
           {/* Backdrop Click to Close */}
           <div 
             className="absolute inset-0" 
             onClick={() => setRadialMenuOpen(false)} 
           />
 
-          {/* Right-aligned Floating Card */}
-          <div className="relative z-10 w-64 bg-zinc-900/95 border border-zinc-800 rounded-2xl p-3.5 shadow-2xl shadow-black/80 backdrop-blur-xl animate-in slide-in-from-bottom-3 zoom-in-95 duration-150 space-y-2.5">
-            {/* Header */}
-            <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse shadow-[0_0_8px_#f97316]" />
-                <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-zinc-300">
-                  Atalhos Rápidos
-                </span>
-              </div>
-              <button
-                onClick={() => setRadialMenuOpen(false)}
-                className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800/80 transition-colors"
-                title="Fechar"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </div>
-
-            {/* Actions Grid */}
+          {/* Right-aligned Floating Card without header */}
+          <div className="relative z-10 w-64 bg-zinc-900/95 border border-zinc-800 rounded-2xl p-3 shadow-2xl shadow-black/80 backdrop-blur-xl animate-in slide-in-from-bottom-3 zoom-in-95 duration-150 space-y-2">
+            
+            {/* Actions Stack: Cronômetro (top) & Timer (bottom) */}
             <div className="space-y-2">
-              {/* Option 1: Lembretes */}
+              {/* Option 1 (Top): Cronômetro */}
               <button
                 onClick={() => {
+                  localStorage.setItem('mbc_reminder_initial_mode', 'cronometer');
                   setActiveTab('lembretes');
                   setRadialMenuOpen(false);
                 }}
-                className="w-full p-2.5 rounded-xl bg-zinc-800/60 hover:bg-zinc-800 border border-zinc-700/50 hover:border-orange-500/60 text-white font-bold text-xs flex items-center justify-between transition-all cursor-pointer group shadow-sm"
+                onMouseEnter={() => setSelectedShortcut('cronometro')}
+                onTouchStart={() => setSelectedShortcut('cronometro')}
+                className={`w-full p-2.5 rounded-xl border transition-all cursor-pointer group shadow-sm flex items-center justify-between ${
+                  selectedShortcut === 'cronometro'
+                    ? 'bg-zinc-800 border-orange-500/80 ring-1 ring-orange-500/40 text-white shadow-orange-500/10'
+                    : 'bg-zinc-800/40 border-zinc-700/30 text-zinc-400 opacity-80 hover:bg-zinc-800 hover:text-white'
+                }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400 group-hover:scale-110 transition-transform">
+                  <div className={`p-2 rounded-lg transition-transform ${
+                    selectedShortcut === 'cronometro'
+                      ? 'bg-orange-500/20 border border-orange-500/40 text-orange-400 scale-105'
+                      : 'bg-orange-500/10 border border-orange-500/20 text-orange-400'
+                  }`}>
                     <Bell className="h-4 w-4" />
                   </div>
                   <div className="text-left">
-                    <div className="text-xs font-bold text-zinc-100 group-hover:text-orange-400 transition-colors">
-                      Lembretes
+                    <div className={`text-xs font-bold transition-colors ${
+                      selectedShortcut === 'cronometro' ? 'text-orange-400' : 'text-zinc-200'
+                    }`}>
+                      Cronômetro
                     </div>
                     <div className="text-[10px] text-zinc-400 font-normal">
-                      Ver e gerenciar alertas
+                      Contagem e alertas
                     </div>
                   </div>
                 </div>
-                <div className="w-1.5 h-1.5 rounded-full bg-orange-500/40 group-hover:bg-orange-500 transition-colors" />
               </button>
 
-              {/* Option 2: Timer */}
+              {/* Option 2 (Bottom): Timer (Pre-selected) */}
               <button
                 onClick={() => {
+                  localStorage.setItem('mbc_reminder_initial_mode', 'timer');
                   setActiveTab('lembretes');
                   setRadialMenuOpen(false);
                 }}
-                className="w-full p-2.5 rounded-xl bg-zinc-800/60 hover:bg-zinc-800 border border-zinc-700/50 hover:border-amber-500/60 text-white font-bold text-xs flex items-center justify-between transition-all cursor-pointer group shadow-sm"
+                onMouseEnter={() => setSelectedShortcut('timer')}
+                onTouchStart={() => setSelectedShortcut('timer')}
+                className={`w-full p-2.5 rounded-xl border transition-all cursor-pointer group shadow-sm flex items-center justify-between ${
+                  selectedShortcut === 'timer'
+                    ? 'bg-zinc-800 border-amber-500/80 ring-1 ring-amber-500/40 text-white shadow-amber-500/10'
+                    : 'bg-zinc-800/40 border-zinc-700/30 text-zinc-400 opacity-80 hover:bg-zinc-800 hover:text-white'
+                }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 group-hover:scale-110 transition-transform">
+                  <div className={`p-2 rounded-lg transition-transform ${
+                    selectedShortcut === 'timer'
+                      ? 'bg-amber-500/20 border border-amber-500/40 text-amber-400 scale-105'
+                      : 'bg-amber-500/10 border border-amber-500/20 text-amber-400'
+                  }`}>
                     <Timer className="h-4 w-4" />
                   </div>
                   <div className="text-left">
-                    <div className="text-xs font-bold text-zinc-100 group-hover:text-amber-400 transition-colors">
+                    <div className={`text-xs font-bold transition-colors ${
+                      selectedShortcut === 'timer' ? 'text-amber-400' : 'text-zinc-200'
+                    }`}>
                       Timer
                     </div>
                     <div className="text-[10px] text-zinc-400 font-normal">
@@ -1058,7 +1090,6 @@ export default function Sidebar({
                     </div>
                   </div>
                 </div>
-                <div className="w-1.5 h-1.5 rounded-full bg-amber-500/40 group-hover:bg-amber-500 transition-colors" />
               </button>
             </div>
           </div>

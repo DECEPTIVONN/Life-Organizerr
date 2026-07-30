@@ -78,7 +78,23 @@ export default function RemindersView({
   // Form states
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [mode, setMode] = useState<'timer' | 'cronometer'>('timer');
+  const [mode, setMode] = useState<'timer' | 'cronometer'>(() => {
+    const saved = localStorage.getItem('mbc_reminder_initial_mode');
+    if (saved === 'cronometer' || saved === 'timer') return saved;
+    return 'timer';
+  });
+
+  useEffect(() => {
+    const syncInitialMode = () => {
+      const saved = localStorage.getItem('mbc_reminder_initial_mode');
+      if (saved === 'cronometer' || saved === 'timer') {
+        setMode(saved);
+      }
+    };
+    syncInitialMode();
+    window.addEventListener('storage', syncInitialMode);
+    return () => window.removeEventListener('storage', syncInitialMode);
+  }, []);
   
   // Timer mode inputs
   const [timerMinutes, setTimerMinutes] = useState<number>(5);
