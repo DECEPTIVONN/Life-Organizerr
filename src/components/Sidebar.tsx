@@ -137,20 +137,35 @@ export default function Sidebar({
 
     const totalSecs = Math.max(60, Math.min(36000, (quickHours * 3600) + (quickMinutes * 60))); // 1 min to 10 hours
     const defaultTitle = quickModalType === 'timer' ? 'Timer Rápido' : 'Alerta de Cronômetro';
+    const targetTs = Date.now() + totalSecs * 1000;
+    const formattedTarget = new Date(targetTs).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
     const newReminder: QuickReminder = {
-      id: Date.now().toString(),
+      id: 'rem-' + Math.random().toString(36).substring(2, 9),
       title: quickReminderTitle.trim() || defaultTitle,
-      description: `Notificação em ${quickHours > 0 ? `${quickHours}h ` : ''}${quickMinutes}min`,
+      description: `Notificação agendada para as ${formattedTarget} (${quickHours > 0 ? `${quickHours}h ` : ''}${quickMinutes}min)`,
       mode: quickModalType,
       durationSeconds: totalSecs,
-      targetTimestamp: Date.now() + totalSecs * 1000,
+      targetTimestamp: targetTs,
       status: 'active',
       createdAt: new Date().toISOString(),
       soundEnabled: true,
       category: 'Foco',
       priority: 'media'
     };
+
+    // Immediate Web Browser Notification on Creation
+    if (typeof Notification !== 'undefined') {
+      if (Notification.permission === 'granted') {
+        const modeLabel = quickModalType === 'timer' ? '⏱️ Timer Iniciado' : '⏰ Alerta de Cronômetro Ativo';
+        new Notification(`${modeLabel}: ${newReminder.title}`, {
+          body: `Contagem ativa! (${quickHours > 0 ? `${quickHours}h ` : ''}${quickMinutes}min). Notificação agendada para as ${formattedTarget}.`,
+          icon: '/icon.png'
+        });
+      } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission();
+      }
+    }
 
     if (onAddReminder) {
       onAddReminder(newReminder);

@@ -234,6 +234,22 @@ export default function RemindersView({
     setReminders(prev => [newReminder, ...prev]);
     addXp(15);
 
+    // Immediate Web Browser Notification on Creation
+    if (typeof Notification !== 'undefined') {
+      if (Notification.permission === 'granted') {
+        const modeLabel = mode === 'timer' ? '⏱️ Timer Iniciado' : mode === 'cronometer' ? '⏰ Alerta de Cronômetro' : '🔔 Lembrete Criado';
+        const formattedTarget = targetTs ? new Date(targetTs).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : scheduledTime || 'Ativo';
+        new Notification(`${modeLabel}: ${title.trim()}`, {
+          body: mode === 'timer'
+            ? `Contagem regressiva iniciada. Notificação agendada para as ${formattedTarget}.`
+            : `Lembrete/alerta ativo em segundo plano (${formattedTarget}).`,
+          icon: '/icon.png'
+        });
+      } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission();
+      }
+    }
+
     // Reset form
     setTitle('');
     setDescription('');
