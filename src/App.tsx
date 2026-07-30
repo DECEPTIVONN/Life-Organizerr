@@ -1874,38 +1874,53 @@ export default function App() {
 
   // --- Auto-fullscreen on first user interaction (mouse or touch) whenever enabled ---
   useEffect(() => {
-    if (!autoFullscreen || document.fullscreenElement) return;
-
     const handleUserInteraction = () => {
-      if (!document.fullscreenElement) {
+      const isAuto = localStorage.getItem('mbc_autoFullscreen') !== 'false';
+      const doc = document as any;
+      const isFS = !!(
+        doc.fullscreenElement ||
+        doc.webkitFullscreenElement ||
+        doc.mozFullScreenElement ||
+        doc.msFullscreenElement
+      );
+
+      if (isAuto && !isFS) {
         try {
           const docEl = document.documentElement as any;
-          if (docEl.requestFullscreen) {
-            docEl.requestFullscreen();
-          } else if (docEl.webkitRequestFullscreen) {
-            docEl.webkitRequestFullscreen();
-          } else if (docEl.msRequestFullscreen) {
-            docEl.msRequestFullscreen();
+          if (docEl) {
+            if (docEl.requestFullscreen) {
+              const res = docEl.requestFullscreen();
+              if (res && typeof res.catch === 'function') {
+                res.catch(() => {});
+              }
+            } else if (docEl.webkitRequestFullscreen) {
+              docEl.webkitRequestFullscreen();
+            } else if (docEl.mozRequestFullScreen) {
+              docEl.mozRequestFullScreen();
+            } else if (docEl.msRequestFullscreen) {
+              docEl.msRequestFullscreen();
+            }
+            localStorage.setItem('mbc_fullscreen', 'true');
           }
-          localStorage.setItem('mbc_fullscreen', 'true');
         } catch (err) {
           console.error('Falha ao acionar tela cheia automaticamente:', err);
         }
       }
-      
-      document.removeEventListener('click', handleUserInteraction, true);
-      document.removeEventListener('touchstart', handleUserInteraction, true);
-      document.removeEventListener('pointerdown', handleUserInteraction, true);
     };
 
-    document.addEventListener('click', handleUserInteraction, true);
-    document.addEventListener('touchstart', handleUserInteraction, true);
-    document.addEventListener('pointerdown', handleUserInteraction, true);
+    const events = ['pointerdown', 'touchstart', 'mousedown', 'click'];
+    const opts = { capture: true, passive: true };
+
+    events.forEach(evt => {
+      window.addEventListener(evt, handleUserInteraction, opts);
+      document.addEventListener(evt, handleUserInteraction, opts);
+    });
 
     return () => {
-      document.removeEventListener('click', handleUserInteraction, true);
-      document.removeEventListener('touchstart', handleUserInteraction, true);
-      document.removeEventListener('pointerdown', handleUserInteraction, true);
+      events.forEach(evt => {
+        window.removeEventListener(evt, handleUserInteraction, opts);
+        document.removeEventListener(evt, handleUserInteraction, opts);
+      });
     };
   }, [autoFullscreen]);
 
