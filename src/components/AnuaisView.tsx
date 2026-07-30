@@ -2420,13 +2420,17 @@ export default function AnuaisView({
       {/* --- DAILY WORKSPACE DETAILED FULL MODAL (All tabs of Espaço Diário & Fé) --- */}
       <AnimatePresence>
         {selectedDateStr && (
-          <div className="fixed inset-0 z-50 bg-[#040405]/95 backdrop-blur-md flex items-center justify-center p-4 md:p-6 overflow-hidden">
+          <div 
+            onClick={() => setSelectedDateStr(null)}
+            className="fixed inset-0 z-50 bg-[#040405]/95 backdrop-blur-md flex items-center justify-center p-4 md:p-6 overflow-hidden cursor-pointer"
+          >
             <motion.div
+              onClick={(e) => e.stopPropagation()}
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="bg-[#0a0a0c] border border-zinc-800 rounded-3xl w-full max-w-4xl h-full max-h-[85vh] flex flex-col overflow-hidden shadow-2xl shadow-orange-500/5 text-left"
+              className="cursor-default bg-[#0a0a0c] border border-zinc-800 rounded-3xl w-full max-w-4xl h-full max-h-[85vh] flex flex-col overflow-hidden shadow-2xl shadow-orange-500/5 text-left"
             >
               {/* Header */}
               <div className="p-5 border-b border-zinc-850 flex items-center justify-between bg-zinc-950/40">
@@ -2835,12 +2839,16 @@ export default function AnuaisView({
       {/* --- MONTHLY REVIEW DETAILED MODAL --- */}
       <AnimatePresence>
         {isMonthlyReviewModalOpen && (
-          <div className="fixed inset-0 z-50 bg-[#040405]/95 backdrop-blur-md flex items-center justify-center p-4 md:p-6 overflow-hidden">
+          <div 
+            onClick={() => setIsMonthlyReviewModalOpen(false)}
+            className="fixed inset-0 z-50 bg-[#040405]/95 backdrop-blur-md flex items-center justify-center p-4 md:p-6 overflow-hidden cursor-pointer"
+          >
             <motion.div
+              onClick={(e) => e.stopPropagation()}
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="bg-[#0a0a0c] border border-zinc-800 rounded-3xl w-full max-w-2xl h-full max-h-[80vh] flex flex-col overflow-hidden shadow-2xl text-left"
+              className="cursor-default bg-[#0a0a0c] border border-zinc-800 rounded-3xl w-full max-w-2xl h-full max-h-[80vh] flex flex-col overflow-hidden shadow-2xl text-left"
             >
               <div className="p-5 border-b border-zinc-850 bg-zinc-950/40 flex items-center justify-between">
                 <div>
@@ -2989,12 +2997,16 @@ export default function AnuaisView({
       {/* --- WEEKLY REVIEW DETAILED MODAL --- */}
       <AnimatePresence>
         {isWeeklyReviewModalOpen && selectedWeekNum !== null && (
-          <div className="fixed inset-0 z-50 bg-[#040405]/95 backdrop-blur-md flex items-center justify-center p-4 md:p-6 overflow-hidden">
+          <div 
+            onClick={() => setIsWeeklyReviewModalOpen(false)}
+            className="fixed inset-0 z-50 bg-[#040405]/95 backdrop-blur-md flex items-center justify-center p-4 md:p-6 overflow-hidden cursor-pointer"
+          >
             <motion.div
+              onClick={(e) => e.stopPropagation()}
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="bg-[#0a0a0c] border border-zinc-800 rounded-3xl w-full max-w-2xl h-full max-h-[80vh] flex flex-col overflow-hidden shadow-2xl text-left"
+              className="cursor-default bg-[#0a0a0c] border border-zinc-800 rounded-3xl w-full max-w-2xl h-full max-h-[80vh] flex flex-col overflow-hidden shadow-2xl text-left"
             >
               <div className="p-5 border-b border-zinc-850 bg-zinc-950/40 flex items-center justify-between">
                 <div>
@@ -3154,12 +3166,16 @@ export default function AnuaisView({
       {/* --- YEARLY BOOK CREATION/EDIT MODAL --- */}
       <AnimatePresence>
         {isBookModalOpen && (
-          <div className="fixed inset-0 z-50 bg-[#040405]/95 backdrop-blur-md flex items-center justify-center p-4 md:p-6 overflow-hidden">
+          <div 
+            onClick={() => setIsBookModalOpen(false)}
+            className="fixed inset-0 z-50 bg-[#040405]/95 backdrop-blur-md flex items-center justify-center p-4 md:p-6 overflow-hidden cursor-pointer"
+          >
             <motion.div
+              onClick={(e) => e.stopPropagation()}
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="bg-[#0a0a0c] border border-zinc-800 rounded-3xl w-full max-w-md flex flex-col overflow-hidden shadow-2xl text-left"
+              className="cursor-default bg-[#0a0a0c] border border-zinc-800 rounded-3xl w-full max-w-md flex flex-col overflow-hidden shadow-2xl text-left"
             >
               <form onSubmit={handleSaveBook}>
                 <div className="p-5 border-b border-zinc-850 bg-zinc-950/40 flex items-center justify-between">
@@ -3292,13 +3308,17 @@ export default function AnuaisView({
       {/* --- ADD YEAR CENTRAL MODAL --- */}
       <AnimatePresence>
         {isAddingYear && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div 
+            onClick={() => setIsAddingYear(false)}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm cursor-pointer"
+          >
             <motion.div
+              onClick={(e) => e.stopPropagation()}
               initial={{ scale: 0.95, opacity: 0, y: 10 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 10 }}
               transition={{ duration: 0.2 }}
-              className="w-full max-w-sm bg-zinc-950 border border-zinc-850 rounded-3xl overflow-hidden shadow-2xl shadow-orange-500/5 text-left"
+              className="cursor-default w-full max-w-sm bg-zinc-950 border border-zinc-850 rounded-3xl overflow-hidden shadow-2xl shadow-orange-500/5 text-left"
             >
               <div className="p-6 space-y-4">
                 <div className="flex items-center gap-2.5">

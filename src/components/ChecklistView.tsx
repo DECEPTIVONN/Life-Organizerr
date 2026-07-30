@@ -2458,13 +2458,20 @@ export default function ChecklistView({
           {/* Time Block creation/editing modal */}
           <AnimatePresence>
             {(isAddingBlock || editingCell) && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+              <div 
+                onClick={() => {
+                  setIsAddingBlock(false);
+                  setEditingCell(null);
+                }}
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 cursor-pointer"
+              >
                 <motion.div 
+                  onClick={(e) => e.stopPropagation()}
                   initial={{ opacity: 0, scale: 0.95, y: 15 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: 15 }}
                   transition={{ type: "spring", duration: 0.35 }}
-                  className="bg-zinc-950 border border-zinc-850 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl flex flex-col"
+                  className="cursor-default bg-zinc-950 border border-zinc-850 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl flex flex-col"
                 >
                   {/* Header */}
                   <div className="p-5 border-b border-zinc-900 flex items-center justify-between">
@@ -2703,12 +2710,16 @@ export default function ChecklistView({
           {/* Confirmation Modal for Clearing Weekly Routine */}
           <AnimatePresence>
             {showClearModal && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+              <div 
+                onClick={() => setShowClearModal(false)}
+                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm cursor-pointer"
+              >
                 <motion.div 
+                  onClick={(e) => e.stopPropagation()}
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
-                  className="bg-zinc-950 border border-zinc-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4"
+                  className="cursor-default bg-zinc-950 border border-zinc-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4"
                 >
                   <div className="flex items-center gap-3 text-red-400">
                     <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20">
@@ -2754,12 +2765,16 @@ export default function ChecklistView({
       {/* Modal 1: Editar Tarefa Diária */}
       <AnimatePresence>
         {editingTask && !showDeleteConfirmModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div 
+            onClick={() => setEditingTask(null)}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm cursor-pointer"
+          >
             <motion.div
+              onClick={(e) => e.stopPropagation()}
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
+              className="cursor-default bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
             >
               {/* Modal Header */}
               <div className="p-4 sm:p-5 border-b border-zinc-800/80 flex items-center justify-between bg-zinc-900/40">
@@ -3027,12 +3042,16 @@ export default function ChecklistView({
       {/* Modal 2: Confirmação de Exclusão */}
       <AnimatePresence>
         {showDeleteConfirmModal && editingTask && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+          <div 
+            onClick={() => setShowDeleteConfirmModal(false)}
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md cursor-pointer"
+          >
             <motion.div
+              onClick={(e) => e.stopPropagation()}
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-zinc-950 border border-red-500/30 rounded-2xl p-5 w-full max-w-md shadow-2xl space-y-4"
+              className="cursor-default bg-zinc-950 border border-red-500/30 rounded-2xl p-5 w-full max-w-md shadow-2xl space-y-4"
             >
               <div className="flex items-center gap-3 text-red-500">
                 <div className="p-2.5 bg-red-500/10 rounded-xl border border-red-500/20">

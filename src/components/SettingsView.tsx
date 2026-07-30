@@ -1903,12 +1903,16 @@ export default function SettingsView({
       {/* Modal: Editar Dispositivo (Image 2) */}
       <AnimatePresence>
         {editingDevice && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div 
+            onClick={() => setEditingDevice(null)}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm cursor-pointer"
+          >
             <motion.div
+              onClick={(e) => e.stopPropagation()}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-zinc-950 border border-zinc-800 rounded-2xl p-6 max-w-md w-full space-y-5 text-left shadow-2xl relative"
+              className="cursor-default bg-zinc-950 border border-zinc-800 rounded-2xl p-6 max-w-md w-full space-y-5 text-left shadow-2xl relative"
             >
               {/* Header */}
               <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
@@ -2015,12 +2019,16 @@ export default function SettingsView({
       {/* Modal: Conectar Dispositivo (QR Code / Pareamento Real) */}
       <AnimatePresence>
         {showConnectDeviceModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div 
+            onClick={() => setShowConnectDeviceModal(false)}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm cursor-pointer"
+          >
             <motion.div
+              onClick={(e) => e.stopPropagation()}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-zinc-950 border border-emerald-500/30 rounded-2xl p-5 max-w-sm w-full space-y-4 text-center shadow-2xl relative"
+              className="cursor-default bg-zinc-950 border border-emerald-500/30 rounded-2xl p-5 max-w-sm w-full space-y-4 text-center shadow-2xl relative"
             >
               <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
                 <div className="flex items-center gap-2">

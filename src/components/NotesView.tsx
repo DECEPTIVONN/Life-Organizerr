@@ -426,12 +426,16 @@ export default function NotesView({ notes, setNotes, addXp, freeEditMode = false
       <AnimatePresence>
         {activeNote && (
           <motion.div
+            onClick={handleCloseEditorModal}
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.98 }}
-            className="fixed inset-0 bg-zinc-950/95 backdrop-blur-md z-50 overflow-y-auto p-4 md:p-8 flex flex-col justify-start"
+            className="fixed inset-0 bg-zinc-950/95 backdrop-blur-md z-50 overflow-y-auto p-4 md:p-8 flex flex-col justify-start cursor-pointer"
           >
-            <div className="max-w-4xl w-full mx-auto flex-1 flex flex-col space-y-6">
+            <div 
+              onClick={(e) => e.stopPropagation()}
+              className="cursor-default max-w-4xl w-full mx-auto flex-1 flex flex-col space-y-6"
+            >
               
               {/* Top Header Controls */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-900 pb-4">

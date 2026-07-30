@@ -1218,8 +1218,15 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
 
           {/* New Budget Category Dialog Popover */}
           {showAddBudget && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
-              <form onSubmit={handleAddBudgetCategory} className="bg-zinc-950 border border-zinc-850 w-full max-w-sm rounded-2xl p-5 space-y-4 shadow-2xl">
+            <div 
+              onClick={() => setShowAddBudget(false)}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 cursor-pointer"
+            >
+              <form 
+                onClick={(e) => e.stopPropagation()}
+                onSubmit={handleAddBudgetCategory}
+                className="cursor-default bg-zinc-950 border border-zinc-850 w-full max-w-sm rounded-2xl p-5 space-y-4 shadow-2xl"
+              >
                 <div className="flex items-center justify-between border-b border-zinc-900 pb-2.5">
                   <h4 className="text-xs font-black text-white uppercase tracking-wider">Nova Meta Orçamentária</h4>
                   <button type="button" onClick={() => setShowAddBudget(false)} className="text-gray-400 hover:text-white">

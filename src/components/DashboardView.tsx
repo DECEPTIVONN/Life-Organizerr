@@ -952,12 +952,16 @@ export default function DashboardView({
       {/* MODAL DE EDIÇÃO DE CARD */}
       <AnimatePresence>
         {editingCard && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div 
+            onClick={() => setEditingCard(null)}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md cursor-pointer"
+          >
             <motion.div
+              onClick={(e) => e.stopPropagation()}
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-zinc-950 border border-zinc-850 rounded-3xl p-6 w-full max-w-md shadow-[0_20px_50px_rgba(0,0,0,0.8)] text-left space-y-5"
+              className="cursor-default bg-zinc-950 border border-zinc-850 rounded-3xl p-6 w-full max-w-md shadow-[0_20px_50px_rgba(0,0,0,0.8)] text-left space-y-5"
             >
               <div className="flex justify-between items-center border-b border-zinc-900 pb-3">
                 <h3 className="text-xs font-black text-white flex items-center gap-2 uppercase tracking-wider">

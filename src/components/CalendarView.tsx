@@ -2316,13 +2316,20 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
       {/* Fullscreen Modal Overlay for Espaço Diário & Fé or Master Templates */}
       <AnimatePresence>
         {(selectedDateStr || isEditingTemplates) && (
-          <div className="fixed inset-0 z-50 bg-[#040405]/95 backdrop-blur-md flex items-center justify-center p-4 md:p-6 overflow-hidden">
+          <div 
+            onClick={() => {
+              setSelectedDateStr(null);
+              setIsEditingTemplates(false);
+            }}
+            className="fixed inset-0 z-50 bg-[#040405]/95 backdrop-blur-md flex items-center justify-center p-4 md:p-6 overflow-hidden cursor-pointer"
+          >
             <motion.div
+              onClick={(e) => e.stopPropagation()}
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="bg-[#0a0a0c] border border-zinc-800 rounded-3xl w-full max-w-4xl h-full max-h-[85vh] flex flex-col overflow-hidden shadow-2xl shadow-orange-500/5 text-left"
+              className="cursor-default bg-[#0a0a0c] border border-zinc-800 rounded-3xl w-full max-w-4xl h-full max-h-[85vh] flex flex-col overflow-hidden shadow-2xl shadow-orange-500/5 text-left"
             >
               <div ref={panelRef} className="flex flex-col h-full overflow-hidden">
           
@@ -3787,12 +3794,16 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
       {/* Future Event Detail Modal (ABRIR) */}
       <AnimatePresence>
         {openModalEvent && (
-          <div className="fixed inset-0 z-50 bg-[#040405]/90 backdrop-blur-sm flex items-center justify-center p-4">
+          <div 
+            onClick={() => setOpenModalEvent(null)}
+            className="fixed inset-0 z-50 bg-[#040405]/90 backdrop-blur-sm flex items-center justify-center p-4 cursor-pointer"
+          >
             <motion.div
+              onClick={(e) => e.stopPropagation()}
               initial={{ scale: 0.95, opacity: 0, y: 15 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 15 }}
-              className="bg-[#0e0e12] border border-zinc-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl text-left relative"
+              className="cursor-default bg-[#0e0e12] border border-zinc-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl text-left relative"
             >
               <div className="flex justify-between items-start mb-4 border-b border-zinc-800/80 pb-3">
                 <div className="flex items-center gap-2">
@@ -3882,13 +3893,17 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
       {/* Weekly Review Modal Overlay */}
       <AnimatePresence>
         {isWeeklyReviewOpen && (
-          <div className="fixed inset-0 z-50 bg-[#040405]/95 backdrop-blur-md flex items-center justify-center p-4 md:p-6 overflow-hidden">
+          <div 
+            onClick={() => setIsWeeklyReviewOpen(false)}
+            className="fixed inset-0 z-50 bg-[#040405]/95 backdrop-blur-md flex items-center justify-center p-4 md:p-6 overflow-hidden cursor-pointer"
+          >
             <motion.div
+              onClick={(e) => e.stopPropagation()}
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="bg-[#0a0a0c] border border-zinc-800 rounded-3xl w-full max-w-6xl h-full max-h-[85vh] flex flex-col overflow-hidden shadow-2xl shadow-orange-500/5 text-left"
+              className="cursor-default bg-[#0a0a0c] border border-zinc-800 rounded-3xl w-full max-w-6xl h-full max-h-[85vh] flex flex-col overflow-hidden shadow-2xl shadow-orange-500/5 text-left"
             >
               
               {/* Modal Header */}
@@ -4252,13 +4267,17 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
       {/* Monthly Review Modal Overlay */}
       <AnimatePresence>
         {isReviewOpen && (
-          <div className="fixed inset-0 z-50 bg-[#040405]/95 backdrop-blur-md flex items-center justify-center p-4 md:p-6 overflow-hidden">
+          <div 
+            onClick={() => setIsReviewOpen(false)}
+            className="fixed inset-0 z-50 bg-[#040405]/95 backdrop-blur-md flex items-center justify-center p-4 md:p-6 overflow-hidden cursor-pointer"
+          >
             <motion.div
+              onClick={(e) => e.stopPropagation()}
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="bg-[#0a0a0c] border border-zinc-800 rounded-3xl w-full max-w-6xl h-full max-h-[85vh] flex flex-col overflow-hidden shadow-2xl shadow-orange-500/5"
+              className="cursor-default bg-[#0a0a0c] border border-zinc-800 rounded-3xl w-full max-w-6xl h-full max-h-[85vh] flex flex-col overflow-hidden shadow-2xl shadow-orange-500/5"
             >
               
               {/* Modal Header */}
