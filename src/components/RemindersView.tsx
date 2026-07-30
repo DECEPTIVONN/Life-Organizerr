@@ -509,14 +509,156 @@ export default function RemindersView({
         </div>
 
         <div className="text-xs text-zinc-400 font-mono flex items-center gap-3">
+          <button
+            type="button"
+            onClick={playReminderChime}
+            className="flex items-center gap-1.5 text-amber-400 hover:text-amber-300 font-bold bg-amber-500/10 hover:bg-amber-500/20 px-2.5 py-1 rounded-lg border border-amber-500/20 transition-all cursor-pointer"
+            title="Testar sinal sonoro de notificação"
+          >
+            <Volume2 className="h-3.5 w-3.5 text-amber-400 animate-pulse" />
+            <span>Testar Som</span>
+          </button>
+          <span className="text-zinc-600">|</span>
           <span className="flex items-center gap-1 text-emerald-400 font-bold">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            Som Ativo
+            Tempo Real Ativo
           </span>
-          <span className="text-zinc-600">|</span>
-          <span>Tempo real ativado</span>
         </div>
       </div>
+
+      {/* 2.5 PREMIUM LIVE NOTIFICATION & TRACKING HUD CARD (When timers are running) */}
+      {reminders.some(r => r.status === 'active') && (
+        <div className="bg-gradient-to-br from-zinc-950 via-zinc-900 to-black border-2 border-orange-500/40 rounded-3xl p-5 shadow-[0_0_35px_rgba(249,115,22,0.15)] relative overflow-hidden space-y-4">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl pointer-events-none" />
+          
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="relative">
+                <span className="w-3 h-3 rounded-full bg-orange-500 block animate-ping absolute inset-0 opacity-75" />
+                <span className="w-3 h-3 rounded-full bg-orange-500 block relative" />
+              </div>
+              <h2 className="text-xs font-mono font-black text-orange-400 uppercase tracking-widest flex items-center gap-2">
+                <Timer className="h-4 w-4" />
+                Acompanhamento de Tempo em Tempo Real
+              </h2>
+            </div>
+            <span className="text-[10px] text-zinc-400 font-mono">
+              {reminders.filter(r => r.status === 'active').length} Lembretes Ativos
+            </span>
+          </div>
+
+          {/* Active Timers Carousel / List */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {reminders.filter(r => r.status === 'active').map(r => {
+              const remainingText = getTimerRemainingText(r);
+              let progressPct = 100;
+              let secsLeft = 0;
+              if (r.mode === 'timer' && r.durationSeconds && r.durationSeconds > 0) {
+                if (r.paused && r.remainingSecondsWhenPaused !== undefined) {
+                  secsLeft = r.remainingSecondsWhenPaused;
+                } else if (r.targetTimestamp) {
+                  secsLeft = Math.max(0, Math.ceil((r.targetTimestamp - Date.now()) / 1000));
+                }
+                progressPct = Math.min(100, Math.max(0, (secsLeft / r.durationSeconds) * 100));
+              }
+
+              return (
+                <div 
+                  key={r.id}
+                  className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-4 flex flex-col justify-between space-y-3 relative group hover:border-orange-500/60 transition-all shadow-md"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-extrabold text-white truncate max-w-[180px]">
+                      {r.title}
+                    </span>
+                    <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full uppercase ${
+                      r.paused 
+                        ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' 
+                        : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                    }`}>
+                      {r.paused ? 'Pausado' : 'Em Execução'}
+                    </span>
+                  </div>
+
+                  {/* Circular & Linear Progress Bar with Clock */}
+                  <div className="flex items-center gap-3 bg-black/60 p-3 rounded-xl border border-zinc-800/80">
+                    {/* Radial Ring */}
+                    <div className="relative w-11 h-11 flex-shrink-0 flex items-center justify-center">
+                      <svg className="w-full h-full -rotate-90">
+                        <circle
+                          cx="22"
+                          cy="22"
+                          r="18"
+                          stroke="rgba(255,255,255,0.1)"
+                          strokeWidth="3.5"
+                          fill="none"
+                        />
+                        <circle
+                          cx="22"
+                          cy="22"
+                          r="18"
+                          stroke={r.paused ? "#f59e0b" : "#f97316"}
+                          strokeWidth="3.5"
+                          fill="none"
+                          strokeDasharray="113"
+                          strokeDashoffset={113 - (113 * progressPct) / 100}
+                          strokeLinecap="round"
+                          className="transition-all duration-1000"
+                        />
+                      </svg>
+                      <Timer className={`h-4 w-4 absolute ${!r.paused ? 'text-orange-400 animate-pulse' : 'text-amber-400'}`} />
+                    </div>
+
+                    <div className="space-y-0.5">
+                      <div className="text-lg font-mono font-black text-white tracking-wider">
+                        {remainingText}
+                      </div>
+                      <div className="text-[10px] text-zinc-400 font-mono">
+                        {r.mode === 'timer' ? 'Contagem regressiva' : `Notificação ${r.scheduledTime || ''}`}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions Bar */}
+                  <div className="flex items-center justify-between gap-1.5 pt-1">
+                    {r.mode === 'timer' && (
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleTogglePause(r.id)}
+                          className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white transition-colors cursor-pointer"
+                          title={r.paused ? 'Continuar' : 'Pausar'}
+                        >
+                          {r.paused ? <Play className="h-3.5 w-3.5 text-emerald-400" /> : <Pause className="h-3.5 w-3.5 text-amber-400" />}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleAddFiveMinutes(r.id)}
+                          className="px-2 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-orange-400 text-[10px] font-mono font-bold transition-colors cursor-pointer"
+                          title="+5 Minutos"
+                        >
+                          +5m
+                        </button>
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => handleCompleteReminder(r.id)}
+                      className="ml-auto px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-400 text-[11px] font-bold transition-colors flex items-center gap-1 cursor-pointer"
+                    >
+                      <Check className="h-3 w-3" />
+                      <span>Concluir</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* 3. REMINDERS GRID */}
       {filteredReminders.length === 0 ? (

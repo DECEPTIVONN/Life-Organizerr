@@ -202,20 +202,26 @@ export default function Sidebar({
     }, HOLD_DURATION);
   };
 
-  const handleTouchMoveShortcut = (e: React.TouchEvent) => {
-    if (touchStartYRef.current === null || e.touches.length === 0) return;
-    const currentY = e.touches[0].clientY;
+  const handleTouchMoveShortcut = (e: React.TouchEvent | React.MouseEvent) => {
+    let currentY: number | null = null;
+    if ('touches' in e && e.touches.length > 0) {
+      currentY = e.touches[0].clientY;
+    } else if ('clientY' in e) {
+      currentY = (e as React.MouseEvent).clientY;
+    }
+
+    if (touchStartYRef.current === null || currentY === null) return;
     const deltaY = touchStartYRef.current - currentY; // positive when sliding UP
     if (deltaY > 50) {
       setSelectedShortcut('lembretes');
     } else if (deltaY > 15) {
       setSelectedShortcut('cronometro');
-    } else if (deltaY < 5) {
+    } else {
       setSelectedShortcut('timer');
     }
   };
 
-  const cancelNotasLongPress = (wasClicked = false) => {
+  const handleNotasRelease = (wasClicked = false) => {
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
@@ -228,10 +234,31 @@ export default function Sidebar({
     const elapsed = Date.now() - pressStartTsRef.current;
     setPressProgress(0);
 
-    if (elapsed < HOLD_DURATION && wasClicked && !radialMenuOpen) {
+    if (radialMenuOpen || elapsed >= HOLD_DURATION) {
+      if (selectedShortcut === 'timer') {
+        setQuickModalType('timer');
+        setQuickReminderTitle('');
+        setQuickHours(0);
+        setQuickMinutes(25);
+      } else if (selectedShortcut === 'cronometro') {
+        setQuickModalType('cronometer');
+        setQuickReminderTitle('');
+        setQuickHours(0);
+        setQuickMinutes(10);
+      } else if (selectedShortcut === 'lembretes') {
+        setActiveTab('lembretes');
+      }
+      setRadialMenuOpen(false);
+    } else if (wasClicked) {
       setActiveTab('notas');
       setMobileMenuOpen(false);
     }
+
+    touchStartYRef.current = null;
+  };
+
+  const cancelNotasLongPress = (wasClicked = false) => {
+    handleNotasRelease(wasClicked);
   };
 
 
@@ -993,16 +1020,18 @@ export default function Sidebar({
             )}
           </button>
 
-          {/* Item 5: Notas (Com Long-Press de 2s para Lembretes Rápido) */}
+          {/* Item 5: Notas (Com Long-Press para Lembretes/Cronômetro/Timer) */}
           <button 
             onTouchStart={startNotasLongPress}
+            onTouchMove={handleTouchMoveShortcut}
             onTouchEnd={() => cancelNotasLongPress(true)}
             onTouchCancel={() => cancelNotasLongPress(false)}
             onMouseDown={startNotasLongPress}
+            onMouseMove={handleTouchMoveShortcut}
             onMouseUp={() => cancelNotasLongPress(true)}
             onMouseLeave={() => cancelNotasLongPress(false)}
             className="relative flex flex-col items-center justify-center w-14 h-14 group cursor-pointer select-none"
-            title="Segure 2s para Lembretes Rápidos"
+            title="Segure para Atalhos de Tempo"
           >
             {/* Visual holding progress ring */}
             {pressProgress > 0 && (
