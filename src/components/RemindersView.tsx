@@ -146,15 +146,15 @@ export default function RemindersView({
         const updated = prevReminders.map(r => {
           if (r.status !== 'active' || r.paused) return r;
 
-          // Check timer mode completion
-          if (r.mode === 'timer' && r.targetTimestamp) {
+          // Check timer or cronometer mode completion via targetTimestamp
+          if ((r.mode === 'timer' || r.mode === 'cronometer') && r.targetTimestamp) {
             if (now >= r.targetTimestamp) {
               hasChanges = true;
               // Trigger alarm
               if (r.soundEnabled) playReminderChime();
               if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
                 new Notification(`⏰ Lembrete: ${r.title}`, {
-                  body: r.description || `Timer encerrado! ${r.category ? `[${r.category}]` : ''}`,
+                  body: r.description || `Tempo atingido! ${r.category ? `[${r.category}]` : ''}`,
                   icon: '/icon.png'
                 });
               }
@@ -167,7 +167,7 @@ export default function RemindersView({
             }
           }
 
-          // Check cronometer / schedule mode completion
+          // Check scheduled cronometer / schedule mode completion
           if (r.mode === 'cronometer' && r.scheduledDate && r.scheduledTime) {
             const fullScheduledTs = new Date(`${r.scheduledDate}T${r.scheduledTime}:00`).getTime();
             if (now >= fullScheduledTs) {
@@ -362,7 +362,7 @@ export default function RemindersView({
     if (r.status === 'completed') return 'Concluído';
     if (r.status === 'triggered') return '⏰ ALARME DISPARADO!';
     
-    if (r.mode === 'timer') {
+    if (r.targetTimestamp || r.mode === 'timer') {
       let secsLeft = 0;
       if (r.paused && r.remainingSecondsWhenPaused !== undefined) {
         secsLeft = r.remainingSecondsWhenPaused;

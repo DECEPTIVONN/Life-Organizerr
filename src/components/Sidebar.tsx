@@ -43,6 +43,7 @@ import {
   LogOut
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { QuickReminder } from '../types';
 
 interface SidebarProps {
   activeTab: string;
@@ -62,6 +63,7 @@ interface SidebarProps {
   appLockEnabled?: boolean;
   onLogout?: () => void;
   currentUser?: any;
+  onAddReminder?: (reminder: QuickReminder) => void;
 }
 
 interface SearchResult {
@@ -89,7 +91,8 @@ export default function Sidebar({
   onLockApp,
   appLockEnabled = false,
   onLogout,
-  currentUser
+  currentUser,
+  onAddReminder
 }: SidebarProps) {
   
   // Animation/HUD state
@@ -113,14 +116,56 @@ export default function Sidebar({
   // Sync state
   const [showSyncModal, setShowSyncModal] = useState(false);
 
-  // Long-press state for mobile navbar "Notas" tab (69ms hold opens Lembretes & Timer Menu)
+  // Long-press state for mobile navbar "Notas" tab
   const [radialMenuOpen, setRadialMenuOpen] = useState(false);
-  const [selectedShortcut, setSelectedShortcut] = useState<'timer' | 'cronometro'>('timer');
+  const [selectedShortcut, setSelectedShortcut] = useState<'timer' | 'cronometro' | 'lembretes'>('timer');
   const [pressProgress, setPressProgress] = useState(0);
   const longPressTimerRef = useRef<any>(null);
   const progressAnimRef = useRef<any>(null);
   const pressStartTsRef = useRef<number>(0);
   const touchStartYRef = useRef<number | null>(null);
+
+  // Quick Modal state for Timer & Cronômetro
+  const [quickModalType, setQuickModalType] = useState<'timer' | 'cronometer' | null>(null);
+  const [quickReminderTitle, setQuickReminderTitle] = useState('');
+  const [quickHours, setQuickHours] = useState<number>(0);
+  const [quickMinutes, setQuickMinutes] = useState<number>(15);
+
+  const handleCreateQuickReminder = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickModalType) return;
+
+    const totalSecs = Math.max(60, Math.min(36000, (quickHours * 3600) + (quickMinutes * 60))); // 1 min to 10 hours
+    const defaultTitle = quickModalType === 'timer' ? 'Timer Rápido' : 'Alerta de Cronômetro';
+
+    const newReminder: QuickReminder = {
+      id: Date.now().toString(),
+      title: quickReminderTitle.trim() || defaultTitle,
+      description: `Notificação em ${quickHours > 0 ? `${quickHours}h ` : ''}${quickMinutes}min`,
+      mode: quickModalType,
+      durationSeconds: totalSecs,
+      targetTimestamp: Date.now() + totalSecs * 1000,
+      status: 'active',
+      createdAt: new Date().toISOString(),
+      soundEnabled: true,
+      category: 'Foco',
+      priority: 'media'
+    };
+
+    if (onAddReminder) {
+      onAddReminder(newReminder);
+    } else {
+      try {
+        const saved = JSON.parse(localStorage.getItem('mbc_reminders') || '[]');
+        localStorage.setItem('mbc_reminders', JSON.stringify([newReminder, ...saved]));
+      } catch (err) {
+        console.error('Error saving quick reminder:', err);
+      }
+    }
+
+    setQuickModalType(null);
+    setActiveTab('lembretes');
+  };
 
   const HOLD_DURATION = 69; // 69ms hold time
 
@@ -161,7 +206,9 @@ export default function Sidebar({
     if (touchStartYRef.current === null || e.touches.length === 0) return;
     const currentY = e.touches[0].clientY;
     const deltaY = touchStartYRef.current - currentY; // positive when sliding UP
-    if (deltaY > 15) {
+    if (deltaY > 50) {
+      setSelectedShortcut('lembretes');
+    } else if (deltaY > 15) {
       setSelectedShortcut('cronometro');
     } else if (deltaY < 5) {
       setSelectedShortcut('timer');
@@ -1018,13 +1065,50 @@ export default function Sidebar({
           {/* Right-aligned Floating Card without header */}
           <div className="relative z-10 w-64 bg-zinc-900/95 border border-zinc-800 rounded-2xl p-3 shadow-2xl shadow-black/80 backdrop-blur-xl animate-in slide-in-from-bottom-3 zoom-in-95 duration-150 space-y-2">
             
-            {/* Actions Stack: Cronômetro (top) & Timer (bottom) */}
+            {/* Actions Stack: Lembretes, Cronômetro & Timer */}
             <div className="space-y-2">
-              {/* Option 1 (Top): Cronômetro */}
+              {/* Option 1: Lembretes */}
               <button
                 onClick={() => {
-                  localStorage.setItem('mbc_reminder_initial_mode', 'cronometer');
                   setActiveTab('lembretes');
+                  setRadialMenuOpen(false);
+                }}
+                onMouseEnter={() => setSelectedShortcut('lembretes')}
+                onTouchStart={() => setSelectedShortcut('lembretes')}
+                className={`w-full p-2.5 rounded-xl border transition-all cursor-pointer group shadow-sm flex items-center justify-between ${
+                  selectedShortcut === 'lembretes'
+                    ? 'bg-zinc-800 border-orange-500/80 ring-1 ring-orange-500/40 text-white shadow-orange-500/10'
+                    : 'bg-zinc-800/40 border-zinc-700/30 text-zinc-400 opacity-80 hover:bg-zinc-800 hover:text-white'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg transition-transform ${
+                    selectedShortcut === 'lembretes'
+                      ? 'bg-orange-500/20 border border-orange-500/40 text-orange-400 scale-105'
+                      : 'bg-orange-500/10 border border-orange-500/20 text-orange-400'
+                  }`}>
+                    <Bell className="h-4 w-4" />
+                  </div>
+                  <div className="text-left">
+                    <div className={`text-xs font-bold transition-colors ${
+                      selectedShortcut === 'lembretes' ? 'text-orange-400' : 'text-zinc-200'
+                    }`}>
+                      Lembretes
+                    </div>
+                    <div className="text-[10px] text-zinc-400 font-normal">
+                      Central de lembretes rápido
+                    </div>
+                  </div>
+                </div>
+              </button>
+
+              {/* Option 2: Cronômetro */}
+              <button
+                onClick={() => {
+                  setQuickModalType('cronometer');
+                  setQuickReminderTitle('');
+                  setQuickHours(0);
+                  setQuickMinutes(10);
                   setRadialMenuOpen(false);
                 }}
                 onMouseEnter={() => setSelectedShortcut('cronometro')}
@@ -1041,7 +1125,7 @@ export default function Sidebar({
                       ? 'bg-orange-500/20 border border-orange-500/40 text-orange-400 scale-105'
                       : 'bg-orange-500/10 border border-orange-500/20 text-orange-400'
                   }`}>
-                    <Bell className="h-4 w-4" />
+                    <Clock className="h-4 w-4" />
                   </div>
                   <div className="text-left">
                     <div className={`text-xs font-bold transition-colors ${
@@ -1050,17 +1134,19 @@ export default function Sidebar({
                       Cronômetro
                     </div>
                     <div className="text-[10px] text-zinc-400 font-normal">
-                      Contagem e alertas
+                      Definir alerta com tempo limite
                     </div>
                   </div>
                 </div>
               </button>
 
-              {/* Option 2 (Bottom): Timer (Pre-selected) */}
+              {/* Option 3: Timer */}
               <button
                 onClick={() => {
-                  localStorage.setItem('mbc_reminder_initial_mode', 'timer');
-                  setActiveTab('lembretes');
+                  setQuickModalType('timer');
+                  setQuickReminderTitle('');
+                  setQuickHours(0);
+                  setQuickMinutes(25);
                   setRadialMenuOpen(false);
                 }}
                 onMouseEnter={() => setSelectedShortcut('timer')}
@@ -1086,7 +1172,7 @@ export default function Sidebar({
                       Timer
                     </div>
                     <div className="text-[10px] text-zinc-400 font-normal">
-                      Contagem regressiva
+                      Contagem regressiva e aviso
                     </div>
                   </div>
                 </div>
@@ -1095,6 +1181,195 @@ export default function Sidebar({
           </div>
         </div>
       )}
+
+      {/* QUICK TIMER / CRONÔMETRO MODAL */}
+      <AnimatePresence>
+        {quickModalType && (
+          <div 
+            onClick={() => setQuickModalType(null)}
+            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 cursor-pointer select-none"
+          >
+            <motion.div
+              onClick={(e) => e.stopPropagation()}
+              initial={{ scale: 0.95, opacity: 0, y: 15 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 15 }}
+              className="cursor-default bg-zinc-950 border border-zinc-800 rounded-3xl p-6 w-full max-w-md shadow-2xl text-left space-y-5 relative"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-zinc-900 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className={`p-3 rounded-2xl border ${
+                    quickModalType === 'timer'
+                      ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                      : 'bg-orange-500/10 border-orange-500/20 text-orange-400'
+                  }`}>
+                    {quickModalType === 'timer' ? <Timer className="h-5 w-5" /> : <Clock className="h-5 w-5" />}
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-extrabold text-white uppercase tracking-wider">
+                      {quickModalType === 'timer' ? 'Novo Timer Rápido' : 'Novo Alerta de Cronômetro'}
+                    </h3>
+                    <p className="text-[11px] text-zinc-400 font-medium">
+                      {quickModalType === 'timer' 
+                        ? 'Contagem regressiva com notificação ao finalizar'
+                        : 'Notificação ao atingir o tempo desejado'}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setQuickModalType(null)}
+                  className="p-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Form Content */}
+              <form onSubmit={handleCreateQuickReminder} className="space-y-4">
+                {/* Field 1: Title */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-zinc-300 uppercase tracking-wider block">
+                    Nome do Lembrete <span className="text-zinc-500 font-normal">(Opcional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={quickReminderTitle}
+                    onChange={(e) => setQuickReminderTitle(e.target.value)}
+                    placeholder={
+                      quickModalType === 'timer'
+                        ? 'Ex: Pausa para o café, Estudo em foco...'
+                        : 'Ex: Alerta de treino, Limite de reunião...'
+                    }
+                    className="w-full bg-zinc-900 border border-zinc-800 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 text-white text-xs rounded-xl px-3.5 py-2.5 outline-none transition-all placeholder:text-zinc-600"
+                  />
+                </div>
+
+                {/* Field 2: Presets */}
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold text-zinc-300 uppercase tracking-wider block">
+                    Atalhos de Tempo
+                  </label>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {(quickModalType === 'timer'
+                      ? [
+                          { label: '1 min', h: 0, m: 1 },
+                          { label: '5 min', h: 0, m: 5 },
+                          { label: '15 min', h: 0, m: 15 },
+                          { label: '25 min', h: 0, m: 25 },
+                          { label: '45 min', h: 0, m: 45 },
+                          { label: '1 hora', h: 1, m: 0 },
+                          { label: '2 horas', h: 2, m: 0 },
+                          { label: '5 horas', h: 5, m: 0 }
+                        ]
+                      : [
+                          { label: '1 min', h: 0, m: 1 },
+                          { label: '5 min', h: 0, m: 5 },
+                          { label: '10 min', h: 0, m: 10 },
+                          { label: '30 min', h: 0, m: 30 },
+                          { label: '1 hora', h: 1, m: 0 },
+                          { label: '2 horas', h: 2, m: 0 },
+                          { label: '3 horas', h: 3, m: 0 },
+                          { label: '5 horas', h: 5, m: 0 }
+                        ]
+                    ).map((preset, idx) => {
+                      const isActive = quickHours === preset.h && quickMinutes === preset.m;
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setQuickHours(preset.h);
+                            setQuickMinutes(preset.m);
+                          }}
+                          className={`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                            isActive
+                              ? 'bg-orange-500/20 border border-orange-500/60 text-orange-400 shadow-sm'
+                              : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-850'
+                          }`}
+                        >
+                          {preset.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Field 3: Time Selector (Hours & Minutes) */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-zinc-300 uppercase tracking-wider block">
+                    Ajuste Fino de Duração (1 min até 10 horas)
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-mono font-bold text-zinc-500 uppercase block mb-1">
+                        Horas
+                      </label>
+                      <select
+                        value={quickHours}
+                        onChange={(e) => setQuickHours(Number(e.target.value))}
+                        className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl p-2.5 text-xs outline-none focus:border-orange-500 font-mono"
+                      >
+                        {Array.from({ length: 11 }).map((_, i) => (
+                          <option key={i} value={i}>
+                            {i} {i === 1 ? 'hora' : 'horas'}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-mono font-bold text-zinc-500 uppercase block mb-1">
+                        Minutos
+                      </label>
+                      <select
+                        value={quickMinutes}
+                        onChange={(e) => setQuickMinutes(Number(e.target.value))}
+                        className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl p-2.5 text-xs outline-none focus:border-orange-500 font-mono"
+                      >
+                        {Array.from({ length: 60 }).map((_, i) => (
+                          <option key={i} value={i}>
+                            {i} {i === 1 ? 'minuto' : 'minutos'}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Preview Box */}
+                <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-3.5 flex items-center justify-between text-xs">
+                  <span className="text-zinc-400 font-medium">Horário da Notificação:</span>
+                  <span className="text-orange-400 font-extrabold font-mono bg-orange-500/10 border border-orange-500/20 px-2.5 py-1 rounded-lg">
+                    {new Date(Date.now() + Math.max(60, (quickHours * 3600 + quickMinutes * 60)) * 1000).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-zinc-900">
+                  <button
+                    type="button"
+                    onClick={() => setQuickModalType(null)}
+                    className="px-4 py-2.5 rounded-xl border border-zinc-800 hover:bg-zinc-900 text-zinc-400 hover:text-white font-bold text-xs transition-colors cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-black font-extrabold text-xs flex items-center gap-2 transition-all shadow-lg shadow-orange-500/20 cursor-pointer"
+                  >
+                    {quickModalType === 'timer' ? <Timer className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
+                    <span>{quickModalType === 'timer' ? 'Iniciar Timer' : 'Criar Alerta'}</span>
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* 4. DESKTOP SIDEBAR HUD (RESPONSIVE COLLAPSIBLE & PINNABLE) */}
       <aside 

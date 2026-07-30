@@ -2505,6 +2505,7 @@ export default function App() {
         appLockEnabled={appLockEnabled && appLockPassword !== ''}
         onLogout={handleLogout}
         currentUser={currentUser}
+        onAddReminder={(newRem) => setReminders(prev => [newRem, ...prev])}
       />
 
       {/* 2. Main Workspace Area (responsive margin/padding for the fixed desktop HUD and mobile header) */}
