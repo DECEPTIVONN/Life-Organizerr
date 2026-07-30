@@ -589,10 +589,10 @@ export default function Sidebar({
 
   return (
     <>
-      {/* 1. PROGRESSIVE PAGE SCROLL BAR (TOP OF THE SCREEN) */}
+      {/* 1. PROGRESSIVE PAGE SCROLL BAR (MOBILE ONLY) */}
       <div 
         id="progressBar" 
-        className="fixed top-0 left-0 h-1 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 z-50 transition-all duration-75 shadow-[0_0_10px_#f97316]"
+        className="lg:hidden fixed top-0 left-0 h-1 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 z-50 transition-all duration-75 shadow-[0_0_10px_#f97316]"
         style={{ width: `${scrollProgress}%` }}
       />
 
