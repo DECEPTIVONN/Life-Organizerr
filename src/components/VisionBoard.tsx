@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Sparkles, 
   ImageIcon, 
@@ -14,7 +14,9 @@ import {
   RectangleHorizontal,
   RectangleVertical,
   Eye,
-  Check
+  Check,
+  Columns2,
+  Columns3
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { VisionBoardCard } from '../types';
@@ -340,6 +342,25 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
   const [zoomedImage, setZoomedImage] = useState<VisionBoardCard | null>(null);
   const [activeTouchCardId, setActiveTouchCardId] = useState<string | null>(null);
 
+  // Cards per row setting (2 or 3 cards)
+  const [cardsPerRow, setCardsPerRow] = useState<2 | 3>(() => {
+    try {
+      const saved = localStorage.getItem('mbc_vb_cards_per_row_v1');
+      if (saved === '2' || saved === '3') return Number(saved) as 2 | 3;
+    } catch (e) {
+      console.error('Failed to read cards per row setting:', e);
+    }
+    return 3;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('mbc_vb_cards_per_row_v1', String(cardsPerRow));
+    } catch (e) {
+      console.error('Failed to save cards per row setting:', e);
+    }
+  }, [cardsPerRow]);
+
   // Form State
   const [formArea, setFormArea] = useState<string>(currentArea || lifeAreas[0] || 'Saúde');
   const [formTitle, setFormTitle] = useState('');
@@ -477,7 +498,39 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 self-start sm:self-center">
+        <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-center">
+          {/* Columns Selector: 2 vs 3 Cards / Linha */}
+          <div className="flex items-center bg-zinc-950/90 border border-purple-500/30 rounded-xl p-1 gap-1">
+            <button
+              type="button"
+              onClick={() => setCardsPerRow(2)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                cardsPerRow === 2
+                  ? 'bg-purple-600 text-white shadow-[0_0_12px_rgba(168,85,247,0.4)]'
+                  : 'text-zinc-400 hover:text-white'
+              }`}
+              title="Exibir 2 cards por linha"
+            >
+              <Columns2 className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">2 / linha</span>
+              <span className="sm:hidden">2</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setCardsPerRow(3)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                cardsPerRow === 3
+                  ? 'bg-purple-600 text-white shadow-[0_0_12px_rgba(168,85,247,0.4)]'
+                  : 'text-zinc-400 hover:text-white'
+              }`}
+              title="Exibir 3 cards por linha"
+            >
+              <Columns3 className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">3 / linha</span>
+              <span className="sm:hidden">3</span>
+            </button>
+          </div>
+
           <button
             type="button"
             onClick={() => handleOpenAddModal(currentArea || undefined)}
@@ -549,7 +602,11 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-start">
+        <div className={`grid gap-6 items-start ${
+          cardsPerRow === 2
+            ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2'
+            : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3'
+        }`}>
           {displayCards.map(card => {
             const badge = areaBadges[card.area] || { label: card.area, color: 'bg-orange-500/10 text-orange-400', border: 'border-orange-500/30' };
             const isHorizontal = (card.orientation || 'horizontal') === 'horizontal';
@@ -566,8 +623,8 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
                   // Toggle active touch state on mobile / desktop tap
                   setActiveTouchCardId(prev => prev === card.id ? null : card.id);
                 }}
-                className={`group relative bg-zinc-950 border border-purple-500/30 hover:border-purple-500/80 rounded-2xl overflow-hidden hover:shadow-[0_0_30px_rgba(168,85,247,0.3)] transition-all duration-300 select-none cursor-pointer ${
-                  isHorizontal ? 'col-span-1 md:col-span-2 aspect-[16/9]' : 'col-span-1 aspect-[3/4]'
+                className={`group relative bg-zinc-950 border border-purple-500/30 hover:border-purple-500/80 rounded-2xl overflow-hidden hover:shadow-[0_0_30px_rgba(168,85,247,0.3)] transition-all duration-300 select-none cursor-pointer col-span-1 ${
+                  isHorizontal ? 'aspect-[16/9]' : 'aspect-[3/4]'
                 } ${card.completed ? 'ring-2 ring-emerald-500/80 shadow-[0_0_20px_rgba(16,185,129,0.25)]' : ''}`}
               >
                 {/* Image background */}
