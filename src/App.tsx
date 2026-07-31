@@ -175,6 +175,18 @@ export default function App() {
     return localStorage.getItem('mbc_show_checklist_date_selector') === 'true';
   });
 
+  const [mobileSlideTransition, setMobileSlideTransition] = useState(() => {
+    return localStorage.getItem('mbc_mobile_slide_transition') !== 'false';
+  });
+
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 1024);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const [freeEditMode, setFreeEditMode] = useState(() => {
     return localStorage.getItem('mbc_freeEditMode') === 'true';
   });
@@ -228,6 +240,74 @@ export default function App() {
   const [settingsHistory, setSettingsHistory] = useState<any[]>([]);
   const [lifeSummaryActiveArea, setLifeSummaryActiveArea] = useState<any>(null);
   const isPoppingRef = useRef(false);
+
+  // --- Mobile Lateral Tab Slide Transitions & Touch Gestures ---
+  const TAB_ORDER: Record<string, number> = {
+    calendario: 0,
+    dashboard: 1,
+    checklist: 2,
+    notas: 3,
+    rotina: 4,
+    habitos: 5,
+    metas: 6,
+    financas: 7,
+    anuais: 8,
+    documentos: 9,
+    configuracoes: 10,
+  };
+
+  const prevTabRef = useRef<string>(activeTab);
+  const [slideDirection, setSlideDirection] = useState<number>(1);
+
+  useEffect(() => {
+    if (prevTabRef.current !== activeTab) {
+      const prevIdx = TAB_ORDER[prevTabRef.current] ?? 0;
+      const newIdx = TAB_ORDER[activeTab] ?? 0;
+      setSlideDirection(newIdx >= prevIdx ? 1 : -1);
+      prevTabRef.current = activeTab;
+    }
+  }, [activeTab]);
+
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!isMobile || !mobileSlideTransition) return;
+    const touch = e.touches[0];
+    const target = e.target as HTMLElement | null;
+    if (target && (
+      target.closest('input, textarea, select, button, a, [data-no-swipe], .no-swipe') ||
+      target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'BUTTON'
+    )) {
+      touchStartRef.current = null;
+      return;
+    }
+    touchStartRef.current = {
+      x: touch.clientX,
+      y: touch.clientY,
+      time: Date.now()
+    };
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!isMobile || !mobileSlideTransition || !touchStartRef.current) return;
+    const touch = e.changedTouches[0];
+    const deltaX = touch.clientX - touchStartRef.current.x;
+    const deltaY = touch.clientY - touchStartRef.current.y;
+    const timeDiff = Date.now() - touchStartRef.current.time;
+    touchStartRef.current = null;
+
+    if (timeDiff < 400 && Math.abs(deltaX) > 60 && Math.abs(deltaX) > Math.abs(deltaY) * 1.8) {
+      const MAIN_MOBILE_TABS = ['calendario', 'dashboard', 'checklist', 'notas'];
+      const currentIndex = MAIN_MOBILE_TABS.indexOf(activeTab);
+      if (currentIndex !== -1) {
+        if (deltaX < 0 && currentIndex < MAIN_MOBILE_TABS.length - 1) {
+          setActiveTab(MAIN_MOBILE_TABS[currentIndex + 1]);
+        } else if (deltaX > 0 && currentIndex > 0) {
+          setActiveTab(MAIN_MOBILE_TABS[currentIndex - 1]);
+        }
+      }
+    }
+  };
 
   const [xpTotal, setXpTotal] = useState<number>(() => {
     const saved = localStorage.getItem('mbc_xpTotal');
@@ -2393,6 +2473,8 @@ export default function App() {
             setAutoFullscreen={setAutoFullscreen}
             showDateSelector={showChecklistDateSelector}
             setShowDateSelector={setShowChecklistDateSelector}
+            mobileSlideTransition={mobileSlideTransition}
+            setMobileSlideTransition={setMobileSlideTransition}
             setAccountDeactivated={setAccountDeactivated}
             onLogout={handleLogout}
             syncKey={syncKey}
@@ -2519,14 +2601,45 @@ export default function App() {
         <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-orange-600/5 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-1/4 left-1/4 w-[400px] h-[400px] bg-amber-600/5 rounded-full blur-[100px] pointer-events-none" />
 
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
-          <AnimatePresence mode="wait">
+        <div 
+          className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative overflow-hidden"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
+          <AnimatePresence mode="wait" custom={slideDirection}>
             <motion.div
               key={activeTab}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.3 }}
+              custom={slideDirection}
+              variants={
+                isMobile && mobileSlideTransition
+                  ? {
+                      enter: (dir: number) => ({
+                        x: dir > 0 ? '100%' : '-100%',
+                        opacity: 0,
+                      }),
+                      center: {
+                        x: '0%',
+                        opacity: 1,
+                      },
+                      exit: (dir: number) => ({
+                        x: dir < 0 ? '100%' : '-100%',
+                        opacity: 0,
+                      }),
+                    }
+                  : {
+                      enter: { opacity: 0, y: 15 },
+                      center: { opacity: 1, y: 0 },
+                      exit: { opacity: 0, y: -15 },
+                    }
+              }
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ 
+                duration: isMobile && mobileSlideTransition ? 0.24 : 0.3,
+                ease: isMobile && mobileSlideTransition ? [0.25, 1, 0.5, 1] : "easeInOut"
+              }}
+              style={{ willChange: 'transform, opacity' }}
             >
               {renderTabContent()}
             </motion.div>

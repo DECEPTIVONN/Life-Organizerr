@@ -76,6 +76,10 @@ interface SettingsViewProps {
   // Date Selector in Missões Diárias
   showDateSelector?: boolean;
   setShowDateSelector?: (show: boolean) => void;
+
+  // Mobile Slide Animation
+  mobileSlideTransition?: boolean;
+  setMobileSlideTransition?: (enabled: boolean) => void;
   
   // Account Status
   setAccountDeactivated: (deactivated: boolean) => void;
@@ -142,6 +146,8 @@ export default function SettingsView({
   setAutoFullscreen,
   showDateSelector = false,
   setShowDateSelector,
+  mobileSlideTransition = true,
+  setMobileSlideTransition,
   setAccountDeactivated,
   onLogout,
   syncKey,
@@ -1743,6 +1749,41 @@ export default function SettingsView({
                 }`}
               >
                 {showDateSelector ? 'Habilitado' : 'Desabilitado'}
+              </button>
+            </div>
+
+            {/* Toggle Mobile Lateral Slide Animation */}
+            <div className="p-4 bg-zinc-950 border border-zinc-900 rounded-2xl flex items-center justify-between">
+              <div className="space-y-0.5 flex-1 pr-4">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-xs font-bold text-zinc-200">Transição Lateral de Abas (Mobile)</h4>
+                  {mobileSlideTransition && (
+                    <span className="text-[8px] font-bold text-orange-400 bg-orange-500/10 border border-orange-500/20 px-2 py-0.5 rounded-full font-mono uppercase">
+                      Suave
+                    </span>
+                  )}
+                </div>
+                <p className="text-[10px] text-zinc-500 font-mono leading-normal">
+                  Animação fluida de deslize lateral ao alternar entre Agenda, Home, Tarefas e Notas no celular.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (setMobileSlideTransition) {
+                    const updated = !mobileSlideTransition;
+                    setMobileSlideTransition(updated);
+                    localStorage.setItem('mbc_mobile_slide_transition', String(updated));
+                    addXp(10);
+                  }
+                }}
+                className={`px-3 py-1.5 rounded-lg text-[9px] font-mono font-bold uppercase transition-all ${
+                  mobileSlideTransition 
+                    ? 'bg-orange-500/15 text-orange-400 border border-orange-500/20' 
+                    : 'bg-zinc-900 border border-zinc-800 text-zinc-500'
+                }`}
+              >
+                {mobileSlideTransition ? 'Habilitado' : 'Desabilitado'}
               </button>
             </div>
 
