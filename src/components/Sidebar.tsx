@@ -1440,22 +1440,6 @@ export default function Sidebar({
                   </span>
                 </div>
               </div>
-
-              {/* Page Scroll Progress Indicator in Desktop Sidebar */}
-              <div className="pt-2 border-t border-zinc-900/60 flex flex-col gap-1">
-                <div className="flex items-center justify-between text-[8px] font-mono text-zinc-400">
-                  <span className="flex items-center gap-1 font-bold text-zinc-300">
-                    <Compass className="h-2.5 w-2.5 text-orange-500" /> Progresso Página
-                  </span>
-                  <span className="text-orange-400 font-bold">{Math.round(scrollProgress)}%</span>
-                </div>
-                <div className="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden border border-zinc-800/80">
-                  <div 
-                    className="bg-gradient-to-r from-orange-500 to-amber-500 h-full rounded-full transition-all duration-75 shadow-[0_0_6px_#f97316]" 
-                    style={{ width: `${scrollProgress}%` }} 
-                  />
-                </div>
-              </div>
             </motion.div>
           ) : (
             <div 

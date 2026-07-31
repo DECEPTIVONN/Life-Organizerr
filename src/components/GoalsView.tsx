@@ -731,17 +731,44 @@ export default function GoalsView({
               </div>
             </div>
 
-            <div className="flex items-center gap-2 py-1 select-none">
-              <input
-                type="checkbox"
-                id="is-recurring-goal-checkbox"
-                checked={newIsRecurring}
-                onChange={(e) => setNewIsRecurring(e.target.checked)}
-                className="rounded border-zinc-800 bg-zinc-950 text-orange-500 focus:ring-0 focus:ring-offset-0 h-4 w-4"
-              />
-              <label htmlFor="is-recurring-goal-checkbox" className="text-xs text-gray-300 font-medium cursor-pointer">
-                Meta Recorrente (diária - reseta o progresso diariamente e acumula XP)
-              </label>
+            <div 
+              onClick={() => setNewIsRecurring(!newIsRecurring)}
+              className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between select-none my-1 ${
+                newIsRecurring
+                  ? 'bg-orange-500/10 border-orange-500/50 shadow-[0_0_20px_rgba(249,115,22,0.15)]'
+                  : 'bg-zinc-950/80 border-zinc-800/80 hover:border-zinc-700'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`p-2.5 rounded-xl transition-colors ${
+                  newIsRecurring ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' : 'bg-zinc-900 text-zinc-500 border border-zinc-800'
+                }`}>
+                  <RefreshCw className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-white">Meta Recorrente Diária</span>
+                    {newIsRecurring && (
+                      <span className="text-[9px] font-mono font-bold bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded-full border border-orange-500/30">
+                        Ativa
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-zinc-400 mt-0.5">
+                    Reseta o progresso diariamente para acompanhamento contínuo e acúmulo de XP.
+                  </p>
+                </div>
+              </div>
+
+              {/* Switch Toggle */}
+              <div className={`w-11 h-6 rounded-full transition-colors p-1 flex items-center ${
+                newIsRecurring ? 'bg-orange-500 justify-end' : 'bg-zinc-800 justify-start'
+              }`}>
+                <motion.div 
+                  layout 
+                  className="w-4 h-4 bg-white rounded-full shadow-md" 
+                />
+              </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-2 border-t border-zinc-850">
