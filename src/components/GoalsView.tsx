@@ -31,7 +31,8 @@ import {
   Briefcase
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Goal, BookTracker, BibleTracker, TimelineGoal, TimelineAction } from '../types';
+import { Goal, BookTracker, BibleTracker, TimelineGoal, TimelineAction, VisionBoardCard } from '../types';
+import { VisionBoard, DEFAULT_VISION_BOARD_CARDS } from './VisionBoard';
 
 interface GoalsViewProps {
   goals: Goal[];
@@ -161,6 +162,28 @@ export default function GoalsView({
 
   // Inline note text state maps
   const [noteInputs, setNoteInputs] = useState<Record<string, string>>({});
+
+  // Vision Board cards state with localStorage persistence
+  const [visionBoardCards, setVisionBoardCards] = useState<VisionBoardCard[]>(() => {
+    try {
+      const saved = localStorage.getItem('mbc_vision_board_cards_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.error('Failed to load vision board cards:', e);
+    }
+    return DEFAULT_VISION_BOARD_CARDS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('mbc_vision_board_cards_v1', JSON.stringify(visionBoardCards));
+    } catch (e) {
+      console.error('Failed to save vision board cards:', e);
+    }
+  }, [visionBoardCards]);
 
   const getTodayDateStr = () => {
     const d = new Date();
@@ -837,6 +860,24 @@ export default function GoalsView({
               </div>
             );
           })}
+          </motion.div>
+        )}
+
+        {/* Vision Board on Áreas da Vida tab (below the area cards) */}
+        {!selectedArea && viewMode === 'areas' && (
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="mt-12 pt-8 border-t border-zinc-800/80"
+          >
+            <VisionBoard 
+              cards={visionBoardCards}
+              setCards={setVisionBoardCards}
+              currentArea={null}
+              lifeAreas={LIFE_AREAS}
+              addXp={addXp}
+            />
           </motion.div>
         )}
       </AnimatePresence>
@@ -1660,6 +1701,17 @@ export default function GoalsView({
               )}
             </div>
 
+          </div>
+
+          {/* Vision Board for specific selected life area */}
+          <div className="mt-10 pt-8 border-t border-zinc-800/80">
+            <VisionBoard 
+              cards={visionBoardCards}
+              setCards={setVisionBoardCards}
+              currentArea={selectedArea}
+              lifeAreas={LIFE_AREAS}
+              addXp={addXp}
+            />
           </div>
           </motion.div>
         )}

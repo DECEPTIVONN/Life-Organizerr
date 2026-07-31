@@ -196,7 +196,18 @@ export interface YearlyBook {
   startDate?: string;
   endDate?: string;
   readingInterval?: string; // dd/mm/yyyy - dd/mm/yyyy
-}export interface QuickReminder {
+}export interface VisionBoardCard {
+  id: string;
+  area: string; // 'Saúde', 'Financeiro', 'Social', 'Hobbies', 'Espiritualidade', 'Físico', 'Carreira'
+  title: string;
+  imageUrl: string;
+  caption?: string;
+  targetYear?: string;
+  completed?: boolean;
+  createdAt?: string;
+}
+
+export interface QuickReminder {
   id: string;
   title: string;
   description?: string;
