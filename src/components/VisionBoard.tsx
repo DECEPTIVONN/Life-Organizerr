@@ -7,19 +7,13 @@ import {
   Edit3, 
   CheckCircle2, 
   Upload, 
-  Link as LinkIcon, 
   Maximize2, 
   Star, 
   RotateCcw, 
   X,
-  Layers,
-  Heart,
-  Coins,
-  Users,
-  Palette,
-  Dumbbell,
-  Briefcase,
-  Target,
+  RectangleHorizontal,
+  RectangleVertical,
+  Eye,
   Check
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -34,7 +28,8 @@ export const DEFAULT_VISION_BOARD_CARDS: VisionBoardCard[] = [
     imageUrl: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?q=80&w=800',
     caption: 'Checkups em dia e hábitos para viver com máxima energia',
     targetYear: '2026',
-    completed: false
+    completed: false,
+    orientation: 'horizontal'
   },
   {
     id: 'vb-sau-2',
@@ -43,7 +38,8 @@ export const DEFAULT_VISION_BOARD_CARDS: VisionBoardCard[] = [
     imageUrl: 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?q=80&w=800',
     caption: 'Comida de verdade, hidratação constante e suplementação ideal',
     targetYear: '2026',
-    completed: false
+    completed: false,
+    orientation: 'horizontal'
   },
   {
     id: 'vb-sau-3',
@@ -52,7 +48,8 @@ export const DEFAULT_VISION_BOARD_CARDS: VisionBoardCard[] = [
     imageUrl: 'https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?q=80&w=800',
     caption: '8 horas de sono de qualidade para regeneração muscular e mental',
     targetYear: '2026',
-    completed: false
+    completed: false,
+    orientation: 'horizontal'
   },
   {
     id: 'vb-sau-4',
@@ -61,7 +58,8 @@ export const DEFAULT_VISION_BOARD_CARDS: VisionBoardCard[] = [
     imageUrl: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=800',
     caption: 'Mente serena, meditação e controle eficiente do estresse',
     targetYear: '2026',
-    completed: false
+    completed: false,
+    orientation: 'horizontal'
   },
 
   // Financeiro
@@ -72,7 +70,8 @@ export const DEFAULT_VISION_BOARD_CARDS: VisionBoardCard[] = [
     imageUrl: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?q=80&w=800',
     caption: 'Reserva sólida de 6 a 12 meses para total tranquilidade',
     targetYear: '2026',
-    completed: false
+    completed: false,
+    orientation: 'horizontal'
   },
   {
     id: 'vb-fin-2',
@@ -81,7 +80,8 @@ export const DEFAULT_VISION_BOARD_CARDS: VisionBoardCard[] = [
     imageUrl: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?q=80&w=800',
     caption: 'Ativos diversificados gerando renda passiva mensal crescente',
     targetYear: '2026',
-    completed: false
+    completed: false,
+    orientation: 'horizontal'
   },
   {
     id: 'vb-fin-3',
@@ -90,7 +90,8 @@ export const DEFAULT_VISION_BOARD_CARDS: VisionBoardCard[] = [
     imageUrl: 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?q=80&w=800',
     caption: 'Aportes regulares e alocação estratégica de capital',
     targetYear: '2027',
-    completed: false
+    completed: false,
+    orientation: 'horizontal'
   },
   {
     id: 'vb-fin-4',
@@ -99,7 +100,8 @@ export const DEFAULT_VISION_BOARD_CARDS: VisionBoardCard[] = [
     imageUrl: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?q=80&w=800',
     caption: 'Aquisições conscientes, segurança e conforto para o futuro',
     targetYear: '2026',
-    completed: false
+    completed: false,
+    orientation: 'horizontal'
   },
 
   // Social
@@ -110,7 +112,8 @@ export const DEFAULT_VISION_BOARD_CARDS: VisionBoardCard[] = [
     imageUrl: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?q=80&w=800',
     caption: 'Amigos leais, conversas sinceras e momentos inesquecíveis',
     targetYear: '2026',
-    completed: false
+    completed: false,
+    orientation: 'horizontal'
   },
   {
     id: 'vb-soc-2',
@@ -119,7 +122,8 @@ export const DEFAULT_VISION_BOARD_CARDS: VisionBoardCard[] = [
     imageUrl: 'https://images.unsplash.com/photo-1511895426328-dc8714191300?q=80&w=800',
     caption: 'Reuniões familiares, atenção plena e celebrações',
     targetYear: '2026',
-    completed: false
+    completed: false,
+    orientation: 'horizontal'
   },
   {
     id: 'vb-soc-3',
@@ -128,7 +132,8 @@ export const DEFAULT_VISION_BOARD_CARDS: VisionBoardCard[] = [
     imageUrl: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=800',
     caption: 'Convívio com pessoas que inspiram constante evolução',
     targetYear: '2026',
-    completed: false
+    completed: false,
+    orientation: 'horizontal'
   },
   {
     id: 'vb-soc-4',
@@ -137,7 +142,8 @@ export const DEFAULT_VISION_BOARD_CARDS: VisionBoardCard[] = [
     imageUrl: 'https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?q=80&w=800',
     caption: 'Cumplicidade, apoio mútuo e construção de uma história juntos',
     targetYear: '2026',
-    completed: false
+    completed: false,
+    orientation: 'horizontal'
   },
 
   // Hobbies
@@ -148,7 +154,8 @@ export const DEFAULT_VISION_BOARD_CARDS: VisionBoardCard[] = [
     imageUrl: 'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?q=80&w=800',
     caption: 'Livros de filosofia, literatura e desenvolvimento pessoal',
     targetYear: '2026',
-    completed: false
+    completed: false,
+    orientation: 'horizontal'
   },
   {
     id: 'vb-hob-2',
@@ -157,7 +164,8 @@ export const DEFAULT_VISION_BOARD_CARDS: VisionBoardCard[] = [
     imageUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=800',
     caption: 'Aprender um instrumento e apreciar arte e boa música',
     targetYear: '2026',
-    completed: false
+    completed: false,
+    orientation: 'horizontal'
   },
   {
     id: 'vb-hob-3',
@@ -166,7 +174,8 @@ export const DEFAULT_VISION_BOARD_CARDS: VisionBoardCard[] = [
     imageUrl: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=800',
     caption: 'Trilhas, praias, montanhas e desconexão das telas',
     targetYear: '2026',
-    completed: false
+    completed: false,
+    orientation: 'horizontal'
   },
   {
     id: 'vb-hob-4',
@@ -175,7 +184,8 @@ export const DEFAULT_VISION_BOARD_CARDS: VisionBoardCard[] = [
     imageUrl: 'https://images.unsplash.com/photo-1452587925148-ce544e77e70d?q=80&w=800',
     caption: 'Registrar ângulos únicos e guardar recordações da vida',
     targetYear: '2026',
-    completed: false
+    completed: false,
+    orientation: 'horizontal'
   },
 
   // Espiritualidade
@@ -186,7 +196,8 @@ export const DEFAULT_VISION_BOARD_CARDS: VisionBoardCard[] = [
     imageUrl: 'https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?q=80&w=800',
     caption: 'Momento diário reservado para silêncio, leitura e fé',
     targetYear: '2026',
-    completed: false
+    completed: false,
+    orientation: 'horizontal'
   },
   {
     id: 'vb-esp-2',
@@ -195,7 +206,8 @@ export const DEFAULT_VISION_BOARD_CARDS: VisionBoardCard[] = [
     imageUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=800',
     caption: 'Cultivar um coração grato em cada detalhe da rotina',
     targetYear: '2026',
-    completed: false
+    completed: false,
+    orientation: 'horizontal'
   },
   {
     id: 'vb-esp-3',
@@ -204,7 +216,8 @@ export const DEFAULT_VISION_BOARD_CARDS: VisionBoardCard[] = [
     imageUrl: 'https://images.unsplash.com/photo-1519834785169-98be25ec3f84?q=80&w=800',
     caption: 'Viver alinhado com meus valores morais e espirituais',
     targetYear: '2026',
-    completed: false
+    completed: false,
+    orientation: 'horizontal'
   },
   {
     id: 'vb-esp-4',
@@ -213,7 +226,8 @@ export const DEFAULT_VISION_BOARD_CARDS: VisionBoardCard[] = [
     imageUrl: 'https://images.unsplash.com/photo-1499209974431-9dac3ada00d7?q=80&w=800',
     caption: 'Desacelerar e renovar o espírito longe do barulho',
     targetYear: '2026',
-    completed: false
+    completed: false,
+    orientation: 'horizontal'
   },
 
   // Físico
@@ -224,7 +238,8 @@ export const DEFAULT_VISION_BOARD_CARDS: VisionBoardCard[] = [
     imageUrl: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?q=80&w=800',
     caption: 'Treinos intensos e constantes com foco em força e hipertrofia',
     targetYear: '2026',
-    completed: false
+    completed: false,
+    orientation: 'horizontal'
   },
   {
     id: 'vb-fis-2',
@@ -233,7 +248,8 @@ export const DEFAULT_VISION_BOARD_CARDS: VisionBoardCard[] = [
     imageUrl: 'https://images.unsplash.com/photo-1486218119243-13883505764c?q=80&w=800',
     caption: 'Bater recordes pessoais de distância e ritmo na corrida',
     targetYear: '2026',
-    completed: false
+    completed: false,
+    orientation: 'horizontal'
   },
   {
     id: 'vb-fis-3',
@@ -242,7 +258,8 @@ export const DEFAULT_VISION_BOARD_CARDS: VisionBoardCard[] = [
     imageUrl: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?q=80&w=800',
     caption: 'Alongamentos diários para articulações saudáveis',
     targetYear: '2026',
-    completed: false
+    completed: false,
+    orientation: 'horizontal'
   },
   {
     id: 'vb-fis-4',
@@ -251,7 +268,8 @@ export const DEFAULT_VISION_BOARD_CARDS: VisionBoardCard[] = [
     imageUrl: 'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?q=80&w=800',
     caption: 'Percentual de gordura baixo e composição corporal atlética',
     targetYear: '2026',
-    completed: false
+    completed: false,
+    orientation: 'horizontal'
   },
 
   // Carreira
@@ -262,7 +280,8 @@ export const DEFAULT_VISION_BOARD_CARDS: VisionBoardCard[] = [
     imageUrl: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=800',
     caption: 'Liderar grandes iniciativas e gerar valor real',
     targetYear: '2026',
-    completed: false
+    completed: false,
+    orientation: 'horizontal'
   },
   {
     id: 'vb-car-2',
@@ -271,7 +290,8 @@ export const DEFAULT_VISION_BOARD_CARDS: VisionBoardCard[] = [
     imageUrl: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?q=80&w=800',
     caption: 'Evolução constante em habilidades do futuro',
     targetYear: '2026',
-    completed: false
+    completed: false,
+    orientation: 'horizontal'
   },
   {
     id: 'vb-car-3',
@@ -280,7 +300,8 @@ export const DEFAULT_VISION_BOARD_CARDS: VisionBoardCard[] = [
     imageUrl: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=800',
     caption: 'Criar soluções inovadoras e escalar negócios próprios',
     targetYear: '2027',
-    completed: false
+    completed: false,
+    orientation: 'horizontal'
   },
   {
     id: 'vb-car-4',
@@ -289,7 +310,8 @@ export const DEFAULT_VISION_BOARD_CARDS: VisionBoardCard[] = [
     imageUrl: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=800',
     caption: 'Ser referência na área e ajudar outros profissionais a crescer',
     targetYear: '2026',
-    completed: false
+    completed: false,
+    orientation: 'horizontal'
   }
 ];
 
@@ -316,6 +338,7 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
   const [editingCard, setEditingCard] = useState<VisionBoardCard | null>(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [zoomedImage, setZoomedImage] = useState<VisionBoardCard | null>(null);
+  const [activeTouchCardId, setActiveTouchCardId] = useState<string | null>(null);
 
   // Form State
   const [formArea, setFormArea] = useState<string>(currentArea || lifeAreas[0] || 'Saúde');
@@ -323,6 +346,7 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
   const [formImageUrl, setFormImageUrl] = useState('');
   const [formCaption, setFormCaption] = useState('');
   const [formYear, setFormYear] = useState('2026');
+  const [formOrientation, setFormOrientation] = useState<'horizontal' | 'vertical'>('horizontal');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -343,6 +367,7 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
     setFormImageUrl('');
     setFormCaption('');
     setFormYear('2026');
+    setFormOrientation('horizontal');
     setEditingCard(null);
     setIsAddingNew(true);
   };
@@ -354,6 +379,7 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
     setFormImageUrl(card.imageUrl);
     setFormCaption(card.caption || '');
     setFormYear(card.targetYear || '2026');
+    setFormOrientation(card.orientation || 'horizontal');
     setIsAddingNew(false);
   };
 
@@ -369,7 +395,8 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
         title: formTitle.trim(),
         imageUrl: formImageUrl.trim(),
         caption: formCaption.trim(),
-        targetYear: formYear.trim()
+        targetYear: formYear.trim(),
+        orientation: formOrientation
       } : c));
     } else {
       // Create new
@@ -381,7 +408,8 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
         caption: formCaption.trim(),
         targetYear: formYear.trim(),
         completed: false,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        orientation: formOrientation
       };
       setCards(prev => [newCard, ...prev]);
       if (addXp) addXp(25);
@@ -444,8 +472,8 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
           </div>
           <p className="text-xs text-zinc-400 max-w-2xl">
             {currentArea 
-              ? `Mural visual de inspirações e metas de ${currentArea.toLowerCase()}. Personalize fotos e objetivos.`
-              : 'Quadros de visão combinados de todos os seus pilares fundamentais. Visualize e realize seus sonhos.'}
+              ? `Mural visual de inspirações e metas de ${currentArea.toLowerCase()}. Passe o mouse ou toque nos cards para visualizar o título e meta.`
+              : 'Quadros de visão combinados de todos os seus pilares fundamentais. Passe o mouse ou toque nos cards para ver as informações.'}
           </p>
         </div>
 
@@ -521,9 +549,11 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-start">
           {displayCards.map(card => {
             const badge = areaBadges[card.area] || { label: card.area, color: 'bg-orange-500/10 text-orange-400', border: 'border-orange-500/30' };
+            const isHorizontal = (card.orientation || 'horizontal') === 'horizontal';
+            const isTouched = activeTouchCardId === card.id;
 
             return (
               <motion.div
@@ -532,115 +562,121 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className={`group relative bg-zinc-900/90 border border-zinc-800 rounded-3xl overflow-hidden hover:border-orange-500/50 transition-all duration-300 flex flex-col shadow-xl ${
-                  card.completed ? 'ring-2 ring-emerald-500/50' : ''
-                }`}
+                onClick={() => {
+                  // Toggle active touch state on mobile / desktop tap
+                  setActiveTouchCardId(prev => prev === card.id ? null : card.id);
+                }}
+                className={`group relative bg-zinc-950 border border-purple-500/30 hover:border-purple-500/80 rounded-2xl overflow-hidden hover:shadow-[0_0_30px_rgba(168,85,247,0.3)] transition-all duration-300 select-none cursor-pointer ${
+                  isHorizontal ? 'col-span-1 md:col-span-2 aspect-[16/9]' : 'col-span-1 aspect-[3/4]'
+                } ${card.completed ? 'ring-2 ring-emerald-500/80 shadow-[0_0_20px_rgba(16,185,129,0.25)]' : ''}`}
               >
-                {/* Image Box */}
-                <div 
-                  onClick={() => setZoomedImage(card)}
-                  className="relative h-48 w-full bg-zinc-950 overflow-hidden cursor-pointer"
-                >
-                  <img
-                    src={card.imageUrl}
-                    alt={card.title}
-                    className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
-                    referrerPolicy="no-referrer"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent opacity-80 group-hover:opacity-60 transition-opacity" />
+                {/* Image background */}
+                <img
+                  src={card.imageUrl}
+                  alt={card.title}
+                  className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                  referrerPolicy="no-referrer"
+                />
 
-                  {/* Area Badge at top left */}
-                  <div className="absolute top-3 left-3 flex items-center gap-1.5 z-10">
-                    <span className={`text-[9px] font-mono font-bold px-2.5 py-1 rounded-full border backdrop-blur-md ${badge.color} ${badge.border}`}>
-                      {card.area}
-                    </span>
-                  </div>
-
-                  {/* Completed star indicator */}
+                {/* Always-Visible Badges (Top Left: Completed / Area) */}
+                <div className="absolute top-3 left-3 flex items-center gap-2 z-10 pointer-events-none">
                   {card.completed && (
-                    <div className="absolute top-3 right-3 bg-emerald-500 text-zinc-950 font-mono font-black text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1 shadow-lg z-10">
-                      <Star className="h-3 w-3 fill-zinc-950" />
+                    <div className="bg-emerald-500 text-zinc-950 font-mono font-black text-[10px] px-2.5 py-1 rounded-md flex items-center gap-1 shadow-lg tracking-wider uppercase border border-emerald-400">
+                      <Check className="h-3 w-3 stroke-[3]" />
                       Conquistado
                     </div>
                   )}
-
-                  {/* Hover action overlay */}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-[2px]">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setZoomedImage(card);
-                      }}
-                      className="p-2 bg-zinc-900/90 hover:bg-zinc-800 text-white rounded-xl border border-zinc-700 transition-all cursor-pointer"
-                      title="Ver em tamanho cheio"
-                    >
-                      <Maximize2 className="h-4 w-4 text-orange-400" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOpenEditModal(card);
-                      }}
-                      className="p-2 bg-zinc-900/90 hover:bg-zinc-800 text-white rounded-xl border border-zinc-700 transition-all cursor-pointer"
-                      title="Editar Card"
-                    >
-                      <Edit3 className="h-4 w-4 text-amber-400" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => handleDeleteCard(card.id, e)}
-                      className="p-2 bg-zinc-900/90 hover:bg-zinc-800 text-white rounded-xl border border-zinc-700 transition-all cursor-pointer"
-                      title="Excluir Card"
-                    >
-                      <Trash2 className="h-4 w-4 text-rose-400" />
-                    </button>
-                  </div>
+                  {!card.completed && (
+                    <span className={`text-[9px] font-mono font-bold px-2.5 py-1 rounded-md border backdrop-blur-md ${badge.color} ${badge.border}`}>
+                      {card.area}
+                    </span>
+                  )}
                 </div>
 
-                {/* Card Content Footer */}
-                <div className="p-4 flex flex-col justify-between flex-1 space-y-3 bg-zinc-900/90">
-                  <div className="space-y-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <h4 className="text-xs font-bold text-white group-hover:text-orange-400 transition-colors leading-snug">
+                {/* HOVER / TOUCH OVERLAY WITH TITLE AND CAPTION */}
+                <div 
+                  className={`absolute inset-0 bg-black/85 backdrop-blur-md transition-all duration-300 flex flex-col items-center justify-between p-5 text-center z-20 ${
+                    isTouched ? 'opacity-100 pointer-events-auto' : 'opacity-0 group-hover:opacity-100 pointer-events-auto'
+                  }`}
+                >
+                  {/* Top Area Tag */}
+                  <div className="w-full flex justify-between items-center">
+                    <span className={`text-[9px] font-mono font-bold px-2.5 py-1 rounded-md border backdrop-blur-md ${badge.color} ${badge.border}`}>
+                      {card.area}
+                    </span>
+                    {card.targetYear && (
+                      <span className="text-[10px] font-mono font-bold text-purple-300 bg-purple-950/80 px-2.5 py-1 rounded-md border border-purple-500/40">
+                        [{card.targetYear}]
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Center Title and Description */}
+                  <div className="space-y-2.5 my-auto px-2 max-w-md">
+                    {card.targetYear && !card.targetYear.includes('[') && (
+                      <span className="text-[10px] font-mono font-bold text-purple-400 tracking-widest uppercase block">
+                        [{card.targetYear}]
+                      </span>
+                    )}
+                    <div className="inline-block bg-purple-950/80 border border-purple-500/50 rounded-xl px-4 py-2 shadow-[0_0_15px_rgba(168,85,247,0.3)]">
+                      <h4 className="text-sm sm:text-base font-black text-white uppercase tracking-wider font-mono">
                         {card.title}
                       </h4>
-                      {card.targetYear && (
-                        <span className="text-[9px] font-mono font-bold text-zinc-500 bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800">
-                          {card.targetYear}
-                        </span>
-                      )}
                     </div>
                     {card.caption && (
-                      <p className="text-[11px] text-zinc-400 leading-relaxed font-sans line-clamp-2">
+                      <p className="text-xs text-zinc-300 font-sans leading-relaxed line-clamp-3 max-w-sm mx-auto">
                         {card.caption}
                       </p>
                     )}
                   </div>
 
-                  {/* Bottom Actions */}
-                  <div className="flex items-center justify-between pt-2 border-t border-zinc-800/60">
+                  {/* Bottom Action Controls */}
+                  <div className="w-full flex items-center justify-between pt-3 border-t border-purple-500/20 gap-2">
                     <button
                       type="button"
                       onClick={(e) => handleToggleCompleted(card.id, e)}
-                      className={`text-[10px] font-bold px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                      className={`text-[10px] font-mono font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
                         card.completed
-                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                          : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white border border-zinc-700'
+                          ? 'bg-emerald-500 text-zinc-950 border border-emerald-400'
+                          : 'bg-zinc-900 hover:bg-purple-900/60 text-purple-300 border border-purple-500/40'
                       }`}
                     >
-                      <CheckCircle2 className={`h-3.5 w-3.5 ${card.completed ? 'text-emerald-400' : 'text-zinc-500'}`} />
+                      <CheckCircle2 className="h-3.5 w-3.5" />
                       <span>{card.completed ? 'Conquistado' : 'Marcar Conquistado'}</span>
                     </button>
 
-                    <button
-                      type="button"
-                      onClick={() => handleOpenEditModal(card)}
-                      className="text-[10px] text-orange-400 hover:text-orange-300 font-bold transition-colors"
-                    >
-                      Editar
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setZoomedImage(card);
+                        }}
+                        className="p-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-lg border border-zinc-700 transition-all cursor-pointer"
+                        title="Ver Imagem Inteira"
+                      >
+                        <Maximize2 className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenEditModal(card);
+                        }}
+                        className="p-1.5 bg-zinc-900 hover:bg-zinc-800 text-amber-400 rounded-lg border border-zinc-700 transition-all cursor-pointer"
+                        title="Editar Card"
+                      >
+                        <Edit3 className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeleteCard(card.id, e)}
+                        className="p-1.5 bg-zinc-900 hover:bg-zinc-800 text-rose-400 rounded-lg border border-zinc-700 transition-all cursor-pointer"
+                        title="Excluir Card"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -649,7 +685,7 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
         </div>
       )}
 
-      {/* CREATE / EDIT MODAL */}
+      {/* CREATE / EDIT MODAL - EXPANDED LATERALLY FOR DESKTOP */}
       <AnimatePresence>
         {(isAddingNew || editingCard) && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -661,21 +697,29 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
                 setIsAddingNew(false);
                 setEditingCard(null);
               }}
-              className="fixed inset-0 bg-black/80 backdrop-blur-sm"
+              className="fixed inset-0 bg-black/85 backdrop-blur-md"
             />
 
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-zinc-950 border border-orange-500/30 rounded-3xl p-6 max-w-lg w-full relative z-10 shadow-2xl space-y-4 overflow-hidden"
+              className="bg-zinc-950 border border-purple-500/40 rounded-3xl p-6 md:p-8 max-w-4xl w-full relative z-10 shadow-[0_0_50px_rgba(168,85,247,0.2)] space-y-6 max-h-[90vh] overflow-y-auto custom-scrollbar"
             >
-              <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-orange-500" />
-                  <h3 className="text-sm font-black text-white uppercase tracking-wider font-serif">
-                    {editingCard ? 'Editar Card do Vision Board' : 'Novo Card no Vision Board'}
-                  </h3>
+              {/* Top Bar */}
+              <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
+                <div className="flex items-center gap-3">
+                  <span className="p-2.5 bg-purple-500/10 rounded-2xl border border-purple-500/30 text-purple-400">
+                    <Sparkles className="h-6 w-6 animate-pulse" />
+                  </span>
+                  <div>
+                    <h3 className="text-base sm:text-lg font-black text-white uppercase tracking-wider font-mono">
+                      {editingCard ? 'Editar Card do Vision Board' : 'Novo Card no Vision Board'}
+                    </h3>
+                    <p className="text-xs text-zinc-400 font-sans">
+                      Personalize a imagem, informações de meta e a orientação de exibição (horizontal/vertical).
+                    </p>
+                  </div>
                 </div>
                 <button
                   type="button"
@@ -683,121 +727,238 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
                     setIsAddingNew(false);
                     setEditingCard(null);
                   }}
-                  className="p-1 hover:bg-zinc-900 rounded-lg text-zinc-500 hover:text-white transition-colors"
+                  className="p-2 hover:bg-zinc-900 rounded-xl text-zinc-500 hover:text-white transition-colors"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
 
-              <form onSubmit={handleSaveCard} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[10px] text-zinc-400 font-bold uppercase block mb-1">Área da Vida</label>
-                    <select
-                      value={formArea}
-                      onChange={(e) => setFormArea(e.target.value)}
-                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500"
-                    >
-                      {lifeAreas.map(a => (
-                        <option key={a} value={a}>{a}</option>
-                      ))}
-                    </select>
+              {/* Form Grid: Left = Inputs, Right = Live Preview */}
+              <form onSubmit={handleSaveCard} className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                
+                {/* Left Column: Form Fields */}
+                <div className="space-y-4">
+                  {/* Area and Year */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[11px] text-zinc-300 font-mono font-bold uppercase block mb-1">
+                        Área da Vida *
+                      </label>
+                      <select
+                        value={formArea}
+                        onChange={(e) => setFormArea(e.target.value)}
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500 transition-colors"
+                      >
+                        {lifeAreas.map(a => (
+                          <option key={a} value={a}>{a}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] text-zinc-300 font-mono font-bold uppercase block mb-1">
+                        Ano / Prazo (Opcional)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ex: 2026, 2027"
+                        value={formYear}
+                        onChange={(e) => setFormYear(e.target.value)}
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-purple-500 transition-colors"
+                      />
+                    </div>
                   </div>
 
+                  {/* Orientation Selector */}
                   <div>
-                    <label className="text-[10px] text-zinc-400 font-bold uppercase block mb-1">Ano / Prazo (Opcional)</label>
-                    <input
-                      type="text"
-                      placeholder="Ex: 2026, 2027"
-                      value={formYear}
-                      onChange={(e) => setFormYear(e.target.value)}
-                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-orange-500"
-                    />
+                    <label className="text-[11px] text-zinc-300 font-mono font-bold uppercase block mb-1.5">
+                      Orientação do Card *
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setFormOrientation('horizontal')}
+                        className={`p-3 rounded-xl border flex items-center justify-center gap-2 transition-all cursor-pointer font-mono text-xs font-bold ${
+                          formOrientation === 'horizontal'
+                            ? 'bg-purple-500/20 text-purple-300 border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.2)]'
+                            : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-700'
+                        }`}
+                      >
+                        <RectangleHorizontal className="h-4 w-4" />
+                        <span>Horizontal (16:9)</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setFormOrientation('vertical')}
+                        className={`p-3 rounded-xl border flex items-center justify-center gap-2 transition-all cursor-pointer font-mono text-xs font-bold ${
+                          formOrientation === 'vertical'
+                            ? 'bg-purple-500/20 text-purple-300 border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.2)]'
+                            : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-700'
+                        }`}
+                      >
+                        <RectangleVertical className="h-4 w-4" />
+                        <span>Vertical (3:4)</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
 
-                <div>
-                  <label className="text-[10px] text-zinc-400 font-bold uppercase block mb-1">Título do Card / Visão *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ex: Reserva Financeira Sólida, Viagem dos Sonhos"
-                    value={formTitle}
-                    onChange={(e) => setFormTitle(e.target.value)}
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[10px] text-zinc-400 font-bold uppercase block mb-1">Frase / Descrição / Meta</label>
-                  <textarea
-                    rows={2}
-                    placeholder="Ex: Conquistar o corpo desejado com treino diário e alimentação saudável..."
-                    value={formCaption}
-                    onChange={(e) => setFormCaption(e.target.value)}
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500 custom-scrollbar"
-                  />
-                </div>
-
-                {/* Image Selection */}
-                <div className="space-y-2">
-                  <label className="text-[10px] text-zinc-400 font-bold uppercase block">Imagem do Card *</label>
-                  
-                  <div className="flex gap-2">
+                  {/* Title */}
+                  <div>
+                    <label className="text-[11px] text-zinc-300 font-mono font-bold uppercase block mb-1">
+                      Título do Card / Visão *
+                    </label>
                     <input
                       type="text"
                       required
-                      placeholder="URL da Imagem (Ex: https://images.unsplash.com/...)"
-                      value={formImageUrl}
-                      onChange={(e) => setFormImageUrl(e.target.value)}
-                      className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500 font-mono text-[11px]"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="bg-zinc-800 hover:bg-zinc-700 text-orange-400 border border-zinc-700 font-bold text-xs px-3 py-2 rounded-xl transition-all flex items-center gap-1 whitespace-nowrap cursor-pointer"
-                      title="Upload foto local"
-                    >
-                      <Upload className="h-3.5 w-3.5" />
-                      <span>Upload</span>
-                    </button>
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      accept="image/*"
-                      onChange={handleFileUpload}
-                      className="hidden"
+                      placeholder="Ex: CALL OF DUTY, RESERVA DE EMERGÊNCIA"
+                      value={formTitle}
+                      onChange={(e) => setFormTitle(e.target.value)}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500 font-mono transition-colors"
                     />
                   </div>
 
-                  {/* Image Preview */}
-                  {formImageUrl && (
-                    <div className="relative h-28 w-full rounded-2xl overflow-hidden border border-zinc-800 mt-2 bg-zinc-900">
-                      <img src={formImageUrl} alt="Preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                      <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-[9px] font-mono font-bold text-orange-400">
-                        Preview
-                      </div>
+                  {/* Caption */}
+                  <div>
+                    <label className="text-[11px] text-zinc-300 font-mono font-bold uppercase block mb-1">
+                      Frase / Descrição / Meta
+                    </label>
+                    <textarea
+                      rows={3}
+                      placeholder="Ex: Conquistar o corpo desejado com treino diário e alimentação saudável..."
+                      value={formCaption}
+                      onChange={(e) => setFormCaption(e.target.value)}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500 custom-scrollbar transition-colors"
+                    />
+                  </div>
+
+                  {/* Image Selection */}
+                  <div className="space-y-2">
+                    <label className="text-[11px] text-zinc-300 font-mono font-bold uppercase block">
+                      Imagem do Card *
+                    </label>
+                    
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        required
+                        placeholder="URL da Imagem (Ex: https://images.unsplash.com/...)"
+                        value={formImageUrl}
+                        onChange={(e) => setFormImageUrl(e.target.value)}
+                        className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500 font-mono text-[11px]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="bg-zinc-800 hover:bg-zinc-700 text-purple-300 border border-zinc-700 font-bold text-xs px-3.5 py-2.5 rounded-xl transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer"
+                        title="Upload foto local"
+                      >
+                        <Upload className="h-3.5 w-3.5" />
+                        <span>Upload</span>
+                      </button>
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        accept="image/*"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                      />
                     </div>
-                  )}
+                  </div>
                 </div>
 
-                <div className="flex justify-end gap-2 pt-2 border-t border-zinc-800">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsAddingNew(false);
-                      setEditingCard(null);
-                    }}
-                    className="px-4 py-2 text-xs font-bold text-zinc-400 hover:text-white transition-colors"
+                {/* Right Column: Live Interactive Card Preview */}
+                <div className="space-y-3 bg-zinc-900/40 p-5 rounded-2xl border border-zinc-800/80">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono font-bold text-purple-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <Eye className="h-3.5 w-3.5" />
+                      Pré-visualização do Card
+                    </span>
+                    <span className="text-[9px] font-mono text-zinc-500">Passe o mouse no preview</span>
+                  </div>
+
+                  {/* Mock Card */}
+                  <div 
+                    className={`group relative bg-zinc-950 border border-purple-500/50 rounded-2xl overflow-hidden shadow-xl transition-all duration-300 mx-auto ${
+                      formOrientation === 'horizontal' ? 'w-full aspect-[16/9]' : 'w-64 max-w-full aspect-[3/4]'
+                    }`}
                   >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs px-5 py-2 rounded-xl transition-all shadow-lg cursor-pointer"
-                  >
-                    {editingCard ? 'Salvar Alterações' : 'Criar Card'}
-                  </button>
+                    {formImageUrl ? (
+                      <img
+                        src={formImageUrl}
+                        alt="Preview"
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-900 text-zinc-600 space-y-2">
+                        <ImageIcon className="h-8 w-8 stroke-1" />
+                        <span className="text-[10px] font-mono">Sem Imagem</span>
+                      </div>
+                    )}
+
+                    {/* Area Badge top left */}
+                    <div className="absolute top-3 left-3 z-10 pointer-events-none">
+                      <span className="text-[9px] font-mono font-bold px-2.5 py-1 rounded-md border backdrop-blur-md bg-purple-500/10 text-purple-400 border-purple-500/30">
+                        {formArea}
+                      </span>
+                    </div>
+
+                    {/* Hover Overlay */}
+                    <div className="absolute inset-0 bg-black/85 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col items-center justify-between p-4 text-center z-20">
+                      <div className="w-full flex justify-between items-center">
+                        <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded border bg-purple-500/10 text-purple-400 border-purple-500/30">
+                          {formArea}
+                        </span>
+                        {formYear && (
+                          <span className="text-[10px] font-mono font-bold text-purple-300 bg-purple-950/80 px-2 py-0.5 rounded border border-purple-500/40">
+                            [{formYear}]
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="space-y-2 my-auto px-2">
+                        {formYear && (
+                          <span className="text-[10px] font-mono font-bold text-purple-400 tracking-widest uppercase block">
+                            [{formYear}]
+                          </span>
+                        )}
+                        <div className="inline-block bg-purple-950/80 border border-purple-500/50 rounded-xl px-3.5 py-1.5 shadow-[0_0_15px_rgba(168,85,247,0.3)]">
+                          <h4 className="text-xs sm:text-sm font-black text-white uppercase tracking-wider font-mono">
+                            {formTitle || 'TÍTULO DO CARD'}
+                          </h4>
+                        </div>
+                        {formCaption && (
+                          <p className="text-[11px] text-zinc-300 font-sans line-clamp-2 max-w-xs mx-auto">
+                            {formCaption}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="w-full text-center text-[9px] font-mono text-purple-400 pt-2 border-t border-purple-500/20">
+                        Visualização em Hover
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-3 pt-4 border-t border-zinc-800">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsAddingNew(false);
+                        setEditingCard(null);
+                      }}
+                      className="px-4 py-2.5 text-xs font-mono font-bold text-zinc-400 hover:text-white transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      className="bg-gradient-to-r from-purple-500 via-purple-600 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-mono font-bold text-xs px-6 py-2.5 rounded-xl transition-all shadow-[0_0_20px_rgba(168,85,247,0.3)] cursor-pointer"
+                    >
+                      {editingCard ? 'Salvar Alterações' : 'Criar Card'}
+                    </button>
+                  </div>
                 </div>
               </form>
             </motion.div>
@@ -821,7 +982,7 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="relative z-10 max-w-4xl w-full bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row"
+              className="relative z-10 max-w-4xl w-full bg-zinc-950 border border-purple-500/30 rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row"
             >
               <button
                 type="button"
@@ -842,16 +1003,16 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
 
               <div className="md:w-2/5 p-6 flex flex-col justify-between space-y-4 bg-zinc-950">
                 <div className="space-y-3">
-                  <span className="text-[10px] font-mono font-bold text-orange-400 bg-orange-500/10 px-2.5 py-1 rounded-full border border-orange-500/20 inline-block uppercase">
+                  <span className="text-[10px] font-mono font-bold text-purple-400 bg-purple-500/10 px-2.5 py-1 rounded-full border border-purple-500/20 inline-block uppercase">
                     {zoomedImage.area}
                   </span>
-                  <h3 className="text-xl font-bold text-white font-serif">{zoomedImage.title}</h3>
+                  <h3 className="text-xl font-black text-white font-mono uppercase">{zoomedImage.title}</h3>
                   {zoomedImage.caption && (
                     <p className="text-xs text-zinc-300 leading-relaxed font-sans">{zoomedImage.caption}</p>
                   )}
                   {zoomedImage.targetYear && (
                     <div className="text-xs font-mono text-zinc-400">
-                      Ano Alvo: <span className="text-white font-bold">{zoomedImage.targetYear}</span>
+                      Ano Alvo: <span className="text-white font-bold">[{zoomedImage.targetYear}]</span>
                     </div>
                   )}
                 </div>
@@ -863,7 +1024,7 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
                       handleToggleCompleted(zoomedImage.id, e);
                       setZoomedImage(prev => prev ? { ...prev, completed: !prev.completed } : null);
                     }}
-                    className={`text-xs font-bold px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
+                    className={`text-xs font-mono font-bold px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
                       zoomedImage.completed
                         ? 'bg-emerald-500 text-zinc-950'
                         : 'bg-zinc-800 text-white hover:bg-zinc-700'

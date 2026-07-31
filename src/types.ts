@@ -205,6 +205,7 @@ export interface YearlyBook {
   targetYear?: string;
   completed?: boolean;
   createdAt?: string;
+  orientation?: 'horizontal' | 'vertical';
 }
 
 export interface QuickReminder {
