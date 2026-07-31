@@ -112,9 +112,6 @@ export default function Sidebar({
   // PWA states
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallModal, setShowInstallModal] = useState(false);
-  
-  // Sync state
-  const [showSyncModal, setShowSyncModal] = useState(false);
 
   // Long-press state for mobile navbar "Notas" tab
   const [radialMenuOpen, setRadialMenuOpen] = useState(false);
@@ -740,23 +737,6 @@ export default function Sidebar({
 
         {/* Right Side: Icons aligned to the right */}
         <div className="flex items-center gap-3">
-          {/* Mobile Cloud Sync Status Button */}
-          <button 
-            onClick={() => setShowSyncModal(true)}
-            className={`p-2 bg-zinc-900/40 rounded-xl border border-zinc-800/80 transition-all active:scale-95 flex items-center justify-center ${
-              syncKey 
-                ? syncStatus === 'syncing' 
-                  ? 'text-amber-500 animate-pulse border-amber-500/20 shadow-[0_0_8px_rgba(245,158,11,0.2)]' 
-                  : syncStatus === 'error' 
-                    ? 'text-red-500 border-red-500/20' 
-                    : 'text-green-500 border-green-500/20 shadow-[0_0_8px_rgba(34,197,94,0.2)]' 
-                : 'text-zinc-500 hover:text-white'
-            }`}
-            title="Sincronização na Nuvem"
-          >
-            {syncKey ? <Cloud className="h-4.5 w-4.5" /> : <CloudOff className="h-4.5 w-4.5 text-zinc-600" />}
-          </button>
-
           {/* Quick Search */}
           <button 
             onClick={() => setSearchOpen(true)}
@@ -857,22 +837,6 @@ export default function Sidebar({
 
                 {/* Extra Utility options for mobile PWA & Fullscreen */}
                 <div className="pt-2 border-t border-zinc-900/60 mt-2 space-y-1">
-                  <button
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      setShowSyncModal(true);
-                    }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-bold text-gray-400 hover:text-white hover:bg-zinc-900 border border-transparent transition-all"
-                  >
-                    <Cloud className={`h-4 w-4 ${syncKey ? 'text-green-500 animate-pulse' : 'text-orange-500'}`} />
-                    <div className="text-left">
-                      <div className="text-xs font-bold text-zinc-300">Sincronizar Dispositivos</div>
-                      <div className="text-[9px] text-zinc-500 font-mono mt-0.5">
-                        {syncKey ? `Conectado: ${syncKey}` : 'Sincronizar dados na nuvem'}
-                      </div>
-                    </div>
-                  </button>
-
                   <button
                     onClick={() => {
                       setMobileMenuOpen(false);
@@ -1559,27 +1523,6 @@ export default function Sidebar({
           {/* Fullscreen & Install App triggers inside Desktop Sidebar */}
           <div className={`w-full flex flex-col gap-1 ${isExpanded ? 'px-1' : 'items-center px-0'}`}>
             <button
-              onClick={() => setShowSyncModal(true)}
-              className={`flex items-center rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-900/40 border border-transparent transition-all group duration-200 w-full ${
-                isExpanded ? 'px-3 py-2 justify-start gap-3' : 'p-2 justify-center h-10 w-10'
-              }`}
-              title="Sincronização na Nuvem"
-            >
-              <Cloud className={`h-4 w-4 flex-shrink-0 group-hover:scale-110 transition-all ${
-                syncKey 
-                  ? syncStatus === 'syncing' 
-                    ? 'text-amber-500 animate-pulse' 
-                    : syncStatus === 'error' 
-                      ? 'text-red-500' 
-                      : 'text-green-500' 
-                  : 'text-orange-500'
-              }`} />
-              <span className={`text-[11px] font-bold leading-none transition-all duration-300 ${isExpanded ? 'opacity-100 block' : 'opacity-0 hidden w-0 overflow-hidden'}`}>
-                {syncKey ? (syncStatus === 'error' ? 'Erro de Sync' : syncStatus === 'syncing' ? 'Sincronizando' : 'Sincronizado') : 'Sincronizar'}
-              </span>
-            </button>
-
-            <button
               onClick={toggleFullscreen}
               className={`flex items-center rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-900/40 border border-transparent transition-all group duration-200 w-full ${
                 isExpanded ? 'px-3 py-2 justify-start gap-3' : 'p-2 justify-center h-10 w-10'
@@ -1821,202 +1764,6 @@ export default function Sidebar({
               >
                 Entendido
               </button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* 7. SUPABASE SYNC MODAL */}
-      <AnimatePresence>
-        {showSyncModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div 
-              className="fixed inset-0 bg-black/95 backdrop-blur-md"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowSyncModal(false)}
-            />
-
-            <motion.div 
-              className="bg-zinc-950 border border-emerald-500/30 rounded-2xl p-6 max-w-md w-full relative overflow-hidden z-50 shadow-[0_0_40px_rgba(16,185,129,0.15)]"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-            >
-              {/* Neon border top accent */}
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-500" />
-
-              {/* Close Button */}
-              <button 
-                onClick={() => setShowSyncModal(false)}
-                className="absolute top-4 right-4 p-1 hover:bg-zinc-900 text-zinc-500 hover:text-white rounded-lg transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
-
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2.5 bg-emerald-500/10 rounded-xl border border-emerald-500/20 text-emerald-400">
-                  <Cloud className="h-6 w-6 animate-pulse" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-black text-white uppercase tracking-wider">Sincronização Cloud</h3>
-                  <p className="text-[9px] text-emerald-400 font-mono font-bold">SUPABASE DATABASE</p>
-                </div>
-              </div>
-
-              <p className="text-xs text-zinc-400 mb-5 leading-relaxed">
-                Seus dados são salvos e sincronizados automaticamente na nuvem sempre que você realiza alterações. Ao abrir o aplicativo em qualquer dispositivo, seu progresso é recuperado instantaneamente!
-              </p>
-
-              {syncKey ? (
-                <div className="space-y-4">
-                  {/* Connected Status Card */}
-                  <div className={`p-4 rounded-xl border flex flex-col gap-2 relative transition-all ${
-                    syncStatus === 'error'
-                      ? 'border-red-500/25 bg-red-950/10'
-                      : syncStatus === 'syncing'
-                        ? 'border-amber-500/25 bg-amber-950/10'
-                        : 'border-green-500/20 bg-zinc-900/50'
-                  }`}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full animate-pulse inline-block ${
-                          syncStatus === 'error' ? 'bg-red-500' : syncStatus === 'syncing' ? 'bg-amber-500' : 'bg-green-500'
-                        }`}></span>
-                        <span className={`text-[10px] font-mono font-bold uppercase tracking-widest ${
-                          syncStatus === 'error' ? 'text-red-500' : syncStatus === 'syncing' ? 'text-amber-500' : 'text-green-500'
-                        }`}>
-                          {syncStatus === 'error' 
-                            ? 'ERRO DE CONEXÃO' 
-                            : syncStatus === 'syncing' 
-                              ? 'SINCRONIZANDO COM A NUVEM' 
-                              : 'SINC ATIVA E AUTOMÁTICA'}
-                        </span>
-                      </div>
-                      <span className="text-[9px] text-zinc-500 font-mono uppercase font-bold">
-                        {syncStatus === 'syncing' ? 'Sincronizando...' : syncStatus === 'error' ? 'Erro' : 'Sincronizado'}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between bg-zinc-950 p-2.5 rounded-lg border border-zinc-900 mt-2">
-                      <code className="text-xs text-zinc-300 font-mono font-bold tracking-wider">{syncKey}</code>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(syncKey);
-                        }}
-                        className="p-1 hover:bg-zinc-900 text-zinc-400 hover:text-white rounded transition-all"
-                        title="Copiar Chave"
-                      >
-                        <Copy className="h-3.5 w-3.5 text-orange-500" />
-                      </button>
-                    </div>
-
-                    <p className="text-[10px] text-zinc-500 leading-normal mt-1">
-                      {syncStatus === 'error'
-                        ? 'Ocorreu um erro de comunicação ou permissão com o banco de dados. Suas alterações locais permanecem salvas em seu navegador e serão sincronizadas assim que a conexão for restabelecida.'
-                        : syncStatus === 'syncing'
-                          ? 'Salvando e atualizando suas alterações em tempo real nos servidores seguros da nuvem.'
-                          : 'Você está conectado ao perfil de sincronização acima. Seus dados estão salvos de forma segura e imediata.'}
-                    </p>
-                  </div>
-
-                  {/* Connect alternative key section */}
-                  <div className="pt-2 border-t border-zinc-900">
-                    <label className="text-[9px] text-zinc-400 font-mono font-bold uppercase tracking-wider block mb-1.5">Sincronizar com Chave Personalizada (Avançado)</label>
-                    <div className="flex gap-2">
-                      <input 
-                        type="text" 
-                        id="sync-key-input"
-                        placeholder="Ex: MINHA_CHAVE_2026"
-                        className="flex-1 bg-zinc-900/60 border border-zinc-850 rounded-lg px-3 py-2 text-xs text-white font-mono placeholder-zinc-700 focus:outline-none focus:border-orange-500 transition-all uppercase"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            const val = (e.target as HTMLInputElement).value;
-                            if (val.trim()) connectSyncKey(val);
-                          }
-                        }}
-                      />
-                      <button
-                        onClick={() => {
-                          const val = (document.getElementById('sync-key-input') as HTMLInputElement)?.value;
-                          if (val && val.trim()) connectSyncKey(val);
-                        }}
-                        className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs px-4 py-2 rounded-lg transition-all uppercase tracking-wider font-mono flex items-center gap-1"
-                      >
-                        Carregar
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2 pt-2">
-                    <button
-                      onClick={() => {
-                        if (confirm("Deseja restaurar a chave de sincronização padrão (USUARIO_UNICO)? Seus dados locais serão sincronizados com o perfil principal.")) {
-                          disconnectSync();
-                        }
-                      }}
-                      className="flex-1 bg-zinc-900 hover:bg-zinc-850 text-zinc-400 hover:text-white border border-zinc-850 font-bold text-xs py-2.5 rounded-lg transition-all uppercase tracking-wider"
-                      title="Restaurar chave de sincronização padrão"
-                    >
-                      Restaurar Padrão
-                    </button>
-                    <button
-                      onClick={() => setShowSyncModal(false)}
-                      className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs py-2.5 rounded-lg transition-all border border-transparent uppercase tracking-wider"
-                    >
-                      Fechar
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {/* Disconnected State: Connect Form */}
-                  <div>
-                    <label className="text-[10px] text-zinc-400 font-mono font-bold uppercase tracking-wider block mb-1.5">Insira ou Crie sua Chave de Sincronização</label>
-                    <div className="flex gap-2">
-                      <input 
-                        type="text" 
-                        id="sync-key-input"
-                        placeholder="Ex: nando_sync_2026"
-                        className="flex-1 bg-zinc-900/60 border border-zinc-850 rounded-lg px-3 py-2 text-xs text-white font-mono placeholder-zinc-700 focus:outline-none focus:border-orange-500 transition-all uppercase"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            const val = (e.target as HTMLInputElement).value;
-                            if (val.trim()) connectSyncKey(val);
-                          }
-                        }}
-                      />
-                      <button
-                        onClick={() => {
-                          const val = (document.getElementById('sync-key-input') as HTMLInputElement)?.value;
-                          if (val && val.trim()) connectSyncKey(val);
-                        }}
-                        className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs px-4 py-2 rounded-lg transition-all uppercase tracking-wider font-mono flex items-center gap-1"
-                      >
-                        Conectar
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="relative flex py-1 items-center">
-                    <div className="flex-grow border-t border-zinc-900"></div>
-                    <span className="flex-shrink mx-3 text-[9px] text-zinc-600 font-mono font-bold uppercase">Ou</span>
-                    <div className="flex-grow border-t border-zinc-900"></div>
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      const randomId = 'mbc-' + Math.random().toString(36).substring(2, 8).toUpperCase();
-                      connectSyncKey(randomId);
-                    }}
-                    className="w-full bg-orange-500/10 hover:bg-orange-500/20 text-orange-500 border border-orange-500/20 font-bold text-xs py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 uppercase tracking-wider font-mono shadow-[0_0_15px_rgba(249,115,22,0.05)]"
-                  >
-                    <RefreshCw className="h-3.5 w-3.5 text-orange-500" />
-                    Gerar Chave Aleatória
-                  </button>
-                </div>
-              )}
             </motion.div>
           </div>
         )}
