@@ -2460,74 +2460,36 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                   /* Active Day Entry Editor */
                   <div className="flex-1 flex flex-col space-y-4">
                     
-                     {/* Primary Topic Selector */}
-                    <div className="flex bg-zinc-950 p-1 rounded-xl border border-zinc-900 overflow-x-auto scrollbar-none gap-0.5">
-                      <button
-                        onClick={() => setActiveTopic('diario')}
-                        className={`flex-1 py-2 px-2 text-[10px] font-bold rounded-lg flex items-center justify-center gap-1 transition-all whitespace-nowrap ${
-                          activeTopic === 'diario'
-                            ? 'bg-zinc-900 text-white shadow border border-zinc-800/60'
-                            : 'text-gray-400 hover:text-white'
-                        }`}
-                      >
-                        <BookOpen className="h-3.5 w-3.5" />
-                        Diário Pessoal
-                      </button>
-                      <button
-                        onClick={() => setActiveTopic('checklist')}
-                        className={`flex-1 py-2 px-2 text-[10px] font-bold rounded-lg flex items-center justify-center gap-1 transition-all whitespace-nowrap ${
-                          activeTopic === 'checklist'
-                            ? 'bg-zinc-900 text-white shadow border border-zinc-800/60'
-                            : 'text-gray-400 hover:text-white'
-                        }`}
-                      >
-                        <Check className="h-3.5 w-3.5 text-orange-500" />
-                        Checklist
-                      </button>
-                      <button
-                        onClick={() => setActiveTopic('espiritualidade')}
-                        className={`flex-1 py-2 px-2 text-[10px] font-bold rounded-lg flex items-center justify-center gap-1 transition-all whitespace-nowrap ${
-                          activeTopic === 'espiritualidade'
-                            ? 'bg-zinc-900 text-white shadow border border-zinc-800/60'
-                            : 'text-gray-400 hover:text-white'
-                        }`}
-                      >
-                        <Sparkles className="h-3.5 w-3.5 text-orange-500" />
-                        Espiritualidade
-                      </button>
-                      <button
-                        onClick={() => setActiveTopic('alteregos')}
-                        className={`flex-1 py-2 px-2 text-[10px] font-bold rounded-lg flex items-center justify-center gap-1 transition-all whitespace-nowrap ${
-                          activeTopic === 'alteregos'
-                            ? 'bg-zinc-900 text-white shadow border border-zinc-800/60'
-                            : 'text-gray-400 hover:text-white'
-                        }`}
-                      >
-                        <Sliders className="h-3.5 w-3.5 text-orange-500" />
-                        Alter Egos
-                      </button>
-                      <button
-                        onClick={() => setActiveTopic('saude')}
-                        className={`flex-1 py-2 px-2 text-[10px] font-bold rounded-lg flex items-center justify-center gap-1 transition-all whitespace-nowrap ${
-                          activeTopic === 'saude'
-                            ? 'bg-zinc-900 text-white shadow border border-zinc-800/60'
-                            : 'text-gray-400 hover:text-white'
-                        }`}
-                      >
-                        <Heart className="h-3.5 w-3.5 text-orange-500" />
-                        Saúde
-                      </button>
-                      <button
-                        onClick={() => setActiveTopic('agenda')}
-                        className={`flex-1 py-2 px-2 text-[10px] font-bold rounded-lg flex items-center justify-center gap-1 transition-all whitespace-nowrap ${
-                          activeTopic === 'agenda'
-                            ? 'bg-zinc-900 text-white shadow border border-zinc-800/60'
-                            : 'text-gray-400 hover:text-white'
-                        }`}
-                      >
-                        <CalendarDays className="h-3.5 w-3.5 text-orange-500" />
-                        Google Agenda
-                      </button>
+                     {/* Primary Topic Selector (Grid de Categorias de Bloco) */}
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 bg-zinc-950 p-2 rounded-2xl border border-zinc-900">
+                      {[
+                        { id: 'diario', label: 'Diário Pessoal', icon: BookOpen },
+                        { id: 'checklist', label: 'Checklist', icon: Check },
+                        { id: 'espiritualidade', label: 'Espiritualidade', icon: Sparkles },
+                        { id: 'alteregos', label: 'Alter Egos', icon: Sliders },
+                        { id: 'saude', label: 'Saúde', icon: Heart },
+                        { id: 'agenda', label: 'Google Agenda', icon: CalendarDays },
+                      ].map((tb) => {
+                        const Icon = tb.icon;
+                        const isActive = activeTopic === tb.id;
+                        return (
+                          <button
+                            key={tb.id}
+                            type="button"
+                            onClick={() => setActiveTopic(tb.id as any)}
+                            className={`flex flex-col items-center justify-center p-3 rounded-2xl transition-all font-sans ${
+                              isActive
+                                ? 'bg-orange-500 text-white font-extrabold shadow-lg shadow-orange-500/20 border border-orange-400/40 scale-[1.02]'
+                                : 'bg-zinc-900/80 hover:bg-zinc-850 text-zinc-400 hover:text-white border border-zinc-800/80'
+                            }`}
+                          >
+                            <Icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-orange-400'}`} />
+                            <span className="text-[11px] font-bold mt-1.5 text-center leading-tight">
+                              {tb.label}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
 
                     {/* Topic Content Container */}
@@ -2547,24 +2509,8 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                             value={journalText}
                             onChange={(e) => setJournalText(e.target.value)}
                             placeholder="Escreva aqui como foi o seu dia, suas vitórias, lições aprendidas e sentimentos... registre tudo."
-                            className="w-full flex-1 min-h-[140px] bg-zinc-950/40 border border-zinc-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-none font-sans leading-relaxed"
+                            className="w-full flex-1 min-h-[160px] bg-zinc-950/40 border border-zinc-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-none font-sans leading-relaxed"
                           />
-                          <div className="pt-2 flex items-center justify-between bg-zinc-950/30 p-2.5 rounded-xl border border-zinc-900/60">
-                            <label className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                              <Bell className="h-3 w-3 text-orange-500" /> Horário do Lembrete
-                            </label>
-                            <input
-                              type="time"
-                              value={noteReminderTime}
-                              onChange={(e) => {
-                                setNoteReminderTime(e.target.value);
-                                if (e.target.value && typeof Notification !== 'undefined' && Notification.permission === 'default') {
-                                  Notification.requestPermission().catch(() => {});
-                                }
-                              }}
-                              className="bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1 text-xs text-white font-mono focus:outline-none focus:border-orange-500/50"
-                            />
-                          </div>
                         </div>
                       ) : activeTopic === 'checklist' ? (
                         /* CHECKLIST TOPIC */

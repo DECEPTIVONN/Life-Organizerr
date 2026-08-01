@@ -1358,6 +1358,20 @@ export default function App() {
           // background fetch silent error ignore
         }
       }
+
+      // 6. Espaço Diário & Fé Notification Trigger
+      const dailySpaceNotifEnabled = localStorage.getItem('mbc_daily_workspace_notif_enabled') !== 'false';
+      const dailySpaceTime = localStorage.getItem('mbc_daily_workspace_reminder_time') || '21:00';
+      if (dailySpaceNotifEnabled && dailySpaceTime === currentHHMM) {
+        const key = `dailyworkspace-${todayDateStr}-${currentHHMM}`;
+        if (!notifiedKeysRef.current.has(key)) {
+          notifiedKeysRef.current.add(key);
+          new Notification('Espaço Diário & Fé', {
+            body: 'Hora de registrar suas reflexões do dia, checklist, orações e hábitos!',
+            icon: '/favicon.ico'
+          });
+        }
+      }
     };
 
     const interval = setInterval(checkNotifications, 30000);

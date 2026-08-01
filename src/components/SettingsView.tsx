@@ -231,6 +231,12 @@ export default function SettingsView({
   const [notifDaily, setNotifDaily] = useState(true);
   const [notifFinances, setNotifFinances] = useState(false);
   const [notifRoutine, setNotifRoutine] = useState(true);
+  const [dailyWorkspaceNotifEnabled, setDailyWorkspaceNotifEnabled] = useState(() => {
+    return localStorage.getItem('mbc_daily_workspace_notif_enabled') !== 'false';
+  });
+  const [dailyWorkspaceReminderTime, setDailyWorkspaceReminderTime] = useState(() => {
+    return localStorage.getItem('mbc_daily_workspace_reminder_time') || '21:00';
+  });
 
   // Install trigger (PWA)
   const [pwaPrompt, setPwaPrompt] = useState<any>(null);
@@ -1613,6 +1619,53 @@ export default function SettingsView({
 
             {/* Switch items */}
             <div className="space-y-4">
+              {/* Espaço Diário & Fé Reminder */}
+              <div className="p-4 bg-zinc-950 border border-zinc-900 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-xs font-bold text-zinc-200 flex items-center gap-2">
+                      <Bell className="h-3.5 w-3.5 text-orange-500" />
+                      Lembrete de Espaço Diário & Fé
+                    </h4>
+                    <p className="text-[9px] text-zinc-500 font-mono mt-0.5">
+                      Alerta diário para diário pessoal, orações, checklist e hábitos.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = !dailyWorkspaceNotifEnabled;
+                      setDailyWorkspaceNotifEnabled(next);
+                      localStorage.setItem('mbc_daily_workspace_notif_enabled', String(next));
+                    }}
+                    className={`w-9 h-5 rounded-full p-0.5 transition-all ${dailyWorkspaceNotifEnabled ? 'bg-orange-500/40' : 'bg-zinc-800'}`}
+                  >
+                    <div className={`w-4 h-4 rounded-full transition-all ${dailyWorkspaceNotifEnabled ? 'translate-x-4 bg-orange-400' : 'translate-x-0 bg-zinc-500'}`} />
+                  </button>
+                </div>
+
+                {dailyWorkspaceNotifEnabled && (
+                  <div className="pt-2.5 flex items-center justify-between border-t border-zinc-900/80">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase font-mono">
+                      Horário do Lembrete
+                    </span>
+                    <input
+                      type="time"
+                      value={dailyWorkspaceReminderTime}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setDailyWorkspaceReminderTime(val);
+                        localStorage.setItem('mbc_daily_workspace_reminder_time', val);
+                        if (val && typeof Notification !== 'undefined' && Notification.permission === 'default') {
+                          Notification.requestPermission().catch(() => {});
+                        }
+                      }}
+                      className="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-orange-500/50"
+                    />
+                  </div>
+                )}
+              </div>
+
               {/* Habits alert */}
               <div className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-900 rounded-2xl">
                 <div>

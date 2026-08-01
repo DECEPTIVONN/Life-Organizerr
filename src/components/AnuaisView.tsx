@@ -2450,28 +2450,35 @@ export default function AnuaisView({
                 </button>
               </div>
 
-              {/* Sub tabs list selectors */}
-              <div className="px-5 py-3 border-b border-zinc-900 flex bg-zinc-950/20 overflow-x-auto scrollbar-none gap-0.5">
+              {/* Sub tabs list selectors (Grid de Categorias de Bloco) */}
+              <div className="px-5 py-3 border-b border-zinc-900 grid grid-cols-3 sm:grid-cols-5 gap-2 bg-zinc-950/40">
                 {[
                   { id: 'diario', label: 'Diário Pessoal', icon: BookOpen },
                   { id: 'checklist', label: 'Checklist Diário', icon: CheckSquare },
                   { id: 'espiritualidade', label: 'Espiritualidade', icon: Sparkles },
                   { id: 'alteregos', label: 'Alter Egos', icon: Sliders },
                   { id: 'saude', label: 'Saúde & Hábitos', icon: Heart }
-                ].map((tb) => (
-                  <button
-                    key={tb.id}
-                    onClick={() => setActiveTopic(tb.id as any)}
-                    className={`flex-1 py-2 px-2 text-[10px] font-bold rounded-lg flex items-center justify-center gap-1.5 transition-all whitespace-nowrap ${
-                      activeTopic === tb.id
-                        ? 'bg-zinc-900 text-white border border-zinc-800/80 shadow'
-                        : 'text-zinc-400 hover:text-white hover:bg-zinc-900/20'
-                    }`}
-                  >
-                    <tb.icon className="h-3.5 w-3.5 shrink-0" />
-                    <span>{tb.label}</span>
-                  </button>
-                ))}
+                ].map((tb) => {
+                  const Icon = tb.icon;
+                  const isActive = activeTopic === tb.id;
+                  return (
+                    <button
+                      key={tb.id}
+                      type="button"
+                      onClick={() => setActiveTopic(tb.id as any)}
+                      className={`flex flex-col items-center justify-center p-3 rounded-2xl transition-all font-sans ${
+                        isActive
+                          ? 'bg-orange-500 text-white font-extrabold shadow-lg shadow-orange-500/20 border border-orange-400/40 scale-[1.02]'
+                          : 'bg-zinc-900/80 hover:bg-zinc-850 text-zinc-400 hover:text-white border border-zinc-800/80'
+                      }`}
+                    >
+                      <Icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-orange-400'}`} />
+                      <span className="text-[11px] font-bold mt-1.5 text-center leading-tight">
+                        {tb.label}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Main Tab Content */}
