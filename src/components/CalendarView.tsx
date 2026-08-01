@@ -45,6 +45,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { CalendarNote, DailyTask, SubTask, MonthlyReview, BookTracker, BibleTracker, RoutineItem, WeeklyReview, FutureEvent } from '../types';
 import { saveGoogleOAuthTokens, clearGoogleOAuthSession, refreshGoogleAccessToken, getValidGoogleAccessToken } from '../utils/googleToken';
+import { handleAutoListKeyDown } from '../utils/listUtils';
 // @ts-ignore
 import classicalLightEngraving from '../assets/images/classical_light_engraving_1784335041654.jpg';
 
@@ -2348,6 +2349,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                     <textarea
                       value={tempTemplateGratitude}
                       onChange={(e) => setTempTemplateGratitude(e.target.value)}
+                      onKeyDown={(e) => handleAutoListKeyDown(e, tempTemplateGratitude, setTempTemplateGratitude)}
                       className="w-full h-24 bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-none font-mono"
                     />
                   </div>
@@ -2359,6 +2361,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                     <textarea
                       value={tempTemplateDecrees}
                       onChange={(e) => setTempTemplateDecrees(e.target.value)}
+                      onKeyDown={(e) => handleAutoListKeyDown(e, tempTemplateDecrees, setTempTemplateDecrees)}
                       className="w-full h-24 bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-none font-mono"
                     />
                   </div>
@@ -2370,6 +2373,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                     <textarea
                       value={tempTemplatePrayer}
                       onChange={(e) => setTempTemplatePrayer(e.target.value)}
+                      onKeyDown={(e) => handleAutoListKeyDown(e, tempTemplatePrayer, setTempTemplatePrayer)}
                       className="w-full h-24 bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-none font-mono"
                     />
                   </div>
@@ -2487,6 +2491,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                           <textarea
                             value={journalText}
                             onChange={(e) => setJournalText(e.target.value)}
+                            onKeyDown={(e) => handleAutoListKeyDown(e, journalText, setJournalText)}
                             placeholder="Escreva aqui como foi o seu dia, suas vitórias, lições aprendidas e sentimentos... registre tudo."
                             className="w-full flex-1 min-h-[160px] bg-zinc-950/40 border border-zinc-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-none font-sans leading-relaxed"
                           />
@@ -2691,6 +2696,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                 <textarea
                                   value={gratitudeText}
                                   onChange={(e) => setGratitudeText(e.target.value)}
+                                  onKeyDown={(e) => handleAutoListKeyDown(e, gratitudeText, setGratitudeText)}
                                   placeholder="Liste o que você é grato hoje..."
                                   className="w-full flex-1 min-h-[140px] bg-zinc-950/40 border border-zinc-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-none font-sans leading-relaxed"
                                 />
@@ -2715,6 +2721,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                 <textarea
                                   value={decreesText}
                                   onChange={(e) => setDecreesText(e.target.value)}
+                                  onKeyDown={(e) => handleAutoListKeyDown(e, decreesText, setDecreesText)}
                                   placeholder="Declare palavras de vitória..."
                                   className="w-full flex-1 min-h-[140px] bg-zinc-950/40 border border-zinc-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-none font-sans leading-relaxed"
                                 />
@@ -2739,6 +2746,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                 <textarea
                                   value={prayerText}
                                   onChange={(e) => setPrayerText(e.target.value)}
+                                  onKeyDown={(e) => handleAutoListKeyDown(e, prayerText, setPrayerText)}
                                   placeholder="Sua oração ou meditação sagrada de hoje..."
                                   className="w-full flex-1 min-h-[140px] bg-zinc-950/40 border border-zinc-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-none font-sans leading-relaxed"
                                 />
@@ -2799,6 +2807,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                             <textarea
                               value={alterEgoText}
                               onChange={(e) => setAlterEgoText(e.target.value)}
+                              onKeyDown={(e) => handleAutoListKeyDown(e, alterEgoText, setAlterEgoText)}
                               placeholder="Onde Alfredo foi forte hoje? Em qual momento o Beto tentou tomar o controle?"
                               className="w-full flex-1 min-h-[100px] bg-zinc-950/40 border border-zinc-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-none font-sans leading-relaxed"
                             />
@@ -2881,12 +2890,13 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                 <label className="text-[10px] text-zinc-400 font-bold block mb-1">
                                   Manhã:
                                 </label>
-                                <input
-                                  type="text"
+                                <textarea
                                   value={foodMorning}
                                   onChange={(e) => setFoodMorning(e.target.value)}
-                                  placeholder="Ex: Ovos mexidos, café e banana"
-                                  className="w-full bg-zinc-950 border border-zinc-850 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-orange-500/50"
+                                  onKeyDown={(e) => handleAutoListKeyDown(e, foodMorning, setFoodMorning)}
+                                  placeholder="Ex: 1. Ovos mexidos, café e banana"
+                                  rows={2}
+                                  className="w-full bg-zinc-950 border border-zinc-850 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-y min-h-[52px]"
                                 />
                               </div>
 
@@ -2894,12 +2904,13 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                 <label className="text-[10px] text-zinc-400 font-bold block mb-1">
                                   Tarde:
                                 </label>
-                                <input
-                                  type="text"
+                                <textarea
                                   value={foodAfternoon}
                                   onChange={(e) => setFoodAfternoon(e.target.value)}
-                                  placeholder="Ex: Arroz, feijão, frango grelhado e salada"
-                                  className="w-full bg-zinc-950 border border-zinc-850 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-orange-500/50"
+                                  onKeyDown={(e) => handleAutoListKeyDown(e, foodAfternoon, setFoodAfternoon)}
+                                  placeholder="Ex: 1. Arroz, feijão, frango e salada"
+                                  rows={2}
+                                  className="w-full bg-zinc-950 border border-zinc-850 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-y min-h-[52px]"
                                 />
                               </div>
 
@@ -2907,12 +2918,13 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                 <label className="text-[10px] text-zinc-400 font-bold block mb-1">
                                   Noite:
                                 </label>
-                                <input
-                                  type="text"
+                                <textarea
                                   value={foodNight}
                                   onChange={(e) => setFoodNight(e.target.value)}
-                                  placeholder="Ex: Sopa de legumes ou whey com aveia"
-                                  className="w-full bg-zinc-950 border border-zinc-850 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-orange-500/50"
+                                  onKeyDown={(e) => handleAutoListKeyDown(e, foodNight, setFoodNight)}
+                                  placeholder="Ex: 1. Sopa de legumes ou whey com aveia"
+                                  rows={2}
+                                  className="w-full bg-zinc-950 border border-zinc-850 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-y min-h-[52px]"
                                 />
                               </div>
                             </div>
@@ -3055,6 +3067,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                       <textarea
                                         value={googleEventDescription}
                                         onChange={(e) => setGoogleEventDescription(e.target.value)}
+                                        onKeyDown={(e) => handleAutoListKeyDown(e, googleEventDescription, setGoogleEventDescription)}
                                         placeholder="Mais detalhes sobre o compromisso..."
                                         className="w-full bg-zinc-950 border border-zinc-850 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-orange-500/50 min-h-[60px] resize-none"
                                       />
@@ -3903,6 +3916,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                     <textarea
                       value={weekReviewOneSentence}
                       onChange={(e) => setWeekReviewOneSentence(e.target.value)}
+                      onKeyDown={(e) => handleAutoListKeyDown(e, weekReviewOneSentence, setWeekReviewOneSentence)}
                       placeholder="Ex: Uma semana produtiva, de muito foco técnico e avanço nas metas de condicionamento físico..."
                       className="w-full min-h-[60px] bg-zinc-950/60 border border-zinc-850 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-none font-sans leading-relaxed"
                     />
@@ -4274,6 +4288,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                     <textarea
                       value={reviewOneSentence}
                       onChange={(e) => setReviewOneSentence(e.target.value)}
+                      onKeyDown={(e) => handleAutoListKeyDown(e, reviewOneSentence, setReviewOneSentence)}
                       placeholder="Ex: Um mês de muito foco profissional, superação física e consolidação de hábitos matinais..."
                       className="w-full min-h-[60px] bg-zinc-950/60 border border-zinc-850 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-none font-sans leading-relaxed"
                     />

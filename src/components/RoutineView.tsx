@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { RoutineItem, MonthlyReview, CalendarNote, WeeklyReview } from '../types';
+import { handleAutoListKeyDown } from '../utils/listUtils';
 
 interface RoutineViewProps {
   routine: RoutineItem[];
@@ -988,6 +989,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                     <textarea
                       value={weekReviewOneSentence}
                       onChange={(e) => setWeekReviewOneSentence(e.target.value)}
+                      onKeyDown={(e) => handleAutoListKeyDown(e, weekReviewOneSentence, setWeekReviewOneSentence)}
                       placeholder="Ex: Uma semana produtiva, de muito foco técnico e avanço nas metas de condicionamento físico..."
                       className="w-full min-h-[60px] bg-zinc-950/60 border border-zinc-850 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-none font-sans leading-relaxed"
                     />
@@ -1362,6 +1364,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                     <textarea
                       value={reviewOneSentence}
                       onChange={(e) => setReviewOneSentence(e.target.value)}
+                      onKeyDown={(e) => handleAutoListKeyDown(e, reviewOneSentence, setReviewOneSentence)}
                       placeholder="Ex: Um mês de muito foco profissional, superação física e consolidação de hábitos matinais..."
                       className="w-full min-h-[60px] bg-zinc-950/60 border border-zinc-850 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-none font-sans leading-relaxed"
                     />

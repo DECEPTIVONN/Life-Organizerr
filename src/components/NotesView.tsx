@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Note } from '../types';
+import { handleAutoListKeyDown } from '../utils/listUtils';
 
 interface NotesViewProps {
   notes: Note[];
@@ -705,6 +706,7 @@ export default function NotesView({ notes, setNotes, addXp, freeEditMode = false
                       <textarea
                         value={content}
                         onChange={(e) => setContent(e.target.value)}
+                        onKeyDown={(e) => handleAutoListKeyDown(e, content, setContent)}
                         placeholder="Digite suas anotações aqui... Suporta escrita livre e organização de ideias."
                         className="w-full flex-1 bg-zinc-950/80 border border-zinc-800 rounded-xl p-5 text-sm text-white focus:outline-none focus:border-orange-500/40 resize-none min-h-[350px] font-sans leading-relaxed"
                       />
@@ -731,6 +733,7 @@ export default function NotesView({ notes, setNotes, addXp, freeEditMode = false
                         <textarea
                           value={content}
                           onChange={(e) => setContent(e.target.value)}
+                          onKeyDown={(e) => handleAutoListKeyDown(e, content, setContent)}
                           placeholder="Digite suas anotações aqui (edição livre em tempo real)..."
                           className="w-full flex-1 bg-zinc-950/60 border border-zinc-800/80 rounded-xl p-5 text-sm md:text-base text-gray-200 focus:outline-none focus:border-orange-500/40 resize-none min-h-[350px] font-sans leading-relaxed"
                         />

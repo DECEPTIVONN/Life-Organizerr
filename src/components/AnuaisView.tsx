@@ -38,6 +38,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { CalendarNote, DailyTask, MonthlyReview, WeeklyReview, YearlyBook, SubTask, Goal, FinanceEntry } from '../types';
 import { calculateReadingInterval, formatDateBR } from '../utils/bookUtils';
+import { handleAutoListKeyDown } from '../utils/listUtils';
 
 interface AnuaisViewProps {
   notes: CalendarNote[];
@@ -2492,6 +2493,7 @@ export default function AnuaisView({
                     <textarea
                       value={journalText}
                       onChange={(e) => setJournalText(e.target.value)}
+                      onKeyDown={(e) => handleAutoListKeyDown(e, journalText, setJournalText)}
                       placeholder="Relate detalhadamente como foi o seu dia, seus sentimentos, suas lutas e conquistas..."
                       className="w-full flex-1 min-h-[250px] bg-zinc-950 border border-zinc-900 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-none font-sans leading-relaxed"
                     />
@@ -2626,6 +2628,7 @@ export default function AnuaisView({
                         <textarea
                           value={gratitudeText}
                           onChange={(e) => setGratitudeText(e.target.value)}
+                          onKeyDown={(e) => handleAutoListKeyDown(e, gratitudeText, setGratitudeText)}
                           placeholder="Liste 3 motivos para agradecer hoje..."
                           className="w-full min-h-[200px] bg-zinc-950 border border-zinc-900 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-none font-sans leading-relaxed"
                         />
@@ -2635,6 +2638,7 @@ export default function AnuaisView({
                         <textarea
                           value={decreesText}
                           onChange={(e) => setDecreesText(e.target.value)}
+                          onKeyDown={(e) => handleAutoListKeyDown(e, decreesText, setDecreesText)}
                           placeholder="Eu sou..."
                           className="w-full min-h-[200px] bg-zinc-950 border border-zinc-900 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-none font-sans leading-relaxed"
                         />
@@ -2644,6 +2648,7 @@ export default function AnuaisView({
                         <textarea
                           value={prayerText}
                           onChange={(e) => setPrayerText(e.target.value)}
+                          onKeyDown={(e) => handleAutoListKeyDown(e, prayerText, setPrayerText)}
                           placeholder="Sua oração pessoal..."
                           className="w-full min-h-[200px] bg-zinc-950 border border-zinc-900 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-none font-sans leading-relaxed"
                         />
@@ -2704,6 +2709,7 @@ export default function AnuaisView({
                       <textarea
                         value={alterEgoText}
                         onChange={(e) => setAlterEgoText(e.target.value)}
+                        onKeyDown={(e) => handleAutoListKeyDown(e, alterEgoText, setAlterEgoText)}
                         placeholder="Quais gatilhos você enfrentou? Onde o Alfredo foi forte? Onde o Beto tentou infiltrar?"
                         className="w-full h-32 bg-zinc-950 border border-zinc-900 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-none font-sans"
                       />
@@ -2752,32 +2758,35 @@ export default function AnuaisView({
                       <div className="space-y-2.5">
                         <div>
                           <label className="text-[9px] text-zinc-500 block">Café da Manhã:</label>
-                          <input
-                            type="text"
+                          <textarea
                             value={foodMorning}
                             onChange={(e) => setFoodMorning(e.target.value)}
+                            onKeyDown={(e) => handleAutoListKeyDown(e, foodMorning, setFoodMorning)}
                             placeholder="O que comeu de manhã..."
-                            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white"
+                            rows={2}
+                            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-rose-500/50 resize-y min-h-[52px]"
                           />
                         </div>
                         <div>
                           <label className="text-[9px] text-zinc-500 block">Almoço / Lanche:</label>
-                          <input
-                            type="text"
+                          <textarea
                             value={foodAfternoon}
                             onChange={(e) => setFoodAfternoon(e.target.value)}
+                            onKeyDown={(e) => handleAutoListKeyDown(e, foodAfternoon, setFoodAfternoon)}
                             placeholder="O que comeu à tarde..."
-                            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white"
+                            rows={2}
+                            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-rose-500/50 resize-y min-h-[52px]"
                           />
                         </div>
                         <div>
                           <label className="text-[9px] text-zinc-500 block">Jantar / Ceia:</label>
-                          <input
-                            type="text"
+                          <textarea
                             value={foodNight}
                             onChange={(e) => setFoodNight(e.target.value)}
+                            onKeyDown={(e) => handleAutoListKeyDown(e, foodNight, setFoodNight)}
                             placeholder="O que comeu à noite..."
-                            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white"
+                            rows={2}
+                            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-rose-500/50 resize-y min-h-[52px]"
                           />
                         </div>
                       </div>
@@ -3152,6 +3161,7 @@ export default function AnuaisView({
                   <textarea
                     value={weeklyReadings}
                     onChange={(e) => setWeeklyReadings(e.target.value)}
+                    onKeyDown={(e) => handleAutoListKeyDown(e, weeklyReadings, setWeeklyReadings)}
                     placeholder="Quais livros, capítulos ou artigos leu essa semana..."
                     className="w-full min-h-[70px] bg-zinc-950 border border-zinc-900 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-none font-sans leading-relaxed"
                   />
@@ -3296,6 +3306,7 @@ export default function AnuaisView({
                     <textarea
                       value={bookReview}
                       onChange={(e) => setBookReview(e.target.value)}
+                      onKeyDown={(e) => handleAutoListKeyDown(e, bookReview, setBookReview)}
                       placeholder="Escreva um breve resumo ou notas sobre o livro..."
                       className="w-full h-20 bg-zinc-950 border border-zinc-900 rounded-xl p-2.5 text-xs text-white focus:outline-none resize-none font-sans"
                     />
