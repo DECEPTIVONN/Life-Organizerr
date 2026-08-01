@@ -2618,19 +2618,16 @@ export default function App() {
                         x: dir > 0 ? '100%' : '-100%',
                         opacity: 0,
                         scale: 0.98,
-                        filter: 'blur(2px)',
                       }),
                       center: {
                         x: '0%',
                         opacity: 1,
                         scale: 1,
-                        filter: 'blur(0px)',
                       },
                       exit: (dir: number) => ({
-                        x: dir < 0 ? '25%' : '-25%',
+                        x: dir > 0 ? '-100%' : '100%',
                         opacity: 0,
-                        scale: 0.95,
-                        filter: 'blur(3px)',
+                        scale: 0.98,
                       }),
                     }
                   : {
