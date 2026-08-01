@@ -197,6 +197,12 @@ export default function App() {
         applyThemeColor(presetObj.primaryHex);
       }
     }
+    if (activeThemePreset) {
+      localStorage.setItem('mbc_theme_preset', activeThemePreset);
+    }
+    if (customThemeHex) {
+      localStorage.setItem('mbc_custom_theme_hex', customThemeHex);
+    }
   }, [activeThemePreset, customThemeHex]);
 
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 1024);
@@ -1165,7 +1171,9 @@ export default function App() {
     futureEvents,
     habits,
     gridRoutine,
-    customCards
+    customCards,
+    activeThemePreset,
+    customThemeHex
   });
 
   // Automatically keep latestStateRef in sync with latest React state on every single render
@@ -1193,7 +1201,9 @@ export default function App() {
       futureEvents,
       habits,
       gridRoutine,
-      customCards
+      customCards,
+      activeThemePreset,
+      customThemeHex
     };
   });
 
@@ -1411,7 +1421,9 @@ export default function App() {
         futureEvents: data.futureEvents !== undefined ? data.futureEvents : latestStateRef.current.futureEvents,
         habits: data.habits !== undefined ? data.habits : latestStateRef.current.habits,
         gridRoutine: data.gridRoutine !== undefined ? data.gridRoutine : latestStateRef.current.gridRoutine,
-        customCards: data.customCards !== undefined ? data.customCards : latestStateRef.current.customCards
+        customCards: data.customCards !== undefined ? data.customCards : latestStateRef.current.customCards,
+        activeThemePreset: data.activeThemePreset !== undefined ? data.activeThemePreset : latestStateRef.current.activeThemePreset,
+        customThemeHex: data.customThemeHex !== undefined ? data.customThemeHex : latestStateRef.current.customThemeHex
       };
 
       const incomingSerialized = safeStringify(incomingData);
@@ -1445,6 +1457,8 @@ export default function App() {
       setHabits(incomingData.habits);
       if (incomingData.customCards) setCustomCards(incomingData.customCards);
       if (incomingData.gridRoutine !== undefined) setGridRoutine(incomingData.gridRoutine);
+      if (incomingData.activeThemePreset !== undefined) setActiveThemePreset(incomingData.activeThemePreset);
+      if (incomingData.customThemeHex !== undefined) setCustomThemeHex(incomingData.customThemeHex);
 
       // Batch save to local storage
       localStorage.setItem('mbc_userName', incomingData.userName);
@@ -1470,6 +1484,8 @@ export default function App() {
       localStorage.setItem('mbc_habits', JSON.stringify(incomingData.habits));
       if (incomingData.customCards) localStorage.setItem('dashboard_custom_cards', JSON.stringify(incomingData.customCards));
       if (incomingData.gridRoutine !== undefined) localStorage.setItem('mbc_grid_routine', JSON.stringify(incomingData.gridRoutine));
+      if (incomingData.activeThemePreset !== undefined) localStorage.setItem('mbc_theme_preset', incomingData.activeThemePreset);
+      if (incomingData.customThemeHex !== undefined) localStorage.setItem('mbc_custom_theme_hex', incomingData.customThemeHex);
     };
 
     async function checkRemoteData(isInitial = false) {
@@ -1593,7 +1609,9 @@ export default function App() {
       futureEvents,
       habits,
       gridRoutine,
-      customCards
+      customCards,
+      activeThemePreset,
+      customThemeHex
     };
     const currentSerialized = safeStringify(currentData);
 
@@ -1655,6 +1673,8 @@ export default function App() {
     habits,
     gridRoutine,
     customCards,
+    activeThemePreset,
+    customThemeHex,
     isInitialLoadComplete
   ]);
 
