@@ -2490,7 +2490,7 @@ export default function ChecklistView({
                   setIsAddingBlock(false);
                   setEditingCell(null);
                 }}
-                className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 cursor-pointer"
+                className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 cursor-pointer"
               >
                 <motion.div 
                   onClick={(e) => e.stopPropagation()}
@@ -2498,7 +2498,7 @@ export default function ChecklistView({
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: 15 }}
                   transition={{ type: "spring", duration: 0.35 }}
-                  className="cursor-default bg-zinc-950 border border-zinc-850 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl flex flex-col"
+                  className="cursor-default bg-zinc-950 border border-zinc-850 w-full max-w-md my-auto rounded-2xl overflow-hidden shadow-2xl flex flex-col"
                 >
                   {/* Header */}
                   <div className="p-5 border-b border-zinc-900 flex items-center justify-between">

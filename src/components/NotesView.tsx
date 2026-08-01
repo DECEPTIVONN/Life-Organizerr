@@ -430,11 +430,11 @@ export default function NotesView({ notes, setNotes, addXp, freeEditMode = false
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.98 }}
-            className="fixed inset-0 bg-zinc-950/95 backdrop-blur-md z-50 overflow-y-auto p-4 md:p-8 flex flex-col justify-start cursor-pointer"
+            className="fixed inset-0 bg-zinc-950/95 backdrop-blur-md z-[9999] overflow-y-auto p-4 md:p-8 flex items-center justify-center cursor-pointer"
           >
             <div 
               onClick={(e) => e.stopPropagation()}
-              className="cursor-default max-w-4xl w-full mx-auto flex-1 flex flex-col space-y-6"
+              className="cursor-default max-w-4xl w-full mx-auto my-auto max-h-[92vh] flex flex-col space-y-6 overflow-y-auto bg-zinc-950 p-6 md:p-8 rounded-3xl border border-zinc-800 shadow-2xl"
             >
               
               {/* Top Header Controls */}

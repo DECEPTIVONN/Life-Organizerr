@@ -905,7 +905,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
         {isWeeklyReviewOpen && (
           <div 
             onClick={() => setIsWeeklyReviewOpen(false)}
-            className="fixed inset-0 z-50 bg-[#040405]/95 backdrop-blur-md flex items-center justify-center p-4 md:p-6 overflow-hidden cursor-pointer"
+            className="fixed inset-0 z-[9999] bg-[#040405]/95 backdrop-blur-md flex items-center justify-center p-4 md:p-6 overflow-hidden cursor-pointer"
           >
             <motion.div
               onClick={(e) => e.stopPropagation()}
@@ -913,7 +913,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="cursor-default bg-[#0a0a0c] border border-zinc-800 rounded-3xl w-full max-w-6xl h-full max-h-[85vh] flex flex-col overflow-hidden shadow-2xl shadow-orange-500/5 text-left"
+              className="cursor-default bg-[#0a0a0c] border border-zinc-800 rounded-3xl w-full max-w-6xl h-full max-h-[85vh] my-auto flex flex-col overflow-hidden shadow-2xl shadow-orange-500/5 text-left"
             >
               
               {/* Modal Header */}
@@ -1710,14 +1710,14 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
         {editingItem && (
           <div 
             onClick={() => setEditingItem(null)}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm cursor-pointer"
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm cursor-pointer"
           >
             <motion.div
               onClick={(e) => e.stopPropagation()}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="cursor-default bg-zinc-950 border border-zinc-800 rounded-2xl p-6 max-w-md w-full space-y-5 text-left shadow-2xl"
+              className="cursor-default bg-zinc-950 border border-zinc-800 rounded-2xl p-6 max-w-md w-full my-auto space-y-5 text-left shadow-2xl"
             >
               <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
                 <div className="flex items-center gap-2">

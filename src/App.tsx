@@ -2641,7 +2641,7 @@ export default function App() {
         <div className="absolute bottom-1/4 left-1/4 w-[400px] h-[400px] bg-amber-600/5 rounded-full blur-[100px] pointer-events-none" />
 
         <div 
-          className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative overflow-hidden"
+          className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative overflow-x-hidden"
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
@@ -2691,11 +2691,6 @@ export default function App() {
                     }
               }
               className="w-full"
-              style={{ 
-                willChange: 'transform, opacity, filter',
-                backfaceVisibility: 'hidden',
-                transformStyle: 'preserve-3d'
-              }}
             >
               {renderTabContent()}
             </motion.div>
