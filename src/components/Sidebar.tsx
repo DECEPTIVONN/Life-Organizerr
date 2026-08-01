@@ -698,7 +698,7 @@ export default function Sidebar({
       {/* 1. PROGRESSIVE PAGE SCROLL BAR (MOBILE ONLY) */}
       <div 
         id="progressBar" 
-        className="lg:hidden fixed top-0 left-0 h-1 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 z-50 transition-all duration-75 shadow-[0_0_10px_#f97316]"
+        className="lg:hidden fixed top-0 left-0 h-1 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 z-50 transition-all duration-75 shadow-[0_0_10px_var(--color-orange-500,#f97316)]"
         style={{ width: `${scrollProgress}%` }}
       />
 
@@ -713,7 +713,7 @@ export default function Sidebar({
         title={`Progresso da página: ${Math.round(scrollProgress)}% • Clique ou arraste para navegar`}
       >
         <div 
-          className="w-full bg-gradient-to-b from-orange-500 via-amber-500 to-orange-400 shadow-[0_0_12px_#f97316] transition-all duration-75 relative rounded-b-full"
+          className="w-full bg-gradient-to-b from-orange-500 via-amber-500 to-orange-400 shadow-[0_0_12px_var(--color-orange-500,#f97316)] transition-all duration-75 relative rounded-b-full"
           style={{ height: `${scrollProgress}%` }}
         />
       </div>
@@ -880,7 +880,7 @@ export default function Sidebar({
             <path 
               d="M 0 30 Q 50 0 100 30 L 100 100 L 0 100 Z" 
               fill="none" 
-              stroke="#f97316" 
+              stroke="var(--color-orange-500, #f97316)" 
               strokeWidth="1.5" 
             />
             {/* Main curved path background */}
@@ -1447,7 +1447,7 @@ export default function Sidebar({
               title={`Progresso da página: ${Math.round(scrollProgress)}%`}
             >
               <div 
-                className="bg-orange-500 h-full rounded-full transition-all duration-75 shadow-[0_0_6px_#f97316]" 
+                className="bg-orange-500 h-full rounded-full transition-all duration-75 shadow-[0_0_6px_var(--color-orange-500,#f97316)]" 
                 style={{ width: `${scrollProgress}%` }} 
               />
             </div>
@@ -1488,7 +1488,7 @@ export default function Sidebar({
               >
                 {/* Active left tiny glow accent bar */}
                 {isActive && (
-                  <div className="w-[3px] bg-orange-500 shadow-[0_0_8px_#f97316] h-1/2 absolute left-0 top-1/4 rounded-r-lg" />
+                  <div className="w-[3px] bg-orange-500 shadow-[0_0_8px_var(--color-orange-500,#f97316)] h-1/2 absolute left-0 top-1/4 rounded-r-lg" />
                 )}
 
                 <Icon className={`h-4.5 w-4.5 transition-colors flex-shrink-0 ${isActive ? 'text-orange-500' : 'text-zinc-500 group-hover:text-white'}`} />

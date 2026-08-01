@@ -28,6 +28,7 @@ import DocumentsView from './components/DocumentsView';
 import NotesView from './components/NotesView';
 import SettingsView from './components/SettingsView';
 import ProfileView from './components/ProfileView';
+import { THEME_PRESETS, applyThemeColor } from './utils/themeColors';
 import LifeSummaryView, { LifeSummaryState, defaultState, mergeWithDefaults } from './components/LifeSummaryView';
 import HabitsTrackerView from './components/HabitsTrackerView';
 import AnuaisView from './components/AnuaisView';
@@ -178,6 +179,25 @@ export default function App() {
   const [mobileSlideTransition, setMobileSlideTransition] = useState(() => {
     return localStorage.getItem('mbc_mobile_slide_transition') !== 'false';
   });
+
+  const [activeThemePreset, setActiveThemePreset] = useState<string>(() => {
+    return localStorage.getItem('mbc_theme_preset') || 'default';
+  });
+
+  const [customThemeHex, setCustomThemeHex] = useState<string>(() => {
+    return localStorage.getItem('mbc_custom_theme_hex') || '#3396f3';
+  });
+
+  useEffect(() => {
+    if (activeThemePreset === 'custom' && customThemeHex) {
+      applyThemeColor(customThemeHex);
+    } else {
+      const presetObj = THEME_PRESETS.find(p => p.id === activeThemePreset);
+      if (presetObj) {
+        applyThemeColor(presetObj.primaryHex);
+      }
+    }
+  }, [activeThemePreset, customThemeHex]);
 
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 1024);
 
@@ -2495,6 +2515,10 @@ export default function App() {
             setAppLockTimeout={setAppLockTimeout}
             isAppLocked={isAppLocked}
             setIsAppLocked={setIsAppLocked}
+            activeThemePreset={activeThemePreset}
+            setActiveThemePreset={setActiveThemePreset}
+            customThemeHex={customThemeHex}
+            setCustomThemeHex={setCustomThemeHex}
           />
         );
       default:

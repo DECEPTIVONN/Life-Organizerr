@@ -9,6 +9,12 @@
 
   --color-zinc-750: #313135;
   --color-zinc-850: #1e1e21;
+
+  --color-orange-300: var(--theme-orange-300, #fdba74);
+  --color-orange-400: var(--theme-orange-400, #fb923c);
+  --color-orange-500: var(--theme-orange-500, #f97316);
+  --color-orange-600: var(--theme-orange-600, #ea580c);
+  --color-orange-700: var(--theme-orange-700, #c2410c);
 }
 
 /* Utility to hide scrollbars completely */

@@ -614,7 +614,7 @@ export default function RemindersView({
                           cx="22"
                           cy="22"
                           r="18"
-                          stroke={r.paused ? "#f59e0b" : "#f97316"}
+                          stroke={r.paused ? "#f59e0b" : "var(--color-orange-500, #f97316)"}
                           strokeWidth="3.5"
                           fill="none"
                           strokeDasharray="113"

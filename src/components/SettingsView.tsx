@@ -33,8 +33,11 @@ import {
   Monitor,
   ShieldCheck,
   Sliders,
-  CheckCircle2
+  CheckCircle2,
+  Palette
 } from 'lucide-react';
+import ColorSchemeModal from './ColorSchemeModal';
+import { THEME_PRESETS, applyThemeColor } from '../utils/themeColors';
 import { motion, AnimatePresence } from 'motion/react';
 import { setSupabaseConfig, testSupabaseConnection } from '../lib/supabase';
 import { authorizeQrLoginSession } from '../lib/auth';
@@ -80,6 +83,12 @@ interface SettingsViewProps {
   // Mobile Slide Animation
   mobileSlideTransition?: boolean;
   setMobileSlideTransition?: (enabled: boolean) => void;
+
+  // Theme Color Customization
+  activeThemePreset?: string;
+  setActiveThemePreset?: (preset: string) => void;
+  customThemeHex?: string;
+  setCustomThemeHex?: (hex: string) => void;
   
   // Account Status
   setAccountDeactivated: (deactivated: boolean) => void;
@@ -166,9 +175,16 @@ export default function SettingsView({
   appLockTimeout,
   setAppLockTimeout,
   isAppLocked,
-  setIsAppLocked
+  setIsAppLocked,
+  activeThemePreset = 'default',
+  setActiveThemePreset,
+  customThemeHex = '#3396f3',
+  setCustomThemeHex
 }: SettingsViewProps) {
   
+  // Theme Color Scheme Modal State
+  const [isColorSchemeModalOpen, setIsColorSchemeModalOpen] = useState(false);
+
   // Navigation stack state
   const [localCurrentScreen, setLocalCurrentScreen] = useState<SettingsScreen>('main');
   const [localScreenHistory, setLocalScreenHistory] = useState<SettingsScreen[]>([]);
@@ -645,6 +661,13 @@ export default function SettingsView({
       screen: 'notificacoes' as SettingsScreen
     },
     {
+      id: 'esquema_cores',
+      title: 'Esquema de cores e personalização',
+      desc: 'Personalize a cor de destaque do aplicativo (Padrão, Azul, Verde, Laranja, Vermelho, Rosa ou Cor Personalizada).',
+      icon: Palette,
+      onClick: () => setIsColorSchemeModalOpen(true)
+    },
+    {
       id: 'exibicao',
       title: 'Acessibilidade, exibição e PWA',
       desc: 'Gerencie o comportamento de tela cheia automática, instalação nativa PWA e exibição geral do Planner.',
@@ -707,7 +730,13 @@ export default function SettingsView({
                 return (
                   <div
                     key={item.id}
-                    onClick={() => navigateTo(item.screen)}
+                    onClick={() => {
+                      if ('onClick' in item && typeof item.onClick === 'function') {
+                        item.onClick();
+                      } else if ('screen' in item && item.screen) {
+                        navigateTo(item.screen as SettingsScreen);
+                      }
+                    }}
                     className="flex items-start gap-4 p-4 hover:bg-zinc-950/85 active:bg-zinc-900/60 cursor-pointer transition-colors group"
                   >
                     <div className="p-2 bg-zinc-900 rounded-xl text-zinc-400 group-hover:text-orange-500 transition-colors shrink-0">
@@ -1787,6 +1816,29 @@ export default function SettingsView({
               </button>
             </div>
 
+            {/* Esquema de Cores e Personalização */}
+            <div className="p-4 bg-zinc-950 border border-zinc-900 rounded-2xl flex items-center justify-between">
+              <div className="space-y-0.5 flex-1 pr-4">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-xs font-bold text-zinc-200">Esquema de Cores e Personalização</h4>
+                  <span className="text-[8px] font-bold text-orange-400 bg-orange-500/10 border border-orange-500/20 px-2 py-0.5 rounded-full font-mono uppercase">
+                    Personalizar
+                  </span>
+                </div>
+                <p className="text-[10px] text-zinc-500 font-mono leading-normal">
+                  Escolha a cor de destaque do aplicativo (Laranja, Azul, Verde, Rosa, Vermelho ou Personalizada).
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsColorSchemeModalOpen(true)}
+                className="px-3.5 py-2 bg-orange-500 text-white font-mono font-bold text-[9px] rounded-xl tracking-wider uppercase hover:bg-orange-600 transition-all flex items-center gap-1.5 shadow-md shrink-0"
+              >
+                <Palette className="w-3.5 h-3.5" />
+                Personalizar
+              </button>
+            </div>
+
             {/* Install native app */}
             <div className="p-4 bg-zinc-950 border border-zinc-900 rounded-2xl flex items-center justify-between">
               <div className="space-y-0.5 flex-1 pr-4">
@@ -2186,6 +2238,23 @@ export default function SettingsView({
           </div>
         )}
       </AnimatePresence>
+
+      {/* Color Scheme Modal */}
+      <ColorSchemeModal
+        isOpen={isColorSchemeModalOpen}
+        onClose={() => setIsColorSchemeModalOpen(false)}
+        activePresetId={activeThemePreset}
+        customHex={customThemeHex}
+        onSelectPreset={(presetId, hex) => {
+          if (setActiveThemePreset) setActiveThemePreset(presetId);
+          localStorage.setItem('mbc_theme_preset', presetId);
+          if (hex && setCustomThemeHex) {
+            setCustomThemeHex(hex);
+            localStorage.setItem('mbc_custom_theme_hex', hex);
+          }
+          addXp(15);
+        }}
+      />
 
     </div>
   );

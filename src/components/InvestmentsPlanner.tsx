@@ -816,7 +816,7 @@ export default function InvestmentsPlanner({ finances, addXp }: InvestmentsPlann
                             <path d={pathInvested} fill="none" stroke="#52525b" strokeWidth="2" strokeDasharray="3,3" />
 
                             {/* Real Growth curve */}
-                            <path d={pathReal} fill="none" stroke="#f97316" strokeWidth="3" />
+                            <path d={pathReal} fill="none" stroke="var(--color-orange-500, #f97316)" strokeWidth="3" />
 
                             {/* Nominal Growth curve */}
                             <path d={pathNominal} fill="none" stroke="#10b981" strokeWidth="1.5" opacity="0.6" />
@@ -824,7 +824,7 @@ export default function InvestmentsPlanner({ finances, addXp }: InvestmentsPlann
                             {/* Markers at endpoints */}
                             {pointsReal.length > 0 && (
                               <>
-                                <circle cx="385" cy={150 - (finalRealValue / maxVal) * 135} r="4" fill="#f97316" />
+                                <circle cx="385" cy={150 - (finalRealValue / maxVal) * 135} r="4" fill="var(--color-orange-500, #f97316)" />
                                 <circle cx="385" cy={150 - (finalNominalValue / maxVal) * 135} r="3" fill="#10b981" />
                               </>
                             )}
@@ -838,8 +838,8 @@ export default function InvestmentsPlanner({ finances, addXp }: InvestmentsPlann
                       
                       <defs>
                         <linearGradient id="orange-gradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#f97316" />
-                          <stop offset="100%" stopColor="#f97316" stopOpacity="0" />
+                          <stop offset="0%" stopColor="var(--color-orange-500, #f97316)" />
+                          <stop offset="100%" stopColor="var(--color-orange-500, #f97316)" stopOpacity="0" />
                         </linearGradient>
                       </defs>
                     </svg>
