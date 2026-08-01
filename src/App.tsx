@@ -275,8 +275,8 @@ export default function App() {
     const touch = e.touches[0];
     const target = e.target as HTMLElement | null;
     if (target && (
-      target.closest('input, textarea, select, button, a, [data-no-swipe], .no-swipe') ||
-      target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'BUTTON'
+      target.closest('input, textarea, select, button, a, [data-no-swipe], .no-swipe, [role="slider"], .overflow-x-auto') ||
+      ['INPUT', 'TEXTAREA', 'BUTTON', 'SELECT'].includes(target.tagName)
     )) {
       touchStartRef.current = null;
       return;
@@ -296,7 +296,8 @@ export default function App() {
     const timeDiff = Date.now() - touchStartRef.current.time;
     touchStartRef.current = null;
 
-    if (timeDiff < 400 && Math.abs(deltaX) > 60 && Math.abs(deltaX) > Math.abs(deltaY) * 1.8) {
+    // Strict velocity and direction check (horizontal distance must dominate vertical scroll)
+    if (timeDiff < 450 && Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY) * 2) {
       const MAIN_MOBILE_TABS = ['calendario', 'dashboard', 'checklist', 'notas'];
       const currentIndex = MAIN_MOBILE_TABS.indexOf(activeTab);
       if (currentIndex !== -1) {
@@ -2606,7 +2607,7 @@ export default function App() {
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
-          <AnimatePresence mode="wait" custom={slideDirection}>
+          <AnimatePresence mode="popLayout" custom={slideDirection} initial={false}>
             <motion.div
               key={activeTab}
               custom={slideDirection}
@@ -2616,30 +2617,50 @@ export default function App() {
                       enter: (dir: number) => ({
                         x: dir > 0 ? '100%' : '-100%',
                         opacity: 0,
+                        scale: 0.98,
+                        filter: 'blur(2px)',
                       }),
                       center: {
                         x: '0%',
                         opacity: 1,
+                        scale: 1,
+                        filter: 'blur(0px)',
                       },
                       exit: (dir: number) => ({
-                        x: dir < 0 ? '100%' : '-100%',
+                        x: dir < 0 ? '25%' : '-25%',
                         opacity: 0,
+                        scale: 0.95,
+                        filter: 'blur(3px)',
                       }),
                     }
                   : {
-                      enter: { opacity: 0, y: 15 },
+                      enter: { opacity: 0, y: 12 },
                       center: { opacity: 1, y: 0 },
-                      exit: { opacity: 0, y: -15 },
+                      exit: { opacity: 0, y: -12 },
                     }
               }
               initial="enter"
               animate="center"
               exit="exit"
-              transition={{ 
-                duration: isMobile && mobileSlideTransition ? 0.24 : 0.3,
-                ease: isMobile && mobileSlideTransition ? [0.25, 1, 0.5, 1] : "easeInOut"
+              transition={
+                isMobile && mobileSlideTransition
+                  ? {
+                      type: "spring",
+                      stiffness: 340,
+                      damping: 32,
+                      mass: 0.75,
+                    }
+                  : {
+                      duration: 0.22,
+                      ease: [0.16, 1, 0.3, 1],
+                    }
+              }
+              className="w-full"
+              style={{ 
+                willChange: 'transform, opacity, filter',
+                backfaceVisibility: 'hidden',
+                transformStyle: 'preserve-3d'
               }}
-              style={{ willChange: 'transform, opacity' }}
             >
               {renderTabContent()}
             </motion.div>
