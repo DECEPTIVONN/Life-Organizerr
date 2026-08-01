@@ -29,6 +29,7 @@ import NotesView from './components/NotesView';
 import SettingsView from './components/SettingsView';
 import ProfileView from './components/ProfileView';
 import { THEME_PRESETS, applyThemeColor } from './utils/themeColors';
+import { getValidGoogleAccessToken, clearGoogleOAuthSession } from './utils/googleToken';
 import LifeSummaryView, { LifeSummaryState, defaultState, mergeWithDefaults } from './components/LifeSummaryView';
 import HabitsTrackerView from './components/HabitsTrackerView';
 import AnuaisView from './components/AnuaisView';
@@ -1330,12 +1331,12 @@ export default function App() {
       });
 
       // 5. Google Calendar Events for today
-      const googleToken = localStorage.getItem('google_calendar_token');
+      const googleToken = await getValidGoogleAccessToken();
       if (googleToken) {
         try {
           const timeMin = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0).toISOString();
           const timeMax = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString();
-          const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}&singleEvents=true`, {
+          const res = await fetch(`/api/calendar/events?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}`, {
             headers: { Authorization: `Bearer ${googleToken}` }
           });
           if (res.ok) {
@@ -1732,12 +1733,26 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    clearGoogleOAuthSession();
     localStorage.removeItem('mbc_auth_user');
     sessionStorage.removeItem('mbc_auth_user');
     localStorage.removeItem('mbc_sync_key');
     setCurrentUser(null);
     setIsAuthModalOpen(true);
   };
+
+  // Keep Google OAuth token fresh proactively as long as user is logged in
+  useEffect(() => {
+    const keepGoogleAlive = async () => {
+      const refreshToken = localStorage.getItem('google_calendar_refresh_token');
+      if (refreshToken || localStorage.getItem('google_calendar_user')) {
+        await getValidGoogleAccessToken();
+      }
+    };
+    keepGoogleAlive();
+    const interval = setInterval(keepGoogleAlive, 10 * 60 * 1000); // 10 minutes
+    return () => clearInterval(interval);
+  }, []);
 
   // Sync session on startup
   useEffect(() => {

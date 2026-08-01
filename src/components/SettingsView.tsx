@@ -41,7 +41,7 @@ import { THEME_PRESETS, applyThemeColor } from '../utils/themeColors';
 import { motion, AnimatePresence } from 'motion/react';
 import { setSupabaseConfig, testSupabaseConnection } from '../lib/supabase';
 import { authorizeQrLoginSession } from '../lib/auth';
-import { saveGoogleOAuthTokens, clearGoogleOAuthSession, refreshGoogleAccessToken } from '../utils/googleToken';
+import { saveGoogleOAuthTokens, clearGoogleOAuthSession, refreshGoogleAccessToken, getValidGoogleAccessToken } from '../utils/googleToken';
 import {
   ConnectedDevice,
   syncAndRegisterCurrentDevice,
@@ -398,6 +398,19 @@ export default function SettingsView({
     window.addEventListener('message', handleOAuthMessageInSettings);
     return () => window.removeEventListener('message', handleOAuthMessageInSettings);
   }, [userName, userEmail, userPhoto, setUserName, setUserEmail, setUserPhoto]);
+
+  useEffect(() => {
+    const checkValidToken = async () => {
+      const savedRefreshToken = localStorage.getItem('google_calendar_refresh_token');
+      if (savedRefreshToken || localStorage.getItem('google_calendar_user')) {
+        const validTok = await getValidGoogleAccessToken();
+        if (validTok) {
+          setGoogleToken(validTok);
+        }
+      }
+    };
+    checkValidToken();
+  }, []);
 
   useEffect(() => {
     const handleStorageChange = () => {

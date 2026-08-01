@@ -44,7 +44,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CalendarNote, DailyTask, SubTask, MonthlyReview, BookTracker, BibleTracker, RoutineItem, WeeklyReview, FutureEvent } from '../types';
-import { saveGoogleOAuthTokens, clearGoogleOAuthSession, refreshGoogleAccessToken } from '../utils/googleToken';
+import { saveGoogleOAuthTokens, clearGoogleOAuthSession, refreshGoogleAccessToken, getValidGoogleAccessToken } from '../utils/googleToken';
 // @ts-ignore
 import classicalLightEngraving from '../assets/images/classical_light_engraving_1784335041654.jpg';
 
@@ -286,15 +286,12 @@ export default function CalendarView({
   };
 
   const handleSyncNext5GoogleEvents = async () => {
-    let tok = googleToken;
-    if (!tok) {
-      tok = await refreshGoogleAccessToken();
-      if (tok) setGoogleToken(tok);
-    }
+    let tok = await getValidGoogleAccessToken();
     if (!tok) {
       await handleGoogleLogin();
       return;
     }
+    setGoogleToken(tok);
 
     setIsSyncingGoogle5(true);
     try {
@@ -533,12 +530,10 @@ export default function CalendarView({
 
   const handleAddGoogleEvent = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    let tok = googleToken;
-    if (!tok) {
-      tok = await refreshGoogleAccessToken();
-      if (tok) setGoogleToken(tok);
-    }
-    if (!googleEventTitle.trim() || !selectedDateStr || !tok) return;
+    let tok = await getValidGoogleAccessToken();
+    if (!tok) return;
+    setGoogleToken(tok);
+    if (!googleEventTitle.trim() || !selectedDateStr) return;
 
     setIsLoadingEvents(true);
     try {
@@ -604,12 +599,10 @@ export default function CalendarView({
 
   const handleUpdateGoogleEvent = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    let tok = googleToken;
-    if (!tok) {
-      tok = await refreshGoogleAccessToken();
-      if (tok) setGoogleToken(tok);
-    }
-    if (!editingGoogleEventId || !googleEventTitle.trim() || !selectedDateStr || !tok) return;
+    let tok = await getValidGoogleAccessToken();
+    if (!tok) return;
+    setGoogleToken(tok);
+    if (!editingGoogleEventId || !googleEventTitle.trim() || !selectedDateStr) return;
 
     setIsLoadingEvents(true);
     try {
@@ -674,12 +667,9 @@ export default function CalendarView({
   };
 
   const handleDeleteGoogleEvent = async (eventId: string) => {
-    let tok = googleToken;
-    if (!tok) {
-      tok = await refreshGoogleAccessToken();
-      if (tok) setGoogleToken(tok);
-    }
+    let tok = await getValidGoogleAccessToken();
     if (!tok) return;
+    setGoogleToken(tok);
     if (!confirm('Deseja realmente excluir este evento do seu Google Agenda?')) return;
 
     setIsLoadingEvents(true);
@@ -720,16 +710,9 @@ export default function CalendarView({
   };
 
   const fetchGoogleEvents = async (tokenToUse?: string) => {
-    let tok = tokenToUse || googleToken;
-    if (!tok) {
-      const refreshed = await refreshGoogleAccessToken();
-      if (refreshed) {
-        tok = refreshed;
-        setGoogleToken(refreshed);
-      } else {
-        return;
-      }
-    }
+    let tok = tokenToUse || (await getValidGoogleAccessToken());
+    if (!tok) return;
+    setGoogleToken(tok);
 
     setIsLoadingEvents(true);
     setGoogleError(null);
@@ -759,10 +742,6 @@ export default function CalendarView({
       }
 
       if (!response.ok) {
-        if (response.status === 401) {
-          handleGoogleLogout();
-          throw new Error('Sessão do Google expirada. Por favor, conecte a conta do Google novamente.');
-        }
         let detailedError = '';
         try {
           const text = await response.text();
@@ -840,13 +819,13 @@ export default function CalendarView({
   // Restore or refresh session on mount
   useEffect(() => {
     const restoreSession = async () => {
-      const savedRefreshToken = localStorage.getItem('google_calendar_refresh_token');
       const savedUser = localStorage.getItem('google_calendar_user');
-      if (savedUser && savedRefreshToken && !googleToken) {
-        const newTok = await refreshGoogleAccessToken();
-        if (newTok) {
-          setGoogleToken(newTok);
-          fetchGoogleEvents(newTok);
+      const savedRefreshToken = localStorage.getItem('google_calendar_refresh_token');
+      if (savedUser || savedRefreshToken) {
+        const validTok = await getValidGoogleAccessToken();
+        if (validTok) {
+          setGoogleToken(validTok);
+          fetchGoogleEvents(validTok);
         }
       }
     };
