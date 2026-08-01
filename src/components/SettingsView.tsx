@@ -508,26 +508,46 @@ export default function SettingsView({
 
   const handleDownloadData = () => {
     try {
-      const data: Record<string, string | null> = {};
+      const storageData: Record<string, any> = {};
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key) {
-          data[key] = localStorage.getItem(key);
+          const raw = localStorage.getItem(key);
+          if (raw !== null) {
+            try {
+              storageData[key] = JSON.parse(raw);
+            } catch {
+              storageData[key] = raw;
+            }
+          }
         }
       }
       
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const backupObj = {
+        _meta: {
+          appName: 'Planner Extraordinário',
+          exportedAt: new Date().toISOString(),
+          version: '1.0',
+          totalKeys: Object.keys(storageData).length,
+          userHandle: localStorage.getItem('mbc_userHandle') || '@usuario'
+        },
+        data: storageData
+      };
+      
+      const jsonString = JSON.stringify(backupObj, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `planner_backup_${new Date().toISOString().slice(0,10)}.json`;
+      const dateStr = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      a.download = `planner_backup_${dateStr}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
       addXp(15);
-      alert('Arquivo de backup baixado com sucesso! Contém todas as suas metas, hábitos, finanças, rotinas e anotações.');
+      alert(`✅ Exportação local concluída com sucesso!\n\nArquivo JSON baixado contendo ${Object.keys(storageData).length} blocos de dados (metas, tarefas, finanças, rotinas, anotações, diário e hábitos).`);
     } catch (err) {
       alert('Erro ao exportar dados.');
     }
@@ -543,15 +563,18 @@ export default function SettingsView({
         const content = event.target?.result as string;
         const parsed = JSON.parse(content);
         if (typeof parsed !== 'object' || parsed === null) {
-          throw new Error('Arquivo inválido');
+          throw new Error('Arquivo de backup inválido');
         }
 
+        const exportData = (parsed._meta && parsed.data && typeof parsed.data === 'object') ? parsed.data : parsed;
+
         let keysRestored = 0;
-        Object.entries(parsed).forEach(([key, val]) => {
+        Object.entries(exportData).forEach(([key, val]) => {
+          if (key === '_meta') return;
           if (typeof val === 'string') {
             localStorage.setItem(key, val);
             keysRestored++;
-          } else if (val !== null) {
+          } else if (val !== null && val !== undefined) {
             localStorage.setItem(key, JSON.stringify(val));
             keysRestored++;
           }
@@ -559,13 +582,14 @@ export default function SettingsView({
 
         localStorage.setItem('mbc_last_local_write', new Date().toISOString());
         addXp(30);
-        alert(`Backup restaurado com sucesso! (${keysRestored} chaves carregadas). Recarregando o Planner...`);
+        alert(`✅ Backup restaurado com sucesso!\n\n${keysRestored} blocos de dados carregados. O Planner será recarregado agora.`);
         window.location.reload();
       } catch (err) {
         alert('Erro ao carregar o arquivo de backup. Certifique-se de escolher um arquivo .json de backup válido.');
       }
     };
     reader.readAsText(file);
+    e.target.value = '';
   };
 
   const handleSaveSupabaseConfig = async (e: React.FormEvent) => {
