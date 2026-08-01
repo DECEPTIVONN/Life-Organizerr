@@ -61,3 +61,38 @@ export function handleAutoListKeyDown(
     }
   }
 }
+
+/**
+ * Formats a raw time string input so user can type e.g. "2300" -> "23:00".
+ * Supports standard "23:00" format without breaking backspace.
+ */
+export function formatTimeInput(val: string): string {
+  if (!val) return '';
+  const cleaned = val.replace(/[^\d:]/g, '');
+  if (cleaned.includes(':')) {
+    const parts = cleaned.split(':');
+    const h = parts[0].slice(0, 2);
+    const m = parts[1] !== undefined ? parts[1].slice(0, 2) : '';
+    return parts.length > 1 && parts[1] !== '' ? `${h}:${m}` : `${h}:`;
+  }
+  const digits = cleaned;
+  if (digits.length <= 2) {
+    return digits;
+  }
+  const hours = digits.slice(0, 2);
+  const minutes = digits.slice(2, 4);
+  return `${hours}:${minutes}`;
+}
+
+/**
+ * Moves the selection/cursor to the end of the input when focused or clicked.
+ */
+export function moveCursorToEnd(e: React.SyntheticEvent<HTMLInputElement>) {
+  const target = e.currentTarget;
+  setTimeout(() => {
+    try {
+      const len = target.value.length;
+      target.setSelectionRange(len, len);
+    } catch {}
+  }, 10);
+}

@@ -38,7 +38,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { CalendarNote, DailyTask, MonthlyReview, WeeklyReview, YearlyBook, SubTask, Goal, FinanceEntry } from '../types';
 import { calculateReadingInterval, formatDateBR } from '../utils/bookUtils';
-import { handleAutoListKeyDown } from '../utils/listUtils';
+import { handleAutoListKeyDown, formatTimeInput, moveCursorToEnd } from '../utils/listUtils';
 
 interface AnuaisViewProps {
   notes: CalendarNote[];
@@ -2730,19 +2730,29 @@ export default function AnuaisView({
                         <div>
                           <label className="text-[10px] text-zinc-500 block mb-1">Deitou-se às:</label>
                           <input
-                            type="time"
+                            type="text"
+                            inputMode="numeric"
+                            placeholder="23:00"
+                            maxLength={5}
                             value={sleepBedTime}
-                            onChange={(e) => setSleepBedTime(e.target.value)}
-                            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white font-mono"
+                            onChange={(e) => setSleepBedTime(formatTimeInput(e.target.value))}
+                            onFocus={moveCursorToEnd}
+                            onClick={moveCursorToEnd}
+                            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white font-mono focus:outline-none focus:border-orange-500/50"
                           />
                         </div>
                         <div>
                           <label className="text-[10px] text-zinc-500 block mb-1">Acordou às:</label>
                           <input
-                            type="time"
+                            type="text"
+                            inputMode="numeric"
+                            placeholder="07:00"
+                            maxLength={5}
                             value={sleepWakeTime}
-                            onChange={(e) => setSleepWakeTime(e.target.value)}
-                            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white font-mono"
+                            onChange={(e) => setSleepWakeTime(formatTimeInput(e.target.value))}
+                            onFocus={moveCursorToEnd}
+                            onClick={moveCursorToEnd}
+                            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white font-mono focus:outline-none focus:border-orange-500/50"
                           />
                         </div>
                       </div>

@@ -1,0 +1,32 @@
+{
+  "id": "tronus-planner-pwa",
+  "name": "TRONUS Planner",
+  "short_name": "TRONUS",
+  "description": "HUD Planner & Task System",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#040405",
+  "theme_color": "#f97316",
+  "icons": [
+    {
+      "src": "/assets/D.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/D.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/D.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "maskable"
+    }
+  ]
+}

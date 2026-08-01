@@ -1,0 +1,8 @@
+{
+	"appId": "com.plannerextraordinario.app",
+	"appName": "Planner",
+	"webDir": "dist",
+	"server": {
+		"androidScheme": "https"
+	}
+}

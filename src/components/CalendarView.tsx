@@ -45,7 +45,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { CalendarNote, DailyTask, SubTask, MonthlyReview, BookTracker, BibleTracker, RoutineItem, WeeklyReview, FutureEvent } from '../types';
 import { saveGoogleOAuthTokens, clearGoogleOAuthSession, refreshGoogleAccessToken, getValidGoogleAccessToken } from '../utils/googleToken';
-import { handleAutoListKeyDown } from '../utils/listUtils';
+import { handleAutoListKeyDown, formatTimeInput, moveCursorToEnd } from '../utils/listUtils';
 // @ts-ignore
 import classicalLightEngraving from '../assets/images/classical_light_engraving_1784335041654.jpg';
 
@@ -2831,9 +2831,14 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                   Quando se deitou:
                                 </label>
                                 <input
-                                  type="time"
+                                  type="text"
+                                  inputMode="numeric"
+                                  placeholder="23:00"
+                                  maxLength={5}
                                   value={sleepBedTime}
-                                  onChange={(e) => setSleepBedTime(e.target.value)}
+                                  onChange={(e) => setSleepBedTime(formatTimeInput(e.target.value))}
+                                  onFocus={moveCursorToEnd}
+                                  onClick={moveCursorToEnd}
                                   className="w-full bg-zinc-950 border border-zinc-850 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono"
                                 />
                               </div>
@@ -2843,9 +2848,14 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                   Quando acordou:
                                 </label>
                                 <input
-                                  type="time"
+                                  type="text"
+                                  inputMode="numeric"
+                                  placeholder="07:00"
+                                  maxLength={5}
                                   value={sleepWakeTime}
-                                  onChange={(e) => setSleepWakeTime(e.target.value)}
+                                  onChange={(e) => setSleepWakeTime(formatTimeInput(e.target.value))}
+                                  onFocus={moveCursorToEnd}
+                                  onClick={moveCursorToEnd}
                                   className="w-full bg-zinc-950 border border-zinc-850 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono"
                                 />
                               </div>
