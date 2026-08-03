@@ -226,5 +226,17 @@ export interface QuickReminder {
   status: 'active' | 'triggered' | 'completed' | 'paused';
   createdAt: string;
   triggeredAt?: string;
+
+  // Pomodoro Configuration & Runtime State
+  pomodoroTotalMinutes?: number;
+  pomodoroFocusMinutes?: number;
+  pomodoroBreakMinutes?: number;
+  pomodoroBreakMode?: 'interval' | 'specific'; // 'interval' = a cada X min, 'specific' = em X min específicos
+  pomodoroSpecificBreakMinute?: number;
+  pomodoroCurrentPhase?: 'focus' | 'break';
+  pomodoroCurrentCycle?: number;
+  pomodoroTotalCycles?: number;
+  pomodoroPhaseEndTimestamp?: number;
+  pomodoroPhaseRemainingSeconds?: number;
 }
 

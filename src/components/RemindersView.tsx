@@ -116,6 +116,12 @@ export default function RemindersView({
   const [timerMinutes, setTimerMinutes] = useState<number>(5);
   const [timerHours, setTimerHours] = useState<number>(0);
   const [timerSeconds, setTimerSeconds] = useState<number>(0);
+
+  // Pomodoro break mode inputs
+  const [pomoBreakMode, setPomoBreakMode] = useState<'interval' | 'specific'>('interval');
+  const [pomoFocusMinutes, setPomoFocusMinutes] = useState<number>(25);
+  const [pomoBreakMinutes, setPomoBreakMinutes] = useState<number>(5);
+  const [pomoSpecificMinute, setPomoSpecificMinute] = useState<number>(45);
   
   // Cronometer / Schedule mode inputs
   const [scheduledDate, setScheduledDate] = useState<string>(() => {
@@ -164,14 +170,14 @@ export default function RemindersView({
 
           // Check timer, pomodoro or cronometer mode completion via targetTimestamp
           if ((r.mode === 'timer' || r.mode === 'cronometer' || r.mode === 'pomodoro') && r.targetTimestamp) {
+            // 1. Check total session completion
             if (now >= r.targetTimestamp) {
               hasChanges = true;
-              // Trigger alarm
               if (r.soundEnabled) playReminderChime();
               if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
                 const iconPrefix = r.mode === 'pomodoro' ? '🍅' : '⏰';
-                new Notification(`${iconPrefix} Lembrete: ${r.title}`, {
-                  body: r.description || `Tempo atingido! ${r.category ? `[${r.category}]` : ''}`,
+                new Notification(`${iconPrefix} Lembrete Concluído: ${r.title}`, {
+                  body: r.description || `Tempo total atingido! ${r.category ? `[${r.category}]` : ''}`,
                   icon: '/icon.png'
                 });
               }
@@ -181,6 +187,44 @@ export default function RemindersView({
                 status: 'triggered' as const,
                 triggeredAt: new Date().toLocaleTimeString('pt-BR')
               };
+            }
+
+            // 2. Check Pomodoro phase transitions (Focus <-> Break)
+            if (r.mode === 'pomodoro' && r.pomodoroPhaseEndTimestamp && now >= r.pomodoroPhaseEndTimestamp) {
+              hasChanges = true;
+              if (r.pomodoroCurrentPhase === 'focus') {
+                // Focus phase ended -> Start break phase
+                if (r.soundEnabled) playReminderChime();
+                const breakMins = r.pomodoroBreakMinutes || 5;
+                if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+                  new Notification(`☕ Hora da Pausa! - ${r.title}`, {
+                    body: `Ciclo de foco finalizado! Descanse por ${breakMins} minutos.`,
+                    icon: '/icon.png'
+                  });
+                }
+                return {
+                  ...r,
+                  pomodoroCurrentPhase: 'break' as const,
+                  pomodoroPhaseEndTimestamp: now + (breakMins * 60 * 1000)
+                };
+              } else if (r.pomodoroCurrentPhase === 'break') {
+                // Break phase ended -> Return to focus phase
+                if (r.soundEnabled) playReminderChime();
+                const focusMins = r.pomodoroFocusMinutes || 25;
+                const nextCycle = (r.pomodoroCurrentCycle || 1) + 1;
+                if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+                  new Notification(`⚡ Fim da Pausa! De volta ao Foco - ${r.title}`, {
+                    body: `Hora de retomar o foco (Ciclo ${nextCycle}${r.pomodoroTotalCycles ? ` de ${r.pomodoroTotalCycles}` : ''}).`,
+                    icon: '/icon.png'
+                  });
+                }
+                return {
+                  ...r,
+                  pomodoroCurrentPhase: 'focus' as const,
+                  pomodoroCurrentCycle: nextCycle,
+                  pomodoroPhaseEndTimestamp: now + (focusMins * 60 * 1000)
+                };
+              }
             }
           }
 
@@ -230,10 +274,16 @@ export default function RemindersView({
       targetTs = nowMs + (totalSecs * 1000);
     }
 
+    const totalMinutes = Math.max(1, Math.floor(totalSecs / 60));
+    const focusIntervalMins = pomoBreakMode === 'interval' ? pomoFocusMinutes : pomoSpecificMinute;
+    const totalCycles = pomoBreakMode === 'interval' ? Math.max(1, Math.ceil(totalMinutes / (pomoFocusMinutes || 25))) : 1;
+    const firstPhaseDurationMins = Math.min(totalMinutes, focusIntervalMins || 25);
+    const phaseEndTs = nowMs + (firstPhaseDurationMins * 60 * 1000);
+
     const newReminder: QuickReminder = {
       id: 'rem-' + Math.random().toString(36).substring(2, 9),
       title: title.trim(),
-      description: description.trim() || undefined,
+      description: description.trim() || (mode === 'pomodoro' ? `Sessão total: ${totalMinutes}m | Pausa: ${pomoBreakMinutes}m ${pomoBreakMode === 'interval' ? `a cada ${pomoFocusMinutes}m` : `aos ${pomoSpecificMinute}m`}` : undefined),
       mode,
       durationSeconds: (mode === 'timer' || mode === 'pomodoro') ? totalSecs : undefined,
       targetTimestamp: targetTs,
@@ -245,7 +295,18 @@ export default function RemindersView({
       priority,
       soundEnabled,
       status: 'active',
-      createdAt: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      createdAt: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+
+      // Pomodoro specific configuration
+      pomodoroTotalMinutes: totalMinutes,
+      pomodoroFocusMinutes: focusIntervalMins,
+      pomodoroBreakMinutes: pomoBreakMinutes,
+      pomodoroBreakMode: pomoBreakMode,
+      pomodoroSpecificBreakMinute: pomoSpecificMinute,
+      pomodoroCurrentPhase: 'focus',
+      pomodoroCurrentCycle: 1,
+      pomodoroTotalCycles: totalCycles,
+      pomodoroPhaseEndTimestamp: phaseEndTs
     };
 
     setReminders(prev => [newReminder, ...prev]);
@@ -290,27 +351,36 @@ export default function RemindersView({
     setTimerSeconds(0);
   };
 
-  // Pause / Resume Timer
+  // Pause / Resume Timer or Pomodoro
   const handleTogglePause = (id: string) => {
     const nowMs = Date.now();
     setReminders(prev => prev.map(r => {
-      if (r.id !== id || r.mode !== 'timer') return r;
+      if (r.id !== id || (r.mode !== 'timer' && r.mode !== 'pomodoro')) return r;
 
       if (!r.paused && r.targetTimestamp) {
         // Pausing: calculate remaining seconds
         const remSecs = Math.max(0, Math.ceil((r.targetTimestamp - nowMs) / 1000));
+        const phaseRemSecs = r.pomodoroPhaseEndTimestamp
+          ? Math.max(0, Math.ceil((r.pomodoroPhaseEndTimestamp - nowMs) / 1000))
+          : undefined;
         return {
           ...r,
           paused: true,
-          remainingSecondsWhenPaused: remSecs
+          remainingSecondsWhenPaused: remSecs,
+          pomodoroPhaseRemainingSeconds: phaseRemSecs
         };
       } else if (r.paused && r.remainingSecondsWhenPaused !== undefined) {
         // Resuming: recalculate target timestamp
+        const newPhaseEnd = r.pomodoroPhaseRemainingSeconds !== undefined
+          ? nowMs + (r.pomodoroPhaseRemainingSeconds * 1000)
+          : undefined;
         return {
           ...r,
           paused: false,
           targetTimestamp: nowMs + (r.remainingSecondsWhenPaused * 1000),
-          remainingSecondsWhenPaused: undefined
+          pomodoroPhaseEndTimestamp: newPhaseEnd,
+          remainingSecondsWhenPaused: undefined,
+          pomodoroPhaseRemainingSeconds: undefined
         };
       }
       return r;
@@ -320,12 +390,20 @@ export default function RemindersView({
   // Add 5 minutes (+300s) to timer
   const handleAddFiveMinutes = (id: string) => {
     setReminders(prev => prev.map(r => {
-      if (r.id !== id || r.mode !== 'timer') return r;
+      if (r.id !== id || (r.mode !== 'timer' && r.mode !== 'pomodoro')) return r;
       if (r.paused && r.remainingSecondsWhenPaused !== undefined) {
-        return { ...r, remainingSecondsWhenPaused: r.remainingSecondsWhenPaused + 300 };
+        return {
+          ...r,
+          remainingSecondsWhenPaused: r.remainingSecondsWhenPaused + 300,
+          pomodoroPhaseRemainingSeconds: r.pomodoroPhaseRemainingSeconds !== undefined ? r.pomodoroPhaseRemainingSeconds + 300 : undefined
+        };
       }
       if (r.targetTimestamp) {
-        return { ...r, targetTimestamp: r.targetTimestamp + 300000 };
+        return {
+          ...r,
+          targetTimestamp: r.targetTimestamp + 300000,
+          pomodoroPhaseEndTimestamp: r.pomodoroPhaseEndTimestamp ? r.pomodoroPhaseEndTimestamp + 300000 : undefined
+        };
       }
       return r;
     }));
@@ -435,6 +513,25 @@ export default function RemindersView({
         return `Faltam ${remMins} min (${r.scheduledTime})`;
       }
     }
+  };
+
+  // Helper to format Pomodoro current phase remaining time
+  const getPomodoroPhaseRemainingText = (r: QuickReminder) => {
+    if (r.status === 'completed') return 'Concluído';
+    if (r.status === 'triggered') return 'SESSÃO CONCLUÍDA';
+
+    let secsLeft = 0;
+    if (r.paused && r.pomodoroPhaseRemainingSeconds !== undefined) {
+      secsLeft = r.pomodoroPhaseRemainingSeconds;
+    } else if (r.pomodoroPhaseEndTimestamp) {
+      secsLeft = Math.max(0, Math.ceil((r.pomodoroPhaseEndTimestamp - Date.now()) / 1000));
+    } else if (r.targetTimestamp) {
+      secsLeft = Math.max(0, Math.ceil((r.targetTimestamp - Date.now()) / 1000));
+    }
+
+    const m = Math.floor(secsLeft / 60);
+    const s = secsLeft % 60;
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   };
 
   // Filtered list
@@ -821,6 +918,47 @@ export default function RemindersView({
                           </div>
                         </div>
                       </div>
+                    ) : rem.mode === 'pomodoro' ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-[11px] font-bold">
+                          <span className={`px-2.5 py-0.5 rounded-lg flex items-center gap-1 font-mono uppercase tracking-wider ${
+                            rem.pomodoroCurrentPhase === 'break'
+                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                              : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                          }`}>
+                            {rem.pomodoroCurrentPhase === 'break' ? '☕ Pausa' : '🍅 Foco'}
+                            {rem.pomodoroTotalCycles && rem.pomodoroTotalCycles > 1 ? ` (${rem.pomodoroCurrentCycle || 1}/${rem.pomodoroTotalCycles})` : ''}
+                          </span>
+                          <span className="text-zinc-400 font-mono text-[10px]">
+                            Sessão: {remainingText}
+                          </span>
+                        </div>
+
+                        <div className={`p-3 rounded-2xl border flex items-center justify-between font-mono ${
+                          rem.pomodoroCurrentPhase === 'break'
+                            ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+                            : 'bg-rose-500/10 border-rose-500/30 text-rose-400'
+                        }`}>
+                          <div className="flex items-center gap-2">
+                            <Flame className={`h-4 w-4 ${!rem.paused && !isCompleted ? 'animate-pulse' : ''}`} />
+                            <span className="text-sm font-black tracking-wider">
+                              {rem.pomodoroCurrentPhase === 'break' ? 'Pausa: ' : 'Foco: '}
+                              {getPomodoroPhaseRemainingText(rem)}
+                            </span>
+                          </div>
+
+                          {rem.paused && (
+                            <span className="text-[9px] font-bold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full uppercase">
+                              Pausado
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="text-[10px] text-zinc-400 font-mono flex items-center justify-between px-0.5">
+                          <span>Pausa de {rem.pomodoroBreakMinutes || 5} min</span>
+                          <span>{rem.pomodoroBreakMode === 'specific' ? `Aos ${rem.pomodoroSpecificBreakMinute || 45} min` : `A cada ${rem.pomodoroFocusMinutes || 25} min`}</span>
+                        </div>
+                      </div>
                     ) : (
                       <div className={`p-3 rounded-2xl border flex items-center justify-between font-mono ${
                         rem.paused
@@ -828,9 +966,7 @@ export default function RemindersView({
                           : 'bg-black/50 border-zinc-800 text-orange-400'
                       }`}>
                         <div className="flex items-center gap-2">
-                          {rem.mode === 'pomodoro' ? (
-                            <Flame className={`h-4 w-4 ${!rem.paused && !isCompleted ? 'text-rose-400 animate-pulse' : 'text-rose-400'}`} />
-                          ) : rem.mode === 'timer' ? (
+                          {rem.mode === 'timer' ? (
                             <Timer className={`h-4 w-4 ${!rem.paused && !isCompleted ? 'animate-pulse' : ''}`} />
                           ) : (
                             <Clock className="h-4 w-4" />
@@ -1002,68 +1138,161 @@ export default function RemindersView({
 
                   {/* MODE DETAILS: Pomodoro */}
                   {mode === 'pomodoro' ? (
-                    <div className="p-4 rounded-2xl bg-zinc-950 border border-rose-500/30 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <label className="text-[10px] font-mono font-bold text-rose-400 uppercase tracking-wider">
-                          Ciclos Pomodoro
+                    <div className="p-4 rounded-2xl bg-zinc-950 border border-rose-500/30 space-y-4">
+                      {/* 1. Tempo Total de Foco */}
+                      <div>
+                        <label className="text-[10px] font-mono font-bold text-rose-400 uppercase tracking-wider block mb-2">
+                          1. Tempo Total da Sessão
                         </label>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {[
-                          { label: '25m Foco', mins: 25 },
-                          { label: '5m Pausa', mins: 5 },
-                          { label: '15m Pausa', mins: 15 },
-                          { label: '50m Intenso', mins: 50 },
-                          { label: '60m Foco', mins: 60 }
-                        ].map((p) => (
-                          <button
-                            key={p.mins}
-                            type="button"
-                            onClick={() => handleApplyPresetMinutes(p.mins)}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold border transition-all cursor-pointer ${
-                              timerMinutes === p.mins && timerHours === 0
-                                ? 'bg-rose-500 text-white border-rose-400 shadow-md shadow-rose-500/20'
-                                : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:border-zinc-700'
-                            }`}
-                          >
-                            {p.label}
-                          </button>
-                        ))}
+                        <div className="flex flex-wrap gap-1.5 mb-3">
+                          {[
+                            { label: '25 Minutos', h: 0, m: 25 },
+                            { label: '50 Minutos', h: 0, m: 50 },
+                            { label: '1 Hora', h: 1, m: 0 },
+                            { label: '2 Horas', h: 2, m: 0 }
+                          ].map((p) => (
+                            <button
+                              key={p.label}
+                              type="button"
+                              onClick={() => { setTimerHours(p.h); setTimerMinutes(p.m); setTimerSeconds(0); }}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold border transition-all cursor-pointer ${
+                                timerHours === p.h && timerMinutes === p.m
+                                  ? 'bg-rose-500 text-white border-rose-400 shadow-md shadow-rose-500/20'
+                                  : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:border-zinc-700'
+                              }`}
+                            >
+                              {p.label}
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 text-center">
+                          <div>
+                            <span className="text-[9px] text-zinc-500 font-mono block mb-1">Horas</span>
+                            <input
+                              type="number"
+                              min="0"
+                              max="23"
+                              value={timerHours}
+                              onChange={(e) => setTimerHours(Math.max(0, parseInt(e.target.value) || 0))}
+                              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2 text-center text-sm font-mono font-bold text-white focus:outline-none focus:border-rose-500"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[9px] text-zinc-500 font-mono block mb-1">Minutos</span>
+                            <input
+                              type="number"
+                              min="0"
+                              max="59"
+                              value={timerMinutes}
+                              onChange={(e) => setTimerMinutes(Math.max(0, parseInt(e.target.value) || 0))}
+                              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2 text-center text-sm font-mono font-bold text-white focus:outline-none focus:border-rose-500"
+                            />
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="pt-2 border-t border-zinc-900 grid grid-cols-3 gap-2 text-center">
-                        <div>
-                          <span className="text-[9px] text-zinc-500 font-mono block mb-1">Horas</span>
-                          <input
-                            type="number"
-                            min="0"
-                            max="23"
-                            value={timerHours}
-                            onChange={(e) => setTimerHours(Math.max(0, parseInt(e.target.value) || 0))}
-                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2 text-center text-sm font-mono font-bold text-white focus:outline-none focus:border-rose-500"
-                          />
+                      {/* 2. Regras de Pausa */}
+                      <div className="pt-3 border-t border-zinc-900 space-y-3">
+                        <label className="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-wider block">
+                          2. Regras de Pausa
+                        </label>
+
+                        {/* Modos de Pausa */}
+                        <div className="grid grid-cols-2 gap-2 bg-zinc-900 p-1 rounded-xl border border-zinc-800">
+                          <button
+                            type="button"
+                            onClick={() => setPomoBreakMode('interval')}
+                            className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                              pomoBreakMode === 'interval'
+                                ? 'bg-amber-500 text-black shadow-sm'
+                                : 'text-zinc-400 hover:text-white'
+                            }`}
+                          >
+                            De quanto em quanto
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPomoBreakMode('specific')}
+                            className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                              pomoBreakMode === 'specific'
+                                ? 'bg-amber-500 text-black shadow-sm'
+                                : 'text-zinc-400 hover:text-white'
+                            }`}
+                          >
+                            Tempo específico
+                          </button>
                         </div>
-                        <div>
-                          <span className="text-[9px] text-zinc-500 font-mono block mb-1">Minutos</span>
-                          <input
-                            type="number"
-                            min="0"
-                            max="59"
-                            value={timerMinutes}
-                            onChange={(e) => setTimerMinutes(Math.max(0, parseInt(e.target.value) || 0))}
-                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2 text-center text-sm font-mono font-bold text-white focus:outline-none focus:border-rose-500"
-                          />
-                        </div>
-                        <div>
-                          <span className="text-[9px] text-zinc-500 font-mono block mb-1">Segundos</span>
-                          <input
-                            type="number"
-                            min="0"
-                            max="59"
-                            value={timerSeconds}
-                            onChange={(e) => setTimerSeconds(Math.max(0, parseInt(e.target.value) || 0))}
-                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2 text-center text-sm font-mono font-bold text-white focus:outline-none focus:border-rose-500"
-                          />
+
+                        {pomoBreakMode === 'interval' ? (
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <span className="text-[10px] text-zinc-400 block mb-1">Pausa a cada:</span>
+                              <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 rounded-xl px-2 py-1.5">
+                                <input
+                                  type="number"
+                                  min="1"
+                                  max="120"
+                                  value={pomoFocusMinutes}
+                                  onChange={(e) => setPomoFocusMinutes(Math.max(1, parseInt(e.target.value) || 1))}
+                                  className="w-full bg-transparent text-center font-mono font-bold text-sm text-white focus:outline-none"
+                                />
+                                <span className="text-xs text-zinc-500 font-mono">min</span>
+                              </div>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-zinc-400 block mb-1">Duração da pausa:</span>
+                              <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 rounded-xl px-2 py-1.5">
+                                <input
+                                  type="number"
+                                  min="1"
+                                  max="60"
+                                  value={pomoBreakMinutes}
+                                  onChange={(e) => setPomoBreakMinutes(Math.max(1, parseInt(e.target.value) || 1))}
+                                  className="w-full bg-transparent text-center font-mono font-bold text-sm text-white focus:outline-none"
+                                />
+                                <span className="text-xs text-zinc-500 font-mono">min</span>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <span className="text-[10px] text-zinc-400 block mb-1">Pausa aos:</span>
+                              <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 rounded-xl px-2 py-1.5">
+                                <input
+                                  type="number"
+                                  min="1"
+                                  max="240"
+                                  value={pomoSpecificMinute}
+                                  onChange={(e) => setPomoSpecificMinute(Math.max(1, parseInt(e.target.value) || 1))}
+                                  className="w-full bg-transparent text-center font-mono font-bold text-sm text-white focus:outline-none"
+                                />
+                                <span className="text-xs text-zinc-500 font-mono">min</span>
+                              </div>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-zinc-400 block mb-1">Duração da pausa:</span>
+                              <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 rounded-xl px-2 py-1.5">
+                                <input
+                                  type="number"
+                                  min="1"
+                                  max="60"
+                                  value={pomoBreakMinutes}
+                                  onChange={(e) => setPomoBreakMinutes(Math.max(1, parseInt(e.target.value) || 1))}
+                                  className="w-full bg-transparent text-center font-mono font-bold text-sm text-white focus:outline-none"
+                                />
+                                <span className="text-xs text-zinc-500 font-mono">min</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-[11px] text-rose-300 font-mono flex items-center gap-2">
+                          <Flame className="h-4 w-4 text-rose-400 flex-shrink-0" />
+                          <span>
+                            Sessão total: {(timerHours * 60) + timerMinutes}m. Pausa de {pomoBreakMinutes}m {pomoBreakMode === 'interval' ? `a cada ${pomoFocusMinutes}m` : `aos ${pomoSpecificMinute}m`}.
+                          </span>
                         </div>
                       </div>
                     </div>
