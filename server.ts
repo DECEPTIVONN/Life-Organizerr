@@ -1,10 +1,14 @@
 import express from "express";
 import path from "path";
 import fs from "fs";
+import compression from "compression";
 import app from "./api/index";
 
 async function startServer() {
   const PORT = 3000;
+
+  // Enable HTTP Gzip compression for all text and JSON responses
+  app.use(compression());
 
   const distPath = path.join(process.cwd(), "dist");
   const indexHtmlExists = fs.existsSync(path.join(distPath, "index.html"));
@@ -20,9 +24,29 @@ async function startServer() {
     if (!indexHtmlExists) {
       console.error("[Planner Server] ERROR: Starting in production mode but dist/index.html does not exist! Please run 'npm run build' first.");
     }
-    console.log("[Planner Server] Running in PRODUCTION mode, serving static files from dist...");
-    app.use(express.static(distPath));
+    console.log("[Planner Server] Running in PRODUCTION mode, serving static files with aggressive caching...");
+
+    // Immutable cache for fingerprinted static assets in /assets (JS, CSS, images)
+    app.use('/assets', express.static(path.join(distPath, 'assets'), {
+      maxAge: '1y',
+      immutable: true,
+      etag: true
+    }));
+
+    // Standard static file serving with cache headers
+    app.use(express.static(distPath, {
+      maxAge: '1d',
+      etag: true,
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.html') || filePath.endsWith('sw.js')) {
+          // Do not cache index.html or service worker so app updates load immediately
+          res.setHeader('Cache-Control', 'no-cache');
+        }
+      }
+    }));
+
     app.get("*", (req, res) => {
+      res.setHeader('Cache-Control', 'no-cache');
       res.sendFile(path.join(distPath, "index.html"));
     });
   } else {

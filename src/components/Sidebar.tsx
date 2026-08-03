@@ -179,7 +179,7 @@ export default function Sidebar({
     setActiveTab('lembretes');
   };
 
-  const HOLD_DURATION = 69; // 69ms hold time
+  const HOLD_DURATION = 1500; // 1.5s (1500ms) hold time
 
   const startNotasLongPress = (e?: React.TouchEvent | React.MouseEvent) => {
     pressStartTsRef.current = Date.now();

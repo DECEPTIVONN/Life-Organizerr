@@ -1385,7 +1385,7 @@ export default function App() {
       }
     };
 
-    const interval = setInterval(checkNotifications, 30000);
+    const interval = setInterval(checkNotifications, 120000);
     checkNotifications();
 
     return () => clearInterval(interval);
@@ -1554,12 +1554,12 @@ export default function App() {
       }
     }
 
-    // 3. Fallback Polling every 30 seconds when tab is active (using lightweight metadata check)
+    // 3. Fallback Polling every 2 minutes when tab is active (using lightweight metadata check)
     const pollingInterval = setInterval(() => {
       if (isSubscribed && document.visibilityState === 'visible') {
         checkRemoteData(false);
       }
-    }, 30000);
+    }, 120000);
 
     // 4. Trigger lightweight metadata check when tab comes back into focus
     const handleFocus = () => {
