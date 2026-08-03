@@ -769,28 +769,65 @@ export default function RemindersView({
 
                   {/* Remaining Time / Countdown Display */}
                   <div className="pt-2">
-                    <div className={`p-3 rounded-2xl border flex items-center justify-between font-mono ${
-                      isTriggered
-                        ? 'bg-red-500/20 border-red-500/40 text-red-300'
-                        : rem.paused
-                        ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
-                        : 'bg-black/50 border-zinc-800 text-orange-400'
-                    }`}>
-                      <div className="flex items-center gap-2">
-                        {rem.mode === 'timer' ? (
-                          <Timer className={`h-4 w-4 ${!rem.paused && !isCompleted ? 'animate-spin' : ''}`} />
-                        ) : (
-                          <Clock className="h-4 w-4" />
-                        )}
-                        <span className="text-sm font-extrabold tracking-wider">{remainingText}</span>
-                      </div>
+                    {isTriggered ? (
+                      <div className="flex items-center gap-3.5 bg-black/90 p-3.5 rounded-2xl border border-red-500/80 shadow-[0_0_20px_rgba(239,68,68,0.25)]">
+                        <div className="relative w-12 h-12 flex-shrink-0 flex items-center justify-center">
+                          <svg className="w-full h-full -rotate-90">
+                            <circle
+                              cx="24"
+                              cy="24"
+                              r="19"
+                              stroke="#27272a"
+                              strokeWidth="3.5"
+                              fill="none"
+                            />
+                            <circle
+                              cx="24"
+                              cy="24"
+                              r="19"
+                              stroke="#ef4444"
+                              strokeWidth="3.5"
+                              fill="none"
+                              strokeDasharray="119"
+                              strokeDashoffset="30"
+                              strokeLinecap="round"
+                              className="animate-pulse"
+                            />
+                          </svg>
+                          <Timer className="h-5 w-5 absolute text-red-400 animate-bounce" />
+                        </div>
 
-                      {rem.paused && (
-                        <span className="text-[9px] font-bold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full uppercase">
-                          Pausado
-                        </span>
-                      )}
-                    </div>
+                        <div className="space-y-0.5">
+                          <div className="text-2xl font-mono font-black text-white tracking-widest">
+                            00:00
+                          </div>
+                          <div className="text-[11px] text-zinc-400 font-mono tracking-wide">
+                            Alarme disparado!
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className={`p-3 rounded-2xl border flex items-center justify-between font-mono ${
+                        rem.paused
+                          ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                          : 'bg-black/50 border-zinc-800 text-orange-400'
+                      }`}>
+                        <div className="flex items-center gap-2">
+                          {rem.mode === 'timer' ? (
+                            <Timer className={`h-4 w-4 ${!rem.paused && !isCompleted ? 'animate-pulse' : ''}`} />
+                          ) : (
+                            <Clock className="h-4 w-4" />
+                          )}
+                          <span className="text-sm font-extrabold tracking-wider">{remainingText}</span>
+                        </div>
+
+                        {rem.paused && (
+                          <span className="text-[9px] font-bold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full uppercase">
+                            Pausado
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1019,23 +1056,35 @@ export default function RemindersView({
               )}
 
               {/* Category & Priority */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-3">
                 <div>
-                  <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
+                  <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1.5">
                     Categoria
                   </label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value as any)}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500"
-                  >
-                    <option value="Foco">⚡ Foco</option>
-                    <option value="Saúde">❤️ Saúde</option>
-                    <option value="Trabalho">💼 Trabalho</option>
-                    <option value="Estudo">📖 Estudo</option>
-                    <option value="Pessoal">👤 Pessoal</option>
-                    <option value="Outros">🏷️ Outros</option>
-                  </select>
+                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                    {[
+                      { id: 'Foco' as const, label: 'Foco', icon: <Zap className="h-3.5 w-3.5 text-amber-400" /> },
+                      { id: 'Saúde' as const, label: 'Saúde', icon: <HeartPulse className="h-3.5 w-3.5 text-rose-400" /> },
+                      { id: 'Trabalho' as const, label: 'Trabalho', icon: <Briefcase className="h-3.5 w-3.5 text-blue-400" /> },
+                      { id: 'Estudo' as const, label: 'Estudo', icon: <BookOpen className="h-3.5 w-3.5 text-emerald-400" /> },
+                      { id: 'Pessoal' as const, label: 'Pessoal', icon: <User className="h-3.5 w-3.5 text-purple-400" /> },
+                      { id: 'Outros' as const, label: 'Outros', icon: <Tag className="h-3.5 w-3.5 text-zinc-400" /> }
+                    ].map((cat) => (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => setCategory(cat.id)}
+                        className={`px-2 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer border ${
+                          category === cat.id
+                            ? 'bg-orange-500/15 border-orange-500/80 text-white shadow-sm'
+                            : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                        }`}
+                      >
+                        {cat.icon}
+                        <span>{cat.label}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <div>

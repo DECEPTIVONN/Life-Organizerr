@@ -1204,7 +1204,8 @@ export default function App() {
       gridRoutine,
       customCards,
       activeThemePreset,
-      customThemeHex
+      customThemeHex,
+      reminders
     };
   });
 
@@ -1424,7 +1425,8 @@ export default function App() {
         gridRoutine: data.gridRoutine !== undefined ? data.gridRoutine : latestStateRef.current.gridRoutine,
         customCards: data.customCards !== undefined ? data.customCards : latestStateRef.current.customCards,
         activeThemePreset: data.activeThemePreset !== undefined ? data.activeThemePreset : latestStateRef.current.activeThemePreset,
-        customThemeHex: data.customThemeHex !== undefined ? data.customThemeHex : latestStateRef.current.customThemeHex
+        customThemeHex: data.customThemeHex !== undefined ? data.customThemeHex : latestStateRef.current.customThemeHex,
+        reminders: data.reminders !== undefined ? data.reminders : latestStateRef.current.reminders
       };
 
       const incomingSerialized = safeStringify(incomingData);
@@ -1456,6 +1458,7 @@ export default function App() {
       setLifeSummary(incomingData.lifeSummary);
       setFutureEvents(incomingData.futureEvents);
       setHabits(incomingData.habits);
+      if (incomingData.reminders) setReminders(incomingData.reminders);
       if (incomingData.customCards) setCustomCards(incomingData.customCards);
       if (incomingData.gridRoutine !== undefined) setGridRoutine(incomingData.gridRoutine);
       if (incomingData.activeThemePreset !== undefined) setActiveThemePreset(incomingData.activeThemePreset);
@@ -1483,6 +1486,7 @@ export default function App() {
       localStorage.setItem('mbc_life_summary_v1', JSON.stringify(incomingData.lifeSummary));
       localStorage.setItem('mbc_futureEvents', JSON.stringify(incomingData.futureEvents));
       localStorage.setItem('mbc_habits', JSON.stringify(incomingData.habits));
+      localStorage.setItem('mbc_reminders', JSON.stringify(incomingData.reminders || []));
       if (incomingData.customCards) localStorage.setItem('dashboard_custom_cards', JSON.stringify(incomingData.customCards));
       if (incomingData.gridRoutine !== undefined) localStorage.setItem('mbc_grid_routine', JSON.stringify(incomingData.gridRoutine));
       if (incomingData.activeThemePreset !== undefined) localStorage.setItem('mbc_theme_preset', incomingData.activeThemePreset);
@@ -1612,7 +1616,8 @@ export default function App() {
       gridRoutine,
       customCards,
       activeThemePreset,
-      customThemeHex
+      customThemeHex,
+      reminders
     };
     const currentSerialized = safeStringify(currentData);
 
@@ -1676,6 +1681,7 @@ export default function App() {
     customCards,
     activeThemePreset,
     customThemeHex,
+    reminders,
     isInitialLoadComplete
   ]);
 
