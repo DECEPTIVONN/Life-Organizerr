@@ -220,7 +220,7 @@ export interface QuickReminder {
   scheduledDate?: string;
   scheduledTime?: string;
   recurrence?: 'none' | 'daily' | 'workdays' | 'weekly';
-  category?: 'Foco' | 'Saúde' | 'Trabalho' | 'Estudo' | 'Pessoal';
+  category?: 'Foco' | 'Saúde' | 'Trabalho' | 'Estudo' | 'Pessoal' | 'Outros';
   priority?: 'baixa' | 'media' | 'alta';
   soundEnabled?: boolean;
   status: 'active' | 'triggered' | 'completed' | 'paused';

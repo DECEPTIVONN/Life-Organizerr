@@ -1367,7 +1367,7 @@ export default function Sidebar({
 
                   <button
                     type="submit"
-                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-black font-extrabold text-xs flex items-center gap-2 transition-all shadow-lg shadow-orange-500/20 cursor-pointer"
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white font-extrabold text-xs flex items-center gap-2 transition-all shadow-lg shadow-orange-500/20 cursor-pointer"
                   >
                     {quickModalType === 'timer' ? <Timer className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
                     <span>{quickModalType === 'timer' ? 'Iniciar Timer' : 'Criar Alerta'}</span>

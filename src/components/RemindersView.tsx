@@ -21,9 +21,25 @@ import {
   Layers,
   ChevronRight,
   Flame,
-  BellRing
+  BellRing,
+  HeartPulse,
+  Briefcase,
+  BookOpen,
+  User,
+  Folder
 } from 'lucide-react';
 import { QuickReminder } from '../types';
+
+export const getCategoryIcon = (cat?: string) => {
+  switch (cat) {
+    case 'Foco': return <Zap className="h-3.5 w-3.5 text-amber-400" />;
+    case 'Saúde': return <HeartPulse className="h-3.5 w-3.5 text-rose-400" />;
+    case 'Trabalho': return <Briefcase className="h-3.5 w-3.5 text-blue-400" />;
+    case 'Estudo': return <BookOpen className="h-3.5 w-3.5 text-emerald-400" />;
+    case 'Pessoal': return <User className="h-3.5 w-3.5 text-purple-400" />;
+    case 'Outros': default: return <Tag className="h-3.5 w-3.5 text-zinc-400" />;
+  }
+};
 
 interface RemindersViewProps {
   reminders: QuickReminder[];
@@ -110,7 +126,7 @@ export default function RemindersView({
   const [recurrence, setRecurrence] = useState<'none' | 'daily' | 'workdays' | 'weekly'>('none');
 
   // Common inputs
-  const [category, setCategory] = useState<'Foco' | 'Saúde' | 'Trabalho' | 'Estudo' | 'Pessoal'>('Foco');
+  const [category, setCategory] = useState<'Foco' | 'Saúde' | 'Trabalho' | 'Estudo' | 'Pessoal' | 'Outros'>('Foco');
   const [priority, setPriority] = useState<'baixa' | 'media' | 'alta'>('media');
   const [soundEnabled, setSoundEnabled] = useState(true);
 
@@ -456,32 +472,6 @@ export default function RemindersView({
             </button>
           </div>
         </div>
-
-        {/* Quick Presets Bar */}
-        <div className="mt-6 pt-5 border-t border-zinc-800/80 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-xs text-zinc-400 font-mono font-bold uppercase tracking-wider">
-            <Zap className="h-3.5 w-3.5 text-amber-400" />
-            <span>Timers Rápido 1-Clique:</span>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {[
-              { label: '+5 min Água', mins: 5, icon: '💧' },
-              { label: '+15 min Foco', mins: 15, icon: '⚡' },
-              { label: '+25 min Pomodoro', mins: 25, icon: '🎯' },
-              { label: '+45 min Estudo', mins: 45, icon: '📖' },
-              { label: '+1h Reunião', mins: 60, icon: '💼' }
-            ].map((p, idx) => (
-              <button
-                key={idx}
-                onClick={() => handleQuickTimer(p.label, p.mins)}
-                className="px-3 py-1.5 rounded-xl bg-zinc-800/60 hover:bg-zinc-800 border border-zinc-700/50 hover:border-orange-500/50 text-zinc-300 hover:text-white text-xs font-semibold transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
-              >
-                <span>{p.icon}</span>
-                <span>{p.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
 
       {/* 2. STATS & FILTER TABS */}
@@ -496,7 +486,7 @@ export default function RemindersView({
             }`}
           >
             <Clock className="h-3.5 w-3.5" />
-            <span>Ativos & Foco ({activeCount})</span>
+            <span>Ativos ({activeCount})</span>
           </button>
 
           <button
@@ -534,11 +524,6 @@ export default function RemindersView({
             <Volume2 className="h-3.5 w-3.5 text-amber-400 animate-pulse" />
             <span>Testar Som</span>
           </button>
-          <span className="text-zinc-600">|</span>
-          <span className="flex items-center gap-1 text-emerald-400 font-bold">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            Tempo Real Ativo
-          </span>
         </div>
       </div>
 
@@ -748,8 +733,9 @@ export default function RemindersView({
                     </span>
 
                     {rem.category && (
-                      <span className="px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700/60 text-zinc-300 text-[10px] font-medium">
-                        {rem.category}
+                      <span className="px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700/60 text-zinc-300 text-[10px] font-medium flex items-center gap-1">
+                        {getCategoryIcon(rem.category)}
+                        <span>{rem.category}</span>
                       </span>
                     )}
                   </div>
@@ -1043,11 +1029,12 @@ export default function RemindersView({
                     onChange={(e) => setCategory(e.target.value as any)}
                     className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500"
                   >
-                    <option value="Foco">⚡ Foco / Estudo</option>
-                    <option value="Saúde">💧 Saúde / Água</option>
-                    <option value="Trabalho">💼 Trabalho / Reunião</option>
-                    <option value="Estudo">📖 Leitura / Cursos</option>
-                    <option value="Pessoal">🎯 Pessoal / Hábitos</option>
+                    <option value="Foco">⚡ Foco</option>
+                    <option value="Saúde">❤️ Saúde</option>
+                    <option value="Trabalho">💼 Trabalho</option>
+                    <option value="Estudo">📖 Estudo</option>
+                    <option value="Pessoal">👤 Pessoal</option>
+                    <option value="Outros">🏷️ Outros</option>
                   </select>
                 </div>
 
@@ -1108,21 +1095,55 @@ export default function RemindersView({
 
       {/* 5. TRIGGERED ALARM POPUP OVERLAY */}
       {activeAlarm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-lg animate-in zoom-in-95 duration-200">
-          <div className="bg-gradient-to-b from-red-950 via-zinc-900 to-black border-2 border-red-500 rounded-3xl w-full max-w-md p-6 text-center space-y-6 shadow-[0_0_50px_rgba(239,68,68,0.5)] relative overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in zoom-in-95 duration-200 select-none">
+          <div className="bg-[#09090b] border border-red-500/80 rounded-3xl w-full max-w-md p-6 space-y-5 shadow-[0_0_50px_rgba(239,68,68,0.35)] relative overflow-hidden">
             <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-red-500 via-orange-500 to-amber-500 animate-pulse" />
 
-            <div className="w-20 h-20 rounded-full bg-red-500/20 border-2 border-red-500/50 flex items-center justify-center mx-auto text-red-400 animate-bounce">
-              <Bell className="h-10 w-10 text-red-500" />
+            {/* Timer card header component matching fixed image */}
+            <div className="flex items-center gap-4 bg-black/90 p-4 rounded-2xl border border-zinc-800/90 text-left">
+              <div className="relative w-14 h-14 flex-shrink-0 flex items-center justify-center">
+                <svg className="w-full h-full -rotate-90">
+                  <circle
+                    cx="28"
+                    cy="28"
+                    r="22"
+                    stroke="#27272a"
+                    strokeWidth="4"
+                    fill="none"
+                  />
+                  <circle
+                    cx="28"
+                    cy="28"
+                    r="22"
+                    stroke="#ef4444"
+                    strokeWidth="4"
+                    fill="none"
+                    strokeDasharray="138"
+                    strokeDashoffset="35"
+                    strokeLinecap="round"
+                    className="animate-pulse"
+                  />
+                </svg>
+                <Timer className="h-6 w-6 absolute text-red-400 animate-bounce" />
+              </div>
+
+              <div className="space-y-0.5">
+                <div className="text-3xl sm:text-4xl font-mono font-black text-white tracking-widest">
+                  00:00
+                </div>
+                <div className="text-xs text-zinc-400 font-mono tracking-wide">
+                  Contagem regressiva
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <span className="px-3 py-1 rounded-full bg-red-500/20 border border-red-500/40 text-red-400 text-xs font-mono font-extrabold uppercase tracking-widest">
-                ⏰ Hora do Lembrete!
+            <div className="space-y-2 text-left">
+              <span className="px-2.5 py-0.5 rounded-full bg-red-500/20 border border-red-500/40 text-red-400 text-[10px] font-mono font-extrabold uppercase tracking-widest inline-block">
+                ⏰ Alarme Disparado!
               </span>
-              <h2 className="text-xl font-black text-white">{activeAlarm.title}</h2>
+              <h2 className="text-xl font-black text-white leading-tight">{activeAlarm.title}</h2>
               {activeAlarm.description && (
-                <p className="text-xs text-zinc-300 bg-zinc-950/60 p-3 rounded-xl border border-zinc-800">
+                <p className="text-xs text-zinc-300 bg-zinc-950 p-3 rounded-xl border border-zinc-800">
                   {activeAlarm.description}
                 </p>
               )}
@@ -1131,9 +1152,9 @@ export default function RemindersView({
             <div className="grid grid-cols-2 gap-3 pt-2">
               <button
                 onClick={() => handleSnoozeAlarm(activeAlarm.id)}
-                className="py-3 px-4 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-amber-400 font-bold text-xs uppercase tracking-wider border border-amber-500/30 transition-all cursor-pointer flex items-center justify-center gap-2"
+                className="py-3 px-4 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-extrabold text-xs uppercase tracking-wider border border-zinc-700/80 transition-all cursor-pointer flex items-center justify-center gap-2"
               >
-                <Clock className="h-4 w-4" />
+                <Clock className="h-4 w-4 text-amber-400" />
                 <span>Adiar +5 min</span>
               </button>
 
