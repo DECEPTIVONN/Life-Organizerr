@@ -1202,7 +1202,7 @@ export default function Sidebar({
               initial={{ scale: 0.95, opacity: 0, y: 15 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 15 }}
-              className="cursor-default bg-zinc-950 border border-zinc-800 rounded-3xl p-6 w-full max-w-md shadow-2xl text-left space-y-5 relative"
+              className="cursor-default bg-zinc-950 border border-zinc-800 rounded-3xl p-6 md:p-8 w-full max-w-md md:max-w-2xl shadow-2xl text-left space-y-6 relative max-h-[90vh] overflow-y-auto"
             >
               {/* Header */}
               <div className="flex items-center justify-between border-b border-zinc-900 pb-4">
@@ -1236,127 +1236,135 @@ export default function Sidebar({
               </div>
 
               {/* Form Content */}
-              <form onSubmit={handleCreateQuickReminder} className="space-y-4">
-                {/* Field 1: Title */}
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-zinc-300 uppercase tracking-wider block">
-                    Nome do Lembrete <span className="text-zinc-500 font-normal">(Opcional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={quickReminderTitle}
-                    onChange={(e) => setQuickReminderTitle(e.target.value)}
-                    placeholder={
-                      quickModalType === 'timer'
-                        ? 'Ex: Pausa para o café, Estudo em foco...'
-                        : 'Ex: Alerta de treino, Limite de reunião...'
-                    }
-                    className="w-full bg-zinc-900 border border-zinc-800 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 text-white text-xs rounded-xl px-3.5 py-2.5 outline-none transition-all placeholder:text-zinc-600"
-                  />
-                </div>
-
-                {/* Field 2: Presets */}
-                <div className="space-y-2">
-                  <label className="text-[11px] font-bold text-zinc-300 uppercase tracking-wider block">
-                    Atalhos de Tempo
-                  </label>
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {(quickModalType === 'timer'
-                      ? [
-                          { label: '1 min', h: 0, m: 1 },
-                          { label: '5 min', h: 0, m: 5 },
-                          { label: '15 min', h: 0, m: 15 },
-                          { label: '25 min', h: 0, m: 25 },
-                          { label: '45 min', h: 0, m: 45 },
-                          { label: '1 hora', h: 1, m: 0 },
-                          { label: '2 horas', h: 2, m: 0 },
-                          { label: '5 horas', h: 5, m: 0 }
-                        ]
-                      : [
-                          { label: '1 min', h: 0, m: 1 },
-                          { label: '5 min', h: 0, m: 5 },
-                          { label: '10 min', h: 0, m: 10 },
-                          { label: '30 min', h: 0, m: 30 },
-                          { label: '1 hora', h: 1, m: 0 },
-                          { label: '2 horas', h: 2, m: 0 },
-                          { label: '3 horas', h: 3, m: 0 },
-                          { label: '5 horas', h: 5, m: 0 }
-                        ]
-                    ).map((preset, idx) => {
-                      const isActive = quickHours === preset.h && quickMinutes === preset.m;
-                      return (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => {
-                            setQuickHours(preset.h);
-                            setQuickMinutes(preset.m);
-                          }}
-                          className={`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                            isActive
-                              ? 'bg-orange-500/20 border border-orange-500/60 text-orange-400 shadow-sm'
-                              : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-850'
-                          }`}
-                        >
-                          {preset.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Field 3: Time Selector (Hours & Minutes) */}
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-zinc-300 uppercase tracking-wider block">
-                    Ajuste Fino de Duração (1 min até 10 horas)
-                  </label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-[10px] font-mono font-bold text-zinc-500 uppercase block mb-1">
-                        Horas
+              <form onSubmit={handleCreateQuickReminder} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Left side: Title and Presets */}
+                  <div className="space-y-4">
+                    {/* Field 1: Title */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-zinc-300 uppercase tracking-wider block">
+                        Nome do Lembrete <span className="text-zinc-500 font-normal">(Opcional)</span>
                       </label>
-                      <select
-                        value={quickHours}
-                        onChange={(e) => setQuickHours(Number(e.target.value))}
-                        className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl p-2.5 text-xs outline-none focus:border-orange-500 font-mono"
-                      >
-                        {Array.from({ length: 11 }).map((_, i) => (
-                          <option key={i} value={i}>
-                            {i} {i === 1 ? 'hora' : 'horas'}
-                          </option>
-                        ))}
-                      </select>
+                      <input
+                        type="text"
+                        value={quickReminderTitle}
+                        onChange={(e) => setQuickReminderTitle(e.target.value)}
+                        placeholder={
+                          quickModalType === 'timer'
+                            ? 'Ex: Pausa para o café, Estudo em foco...'
+                            : 'Ex: Alerta de treino, Limite de reunião...'
+                        }
+                        className="w-full bg-zinc-900 border border-zinc-800 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 text-white text-xs rounded-xl px-3.5 py-2.5 outline-none transition-all placeholder:text-zinc-600"
+                      />
                     </div>
 
-                    <div>
-                      <label className="text-[10px] font-mono font-bold text-zinc-500 uppercase block mb-1">
-                        Minutos
+                    {/* Field 2: Presets */}
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-bold text-zinc-300 uppercase tracking-wider block">
+                        Atalhos de Tempo
                       </label>
-                      <select
-                        value={quickMinutes}
-                        onChange={(e) => setQuickMinutes(Number(e.target.value))}
-                        className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl p-2.5 text-xs outline-none focus:border-orange-500 font-mono"
-                      >
-                        {Array.from({ length: 60 }).map((_, i) => (
-                          <option key={i} value={i}>
-                            {i} {i === 1 ? 'minuto' : 'minutos'}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {(quickModalType === 'timer'
+                          ? [
+                              { label: '1 min', h: 0, m: 1 },
+                              { label: '5 min', h: 0, m: 5 },
+                              { label: '15 min', h: 0, m: 15 },
+                              { label: '25 min', h: 0, m: 25 },
+                              { label: '45 min', h: 0, m: 45 },
+                              { label: '1 hora', h: 1, m: 0 },
+                              { label: '2 horas', h: 2, m: 0 },
+                              { label: '5 horas', h: 5, m: 0 }
+                            ]
+                          : [
+                              { label: '1 min', h: 0, m: 1 },
+                              { label: '5 min', h: 0, m: 5 },
+                              { label: '10 min', h: 0, m: 10 },
+                              { label: '30 min', h: 0, m: 30 },
+                              { label: '1 hora', h: 1, m: 0 },
+                              { label: '2 horas', h: 2, m: 0 },
+                              { label: '3 horas', h: 3, m: 0 },
+                              { label: '5 horas', h: 5, m: 0 }
+                            ]
+                        ).map((preset, idx) => {
+                          const isActive = quickHours === preset.h && quickMinutes === preset.m;
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => {
+                                setQuickHours(preset.h);
+                                setQuickMinutes(preset.m);
+                              }}
+                              className={`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                                isActive
+                                  ? 'bg-orange-500/20 border border-orange-500/60 text-orange-400 shadow-sm'
+                                  : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-850'
+                              }`}
+                            >
+                              {preset.label}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Preview Box */}
-                <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-3.5 flex items-center justify-between text-xs">
-                  <span className="text-zinc-400 font-medium">Horário da Notificação:</span>
-                  <span className="text-orange-400 font-extrabold font-mono bg-orange-500/10 border border-orange-500/20 px-2.5 py-1 rounded-lg">
-                    {new Date(Date.now() + Math.max(60, (quickHours * 3600 + quickMinutes * 60)) * 1000).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                  </span>
+                  {/* Right side: Time Selector & Preview */}
+                  <div className="space-y-4 flex flex-col justify-between">
+                    {/* Field 3: Time Selector (Hours & Minutes) */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-zinc-300 uppercase tracking-wider block">
+                        Ajuste Fino de Duração (1 min até 10 horas)
+                      </label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[10px] font-mono font-bold text-zinc-500 uppercase block mb-1">
+                            Horas
+                          </label>
+                          <select
+                            value={quickHours}
+                            onChange={(e) => setQuickHours(Number(e.target.value))}
+                            className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl p-2.5 text-xs outline-none focus:border-orange-500 font-mono"
+                          >
+                            {Array.from({ length: 11 }).map((_, i) => (
+                              <option key={i} value={i}>
+                                {i} {i === 1 ? 'hora' : 'horas'}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] font-mono font-bold text-zinc-500 uppercase block mb-1">
+                            Minutos
+                          </label>
+                          <select
+                            value={quickMinutes}
+                            onChange={(e) => setQuickMinutes(Number(e.target.value))}
+                            className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl p-2.5 text-xs outline-none focus:border-orange-500 font-mono"
+                          >
+                            {Array.from({ length: 60 }).map((_, i) => (
+                              <option key={i} value={i}>
+                                {i} {i === 1 ? 'minuto' : 'minutos'}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Preview Box */}
+                    <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-3.5 flex items-center justify-between text-xs">
+                      <span className="text-zinc-400 font-medium">Horário da Notificação:</span>
+                      <span className="text-orange-400 font-extrabold font-mono bg-orange-500/10 border border-orange-500/20 px-2.5 py-1 rounded-lg">
+                        {new Date(Date.now() + Math.max(60, (quickHours * 3600 + quickMinutes * 60)) * 1000).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-zinc-900">
+                <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-zinc-900">
                   <button
                     type="button"
                     onClick={() => setQuickModalType(null)}

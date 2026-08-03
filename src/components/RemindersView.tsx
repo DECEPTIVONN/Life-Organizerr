@@ -889,7 +889,7 @@ export default function RemindersView({
         >
           <div 
             onClick={(e) => e.stopPropagation()}
-            className="cursor-default bg-zinc-900 border border-zinc-800 rounded-3xl w-full max-w-lg p-6 space-y-6 shadow-2xl relative overflow-hidden"
+            className="cursor-default bg-zinc-900 border border-zinc-800 rounded-3xl w-full max-w-lg md:max-w-4xl p-6 md:p-8 space-y-6 shadow-2xl relative overflow-hidden max-h-[90vh] overflow-y-auto"
           >
             <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
               <div className="flex items-center gap-3">
@@ -912,220 +912,229 @@ export default function RemindersView({
               </button>
             </div>
 
-            <form onSubmit={handleCreateReminder} className="space-y-4">
-              {/* Title */}
-              <div>
-                <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
-                  Título do Lembrete *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ex: Beber 500ml de água, Alinhamento de equipe, Pausa de olhos..."
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-orange-500"
-                />
-              </div>
-
-              {/* Mode Switch: Timer vs Cronometer */}
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
-                  Modo de Notificação
-                </label>
-                <div className="grid grid-cols-2 gap-2 bg-zinc-950 p-1 rounded-2xl border border-zinc-800">
-                  <button
-                    type="button"
-                    onClick={() => setMode('timer')}
-                    className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-                      mode === 'timer'
-                        ? 'bg-gradient-to-r from-orange-600 to-orange-500 text-white shadow-md'
-                        : 'text-zinc-400 hover:text-white'
-                    }`}
-                  >
-                    <Timer className="h-4 w-4" />
-                    <span>Timer Regressivo</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setMode('cronometer')}
-                    className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-                      mode === 'cronometer'
-                        ? 'bg-gradient-to-r from-amber-600 to-amber-500 text-white shadow-md'
-                        : 'text-zinc-400 hover:text-white'
-                    }`}
-                  >
-                    <Clock className="h-4 w-4" />
-                    <span>Horário Agendado</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* MODE DETAILS: Timer */}
-              {mode === 'timer' ? (
-                <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[10px] font-mono font-bold text-orange-400 uppercase tracking-wider">
-                      Presets Rápidos
+            <form onSubmit={handleCreateReminder} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* LEFT COLUMN: Title, Mode, Presets */}
+                <div className="space-y-4">
+                  {/* Title */}
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
+                      Título do Lembrete *
                     </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ex: Beber 500ml de água, Alinhamento de equipe..."
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-orange-500"
+                    />
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {[1, 3, 5, 10, 15, 25, 30, 45, 60].map((m) => (
+
+                  {/* Mode Switch: Timer vs Cronometer */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
+                      Modo de Notificação
+                    </label>
+                    <div className="grid grid-cols-2 gap-2 bg-zinc-950 p-1 rounded-2xl border border-zinc-800">
                       <button
-                        key={m}
                         type="button"
-                        onClick={() => handleApplyPresetMinutes(m)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold border transition-all ${
-                          timerMinutes === m && timerHours === 0
-                            ? 'bg-orange-500 text-white border-orange-400 shadow-md shadow-orange-500/20'
-                            : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:border-zinc-700'
+                        onClick={() => setMode('timer')}
+                        className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                          mode === 'timer'
+                            ? 'bg-gradient-to-r from-orange-600 to-orange-500 text-white shadow-md'
+                            : 'text-zinc-400 hover:text-white'
                         }`}
                       >
-                        {m}m
+                        <Timer className="h-4 w-4" />
+                        <span>Timer Regressivo</span>
                       </button>
-                    ))}
-                  </div>
 
-                  <div className="pt-2 border-t border-zinc-900 grid grid-cols-3 gap-2 text-center">
-                    <div>
-                      <span className="text-[9px] text-zinc-500 font-mono block mb-1">Horas</span>
-                      <input
-                        type="number"
-                        min="0"
-                        max="23"
-                        value={timerHours}
-                        onChange={(e) => setTimerHours(Math.max(0, parseInt(e.target.value) || 0))}
-                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2 text-center text-sm font-mono font-bold text-white focus:outline-none focus:border-orange-500"
-                      />
-                    </div>
-                    <div>
-                      <span className="text-[9px] text-zinc-500 font-mono block mb-1">Minutos</span>
-                      <input
-                        type="number"
-                        min="0"
-                        max="59"
-                        value={timerMinutes}
-                        onChange={(e) => setTimerMinutes(Math.max(0, parseInt(e.target.value) || 0))}
-                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2 text-center text-sm font-mono font-bold text-white focus:outline-none focus:border-orange-500"
-                      />
-                    </div>
-                    <div>
-                      <span className="text-[9px] text-zinc-500 font-mono block mb-1">Segundos</span>
-                      <input
-                        type="number"
-                        min="0"
-                        max="59"
-                        value={timerSeconds}
-                        onChange={(e) => setTimerSeconds(Math.max(0, parseInt(e.target.value) || 0))}
-                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2 text-center text-sm font-mono font-bold text-white focus:outline-none focus:border-orange-500"
-                      />
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                /* MODE DETAILS: Cronometer / Scheduled */
-                <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
-                        Data *
-                      </label>
-                      <input
-                        type="date"
-                        required
-                        value={scheduledDate}
-                        onChange={(e) => setScheduledDate(e.target.value)}
-                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-amber-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
-                        Horário Exato *
-                      </label>
-                      <input
-                        type="time"
-                        required
-                        value={scheduledTime}
-                        onChange={(e) => setScheduledTime(e.target.value)}
-                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-amber-500"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Category & Priority */}
-              <div className="space-y-3">
-                <div>
-                  <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1.5">
-                    Categoria
-                  </label>
-                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                    {[
-                      { id: 'Foco' as const, label: 'Foco', icon: <Zap className="h-3.5 w-3.5 text-amber-400" /> },
-                      { id: 'Saúde' as const, label: 'Saúde', icon: <HeartPulse className="h-3.5 w-3.5 text-rose-400" /> },
-                      { id: 'Trabalho' as const, label: 'Trabalho', icon: <Briefcase className="h-3.5 w-3.5 text-blue-400" /> },
-                      { id: 'Estudo' as const, label: 'Estudo', icon: <BookOpen className="h-3.5 w-3.5 text-emerald-400" /> },
-                      { id: 'Pessoal' as const, label: 'Pessoal', icon: <User className="h-3.5 w-3.5 text-purple-400" /> },
-                      { id: 'Outros' as const, label: 'Outros', icon: <Tag className="h-3.5 w-3.5 text-zinc-400" /> }
-                    ].map((cat) => (
                       <button
-                        key={cat.id}
                         type="button"
-                        onClick={() => setCategory(cat.id)}
-                        className={`px-2 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer border ${
-                          category === cat.id
-                            ? 'bg-orange-500/15 border-orange-500/80 text-white shadow-sm'
-                            : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                        onClick={() => setMode('cronometer')}
+                        className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                          mode === 'cronometer'
+                            ? 'bg-gradient-to-r from-amber-600 to-amber-500 text-white shadow-md'
+                            : 'text-zinc-400 hover:text-white'
                         }`}
                       >
-                        {cat.icon}
-                        <span>{cat.label}</span>
+                        <Clock className="h-4 w-4" />
+                        <span>Horário Agendado</span>
                       </button>
-                    ))}
+                    </div>
+                  </div>
+
+                  {/* MODE DETAILS: Timer */}
+                  {mode === 'timer' ? (
+                    <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] font-mono font-bold text-orange-400 uppercase tracking-wider">
+                          Presets Rápidos
+                        </label>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {[1, 3, 5, 10, 15, 25, 30, 45, 60].map((m) => (
+                          <button
+                            key={m}
+                            type="button"
+                            onClick={() => handleApplyPresetMinutes(m)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold border transition-all ${
+                              timerMinutes === m && timerHours === 0
+                                ? 'bg-orange-500 text-white border-orange-400 shadow-md shadow-orange-500/20'
+                                : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:border-zinc-700'
+                            }`}
+                          >
+                            {m}m
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="pt-2 border-t border-zinc-900 grid grid-cols-3 gap-2 text-center">
+                        <div>
+                          <span className="text-[9px] text-zinc-500 font-mono block mb-1">Horas</span>
+                          <input
+                            type="number"
+                            min="0"
+                            max="23"
+                            value={timerHours}
+                            onChange={(e) => setTimerHours(Math.max(0, parseInt(e.target.value) || 0))}
+                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2 text-center text-sm font-mono font-bold text-white focus:outline-none focus:border-orange-500"
+                          />
+                        </div>
+                        <div>
+                          <span className="text-[9px] text-zinc-500 font-mono block mb-1">Minutos</span>
+                          <input
+                            type="number"
+                            min="0"
+                            max="59"
+                            value={timerMinutes}
+                            onChange={(e) => setTimerMinutes(Math.max(0, parseInt(e.target.value) || 0))}
+                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2 text-center text-sm font-mono font-bold text-white focus:outline-none focus:border-orange-500"
+                          />
+                        </div>
+                        <div>
+                          <span className="text-[9px] text-zinc-500 font-mono block mb-1">Segundos</span>
+                          <input
+                            type="number"
+                            min="0"
+                            max="59"
+                            value={timerSeconds}
+                            onChange={(e) => setTimerSeconds(Math.max(0, parseInt(e.target.value) || 0))}
+                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2 text-center text-sm font-mono font-bold text-white focus:outline-none focus:border-orange-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    /* MODE DETAILS: Cronometer / Scheduled */
+                    <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
+                            Data *
+                          </label>
+                          <input
+                            type="date"
+                            required
+                            value={scheduledDate}
+                            onChange={(e) => setScheduledDate(e.target.value)}
+                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-amber-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
+                            Horário Exato *
+                          </label>
+                          <input
+                            type="time"
+                            required
+                            value={scheduledTime}
+                            onChange={(e) => setScheduledTime(e.target.value)}
+                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-amber-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* RIGHT COLUMN: Category, Priority, Description */}
+                <div className="space-y-4 flex flex-col justify-between">
+                  <div className="space-y-4">
+                    {/* Category */}
+                    <div>
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1.5">
+                        Categoria
+                      </label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { id: 'Foco' as const, label: 'Foco', icon: <Zap className="h-3.5 w-3.5 text-amber-400" /> },
+                          { id: 'Saúde' as const, label: 'Saúde', icon: <HeartPulse className="h-3.5 w-3.5 text-rose-400" /> },
+                          { id: 'Trabalho' as const, label: 'Trabalho', icon: <Briefcase className="h-3.5 w-3.5 text-blue-400" /> },
+                          { id: 'Estudo' as const, label: 'Estudo', icon: <BookOpen className="h-3.5 w-3.5 text-emerald-400" /> },
+                          { id: 'Pessoal' as const, label: 'Pessoal', icon: <User className="h-3.5 w-3.5 text-purple-400" /> },
+                          { id: 'Outros' as const, label: 'Outros', icon: <Tag className="h-3.5 w-3.5 text-zinc-400" /> }
+                        ].map((cat) => (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => setCategory(cat.id)}
+                            className={`px-2.5 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer border ${
+                              category === cat.id
+                                ? 'bg-orange-500/15 border-orange-500/80 text-white shadow-sm'
+                                : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                            }`}
+                          >
+                            {cat.icon}
+                            <span>{cat.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Priority */}
+                    <div>
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
+                        Prioridade
+                      </label>
+                      <select
+                        value={priority}
+                        onChange={(e) => setPriority(e.target.value as any)}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-orange-500"
+                      >
+                        <option value="baixa">Baixa</option>
+                        <option value="media">Média</option>
+                        <option value="alta">Alta 🔥</option>
+                      </select>
+                    </div>
+
+                    {/* Description */}
+                    <div>
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
+                        Detalhes / Anotação (Opcional)
+                      </label>
+                      <textarea
+                        rows={3}
+                        placeholder="Instruções adicionais, notas ou links..."
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-orange-500 resize-none"
+                      />
+                    </div>
                   </div>
                 </div>
-
-                <div>
-                  <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
-                    Prioridade
-                  </label>
-                  <select
-                    value={priority}
-                    onChange={(e) => setPriority(e.target.value as any)}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500"
-                  >
-                    <option value="baixa">Baixa</option>
-                    <option value="media">Média</option>
-                    <option value="alta">Alta 🔥</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
-                  Detalhes / Anotação (Opcional)
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="Instruções adicionais ou links..."
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-orange-500 resize-none"
-                />
               </div>
 
               {/* Modal Actions */}
-              <div className="pt-3 border-t border-zinc-800 flex items-center justify-end gap-3">
+              <div className="pt-4 border-t border-zinc-800 flex items-center justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => {
                     setIsModalOpen(false);
                     if (onModalClosed) onModalClosed();
                   }}
-                  className="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold transition-colors cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold transition-colors cursor-pointer"
                 >
                   Cancelar
                 </button>
