@@ -115,15 +115,15 @@ export default function Sidebar({
 
   // Long-press state for mobile navbar "Notas" tab
   const [radialMenuOpen, setRadialMenuOpen] = useState(false);
-  const [selectedShortcut, setSelectedShortcut] = useState<'timer' | 'cronometro' | 'lembretes'>('timer');
+  const [selectedShortcut, setSelectedShortcut] = useState<'timer' | 'cronometro' | 'pomodoro' | 'lembretes'>('timer');
   const [pressProgress, setPressProgress] = useState(0);
   const longPressTimerRef = useRef<any>(null);
   const progressAnimRef = useRef<any>(null);
   const pressStartTsRef = useRef<number>(0);
   const touchStartYRef = useRef<number | null>(null);
 
-  // Quick Modal state for Timer & Cronômetro
-  const [quickModalType, setQuickModalType] = useState<'timer' | 'cronometer' | null>(null);
+  // Quick Modal state for Timer, Cronômetro & Pomodoro
+  const [quickModalType, setQuickModalType] = useState<'timer' | 'cronometer' | 'pomodoro' | null>(null);
   const [quickReminderTitle, setQuickReminderTitle] = useState('');
   const [quickHours, setQuickHours] = useState<number>(0);
   const [quickMinutes, setQuickMinutes] = useState<number>(15);
@@ -133,7 +133,11 @@ export default function Sidebar({
     if (!quickModalType) return;
 
     const totalSecs = Math.max(60, Math.min(36000, (quickHours * 3600) + (quickMinutes * 60))); // 1 min to 10 hours
-    const defaultTitle = quickModalType === 'timer' ? 'Timer Rápido' : 'Alerta de Cronômetro';
+    const defaultTitle = quickModalType === 'pomodoro'
+      ? 'Sessão Pomodoro 🍅'
+      : quickModalType === 'timer'
+      ? 'Timer Rápido'
+      : 'Alerta de Cronômetro';
     const targetTs = Date.now() + totalSecs * 1000;
     const formattedTarget = new Date(targetTs).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
@@ -154,7 +158,11 @@ export default function Sidebar({
     // Immediate Web Browser Notification on Creation
     if (typeof Notification !== 'undefined') {
       if (Notification.permission === 'granted') {
-        const modeLabel = quickModalType === 'timer' ? '⏱️ Timer Iniciado' : '⏰ Alerta de Cronômetro Ativo';
+        const modeLabel = quickModalType === 'pomodoro'
+          ? '🍅 Sessão Pomodoro Iniciada'
+          : quickModalType === 'timer'
+          ? '⏱️ Timer Iniciado'
+          : '⏰ Alerta de Cronômetro Ativo';
         new Notification(`${modeLabel}: ${newReminder.title}`, {
           body: `Contagem ativa! (${quickHours > 0 ? `${quickHours}h ` : ''}${quickMinutes}min). Notificação agendada para as ${formattedTarget}.`,
           icon: '/icon.png'
@@ -247,11 +255,16 @@ export default function Sidebar({
     setPressProgress(0);
 
     if (radialMenuOpen || elapsed >= HOLD_DURATION) {
-      if (selectedShortcut === 'timer') {
-        setQuickModalType('timer');
+      if (selectedShortcut === 'pomodoro') {
+        setQuickModalType('pomodoro');
         setQuickReminderTitle('');
         setQuickHours(0);
         setQuickMinutes(25);
+      } else if (selectedShortcut === 'timer') {
+        setQuickModalType('timer');
+        setQuickReminderTitle('');
+        setQuickHours(0);
+        setQuickMinutes(15);
       } else if (selectedShortcut === 'cronometro') {
         setQuickModalType('cronometer');
         setQuickReminderTitle('');
@@ -1154,7 +1167,7 @@ export default function Sidebar({
                   setQuickModalType('timer');
                   setQuickReminderTitle('');
                   setQuickHours(0);
-                  setQuickMinutes(25);
+                  setQuickMinutes(15);
                   setRadialMenuOpen(false);
                 }}
                 onMouseEnter={() => setSelectedShortcut('timer')}
@@ -1185,12 +1198,50 @@ export default function Sidebar({
                   </div>
                 </div>
               </button>
+
+              {/* Option 4: Pomodoro */}
+              <button
+                onClick={() => {
+                  setQuickModalType('pomodoro');
+                  setQuickReminderTitle('');
+                  setQuickHours(0);
+                  setQuickMinutes(25);
+                  setRadialMenuOpen(false);
+                }}
+                onMouseEnter={() => setSelectedShortcut('pomodoro')}
+                onTouchStart={() => setSelectedShortcut('pomodoro')}
+                className={`w-full p-2.5 rounded-xl border transition-all cursor-pointer group shadow-sm flex items-center justify-between ${
+                  selectedShortcut === 'pomodoro'
+                    ? 'bg-zinc-800 border-rose-500/80 ring-1 ring-rose-500/40 text-white shadow-rose-500/10'
+                    : 'bg-zinc-800/40 border-zinc-700/30 text-zinc-400 opacity-80 hover:bg-zinc-800 hover:text-white'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg transition-transform ${
+                    selectedShortcut === 'pomodoro'
+                      ? 'bg-rose-500/20 border border-rose-500/40 text-rose-400 scale-105'
+                      : 'bg-rose-500/10 border border-rose-500/20 text-rose-400'
+                  }`}>
+                    <Flame className="h-4 w-4" />
+                  </div>
+                  <div className="text-left">
+                    <div className={`text-xs font-bold transition-colors ${
+                      selectedShortcut === 'pomodoro' ? 'text-rose-400' : 'text-zinc-200'
+                    }`}>
+                      Pomodoro 🍅
+                    </div>
+                    <div className="text-[10px] text-zinc-400 font-normal">
+                      Ciclo de foco de 25 min
+                    </div>
+                  </div>
+                </div>
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* QUICK TIMER / CRONÔMETRO MODAL */}
+      {/* QUICK TIMER / CRONÔMETRO / POMODORO MODAL */}
       <AnimatePresence>
         {quickModalType && (
           <div 
@@ -1208,18 +1259,32 @@ export default function Sidebar({
               <div className="flex items-center justify-between border-b border-zinc-900 pb-4">
                 <div className="flex items-center gap-3">
                   <div className={`p-3 rounded-2xl border ${
-                    quickModalType === 'timer'
+                    quickModalType === 'pomodoro'
+                      ? 'bg-rose-500/10 border-rose-500/20 text-rose-400'
+                      : quickModalType === 'timer'
                       ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
                       : 'bg-orange-500/10 border-orange-500/20 text-orange-400'
                   }`}>
-                    {quickModalType === 'timer' ? <Timer className="h-5 w-5" /> : <Clock className="h-5 w-5" />}
+                    {quickModalType === 'pomodoro' ? (
+                      <Flame className="h-5 w-5" />
+                    ) : quickModalType === 'timer' ? (
+                      <Timer className="h-5 w-5" />
+                    ) : (
+                      <Clock className="h-5 w-5" />
+                    )}
                   </div>
                   <div>
                     <h3 className="text-sm font-extrabold text-white uppercase tracking-wider">
-                      {quickModalType === 'timer' ? 'Novo Timer Rápido' : 'Novo Alerta de Cronômetro'}
+                      {quickModalType === 'pomodoro'
+                        ? 'Nova Sessão Pomodoro 🍅'
+                        : quickModalType === 'timer'
+                        ? 'Novo Timer Rápido'
+                        : 'Novo Alerta de Cronômetro'}
                     </h3>
                     <p className="text-[11px] text-zinc-400 font-medium">
-                      {quickModalType === 'timer' 
+                      {quickModalType === 'pomodoro'
+                        ? 'Ciclo de foco com notificação sonora ao finalizar'
+                        : quickModalType === 'timer' 
                         ? 'Contagem regressiva com notificação ao finalizar'
                         : 'Notificação ao atingir o tempo desejado'}
                     </p>
@@ -1233,6 +1298,63 @@ export default function Sidebar({
                 >
                   <X className="h-4 w-4" />
                 </button>
+              </div>
+
+              {/* Mode Switcher inside Quick Modal */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
+                  Modo de Lembrete
+                </label>
+                <div className="grid grid-cols-3 gap-2 bg-zinc-900/80 p-1.5 rounded-2xl border border-zinc-800">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQuickModalType('timer');
+                      if (quickMinutes === 25) setQuickMinutes(15);
+                    }}
+                    className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                      quickModalType === 'timer'
+                        ? 'bg-amber-500/20 border border-amber-500/50 text-amber-400 shadow-sm'
+                        : 'text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    <Timer className="h-3.5 w-3.5" />
+                    <span>Timer</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQuickModalType('cronometer');
+                      if (quickMinutes === 25) setQuickMinutes(10);
+                    }}
+                    className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                      quickModalType === 'cronometer'
+                        ? 'bg-orange-500/20 border border-orange-500/50 text-orange-400 shadow-sm'
+                        : 'text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    <Clock className="h-3.5 w-3.5" />
+                    <span>Agendado</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQuickModalType('pomodoro');
+                      setQuickHours(0);
+                      setQuickMinutes(25);
+                    }}
+                    className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                      quickModalType === 'pomodoro'
+                        ? 'bg-rose-500/20 border border-rose-500/50 text-rose-400 shadow-sm'
+                        : 'text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    <Flame className="h-3.5 w-3.5 text-rose-400" />
+                    <span>Pomodoro 🍅</span>
+                  </button>
+                </div>
               </div>
 
               {/* Form Content */}
@@ -1250,7 +1372,9 @@ export default function Sidebar({
                         value={quickReminderTitle}
                         onChange={(e) => setQuickReminderTitle(e.target.value)}
                         placeholder={
-                          quickModalType === 'timer'
+                          quickModalType === 'pomodoro'
+                            ? 'Ex: Estudo Pomodoro, Leitura focada, Código...'
+                            : quickModalType === 'timer'
                             ? 'Ex: Pausa para o café, Estudo em foco...'
                             : 'Ex: Alerta de treino, Limite de reunião...'
                         }
@@ -1261,10 +1385,21 @@ export default function Sidebar({
                     {/* Field 2: Presets */}
                     <div className="space-y-2">
                       <label className="text-[11px] font-bold text-zinc-300 uppercase tracking-wider block">
-                        Atalhos de Tempo
+                        {quickModalType === 'pomodoro' ? 'Ciclos Pomodoro' : 'Atalhos de Tempo'}
                       </label>
                       <div className="grid grid-cols-4 gap-1.5">
-                        {(quickModalType === 'timer'
+                        {(quickModalType === 'pomodoro'
+                          ? [
+                              { label: '25m Foco', h: 0, m: 25 },
+                              { label: '5m Pausa', h: 0, m: 5 },
+                              { label: '15m Pausa', h: 0, m: 15 },
+                              { label: '50m Intenso', h: 0, m: 50 },
+                              { label: '1 hora', h: 1, m: 0 },
+                              { label: '1h 30m', h: 1, m: 30 },
+                              { label: '2 horas', h: 2, m: 0 },
+                              { label: '3 horas', h: 3, m: 0 }
+                            ]
+                          : quickModalType === 'timer'
                           ? [
                               { label: '1 min', h: 0, m: 1 },
                               { label: '5 min', h: 0, m: 5 },
@@ -1297,7 +1432,9 @@ export default function Sidebar({
                               }}
                               className={`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
                                 isActive
-                                  ? 'bg-orange-500/20 border border-orange-500/60 text-orange-400 shadow-sm'
+                                  ? quickModalType === 'pomodoro'
+                                    ? 'bg-rose-500/20 border border-rose-500/60 text-rose-400 shadow-sm'
+                                    : 'bg-orange-500/20 border border-orange-500/60 text-orange-400 shadow-sm'
                                   : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-850'
                               }`}
                             >
@@ -1356,7 +1493,11 @@ export default function Sidebar({
                     {/* Preview Box */}
                     <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-3.5 flex items-center justify-between text-xs">
                       <span className="text-zinc-400 font-medium">Horário da Notificação:</span>
-                      <span className="text-orange-400 font-extrabold font-mono bg-orange-500/10 border border-orange-500/20 px-2.5 py-1 rounded-lg">
+                      <span className={`font-extrabold font-mono px-2.5 py-1 rounded-lg border ${
+                        quickModalType === 'pomodoro'
+                          ? 'text-rose-400 bg-rose-500/10 border-rose-500/20'
+                          : 'text-orange-400 bg-orange-500/10 border-orange-500/20'
+                      }`}>
                         {new Date(Date.now() + Math.max(60, (quickHours * 3600 + quickMinutes * 60)) * 1000).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
@@ -1375,10 +1516,26 @@ export default function Sidebar({
 
                   <button
                     type="submit"
-                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white font-extrabold text-xs flex items-center gap-2 transition-all shadow-lg shadow-orange-500/20 cursor-pointer"
+                    className={`px-5 py-2.5 rounded-xl font-extrabold text-xs flex items-center gap-2 transition-all shadow-lg cursor-pointer ${
+                      quickModalType === 'pomodoro'
+                        ? 'bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white shadow-rose-500/20'
+                        : 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white shadow-orange-500/20'
+                    }`}
                   >
-                    {quickModalType === 'timer' ? <Timer className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
-                    <span>{quickModalType === 'timer' ? 'Iniciar Timer' : 'Criar Alerta'}</span>
+                    {quickModalType === 'pomodoro' ? (
+                      <Flame className="h-4 w-4" />
+                    ) : quickModalType === 'timer' ? (
+                      <Timer className="h-4 w-4" />
+                    ) : (
+                      <Clock className="h-4 w-4" />
+                    )}
+                    <span>
+                      {quickModalType === 'pomodoro'
+                        ? 'Iniciar Pomodoro'
+                        : quickModalType === 'timer'
+                        ? 'Iniciar Timer'
+                        : 'Criar Alerta'}
+                    </span>
                   </button>
                 </div>
               </form>

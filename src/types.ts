@@ -212,7 +212,7 @@ export interface QuickReminder {
   id: string;
   title: string;
   description?: string;
-  mode: 'timer' | 'cronometer';
+  mode: 'timer' | 'cronometer' | 'pomodoro';
   durationSeconds?: number;
   targetTimestamp?: number;
   paused?: boolean;

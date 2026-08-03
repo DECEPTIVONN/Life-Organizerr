@@ -94,16 +94,16 @@ export default function RemindersView({
   // Form states
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [mode, setMode] = useState<'timer' | 'cronometer'>(() => {
+  const [mode, setMode] = useState<'timer' | 'cronometer' | 'pomodoro'>(() => {
     const saved = localStorage.getItem('mbc_reminder_initial_mode');
-    if (saved === 'cronometer' || saved === 'timer') return saved;
+    if (saved === 'cronometer' || saved === 'timer' || saved === 'pomodoro') return saved;
     return 'timer';
   });
 
   useEffect(() => {
     const syncInitialMode = () => {
       const saved = localStorage.getItem('mbc_reminder_initial_mode');
-      if (saved === 'cronometer' || saved === 'timer') {
+      if (saved === 'cronometer' || saved === 'timer' || saved === 'pomodoro') {
         setMode(saved);
       }
     };
@@ -162,14 +162,15 @@ export default function RemindersView({
         const updated = prevReminders.map(r => {
           if (r.status !== 'active' || r.paused) return r;
 
-          // Check timer or cronometer mode completion via targetTimestamp
-          if ((r.mode === 'timer' || r.mode === 'cronometer') && r.targetTimestamp) {
+          // Check timer, pomodoro or cronometer mode completion via targetTimestamp
+          if ((r.mode === 'timer' || r.mode === 'cronometer' || r.mode === 'pomodoro') && r.targetTimestamp) {
             if (now >= r.targetTimestamp) {
               hasChanges = true;
               // Trigger alarm
               if (r.soundEnabled) playReminderChime();
               if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-                new Notification(`⏰ Lembrete: ${r.title}`, {
+                const iconPrefix = r.mode === 'pomodoro' ? '🍅' : '⏰';
+                new Notification(`${iconPrefix} Lembrete: ${r.title}`, {
                   body: r.description || `Tempo atingido! ${r.category ? `[${r.category}]` : ''}`,
                   icon: '/icon.png'
                 });
@@ -223,9 +224,9 @@ export default function RemindersView({
     let totalSecs = 0;
     let targetTs: number | undefined = undefined;
 
-    if (mode === 'timer') {
+    if (mode === 'timer' || mode === 'pomodoro') {
       totalSecs = (timerHours * 3600) + (timerMinutes * 60) + timerSeconds;
-      if (totalSecs <= 0) totalSecs = 300; // default 5 min if 0
+      if (totalSecs <= 0) totalSecs = mode === 'pomodoro' ? 1500 : 300; // default 25 min for pomodoro, 5 min for timer
       targetTs = nowMs + (totalSecs * 1000);
     }
 
@@ -234,13 +235,13 @@ export default function RemindersView({
       title: title.trim(),
       description: description.trim() || undefined,
       mode,
-      durationSeconds: mode === 'timer' ? totalSecs : undefined,
+      durationSeconds: (mode === 'timer' || mode === 'pomodoro') ? totalSecs : undefined,
       targetTimestamp: targetTs,
       paused: false,
       scheduledDate: mode === 'cronometer' ? scheduledDate : undefined,
       scheduledTime: mode === 'cronometer' ? scheduledTime : undefined,
       recurrence: mode === 'cronometer' ? recurrence : undefined,
-      category,
+      category: mode === 'pomodoro' ? 'Foco' : category,
       priority,
       soundEnabled,
       status: 'active',
@@ -253,10 +254,16 @@ export default function RemindersView({
     // Immediate Web Browser Notification on Creation
     if (typeof Notification !== 'undefined') {
       if (Notification.permission === 'granted') {
-        const modeLabel = mode === 'timer' ? '⏱️ Timer Iniciado' : mode === 'cronometer' ? '⏰ Alerta de Cronômetro' : '🔔 Lembrete Criado';
+        const modeLabel = mode === 'pomodoro'
+          ? '🍅 Sessão Pomodoro'
+          : mode === 'timer'
+          ? '⏱️ Timer Iniciado'
+          : mode === 'cronometer'
+          ? '⏰ Alerta Agendado'
+          : '🔔 Lembrete Criado';
         const formattedTarget = targetTs ? new Date(targetTs).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : scheduledTime || 'Ativo';
         new Notification(`${modeLabel}: ${title.trim()}`, {
-          body: mode === 'timer'
+          body: (mode === 'timer' || mode === 'pomodoro')
             ? `Contagem regressiva iniciada. Notificação agendada para as ${formattedTarget}.`
             : `Lembrete/alerta ativo em segundo plano (${formattedTarget}).`,
           icon: '/icon.png'
@@ -394,7 +401,7 @@ export default function RemindersView({
     if (r.status === 'completed') return 'Concluído';
     if (r.status === 'triggered') return '⏰ ALARME DISPARADO!';
     
-    if (r.targetTimestamp || r.mode === 'timer') {
+    if (r.targetTimestamp || r.mode === 'timer' || r.mode === 'pomodoro') {
       let secsLeft = 0;
       if (r.paused && r.remainingSecondsWhenPaused !== undefined) {
         secsLeft = r.remainingSecondsWhenPaused;
@@ -608,7 +615,11 @@ export default function RemindersView({
                           className="transition-all duration-1000"
                         />
                       </svg>
-                      <Timer className={`h-4 w-4 absolute ${!r.paused ? 'text-orange-400 animate-pulse' : 'text-amber-400'}`} />
+                      {r.mode === 'pomodoro' ? (
+                        <Flame className={`h-4 w-4 absolute ${!r.paused ? 'text-rose-400 animate-pulse' : 'text-rose-400'}`} />
+                      ) : (
+                        <Timer className={`h-4 w-4 absolute ${!r.paused ? 'text-orange-400 animate-pulse' : 'text-amber-400'}`} />
+                      )}
                     </div>
 
                     <div className="space-y-0.5">
@@ -616,14 +627,14 @@ export default function RemindersView({
                         {remainingText}
                       </div>
                       <div className="text-[10px] text-zinc-400 font-mono">
-                        {r.mode === 'timer' ? 'Contagem regressiva' : `Notificação ${r.scheduledTime || ''}`}
+                        {r.mode === 'pomodoro' ? 'Sessão Pomodoro' : r.mode === 'timer' ? 'Contagem regressiva' : `Notificação ${r.scheduledTime || ''}`}
                       </div>
                     </div>
                   </div>
 
                   {/* Actions Bar */}
                   <div className="flex items-center justify-between gap-1.5 pt-1">
-                    {r.mode === 'timer' && (
+                    {(r.mode === 'timer' || r.mode === 'pomodoro') && (
                       <div className="flex items-center gap-1">
                         <button
                           type="button"
@@ -714,9 +725,11 @@ export default function RemindersView({
                 }`}
               >
                 {/* Background progress fill for timer */}
-                {!isCompleted && rem.mode === 'timer' && (
+                {!isCompleted && (rem.mode === 'timer' || rem.mode === 'pomodoro') && (
                   <div
-                    className="absolute top-0 left-0 bottom-0 bg-orange-500/5 transition-all duration-1000 pointer-events-none"
+                    className={`absolute top-0 left-0 bottom-0 transition-all duration-1000 pointer-events-none ${
+                      rem.mode === 'pomodoro' ? 'bg-rose-500/5' : 'bg-orange-500/5'
+                    }`}
                     style={{ width: `${progressPct}%` }}
                   />
                 )}
@@ -725,11 +738,13 @@ export default function RemindersView({
                 <div className="relative z-10 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-black uppercase tracking-wider border ${
-                      rem.mode === 'timer'
+                      rem.mode === 'pomodoro'
+                        ? 'bg-rose-500/10 border-rose-500/20 text-rose-400'
+                        : rem.mode === 'timer'
                         ? 'bg-orange-500/10 border-orange-500/20 text-orange-400'
                         : 'bg-amber-500/10 border-amber-500/20 text-amber-400'
                     }`}>
-                      {rem.mode === 'timer' ? '⏱ Timer' : '⏰ Agendado'}
+                      {rem.mode === 'pomodoro' ? '🍅 Pomodoro' : rem.mode === 'timer' ? '⏱ Timer' : '⏰ Agendado'}
                     </span>
 
                     {rem.category && (
@@ -813,7 +828,9 @@ export default function RemindersView({
                           : 'bg-black/50 border-zinc-800 text-orange-400'
                       }`}>
                         <div className="flex items-center gap-2">
-                          {rem.mode === 'timer' ? (
+                          {rem.mode === 'pomodoro' ? (
+                            <Flame className={`h-4 w-4 ${!rem.paused && !isCompleted ? 'text-rose-400 animate-pulse' : 'text-rose-400'}`} />
+                          ) : rem.mode === 'timer' ? (
                             <Timer className={`h-4 w-4 ${!rem.paused && !isCompleted ? 'animate-pulse' : ''}`} />
                           ) : (
                             <Clock className="h-4 w-4" />
@@ -833,7 +850,7 @@ export default function RemindersView({
 
                 {/* Bottom Action Controls */}
                 <div className="relative z-10 pt-2 border-t border-zinc-800/60 flex items-center justify-between gap-2">
-                  {rem.mode === 'timer' && !isCompleted && !isTriggered && (
+                  {(rem.mode === 'timer' || rem.mode === 'pomodoro') && !isCompleted && !isTriggered && (
                     <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => handleTogglePause(rem.id)}
@@ -931,42 +948,126 @@ export default function RemindersView({
                     />
                   </div>
 
-                  {/* Mode Switch: Timer vs Cronometer */}
+                  {/* Mode Switch: Timer vs Cronometer vs Pomodoro */}
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
                       Modo de Notificação
                     </label>
-                    <div className="grid grid-cols-2 gap-2 bg-zinc-950 p-1 rounded-2xl border border-zinc-800">
+                    <div className="grid grid-cols-3 gap-1.5 bg-zinc-950 p-1.5 rounded-2xl border border-zinc-800">
                       <button
                         type="button"
                         onClick={() => setMode('timer')}
-                        className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                        className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                           mode === 'timer'
                             ? 'bg-gradient-to-r from-orange-600 to-orange-500 text-white shadow-md'
                             : 'text-zinc-400 hover:text-white'
                         }`}
                       >
-                        <Timer className="h-4 w-4" />
-                        <span>Timer Regressivo</span>
+                        <Timer className="h-3.5 w-3.5" />
+                        <span>Timer</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => setMode('cronometer')}
-                        className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                        className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                           mode === 'cronometer'
                             ? 'bg-gradient-to-r from-amber-600 to-amber-500 text-white shadow-md'
                             : 'text-zinc-400 hover:text-white'
                         }`}
                       >
-                        <Clock className="h-4 w-4" />
-                        <span>Horário Agendado</span>
+                        <Clock className="h-3.5 w-3.5" />
+                        <span>Agendado</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMode('pomodoro');
+                          setTimerHours(0);
+                          setTimerMinutes(25);
+                          setTimerSeconds(0);
+                        }}
+                        className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                          mode === 'pomodoro'
+                            ? 'bg-gradient-to-r from-rose-600 to-rose-500 text-white shadow-md'
+                            : 'text-zinc-400 hover:text-white'
+                        }`}
+                      >
+                        <Flame className="h-3.5 w-3.5 text-rose-400" />
+                        <span>Pomodoro 🍅</span>
                       </button>
                     </div>
                   </div>
 
-                  {/* MODE DETAILS: Timer */}
-                  {mode === 'timer' ? (
+                  {/* MODE DETAILS: Pomodoro */}
+                  {mode === 'pomodoro' ? (
+                    <div className="p-4 rounded-2xl bg-zinc-950 border border-rose-500/30 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] font-mono font-bold text-rose-400 uppercase tracking-wider">
+                          Ciclos Pomodoro
+                        </label>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { label: '25m Foco', mins: 25 },
+                          { label: '5m Pausa', mins: 5 },
+                          { label: '15m Pausa', mins: 15 },
+                          { label: '50m Intenso', mins: 50 },
+                          { label: '60m Foco', mins: 60 }
+                        ].map((p) => (
+                          <button
+                            key={p.mins}
+                            type="button"
+                            onClick={() => handleApplyPresetMinutes(p.mins)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold border transition-all cursor-pointer ${
+                              timerMinutes === p.mins && timerHours === 0
+                                ? 'bg-rose-500 text-white border-rose-400 shadow-md shadow-rose-500/20'
+                                : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:border-zinc-700'
+                            }`}
+                          >
+                            {p.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="pt-2 border-t border-zinc-900 grid grid-cols-3 gap-2 text-center">
+                        <div>
+                          <span className="text-[9px] text-zinc-500 font-mono block mb-1">Horas</span>
+                          <input
+                            type="number"
+                            min="0"
+                            max="23"
+                            value={timerHours}
+                            onChange={(e) => setTimerHours(Math.max(0, parseInt(e.target.value) || 0))}
+                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2 text-center text-sm font-mono font-bold text-white focus:outline-none focus:border-rose-500"
+                          />
+                        </div>
+                        <div>
+                          <span className="text-[9px] text-zinc-500 font-mono block mb-1">Minutos</span>
+                          <input
+                            type="number"
+                            min="0"
+                            max="59"
+                            value={timerMinutes}
+                            onChange={(e) => setTimerMinutes(Math.max(0, parseInt(e.target.value) || 0))}
+                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2 text-center text-sm font-mono font-bold text-white focus:outline-none focus:border-rose-500"
+                          />
+                        </div>
+                        <div>
+                          <span className="text-[9px] text-zinc-500 font-mono block mb-1">Segundos</span>
+                          <input
+                            type="number"
+                            min="0"
+                            max="59"
+                            value={timerSeconds}
+                            onChange={(e) => setTimerSeconds(Math.max(0, parseInt(e.target.value) || 0))}
+                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2 text-center text-sm font-mono font-bold text-white focus:outline-none focus:border-rose-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ) : mode === 'timer' ? (
                     <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-3">
                       <div className="flex items-center justify-between">
                         <label className="text-[10px] font-mono font-bold text-orange-400 uppercase tracking-wider">
