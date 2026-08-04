@@ -59,11 +59,11 @@ const getRedirectUri = (req: express.Request) => {
 };
 
 // Google OAuth URL Generation
-app.get("/api/auth/google/url", (req, res) => {
+app.get(["/api/auth/google/url", "/auth/google/url"], (req, res) => {
   const client_id = process.env.GOOGLE_CLIENT_ID || process.env.CLIENT_ID || process.env.OAUTH_CLIENT_ID;
   if (!client_id) {
     return res.status(400).json({ 
-      error: "Google Client ID não configurado no servidor. Por favor, configure as variáveis de ambiente." 
+      error: "Google Client ID não configurado no servidor. Por favor, configure as variáveis de ambiente na Vercel (GOOGLE_CLIENT_ID)." 
     });
   }
 
@@ -104,8 +104,8 @@ app.get("/api/auth/google/url", (req, res) => {
 });
 
 // OAuth Refresh Token Route
-app.post("/api/auth/google/refresh", async (req, res) => {
-  const { refresh_token } = req.body;
+app.post(["/api/auth/google/refresh", "/auth/google/refresh"], async (req, res) => {
+  const { refresh_token } = req.body || {};
   if (!refresh_token) {
     return res.status(400).json({ error: "Refresh token ausente." });
   }
@@ -114,7 +114,7 @@ app.post("/api/auth/google/refresh", async (req, res) => {
   const client_secret = process.env.GOOGLE_CLIENT_SECRET || process.env.CLIENT_SECRET || process.env.OAUTH_CLIENT_SECRET;
 
   if (!client_id || !client_secret) {
-    return res.status(500).json({ error: "Credenciais de cliente Google não configuradas." });
+    return res.status(500).json({ error: "Credenciais de cliente Google não configuradas nas variáveis de ambiente do servidor." });
   }
 
   try {
@@ -145,7 +145,7 @@ app.post("/api/auth/google/refresh", async (req, res) => {
 });
 
 // OAuth Callback Route
-app.get(["/auth/callback", "/auth/callback/"], async (req, res) => {
+app.get(["/auth/callback", "/auth/callback/", "/api/auth/callback"], async (req, res) => {
   const { code, error, state } = req.query;
 
   if (error) {
@@ -262,7 +262,7 @@ app.get(["/auth/callback", "/auth/callback/"], async (req, res) => {
 });
 
 // Calendar Proxy Route
-app.get("/api/calendar/events", async (req, res) => {
+app.get(["/api/calendar/events", "/calendar/events"], async (req, res) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).json({ error: "Token de acesso ausente ou inválido." });
@@ -303,7 +303,7 @@ app.get("/api/calendar/events", async (req, res) => {
 });
 
 // POST to create Google Calendar event
-app.post("/api/calendar/events", async (req, res) => {
+app.post(["/api/calendar/events", "/calendar/events"], async (req, res) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).json({ error: "Token de acesso ausente ou inválido." });
@@ -334,7 +334,7 @@ app.post("/api/calendar/events", async (req, res) => {
 });
 
 // PUT to update Google Calendar event
-app.put("/api/calendar/events/:id", async (req, res) => {
+app.put(["/api/calendar/events/:id", "/calendar/events/:id"], async (req, res) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).json({ error: "Token de acesso ausente ou inválido." });
@@ -366,7 +366,7 @@ app.put("/api/calendar/events/:id", async (req, res) => {
 });
 
 // DELETE to remove Google Calendar event
-app.delete("/api/calendar/events/:id", async (req, res) => {
+app.delete(["/api/calendar/events/:id", "/calendar/events/:id"], async (req, res) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).json({ error: "Token de acesso ausente ou inválido." });
@@ -392,6 +392,17 @@ app.delete("/api/calendar/events/:id", async (req, res) => {
     console.error("[Planner Server] Delete event error:", err);
     res.status(500).json({ error: err.message });
   }
+});
+
+// Global Error Handler for Vercel Serverless Function Execution
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error("[Planner Server Unhandled Error]:", err);
+  if (res.headersSent) {
+    return next(err);
+  }
+  res.status(500).json({
+    error: err?.message || "Ocorreu um erro interno no servidor."
+  });
 });
 
 export default app;

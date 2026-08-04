@@ -18,7 +18,7 @@ const authRateLimitMap = new Map<string, RateLimitRecord>();
 const pinRateLimitMap = new Map<string, RateLimitRecord>();
 
 // Cleanup stale rate limit and blocked IP records every 5 minutes
-setInterval(() => {
+const cleanupTimer = setInterval(() => {
   const now = Date.now();
   for (const [ip, unblockTime] of blockedIpsMap.entries()) {
     if (now > unblockTime) blockedIpsMap.delete(ip);
@@ -33,18 +33,26 @@ setInterval(() => {
     if (now > rec.resetTime) pinRateLimitMap.delete(ip);
   }
 }, 5 * 60 * 1000);
+if (cleanupTimer && typeof cleanupTimer.unref === "function") {
+  cleanupTimer.unref();
+}
 
 /**
  * Gets real client IP address considering proxy headers
  */
 function getClientIp(req: express.Request): string {
-  const forwarded = req.headers["x-forwarded-for"];
+  if (!req) return "127.0.0.1";
+  const forwarded = req.headers ? req.headers["x-forwarded-for"] : undefined;
   if (typeof forwarded === "string") {
     return forwarded.split(",")[0].trim();
-  } else if (Array.isArray(forwarded)) {
+  } else if (Array.isArray(forwarded) && forwarded.length > 0) {
     return forwarded[0].trim();
   }
-  return req.socket.remoteAddress || "127.0.0.1";
+  const realIp = req.headers ? req.headers["x-real-ip"] : undefined;
+  if (typeof realIp === "string") {
+    return realIp.trim();
+  }
+  return req.socket?.remoteAddress || "127.0.0.1";
 }
 
 /**
@@ -218,7 +226,7 @@ export function antiPathTraversalMiddleware(req: express.Request, res: express.R
 const ALLOWED_HTTP_METHODS = new Set(["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"]);
 
 export function httpMethodGuardMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
-  if (!ALLOWED_HTTP_METHODS.has(req.method.toUpperCase())) {
+  if (!req.method || !ALLOWED_HTTP_METHODS.has(req.method.toUpperCase())) {
     return res.status(405).json({ error: `Método HTTP ${req.method} não é permitido.` });
   }
   next();
