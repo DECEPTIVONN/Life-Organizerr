@@ -12,7 +12,7 @@ import {
   safeJsonForHtmlScript,
   escapeHtml,
   isSafeRedirectUrl
-} from "./security";
+} from "./security.js";
 
 const app = express();
 
