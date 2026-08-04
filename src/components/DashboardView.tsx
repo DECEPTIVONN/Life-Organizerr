@@ -91,6 +91,7 @@ interface DashboardViewProps {
   routine: RoutineItem[];
   customCards?: any[];
   setCustomCards?: React.Dispatch<React.SetStateAction<any[]>>;
+  onOpenStreakHub?: () => void;
 }
 
 export default function DashboardView({
@@ -111,7 +112,8 @@ export default function DashboardView({
   setHabits,
   routine = [],
   customCards: propCustomCards,
-  setCustomCards: propSetCustomCards
+  setCustomCards: propSetCustomCards,
+  onOpenStreakHub
 }: DashboardViewProps) {
   const [seederApplied, setSeederApplied] = useState(false);
 
@@ -540,20 +542,26 @@ export default function DashboardView({
         {/* Streak Card */}
         <motion.div 
           id="metric-streak-card"
-          className="bg-[#0a0a0c]/60 p-5 rounded-2xl border border-zinc-850 hover:border-orange-500/20 transition-all flex flex-col justify-between"
+          onClick={onOpenStreakHub}
+          className="bg-[#0a0a0c]/60 p-5 rounded-2xl border border-zinc-850 hover:border-orange-500/40 transition-all flex flex-col justify-between cursor-pointer group"
           whileHover={{ y: -2 }}
         >
           <div className="flex items-center justify-between">
-            <span className="text-[10px] text-gray-400 font-extrabold tracking-widest uppercase">Frequência</span>
-            <Flame className="h-5 w-5 text-orange-500 fill-orange-500/20 animate-pulse" />
+            <span className="text-[10px] text-gray-400 group-hover:text-orange-300 font-extrabold tracking-widest uppercase transition-colors">
+              Frequência
+            </span>
+            <div className="p-1.5 bg-orange-500/10 border border-orange-500/20 rounded-xl">
+              <Flame className="h-5 w-5 text-orange-500 fill-orange-500/20 animate-pulse" />
+            </div>
           </div>
           <div className="mt-4">
             <span className="text-4xl font-black text-white font-mono">{streak}</span>
-            <span className="text-xs text-gray-500 ml-2 font-bold">DIAS SEGUIDOS</span>
+            <span className="text-xs text-gray-500 ml-2 font-bold uppercase font-mono">Dias em Combo</span>
           </div>
-          <p className="text-[10px] text-gray-500 mt-2 border-t border-zinc-900 pt-2 font-medium">
-            Seu maior recorde ativo no planner.
-          </p>
+          <div className="text-[10px] text-orange-400 mt-2 border-t border-zinc-900 pt-2 font-bold flex items-center justify-between">
+            <span>🛡️ Escudos & Multi-Streaks</span>
+            <span className="underline group-hover:translate-x-0.5 transition-transform">Abrir Hub →</span>
+          </div>
         </motion.div>
 
         {/* XP Total Card */}

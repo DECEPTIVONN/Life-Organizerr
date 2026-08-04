@@ -34,6 +34,7 @@ import LifeSummaryView, { LifeSummaryState, defaultState, mergeWithDefaults } fr
 import HabitsTrackerView from './components/HabitsTrackerView';
 import AnuaisView from './components/AnuaisView';
 import RemindersView from './components/RemindersView';
+import StreakHubModal from './components/StreakHubModal';
 import { saveToSupabase, loadFromSupabase, loadMetadataFromSupabase, getSupabaseClient } from './lib/supabase';
 
 // Types
@@ -346,6 +347,8 @@ export default function App() {
     const saved = localStorage.getItem('mbc_streak');
     return saved ? parseInt(saved, 10) : 4;
   });
+
+  const [isStreakHubOpen, setIsStreakHubOpen] = useState(false);
 
   const [bookTracker, setBookTracker] = useState<BookTracker>(() => {
     try {
@@ -2337,6 +2340,7 @@ export default function App() {
             routine={routine}
             customCards={customCards}
             setCustomCards={setCustomCards}
+            onOpenStreakHub={() => setIsStreakHubOpen(true)}
           />
         );
       case 'checklist':
@@ -2345,6 +2349,7 @@ export default function App() {
             dailyTasks={dailyTasks}
             setDailyTasks={setDailyTasks}
             streak={streak}
+            onOpenStreakHub={() => setIsStreakHubOpen(true)}
             addXp={addXp}
             xpTotal={xpTotal}
             bookTracker={bookTracker}
@@ -2528,6 +2533,7 @@ export default function App() {
             finances={finances}
             habits={habits}
             routine={routine}
+            onOpenStreakHub={() => setIsStreakHubOpen(true)}
           />
         );
       case 'configuracoes':
@@ -2668,6 +2674,7 @@ export default function App() {
         onLogout={handleLogout}
         currentUser={currentUser}
         onAddReminder={(newRem) => setReminders(prev => [newRem, ...prev])}
+        onOpenStreakHub={() => setIsStreakHubOpen(true)}
       />
 
       {/* 2. Main Workspace Area (responsive margin/padding for the fixed desktop HUD and mobile header) */}
@@ -2828,6 +2835,17 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Central de Ofensivas & Congelamento Modal (Sugestões 1 & 2) */}
+      <StreakHubModal
+        isOpen={isStreakHubOpen}
+        onClose={() => setIsStreakHubOpen(false)}
+        masterStreak={streak}
+        onUpdateMasterStreak={setStreak}
+        onNavigateToTab={(tabId) => setActiveTab(tabId)}
+        xpTotal={xpTotal}
+        addXp={addXp}
+      />
     </div>
   );
 }

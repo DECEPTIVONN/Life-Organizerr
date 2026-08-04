@@ -65,6 +65,7 @@ interface ChecklistViewProps {
   calendarNotes?: CalendarNote[];
   setCalendarNotes?: React.Dispatch<React.SetStateAction<CalendarNote[]>>;
   showDateSelector?: boolean;
+  onOpenStreakHub?: () => void;
 }
 
 // Bible total chapters standard (1189 is standard for Protestant bible)
@@ -171,7 +172,8 @@ export default function ChecklistView({
   setWeeklyReviews: propSetWeeklyReviews,
   calendarNotes,
   setCalendarNotes,
-  showDateSelector = false
+  showDateSelector = false,
+  onOpenStreakHub
 }: ChecklistViewProps) {
   const [localBooks, setLocalBooks] = useState<YearlyBook[]>([]);
   const actualBooks = propBooks || localBooks;
@@ -1335,10 +1337,15 @@ export default function ChecklistView({
         </div>
 
         {/* Combo Streak Indicator */}
-        <div className="flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/10 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs text-orange-500 font-bold shrink-0">
-          <Flame className="h-3.5 sm:h-4 w-3.5 sm:w-4 fill-orange-500/20" />
+        <button
+          onClick={onOpenStreakHub}
+          className="flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/20 hover:border-orange-500/40 hover:bg-orange-500/20 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs text-orange-400 font-bold shrink-0 transition-all cursor-pointer group"
+          title="Abrir Central de Ofensivas & Congelamento"
+        >
+          <Flame className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-orange-500 fill-orange-500/20 group-hover:scale-110 transition-transform" />
           <span>{streak} {streak === 1 ? 'dia' : 'dias'} em combo</span>
-        </div>
+          <span className="text-[9px] bg-orange-500/20 text-orange-300 px-1.5 py-0.5 rounded font-mono">Hub</span>
+        </button>
       </div>
 
       {/* Tabs Selector for Checklist vs Routine Grid */}

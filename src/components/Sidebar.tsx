@@ -65,6 +65,7 @@ interface SidebarProps {
   onLogout?: () => void;
   currentUser?: any;
   onAddReminder?: (reminder: QuickReminder) => void;
+  onOpenStreakHub?: () => void;
 }
 
 interface SearchResult {
@@ -93,7 +94,8 @@ export default function Sidebar({
   appLockEnabled = false,
   onLogout,
   currentUser,
-  onAddReminder
+  onAddReminder,
+  onOpenStreakHub
 }: SidebarProps) {
   
   // Animation/HUD state
@@ -841,14 +843,18 @@ export default function Sidebar({
                 </div>
                 
                 {/* Micro Streak */}
-                <div className="mt-3 pt-3 border-t border-zinc-900 flex items-center justify-between">
-                  <span className="text-[10px] text-gray-400 flex items-center gap-1">
-                    <Flame className="h-3.5 w-3.5 text-orange-500" /> Streak:
+                <button
+                  onClick={onOpenStreakHub}
+                  className="mt-3 w-full pt-3 border-t border-zinc-900 flex items-center justify-between hover:bg-orange-500/10 p-1.5 rounded-lg transition-colors group cursor-pointer"
+                  title="Abrir Central de Ofensivas & Congelamento"
+                >
+                  <span className="text-[10px] text-gray-400 group-hover:text-orange-300 flex items-center gap-1 font-mono">
+                    <Flame className="h-3.5 w-3.5 text-orange-500 animate-pulse" /> Central de Ofensivas:
                   </span>
-                  <span className="text-[10px] font-bold text-orange-400 font-mono">
-                    {streak} dias
+                  <span className="text-[10px] font-bold text-orange-400 font-mono bg-orange-500/10 border border-orange-500/20 px-2 py-0.5 rounded-md">
+                    🔥 {streak} dias
                   </span>
-                </div>
+                </button>
               </div>
 
               {/* Navigation Items */}
@@ -1755,9 +1761,13 @@ export default function Sidebar({
                 </div>
                 <div className="flex items-center justify-between text-[8px] font-mono text-gray-500 mt-1">
                   <span>{xpInCurrentLevel} / 1000 XP</span>
-                  <span className="text-orange-500 flex items-center gap-0.5 font-bold">
-                    <Flame className="h-2.5 w-2.5" /> {streak} dias
-                  </span>
+                  <button
+                    onClick={onOpenStreakHub}
+                    className="text-orange-400 hover:text-orange-300 flex items-center gap-0.5 font-bold hover:bg-orange-500/10 px-1 rounded transition-colors"
+                    title="Abrir Central de Ofensivas & Congelamento"
+                  >
+                    <Flame className="h-2.5 w-2.5 animate-pulse" /> {streak} dias
+                  </button>
                 </div>
               </div>
             </motion.div>

@@ -45,6 +45,7 @@ interface ProfileViewProps {
   finances: FinanceEntry[];
   habits: Habit[];
   routine: RoutineItem[];
+  onOpenStreakHub?: () => void;
 }
 
 export default function ProfileView({
@@ -64,7 +65,8 @@ export default function ProfileView({
   dailyTasks = [],
   finances = [],
   habits = [],
-  routine = []
+  routine = [],
+  onOpenStreakHub
 }: ProfileViewProps) {
   // Bio state
   const [bio, setBio] = useState(() => {
@@ -299,11 +301,24 @@ export default function ProfileView({
           </p>
         </div>
         
-        <div className="flex items-center gap-3 bg-zinc-950 border border-zinc-850 px-4 py-2 rounded-2xl">
-          <Trophy className="h-5 w-5 text-orange-500 fill-orange-500/10" />
-          <div>
-            <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest block">Classe de Foco</span>
-            <span className="text-xs font-black text-white uppercase font-mono">Nível {level}</span>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onOpenStreakHub}
+            className="flex items-center gap-2 bg-gradient-to-r from-orange-500/10 to-amber-500/10 border border-orange-500/30 hover:border-orange-500/50 px-3.5 py-2 rounded-2xl text-xs font-bold text-orange-400 hover:text-orange-300 transition-all cursor-pointer shadow-sm"
+            title="Abrir Central de Ofensivas & Escudos"
+          >
+            <Flame className="h-4 w-4 text-orange-500 fill-orange-500/20 animate-pulse" />
+            <div className="text-left leading-tight">
+              <span className="text-[9px] text-zinc-400 block font-mono">Ofensiva Master</span>
+              <span className="font-mono text-white font-black">{streak} Dias</span>
+            </div>
+          </button>
+          <div className="flex items-center gap-3 bg-zinc-950 border border-zinc-850 px-4 py-2 rounded-2xl">
+            <Trophy className="h-5 w-5 text-orange-500 fill-orange-500/10" />
+            <div>
+              <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest block">Classe de Foco</span>
+              <span className="text-xs font-black text-white uppercase font-mono">Nível {level}</span>
+            </div>
           </div>
         </div>
       </div>
