@@ -557,10 +557,9 @@ export default function DashboardView({
           <div className="mt-4">
             <span className="text-4xl font-black text-white font-mono">{streak}</span>
             <span className="text-xs text-gray-500 ml-2 font-bold uppercase font-mono">Dias em Combo</span>
-          </div>
-          <div className="text-[10px] text-orange-400 mt-2 border-t border-zinc-900 pt-2 font-bold flex items-center justify-between">
-            <span>🛡️ Escudos & Multi-Streaks</span>
-            <span className="underline group-hover:translate-x-0.5 transition-transform">Abrir Hub →</span>
+            <p className="text-[11px] text-zinc-400 mt-1.5 italic font-medium">
+              "A persistência é o caminho do êxito"
+            </p>
           </div>
         </motion.div>
 
