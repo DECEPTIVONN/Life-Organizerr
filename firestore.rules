@@ -1,8 +1,25 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    
+    // Helper validation functions for security & anti-DoS
+    function isValidSyncKey(key) {
+      return key is string && key.size() >= 3 && key.size() <= 128;
+    }
+
+    function isReasonablePayload() {
+      // Limit field payload sizes to prevent database bloating DoS attacks
+      return request.resource.data.keys().size() <= 100;
+    }
+
     match /sync_profiles/{syncKey} {
-      allow read, write: if true;
+      allow read: if isValidSyncKey(syncKey);
+      allow create, update: if isValidSyncKey(syncKey) && isReasonablePayload();
+      allow delete: if isValidSyncKey(syncKey);
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

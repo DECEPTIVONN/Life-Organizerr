@@ -1,7 +1,50 @@
 import express from "express";
+import {
+  ipBlacklistCheckMiddleware,
+  securityHeadersMiddleware,
+  antiScannerUserAgentMiddleware,
+  antiScriptKiddieProbeMiddleware,
+  antiPathTraversalMiddleware,
+  httpMethodGuardMiddleware,
+  globalApiRateLimiter,
+  authEndpointRateLimiter,
+  antiSqlInjectionMiddleware,
+  safeJsonForHtmlScript,
+  escapeHtml,
+  isSafeRedirectUrl
+} from "./security";
 
 const app = express();
-app.use(express.json());
+
+// 1. IP Blacklist Enforcer (Drops blacklisted scanner IPs)
+app.use(ipBlacklistCheckMiddleware);
+
+// 2. HTTP Method Guard (Only standard HTTP methods allowed)
+app.use(httpMethodGuardMiddleware);
+
+// 3. Security HTTP Headers
+app.use(securityHeadersMiddleware);
+
+// 4. Anti-Script Kiddie Scanner User-Agent Filter (Blocks sqlmap, nikto, wpscan, gobuster, etc.)
+app.use(antiScannerUserAgentMiddleware);
+
+// 5. Anti-Script Kiddie Probe Honeypot Trap (Blocks probes for .env, wp-login, phpmyadmin, etc.)
+app.use(antiScriptKiddieProbeMiddleware);
+
+// 6. Path Traversal Guard (Blocks ../ and %2e%2e directory traversal vectors)
+app.use(antiPathTraversalMiddleware);
+
+// 7. Body Parser with strict 100kb payload limit to prevent DoS memory overflow
+app.use(express.json({ limit: "100kb" }));
+
+// 8. Anti-SQL Injection Defense Filter
+app.use(antiSqlInjectionMiddleware);
+
+// 9. Global API Rate Limiter
+app.use("/api", globalApiRateLimiter);
+
+// 10. Specific Auth Endpoint Rate Limiter (Anti-Brute Force / Credential Stuffing)
+app.use("/api/auth", authEndpointRateLimiter);
 
 // Helper to construct exact redirect URI
 const getRedirectUri = (req: express.Request) => {
@@ -24,7 +67,10 @@ app.get("/api/auth/google/url", (req, res) => {
     });
   }
 
-  const clientRedirectUri = (req.query.redirect_uri as string) || getRedirectUri(req);
+  const rawRedirectUri = (req.query.redirect_uri as string) || getRedirectUri(req);
+  // Open Redirect Defense: Validate redirect URL
+  const clientRedirectUri = isSafeRedirectUrl(rawRedirectUri) ? rawRedirectUri : getRedirectUri(req);
+
   const requestedScope = req.query.scope as string;
   const defaultScopes = [
     "https://www.googleapis.com/auth/userinfo.profile",
@@ -103,18 +149,22 @@ app.get(["/auth/callback", "/auth/callback/"], async (req, res) => {
   const { code, error, state } = req.query;
 
   if (error) {
+    const safeErrObj = safeJsonForHtmlScript(error);
+    const safeErrHtml = escapeHtml(String(error));
     return res.send(`
+      <!DOCTYPE html>
       <html>
+        <head><meta charset="utf-8"><title>Autenticação</title></head>
         <body>
           <script>
             if (window.opener) {
-              window.opener.postMessage({ type: "GOOGLE_OAUTH_FAILURE", error: ${JSON.stringify(error)} }, "*");
+              window.opener.postMessage({ type: "GOOGLE_OAUTH_FAILURE", error: ${safeErrObj} }, "*");
               window.close();
             } else {
               window.location.href = "/";
             }
           </script>
-          <p>Erro na autenticação: ${error}</p>
+          <p>Erro na autenticação: ${safeErrHtml}</p>
         </body>
       </html>
     `);
@@ -129,7 +179,7 @@ app.get(["/auth/callback", "/auth/callback/"], async (req, res) => {
     const client_secret = process.env.GOOGLE_CLIENT_SECRET || process.env.CLIENT_SECRET || process.env.OAUTH_CLIENT_SECRET;
 
     let redirectUri = getRedirectUri(req);
-    if (state && typeof state === "string" && state.startsWith("http")) {
+    if (state && typeof state === "string" && isSafeRedirectUrl(state)) {
       redirectUri = state;
     }
 
@@ -165,15 +215,20 @@ app.get(["/auth/callback", "/auth/callback/"], async (req, res) => {
       profile = await userInfoResponse.json();
     }
 
+    const safeTokensStr = safeJsonForHtmlScript(tokens);
+    const safeProfileStr = safeJsonForHtmlScript(profile);
+
     res.send(`
+      <!DOCTYPE html>
       <html>
+        <head><meta charset="utf-8"><title>Autenticação Concluída</title></head>
         <body>
           <script>
             if (window.opener) {
               window.opener.postMessage({
                 type: "GOOGLE_OAUTH_SUCCESS",
-                tokens: ${JSON.stringify(tokens)},
-                profile: ${JSON.stringify(profile)}
+                tokens: ${safeTokensStr},
+                profile: ${safeProfileStr}
               }, "*");
               window.close();
             } else {
@@ -186,16 +241,20 @@ app.get(["/auth/callback", "/auth/callback/"], async (req, res) => {
     `);
   } catch (err: any) {
     console.error("[Planner Server] OAuth callback error:", err);
+    const safeErrMsg = safeJsonForHtmlScript(err.message || "Erro de autorização");
+    const safeErrText = escapeHtml(err.message || "Erro de autorização");
     res.send(`
+      <!DOCTYPE html>
       <html>
+        <head><meta charset="utf-8"><title>Erro de Autenticação</title></head>
         <body>
           <script>
             if (window.opener) {
-              window.opener.postMessage({ type: "GOOGLE_OAUTH_FAILURE", error: ${JSON.stringify(err.message)} }, "*");
+              window.opener.postMessage({ type: "GOOGLE_OAUTH_FAILURE", error: ${safeErrMsg} }, "*");
               window.close();
             }
           </script>
-          <p>Erro de processamento: ${err.message}</p>
+          <p>Erro de processamento: ${safeErrText}</p>
         </body>
       </html>
     `);

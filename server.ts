@@ -7,9 +7,6 @@ import app from "./api/index";
 async function startServer() {
   const PORT = 3000;
 
-  // Enable HTTP Gzip compression for all text and JSON responses
-  app.use(compression());
-
   const distPath = path.join(process.cwd(), "dist");
   const indexHtmlExists = fs.existsSync(path.join(distPath, "index.html"));
   
@@ -21,6 +18,7 @@ async function startServer() {
   console.log(`[Planner Server] Is production: ${isProduction}`);
 
   if (isProduction) {
+    app.use(compression());
     if (!indexHtmlExists) {
       console.error("[Planner Server] ERROR: Starting in production mode but dist/index.html does not exist! Please run 'npm run build' first.");
     }
@@ -65,4 +63,3 @@ async function startServer() {
 }
 
 startServer();
-

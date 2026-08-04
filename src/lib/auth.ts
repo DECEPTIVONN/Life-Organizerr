@@ -1,4 +1,11 @@
 import { loadFromSupabase, saveToSupabase } from './supabase';
+import {
+  sanitizeInput,
+  isSqlInjectionPattern,
+  checkLoginLockout,
+  recordFailedLoginAttempt,
+  resetFailedLoginAttempts
+} from '../utils/security';
 
 export interface AuthUser {
   email: string;
@@ -133,12 +140,16 @@ export async function registerWithEmail(
   pass: string,
   name?: string
 ): Promise<{ ok: boolean; user?: AuthUser; message?: string }> {
-  const cleanEmail = cleanString(email);
-  const rawUsername = username.trim().replace(/^@/, '');
-  const cleanUser = cleanString(rawUsername);
+  if (isSqlInjectionPattern(username) || isSqlInjectionPattern(email) || (name && isSqlInjectionPattern(name))) {
+    return { ok: false, message: 'Caracteres ou padrão de texto inválido detectado.' };
+  }
+
+  const cleanEmail = cleanString(sanitizeInput(email));
+  const rawUsername = sanitizeInput(username).trim().replace(/^@/, '');
+  const cleanUser = cleanString(rawUsername).replace(/[^a-z0-9_.]/g, '');
 
   if (!cleanUser || cleanUser.length < 3) {
-    return { ok: false, message: 'O nome de usuário deve ter pelo menos 3 caracteres.' };
+    return { ok: false, message: 'O nome de usuário deve conter pelo menos 3 caracteres válidos (letras, números, pontos ou _).' };
   }
   if (!cleanEmail || !cleanEmail.includes('@')) {
     return { ok: false, message: 'Por favor, insira um e-mail válido.' };
@@ -197,6 +208,21 @@ export async function loginWithEmailOrUsername(
   identifier: string,
   pass: string
 ): Promise<{ ok: boolean; user?: AuthUser; message?: string }> {
+  // 1. Check for active Brute-Force lockout
+  const lockout = checkLoginLockout();
+  if (lockout.locked) {
+    return {
+      ok: false,
+      message: `Conta temporariamente bloqueada por segurança devido a múltiplas tentativas falhas. Tente novamente em ${lockout.remainingSeconds} segundos.`
+    };
+  }
+
+  // 2. Validate input and check for SQL Injection vectors
+  if (isSqlInjectionPattern(identifier)) {
+    recordFailedLoginAttempt();
+    return { ok: false, message: 'Caracteres ou padrão de texto inválido detectado.' };
+  }
+
   const cleanId = cleanString(identifier).replace(/^@/, '');
   if (!cleanId || !pass) {
     return { ok: false, message: 'Preencha o e-mail/usuário e a senha.' };
@@ -254,6 +280,7 @@ export async function loginWithEmailOrUsername(
   }
 
   if (!accRecord) {
+    recordFailedLoginAttempt();
     return { ok: false, message: 'Conta não encontrada. Verifique os dados ou recupere a senha.' };
   }
 
@@ -264,8 +291,18 @@ export async function loginWithEmailOrUsername(
     accRecord.passwordHash = inputHash;
     await saveAuthRecord(`auth_account:${targetEmail}`, accRecord);
   } else if (accRecord.passwordHash !== inputHash) {
-    return { ok: false, message: 'Senha incorreta. Tente novamente.' };
+    const failInfo = recordFailedLoginAttempt();
+    if (failInfo.locked) {
+      return {
+        ok: false,
+        message: 'Senha incorreta. Limite de tentativas excedido! Conta temporariamente bloqueada por 2 minutos por segurança.'
+      };
+    }
+    return { ok: false, message: `Senha incorreta. Restam ${failInfo.remainingAttempts} tentativas antes do bloqueio temporário.` };
   }
+
+  // Successful login: reset failed login attempts counter
+  resetFailedLoginAttempts();
 
   const authUser: AuthUser = {
     email: accRecord.email,
