@@ -40,9 +40,12 @@ import {
   ArrowUpDown,
   Filter,
   ExternalLink,
-  Globe
+  Globe,
+  Folder
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import TagManagementModal from './TagManagementModal';
+import TagInputWithMention from './TagInputWithMention';
 import { CalendarNote, DailyTask, SubTask, MonthlyReview, BookTracker, BibleTracker, RoutineItem, WeeklyReview, FutureEvent } from '../types';
 import { saveGoogleOAuthTokens, clearGoogleOAuthSession, refreshGoogleAccessToken, getValidGoogleAccessToken } from '../utils/googleToken';
 import { handleAutoListKeyDown, formatTimeInput, moveCursorToEnd } from '../utils/listUtils';
@@ -199,6 +202,7 @@ export default function CalendarView({
   const [selectedDateStr, setSelectedDateStr] = useState<string | null>(() => {
     return localStorage.getItem('calendar_selected_date_str') || null;
   });
+  const [isTagModalOpen, setIsTagModalOpen] = useState(false);
 
   useEffect(() => {
     if (selectedDateStr) {
@@ -2422,6 +2426,13 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                     </p>
                   </div>
                   <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => setIsTagModalOpen(true)}
+                      className="px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 text-orange-400 border border-orange-500/30 text-[10px] font-bold rounded-lg flex items-center gap-1 transition-colors"
+                      title="Abrir Central de Tags (@)"
+                    >
+                      <Folder className="h-3 w-3" /> Tags
+                    </button>
                     {activeRecord && (
                       <button
                         onClick={handleDeleteRecord}
@@ -2496,12 +2507,12 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                               {journalText.length} caracteres
                             </span>
                           </div>
-                          <textarea
+                          <TagInputWithMention
                             value={journalText}
-                            onChange={(e) => setJournalText(e.target.value)}
-                            onKeyDown={(e) => handleAutoListKeyDown(e, journalText, setJournalText)}
-                            placeholder="Escreva aqui como foi o seu dia, suas vitórias, lições aprendidas e sentimentos... registre tudo."
-                            className="w-full flex-1 min-h-[160px] bg-zinc-950/40 border border-zinc-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-none font-sans leading-relaxed"
+                            onChange={setJournalText}
+                            rows={6}
+                            openTagManagerModal={() => setIsTagModalOpen(true)}
+                            placeholder="Escreva aqui como foi o seu dia, suas vitórias, lições aprendidas e sentimentos... Use @ para invocar tags ou @# para criar."
                           />
                         </div>
                       ) : activeTopic === 'checklist' ? (
@@ -2701,12 +2712,12 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                     Restaurar Modelo
                                   </button>
                                 </div>
-                                <textarea
+                                <TagInputWithMention
                                   value={gratitudeText}
-                                  onChange={(e) => setGratitudeText(e.target.value)}
-                                  onKeyDown={(e) => handleAutoListKeyDown(e, gratitudeText, setGratitudeText)}
-                                  placeholder="Liste o que você é grato hoje..."
-                                  className="w-full flex-1 min-h-[140px] bg-zinc-950/40 border border-zinc-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-none font-sans leading-relaxed"
+                                  onChange={setGratitudeText}
+                                  rows={5}
+                                  openTagManagerModal={() => setIsTagModalOpen(true)}
+                                  placeholder="Liste o que você é grato hoje... Use @ para invocar tags ou @# para criar."
                                 />
                               </div>
                             )}
@@ -2726,12 +2737,12 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                     Restaurar Modelo
                                   </button>
                                 </div>
-                                <textarea
+                                <TagInputWithMention
                                   value={decreesText}
-                                  onChange={(e) => setDecreesText(e.target.value)}
-                                  onKeyDown={(e) => handleAutoListKeyDown(e, decreesText, setDecreesText)}
-                                  placeholder="Declare palavras de vitória..."
-                                  className="w-full flex-1 min-h-[140px] bg-zinc-950/40 border border-zinc-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-none font-sans leading-relaxed"
+                                  onChange={setDecreesText}
+                                  rows={5}
+                                  openTagManagerModal={() => setIsTagModalOpen(true)}
+                                  placeholder="Declare palavras de vitória... Use @ para invocar tags ou @# para criar."
                                 />
                               </div>
                             )}
@@ -2751,12 +2762,12 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                     Restaurar Modelo
                                   </button>
                                 </div>
-                                <textarea
+                                <TagInputWithMention
                                   value={prayerText}
-                                  onChange={(e) => setPrayerText(e.target.value)}
-                                  onKeyDown={(e) => handleAutoListKeyDown(e, prayerText, setPrayerText)}
-                                  placeholder="Sua oração ou meditação sagrada de hoje..."
-                                  className="w-full flex-1 min-h-[140px] bg-zinc-950/40 border border-zinc-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-none font-sans leading-relaxed"
+                                  onChange={setPrayerText}
+                                  rows={5}
+                                  openTagManagerModal={() => setIsTagModalOpen(true)}
+                                  placeholder="Sua oração ou meditação sagrada de hoje... Use @ para invocar tags ou @# para criar."
                                 />
                               </div>
                             )}
@@ -4643,6 +4654,12 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
         )}
       </AnimatePresence>
 
+      {/* Tag Management Modal */}
+      <TagManagementModal
+        isOpen={isTagModalOpen}
+        onClose={() => setIsTagModalOpen(false)}
+        allCalendarNotes={notes}
+      />
     </div>
   );
 }

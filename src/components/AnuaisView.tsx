@@ -33,9 +33,12 @@ import {
   Upload,
   TrendingUp,
   Pause,
-  Play
+  Play,
+  Folder
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import TagManagementModal from './TagManagementModal';
+import TagInputWithMention from './TagInputWithMention';
 import { CalendarNote, DailyTask, MonthlyReview, WeeklyReview, YearlyBook, SubTask, Goal, FinanceEntry } from '../types';
 import { calculateReadingInterval, formatDateBR } from '../utils/bookUtils';
 import { handleAutoListKeyDown, formatTimeInput, moveCursorToEnd } from '../utils/listUtils';
@@ -195,6 +198,7 @@ export default function AnuaisView({
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
   };
   const [viewMode, setViewMode] = useState<'lista' | 'galeria'>('lista');
+  const [isTagModalOpen, setIsTagModalOpen] = useState(false);
 
   // Year Overview Card View mode and custom background covers
   const [viewingDetail, setViewingDetail] = useState(false);
@@ -2443,12 +2447,21 @@ export default function AnuaisView({
                     Data: {selectedDateStr.split('-').reverse().join('/')}
                   </p>
                 </div>
-                <button
-                  onClick={() => setSelectedDateStr(null)}
-                  className="p-1.5 hover:bg-zinc-900 text-zinc-400 hover:text-white rounded-lg transition-colors"
-                >
-                  <X className="h-4.5 w-4.5" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setIsTagModalOpen(true)}
+                    className="px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 text-orange-400 border border-orange-500/30 text-[10px] font-bold rounded-lg flex items-center gap-1 transition-colors"
+                    title="Abrir Central de Tags (@)"
+                  >
+                    <Folder className="h-3 w-3" /> Tags
+                  </button>
+                  <button
+                    onClick={() => setSelectedDateStr(null)}
+                    className="p-1.5 hover:bg-zinc-900 text-zinc-400 hover:text-white rounded-lg transition-colors"
+                  >
+                    <X className="h-4.5 w-4.5" />
+                  </button>
+                </div>
               </div>
 
               {/* Sub tabs list selectors (Grid de Categorias de Bloco) */}
@@ -2490,12 +2503,12 @@ export default function AnuaisView({
                       <span>Reflexões do dia</span>
                       <span>{journalText.length} caractere(s)</span>
                     </div>
-                    <textarea
+                    <TagInputWithMention
                       value={journalText}
-                      onChange={(e) => setJournalText(e.target.value)}
-                      onKeyDown={(e) => handleAutoListKeyDown(e, journalText, setJournalText)}
-                      placeholder="Relate detalhadamente como foi o seu dia, seus sentimentos, suas lutas e conquistas..."
-                      className="w-full flex-1 min-h-[250px] bg-zinc-950 border border-zinc-900 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-none font-sans leading-relaxed"
+                      onChange={setJournalText}
+                      rows={10}
+                      openTagManagerModal={() => setIsTagModalOpen(true)}
+                      placeholder="Relate detalhadamente como foi o seu dia, seus sentimentos, suas lutas e conquistas... Use @ para invocar tags ou @# para criar."
                     />
                   </div>
                 )}
@@ -3405,6 +3418,12 @@ export default function AnuaisView({
           </div>
         )}
       </AnimatePresence>
+      {/* Tag Management Modal */}
+      <TagManagementModal
+        isOpen={isTagModalOpen}
+        onClose={() => setIsTagModalOpen(false)}
+        allCalendarNotes={notes}
+      />
     </div>
   );
 }

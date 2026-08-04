@@ -14,11 +14,15 @@ import {
   Bell,
   Clock,
   ChevronDown,
-  Check
+  Check,
+  Folder
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Note } from '../types';
 import { handleAutoListKeyDown } from '../utils/listUtils';
+import TagManagementModal from './TagManagementModal';
+import TagInputWithMention from './TagInputWithMention';
+import { loadStoredTags, TagItem } from '../utils/tagStore';
 
 interface NotesViewProps {
   notes: Note[];
@@ -31,6 +35,12 @@ export default function NotesView({ notes, setNotes, addXp, freeEditMode = false
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'active' | 'archived'>('active');
+  const [isTagModalOpen, setIsTagModalOpen] = useState(false);
+  const [storedTagsList, setStoredTagsList] = useState<TagItem[]>([]);
+
+  useEffect(() => {
+    setStoredTagsList(loadStoredTags());
+  }, [isTagModalOpen]);
   
   // Note Form / Selection states
   const [activeNote, setActiveNote] = useState<Note | null>(null);
@@ -257,12 +267,21 @@ export default function NotesView({ notes, setNotes, addXp, freeEditMode = false
           </p>
         </div>
 
-        <button
-          onClick={handleCreateNewNote}
-          className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs px-4 py-2.5 rounded-lg flex items-center gap-1.5 shadow-[0_4px_12px_rgba(249,115,22,0.3)] transition-colors self-start sm:self-auto"
-        >
-          <Plus className="h-4 w-4" /> Nova Nota
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <button
+            onClick={() => setIsTagModalOpen(true)}
+            className="bg-zinc-900 hover:bg-zinc-800 text-orange-400 border border-orange-500/30 font-bold text-xs px-3.5 py-2.5 rounded-lg flex items-center gap-1.5 transition-colors"
+            title="Abrir Central de Tags (@)"
+          >
+            <Folder className="h-4 w-4" /> Central de Tags
+          </button>
+          <button
+            onClick={handleCreateNewNote}
+            className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs px-4 py-2.5 rounded-lg flex items-center gap-1.5 shadow-[0_4px_12px_rgba(249,115,22,0.3)] transition-colors"
+          >
+            <Plus className="h-4 w-4" /> Nova Nota
+          </button>
+        </div>
       </div>
 
       {/* Control Actions / Search and Filter Tabs */}
@@ -702,13 +721,15 @@ export default function NotesView({ notes, setNotes, addXp, freeEditMode = false
                     </div>
 
                     <div className="flex-1 flex flex-col">
-                      <label className="text-[10px] text-gray-500 font-bold block mb-1.5 uppercase tracking-wider">Conteúdo</label>
-                      <textarea
+                      <label className="text-[10px] text-gray-500 font-bold block mb-1.5 uppercase tracking-wider">
+                        Conteúdo (Use @ para tags ou @# para criar novas)
+                      </label>
+                      <TagInputWithMention
                         value={content}
-                        onChange={(e) => setContent(e.target.value)}
-                        onKeyDown={(e) => handleAutoListKeyDown(e, content, setContent)}
-                        placeholder="Digite suas anotações aqui... Suporta escrita livre e organização de ideias."
-                        className="w-full flex-1 bg-zinc-950/80 border border-zinc-800 rounded-xl p-5 text-sm text-white focus:outline-none focus:border-orange-500/40 resize-none min-h-[350px] font-sans leading-relaxed"
+                        onChange={setContent}
+                        rows={12}
+                        openTagManagerModal={() => setIsTagModalOpen(true)}
+                        placeholder="Digite suas anotações aqui... Use @ para invocar tags ou @#NomeDaTag para criar uma nova tag."
                       />
                     </div>
                   </div>
@@ -754,6 +775,13 @@ export default function NotesView({ notes, setNotes, addXp, freeEditMode = false
           </motion.div>
         )}
       </AnimatePresence>
+      {/* Central de Tags Modal */}
+      <TagManagementModal
+        isOpen={isTagModalOpen}
+        onClose={() => setIsTagModalOpen(false)}
+        allNotes={notes}
+        onSelectTagToFilter={(tagName) => setSelectedTag(tagName)}
+      />
     </div>
   );
 }
