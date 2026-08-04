@@ -317,35 +317,37 @@ export default function SettingsView({
   });
 
   const handleGoogleLogin = async () => {
-    const width = 500;
-    const height = 650;
-    const left = window.screen.width / 2 - width / 2;
-    const top = window.screen.height / 2 - height / 2;
-
-    const authWindow = window.open(
-      'about:blank',
-      'google_oauth_popup',
-      `width=${width},height=${height},top=${top},left=${left},status=no,toolbar=no,menubar=no`
-    );
-
     try {
       const redirectUri = `${window.location.origin}/auth/callback`;
       const response = await fetch(`/api/auth/google/url?redirect_uri=${encodeURIComponent(redirectUri)}&scope=calendar`);
+      const data = await response.json().catch(() => ({}));
+
       if (!response.ok) {
-        const errText = await response.json().catch(() => ({}));
-        if (authWindow) authWindow.close();
-        alert(errText.error || 'Erro ao gerar URL de autenticação.');
+        alert(data.error || 'Erro ao gerar URL de autenticação do Google.');
         return;
       }
-      const { url } = await response.json();
 
-      if (authWindow && !authWindow.closed) {
-        authWindow.location.href = url;
-      } else {
+      const { url } = data;
+      if (!url) {
+        alert('URL de autenticação do Google não recebida.');
+        return;
+      }
+
+      const width = 550;
+      const height = 650;
+      const left = window.screen.width / 2 - width / 2;
+      const top = window.screen.height / 2 - height / 2;
+
+      const authWindow = window.open(
+        url,
+        'google_oauth_popup',
+        `width=${width},height=${height},top=${top},left=${left},status=no,toolbar=no,menubar=no`
+      );
+
+      if (!authWindow) {
         window.location.href = url;
       }
     } catch (err: any) {
-      if (authWindow) authWindow.close();
       console.error('Error opening Google OAuth:', err);
       alert('Erro ao conectar ao Google Agenda: ' + (err?.message || 'Falha de rede.'));
     }

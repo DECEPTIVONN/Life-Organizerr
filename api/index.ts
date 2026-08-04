@@ -43,8 +43,8 @@ app.use(antiSqlInjectionMiddleware);
 // 9. Global API Rate Limiter
 app.use("/api", globalApiRateLimiter);
 
-// 10. Specific Auth Endpoint Rate Limiter (Anti-Brute Force / Credential Stuffing)
-app.use("/api/auth", authEndpointRateLimiter);
+// 10. Specific Auth Endpoint Rate Limiter (Anti-Brute Force / Credential Stuffing for password & PIN routes)
+app.post(["/api/auth/login", "/api/auth/register", "/api/auth/pin"], authEndpointRateLimiter);
 
 // Helper to construct exact redirect URI
 const getRedirectUri = (req: express.Request) => {

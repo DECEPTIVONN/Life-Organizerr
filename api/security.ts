@@ -286,7 +286,7 @@ export const pinBruteForceLimiter = createRateLimiter(
 
 // Known SQL Injection attack signature patterns
 const SQLI_PATTERNS = [
-  /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|TRUNCATE|EXEC|UNION|ALL)\b)/i,
+  /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|TRUNCATE|EXEC|UNION)\b)/i,
   /('|\"|\bOR\b|\bAND\b)\s*['\"]?\s*1\s*=\s*1/i,
   /('|\"|\bOR\b|\bAND\b)\s*['\"]?\s*['\"]/i,
   /--\s*$/m,
