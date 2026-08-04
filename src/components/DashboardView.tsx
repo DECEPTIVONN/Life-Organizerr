@@ -543,17 +543,17 @@ export default function DashboardView({
         <motion.div 
           id="metric-streak-card"
           onClick={onOpenStreakHub}
-          className="relative overflow-hidden bg-[#0a0a0c]/80 p-5 rounded-2xl border border-zinc-850 hover:border-orange-500/40 transition-all flex flex-col justify-between cursor-pointer group min-h-[140px]"
+          className="relative overflow-hidden bg-[#0a0a0c]/90 p-5 rounded-2xl border border-zinc-850 hover:border-orange-500/40 transition-all flex flex-col justify-between cursor-pointer group min-h-[140px]"
           whileHover={{ y: -2 }}
         >
           {/* Background Image & Dark Gradient Overlay */}
           <img
             src="https://images.unsplash.com/photo-1517838277536-f5f99be501cd?q=80&w=1000"
             alt="Frequência"
-            className="absolute inset-0 w-full h-full object-cover filter grayscale opacity-20 group-hover:scale-105 group-hover:opacity-30 transition-all duration-500 pointer-events-none"
+            className="absolute inset-0 w-full h-full object-cover opacity-25 group-hover:scale-105 group-hover:opacity-40 transition-all duration-500 pointer-events-none"
             referrerPolicy="no-referrer"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0c] via-[#0a0a0c]/80 to-black/40 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0c] via-[#0a0a0c]/80 to-black/30 pointer-events-none" />
 
           {/* Card Content */}
           <div className="relative z-10 flex flex-col justify-between h-full">
@@ -561,12 +561,12 @@ export default function DashboardView({
               <span className="text-[10px] text-gray-300 group-hover:text-orange-300 font-extrabold tracking-widest uppercase transition-colors drop-shadow">
                 Frequência
               </span>
-              <div className="p-1.5 bg-orange-500/10 border border-orange-500/20 rounded-xl backdrop-blur-sm">
+              <div className="p-1.5 bg-orange-500/20 border border-orange-500/30 rounded-xl backdrop-blur-md">
                 <Flame className="h-5 w-5 text-orange-500 fill-orange-500/20 animate-pulse" />
               </div>
             </div>
             <div className="mt-4">
-              <span className="text-4xl font-black text-white font-mono drop-shadow">{streak}</span>
+              <span className="text-4xl font-black text-white font-mono drop-shadow-md">{streak}</span>
               <span className="text-xs text-gray-400 ml-2 font-bold uppercase font-mono">Dias em Combo</span>
               <p className="text-[11px] text-zinc-300 mt-1.5 italic font-medium drop-shadow-sm">
                 "A persistência é o caminho do êxito"
@@ -578,35 +578,35 @@ export default function DashboardView({
         {/* XP Total Card */}
         <motion.div 
           id="metric-xp-card"
-          className="relative overflow-hidden bg-[#0a0a0c]/80 p-5 rounded-2xl border border-zinc-850 hover:border-amber-500/30 transition-all flex flex-col justify-between group min-h-[140px]"
+          className="relative overflow-hidden bg-[#0a0a0c]/90 p-5 rounded-2xl border border-zinc-850 hover:border-amber-500/40 transition-all flex flex-col justify-between group min-h-[140px]"
           whileHover={{ y: -2 }}
         >
           {/* Background Image & Dark Gradient Overlay */}
           <img
-            src="https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=1000"
+            src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1000"
             alt="XP Acumulado"
-            className="absolute inset-0 w-full h-full object-cover filter grayscale opacity-20 group-hover:scale-105 group-hover:opacity-30 transition-all duration-500 pointer-events-none"
+            className="absolute inset-0 w-full h-full object-cover opacity-25 group-hover:scale-105 group-hover:opacity-40 transition-all duration-500 pointer-events-none"
             referrerPolicy="no-referrer"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0c] via-[#0a0a0c]/80 to-black/40 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0c] via-[#0a0a0c]/80 to-black/30 pointer-events-none" />
 
           {/* Card Content */}
           <div className="relative z-10 flex flex-col justify-between h-full">
             <div className="flex items-center justify-between">
               <span className="text-[10px] text-gray-300 font-extrabold tracking-widest uppercase drop-shadow">XP Acumulado</span>
-              <div className="p-1.5 bg-amber-500/10 border border-amber-500/20 rounded-xl backdrop-blur-sm">
-                <Zap className="h-5 w-5 text-amber-500 fill-amber-500/20" />
+              <div className="p-1.5 bg-amber-500/20 border border-amber-500/30 rounded-xl backdrop-blur-md">
+                <Zap className="h-5 w-5 text-amber-400 fill-amber-400/20" />
               </div>
             </div>
             <div className="mt-4">
-              <span className="text-4xl font-black text-white font-mono drop-shadow">{xpTotal}</span>
+              <span className="text-4xl font-black text-white font-mono drop-shadow-md">{xpTotal}</span>
               <span className="text-xs text-gray-400 ml-2 font-bold">XP TOTAL</span>
             </div>
             <div className="mt-2 border-t border-zinc-800/80 pt-2">
               <div className="w-full bg-[#18181b]/90 h-1.5 rounded-full overflow-hidden border border-zinc-800/50">
                 <div className="bg-gradient-to-r from-amber-500 to-orange-500 h-full rounded-full" style={{ width: `${progressPercent}%` }} />
               </div>
-              <p className="text-[9px] text-zinc-400 mt-1 text-right font-mono font-bold">
+              <p className="text-[9px] text-zinc-300 mt-1 text-right font-mono font-bold drop-shadow-sm">
                 Faltam {1000 - xpInCurrentLevel} XP para o Nível {level + 1}
               </p>
             </div>
@@ -616,35 +616,35 @@ export default function DashboardView({
         {/* Checklist Completeness Card */}
         <motion.div 
           id="metric-goals-card"
-          className="relative overflow-hidden bg-[#0a0a0c]/80 p-5 rounded-2xl border border-zinc-850 hover:border-emerald-500/30 transition-all flex flex-col justify-between group min-h-[140px]"
+          className="relative overflow-hidden bg-[#0a0a0c]/90 p-5 rounded-2xl border border-zinc-850 hover:border-emerald-500/40 transition-all flex flex-col justify-between group min-h-[140px]"
           whileHover={{ y: -2 }}
         >
           {/* Background Image & Dark Gradient Overlay */}
           <img
             src="https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?q=80&w=1000"
             alt="Checklist de Hoje"
-            className="absolute inset-0 w-full h-full object-cover filter grayscale opacity-20 group-hover:scale-105 group-hover:opacity-30 transition-all duration-500 pointer-events-none"
+            className="absolute inset-0 w-full h-full object-cover opacity-25 group-hover:scale-105 group-hover:opacity-40 transition-all duration-500 pointer-events-none"
             referrerPolicy="no-referrer"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0c] via-[#0a0a0c]/80 to-black/40 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0c] via-[#0a0a0c]/80 to-black/30 pointer-events-none" />
 
           {/* Card Content */}
           <div className="relative z-10 flex flex-col justify-between h-full">
             <div className="flex items-center justify-between">
               <span className="text-[10px] text-gray-300 font-extrabold tracking-widest uppercase drop-shadow">Checklist de Hoje</span>
-              <div className="p-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl backdrop-blur-sm">
+              <div className="p-1.5 bg-emerald-500/20 border border-emerald-500/30 rounded-xl backdrop-blur-md">
                 <CheckSquare className="h-5 w-5 text-emerald-400" />
               </div>
             </div>
             <div className="mt-4">
-              <span className="text-4xl font-black text-white font-mono drop-shadow">{completedChecklistCount}</span>
+              <span className="text-4xl font-black text-white font-mono drop-shadow-md">{completedChecklistCount}</span>
               <span className="text-xs text-gray-400 ml-2 font-bold">DE {dailyTasks.length} RITUAIS</span>
             </div>
             <div className="mt-2 border-t border-zinc-800/80 pt-2">
               <div className="w-full bg-[#18181b]/90 h-1.5 rounded-full overflow-hidden border border-zinc-800/50">
                 <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${checklistPercent}%` }} />
               </div>
-              <p className="text-[9px] text-emerald-400 mt-1 text-right font-bold">
+              <p className="text-[9px] text-emerald-400 mt-1 text-right font-bold drop-shadow-sm">
                 {checklistPercent}% concluído hoje
               </p>
             </div>
@@ -654,32 +654,32 @@ export default function DashboardView({
         {/* Saldo Financeiro Card */}
         <motion.div 
           id="metric-badges-card"
-          className="relative overflow-hidden bg-[#0a0a0c]/80 p-5 rounded-2xl border border-zinc-850 hover:border-cyan-500/30 transition-all flex flex-col justify-between group min-h-[140px]"
+          className="relative overflow-hidden bg-[#0a0a0c]/90 p-5 rounded-2xl border border-zinc-850 hover:border-cyan-500/40 transition-all flex flex-col justify-between group min-h-[140px]"
           whileHover={{ y: -2 }}
         >
           {/* Background Image & Dark Gradient Overlay */}
           <img
-            src="https://images.unsplash.com/photo-1584290860587-211bfb66aa0f?q=80&w=1000"
+            src="https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?q=80&w=1000"
             alt="Saldo de Caixa"
-            className="absolute inset-0 w-full h-full object-cover filter grayscale opacity-20 group-hover:scale-105 group-hover:opacity-30 transition-all duration-500 pointer-events-none"
+            className="absolute inset-0 w-full h-full object-cover opacity-25 group-hover:scale-105 group-hover:opacity-40 transition-all duration-500 pointer-events-none"
             referrerPolicy="no-referrer"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0c] via-[#0a0a0c]/80 to-black/40 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0c] via-[#0a0a0c]/80 to-black/30 pointer-events-none" />
 
           {/* Card Content */}
           <div className="relative z-10 flex flex-col justify-between h-full">
             <div className="flex items-center justify-between">
               <span className="text-[10px] text-gray-300 font-extrabold tracking-widest uppercase drop-shadow">Saldo de Caixa</span>
-              <div className="p-1.5 bg-cyan-500/10 border border-cyan-500/20 rounded-xl backdrop-blur-sm">
+              <div className="p-1.5 bg-cyan-500/20 border border-cyan-500/30 rounded-xl backdrop-blur-md">
                 <Wallet className="h-5 w-5 text-cyan-400" />
               </div>
             </div>
             <div className="mt-4">
-              <span className="text-2xl font-black text-white font-mono drop-shadow">
+              <span className="text-2xl font-black text-white font-mono drop-shadow-md">
                 R$ {availableBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
-            <p className="text-[10px] text-gray-400 mt-2 border-t border-zinc-800/80 pt-2 font-medium flex items-center justify-between">
+            <p className="text-[10px] text-gray-300 mt-2 border-t border-zinc-800/80 pt-2 font-medium flex items-center justify-between">
               <span>Último mês:</span>
               <span className={availableBalance >= 0 ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>
                 {availableBalance >= 0 ? '+' : ''} R$ {availableBalance.toLocaleString('pt-BR')}
