@@ -779,32 +779,37 @@ export default function CalendarView({
   }, [currentDate, googleToken, viewMode]);
 
   const handleGoogleLogin = async () => {
+    const width = 500;
+    const height = 650;
+    const left = window.screen.width / 2 - width / 2;
+    const top = window.screen.height / 2 - height / 2;
+
+    const authWindow = window.open(
+      'about:blank',
+      'google_oauth_popup',
+      `width=${width},height=${height},top=${top},left=${left},status=no,toolbar=no,menubar=no`
+    );
+
     try {
       const redirectUri = `${window.location.origin}/auth/callback`;
       const response = await fetch(`/api/auth/google/url?redirect_uri=${encodeURIComponent(redirectUri)}&scope=calendar`);
       if (!response.ok) {
-        const errText = await response.json();
+        const errText = await response.json().catch(() => ({}));
+        if (authWindow) authWindow.close();
         alert(errText.error || 'Erro ao gerar URL de autenticação.');
         return;
       }
       const { url } = await response.json();
 
-      const width = 500;
-      const height = 650;
-      const left = window.screen.width / 2 - width / 2;
-      const top = window.screen.height / 2 - height / 2;
-
-      const authWindow = window.open(
-        url,
-        'google_oauth_popup',
-        `width=${width},height=${height},top=${top},left=${left}`
-      );
-
-      if (!authWindow) {
-        alert('Por favor, permita popups para este site para conectar o Google Agenda.');
+      if (authWindow && !authWindow.closed) {
+        authWindow.location.href = url;
+      } else {
+        window.location.href = url;
       }
-    } catch (err) {
+    } catch (err: any) {
+      if (authWindow) authWindow.close();
       console.error('Error opening Google OAuth:', err);
+      alert('Erro ao conectar ao Google Agenda: ' + (err?.message || 'Falha de rede.'));
     }
   };
 
@@ -836,7 +841,7 @@ export default function CalendarView({
   useEffect(() => {
     const handleOAuthMessage = (event: MessageEvent) => {
       const origin = event.origin;
-      if (!origin.endsWith('.run.app') && !origin.includes('localhost')) {
+      if (event.origin !== window.location.origin && !origin.endsWith('.run.app') && !origin.includes('localhost')) {
         return;
       }
 

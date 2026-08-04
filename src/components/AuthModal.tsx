@@ -233,30 +233,35 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
     setErrorMsg(null);
     setLoading(true);
 
+    const width = 500;
+    const height = 650;
+    const left = window.screen.width / 2 - width / 2;
+    const top = window.screen.height / 2 - height / 2;
+
+    const popup = window.open(
+      'about:blank',
+      'google_auth_popup',
+      `width=${width},height=${height},top=${top},left=${left},status=no,toolbar=no,menubar=no`
+    );
+
     try {
       const redirectUri = `${window.location.origin}/auth/callback`;
       const res = await fetch(`/api/auth/google/url?redirect_uri=${encodeURIComponent(redirectUri)}&scope=calendar`);
       
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
+        if (popup) popup.close();
         throw new Error(data.error || 'Não foi possível gerar URL do Google OAuth.');
       }
 
       const { url } = await res.json();
-      
-      const popup = window.open(
-        url,
-        'google_auth_popup',
-        'width=500,height=600,status=no,toolbar=no,menubar=no'
-      );
-
-      if (!popup) {
-        setErrorMsg('Pop-up bloqueado pelo navegador. Por favor, permita pop-ups.');
-        setLoading(false);
-        return;
-      }
 
       const handleMessage = async (event: MessageEvent) => {
+        const origin = event.origin;
+        if (event.origin !== window.location.origin && !origin.endsWith('.run.app') && !origin.includes('localhost')) {
+          return;
+        }
+
         if (event.data?.type === 'GOOGLE_OAUTH_SUCCESS' && event.data?.profile) {
           window.removeEventListener('message', handleMessage);
           const profile = event.data.profile;
@@ -295,7 +300,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
       };
 
       window.addEventListener('message', handleMessage);
+
+      if (popup && !popup.closed) {
+        popup.location.href = url;
+      } else {
+        window.location.href = url;
+      }
     } catch (err: any) {
+      if (popup) popup.close();
       setErrorMsg(err.message || 'Erro ao conectar com Google.');
       setLoading(false);
     }
