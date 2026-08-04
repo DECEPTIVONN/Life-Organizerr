@@ -44,6 +44,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { QuickReminder } from '../types';
+import { PomodoroIcon } from './icons/PomodoroIcon';
 
 interface SidebarProps {
   activeTab: string;
@@ -141,7 +142,7 @@ export default function Sidebar({
     const totalMinutes = (quickHours * 60) + quickMinutes;
     const totalSecs = Math.max(60, Math.min(36000, totalMinutes * 60)); // 1 min to 10 hours
     const defaultTitle = quickModalType === 'pomodoro'
-      ? 'Sessão Pomodoro 🍅'
+      ? 'Sessão Pomodoro'
       : quickModalType === 'timer'
       ? 'Timer Rápido'
       : 'Alerta de Cronômetro';
@@ -185,7 +186,7 @@ export default function Sidebar({
     if (typeof Notification !== 'undefined') {
       if (Notification.permission === 'granted') {
         const modeLabel = quickModalType === 'pomodoro'
-          ? '🍅 Sessão Pomodoro Iniciada'
+          ? 'Sessão Pomodoro Iniciada'
           : quickModalType === 'timer'
           ? '⏱️ Timer Iniciado'
           : '⏰ Alerta de Cronômetro Ativo';
@@ -1248,13 +1249,13 @@ export default function Sidebar({
                       ? 'bg-rose-500/20 border border-rose-500/40 text-rose-400 scale-105'
                       : 'bg-rose-500/10 border border-rose-500/20 text-rose-400'
                   }`}>
-                    <Flame className="h-4 w-4" />
+                    <PomodoroIcon className="h-4 w-4" />
                   </div>
                   <div className="text-left">
                     <div className={`text-xs font-bold transition-colors ${
                       selectedShortcut === 'pomodoro' ? 'text-rose-400' : 'text-zinc-200'
                     }`}>
-                      Pomodoro 🍅
+                      Pomodoro
                     </div>
                     <div className="text-[10px] text-zinc-400 font-normal">
                       Ciclo de foco de 25 min
@@ -1292,7 +1293,7 @@ export default function Sidebar({
                       : 'bg-orange-500/10 border-orange-500/20 text-orange-400'
                   }`}>
                     {quickModalType === 'pomodoro' ? (
-                      <Flame className="h-5 w-5" />
+                      <PomodoroIcon className="h-5 w-5" />
                     ) : quickModalType === 'timer' ? (
                       <Timer className="h-5 w-5" />
                     ) : (
@@ -1302,7 +1303,7 @@ export default function Sidebar({
                   <div>
                     <h3 className="text-sm font-extrabold text-white uppercase tracking-wider">
                       {quickModalType === 'pomodoro'
-                        ? 'Nova Sessão Pomodoro 🍅'
+                        ? 'Nova Sessão Pomodoro'
                         : quickModalType === 'timer'
                         ? 'Novo Timer Rápido'
                         : 'Novo Alerta de Cronômetro'}
@@ -1377,8 +1378,8 @@ export default function Sidebar({
                         : 'text-zinc-400 hover:text-white'
                     }`}
                   >
-                    <Flame className="h-3.5 w-3.5 text-rose-400" />
-                    <span>Pomodoro 🍅</span>
+                    <PomodoroIcon className="h-3.5 w-3.5 text-rose-400" />
+                    <span>Pomodoro</span>
                   </button>
                 </div>
               </div>
@@ -1673,7 +1674,7 @@ export default function Sidebar({
                     }`}
                   >
                     {quickModalType === 'pomodoro' ? (
-                      <Flame className="h-4 w-4" />
+                      <PomodoroIcon className="h-4 w-4" />
                     ) : quickModalType === 'timer' ? (
                       <Timer className="h-4 w-4" />
                     ) : (

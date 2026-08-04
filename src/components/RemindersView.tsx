@@ -29,6 +29,7 @@ import {
   Folder
 } from 'lucide-react';
 import { QuickReminder } from '../types';
+import { PomodoroIcon } from './icons/PomodoroIcon';
 
 export const getCategoryIcon = (cat?: string) => {
   switch (cat) {
@@ -316,7 +317,7 @@ export default function RemindersView({
     if (typeof Notification !== 'undefined') {
       if (Notification.permission === 'granted') {
         const modeLabel = mode === 'pomodoro'
-          ? '🍅 Sessão Pomodoro'
+          ? 'Sessão Pomodoro'
           : mode === 'timer'
           ? '⏱️ Timer Iniciado'
           : mode === 'cronometer'
@@ -713,7 +714,7 @@ export default function RemindersView({
                         />
                       </svg>
                       {r.mode === 'pomodoro' ? (
-                        <Flame className={`h-4 w-4 absolute ${!r.paused ? 'text-rose-400 animate-pulse' : 'text-rose-400'}`} />
+                        <PomodoroIcon className={`h-4 w-4 absolute ${!r.paused ? 'text-rose-400 animate-pulse' : 'text-rose-400'}`} />
                       ) : (
                         <Timer className={`h-4 w-4 absolute ${!r.paused ? 'text-orange-400 animate-pulse' : 'text-amber-400'}`} />
                       )}
@@ -834,14 +835,19 @@ export default function RemindersView({
                 {/* Top Row: Category Pill & Priority Badge */}
                 <div className="relative z-10 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-black uppercase tracking-wider border ${
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-black uppercase tracking-wider border flex items-center gap-1.5 ${
                       rem.mode === 'pomodoro'
                         ? 'bg-rose-500/10 border-rose-500/20 text-rose-400'
                         : rem.mode === 'timer'
                         ? 'bg-orange-500/10 border-orange-500/20 text-orange-400'
                         : 'bg-amber-500/10 border-amber-500/20 text-amber-400'
                     }`}>
-                      {rem.mode === 'pomodoro' ? '🍅 Pomodoro' : rem.mode === 'timer' ? '⏱ Timer' : '⏰ Agendado'}
+                      {rem.mode === 'pomodoro' ? (
+                        <>
+                          <PomodoroIcon className="h-3 w-3" />
+                          <span>Pomodoro</span>
+                        </>
+                      ) : rem.mode === 'timer' ? '⏱ Timer' : '⏰ Agendado'}
                     </span>
 
                     {rem.category && (
@@ -926,7 +932,14 @@ export default function RemindersView({
                               ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                               : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
                           }`}>
-                            {rem.pomodoroCurrentPhase === 'break' ? '☕ Pausa' : '🍅 Foco'}
+                            {rem.pomodoroCurrentPhase === 'break' ? (
+                              <span>☕ Pausa</span>
+                            ) : (
+                              <>
+                                <PomodoroIcon className="h-3 w-3 text-rose-400 inline-block mr-0.5" />
+                                <span>Foco</span>
+                              </>
+                            )}
                             {rem.pomodoroTotalCycles && rem.pomodoroTotalCycles > 1 ? ` (${rem.pomodoroCurrentCycle || 1}/${rem.pomodoroTotalCycles})` : ''}
                           </span>
                           <span className="text-zinc-400 font-mono text-[10px]">
@@ -940,7 +953,7 @@ export default function RemindersView({
                             : 'bg-rose-500/10 border-rose-500/30 text-rose-400'
                         }`}>
                           <div className="flex items-center gap-2">
-                            <Flame className={`h-4 w-4 ${!rem.paused && !isCompleted ? 'animate-pulse' : ''}`} />
+                            <PomodoroIcon className={`h-4 w-4 ${!rem.paused && !isCompleted ? 'animate-pulse' : ''}`} />
                             <span className="text-sm font-black tracking-wider">
                               {rem.pomodoroCurrentPhase === 'break' ? 'Pausa: ' : 'Foco: '}
                               {getPomodoroPhaseRemainingText(rem)}
@@ -1130,8 +1143,8 @@ export default function RemindersView({
                             : 'text-zinc-400 hover:text-white'
                         }`}
                       >
-                        <Flame className="h-3.5 w-3.5 text-rose-400" />
-                        <span>Pomodoro 🍅</span>
+                        <PomodoroIcon className="h-3.5 w-3.5" />
+                        <span>Pomodoro</span>
                       </button>
                     </div>
                   </div>
