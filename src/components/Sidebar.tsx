@@ -937,7 +937,8 @@ export default function Sidebar({
           {/* Item 1: Menu */}
           <button 
             onClick={() => setMobileMenuOpen(true)}
-            className="relative flex flex-col items-center justify-center w-14 h-14 group cursor-pointer"
+            className="relative flex flex-col items-center justify-center w-14 h-14 group cursor-pointer select-none outline-none focus:outline-none active:bg-transparent bg-transparent"
+            style={{ WebkitTapHighlightColor: 'transparent', WebkitTouchCallout: 'none' }}
           >
             <div 
               className={`transition-all duration-300 ${
@@ -964,7 +965,8 @@ export default function Sidebar({
               setActiveTab('calendario');
               setMobileMenuOpen(false);
             }}
-            className="relative flex flex-col items-center justify-center w-14 h-14 group cursor-pointer"
+            className="relative flex flex-col items-center justify-center w-14 h-14 group cursor-pointer select-none outline-none focus:outline-none active:bg-transparent bg-transparent"
+            style={{ WebkitTapHighlightColor: 'transparent', WebkitTouchCallout: 'none' }}
           >
             <div 
               className={`transition-all duration-300 ${
@@ -991,7 +993,8 @@ export default function Sidebar({
               setActiveTab('dashboard');
               setMobileMenuOpen(false);
             }}
-            className="relative flex flex-col items-center justify-center w-14 h-14 group cursor-pointer"
+            className="relative flex flex-col items-center justify-center w-14 h-14 group cursor-pointer select-none outline-none focus:outline-none active:bg-transparent bg-transparent"
+            style={{ WebkitTapHighlightColor: 'transparent', WebkitTouchCallout: 'none' }}
           >
             <div 
               className={`transition-all duration-300 ${
@@ -1018,7 +1021,8 @@ export default function Sidebar({
               setActiveTab('checklist');
               setMobileMenuOpen(false);
             }}
-            className="relative flex flex-col items-center justify-center w-14 h-14 group cursor-pointer"
+            className="relative flex flex-col items-center justify-center w-14 h-14 group cursor-pointer select-none outline-none focus:outline-none active:bg-transparent bg-transparent"
+            style={{ WebkitTapHighlightColor: 'transparent', WebkitTouchCallout: 'none' }}
           >
             <div 
               className={`transition-all duration-300 ${
@@ -1049,12 +1053,12 @@ export default function Sidebar({
             onMouseMove={handleTouchMoveShortcut}
             onMouseUp={() => cancelNotasLongPress(true)}
             onMouseLeave={() => cancelNotasLongPress(false)}
-            className="relative flex flex-col items-center justify-center w-14 h-14 group cursor-pointer select-none"
-            title="Segure para Atalhos de Tempo"
+            className="relative flex flex-col items-center justify-center w-14 h-14 group cursor-pointer select-none outline-none focus:outline-none active:bg-transparent bg-transparent"
+            style={{ WebkitTapHighlightColor: 'transparent', WebkitTouchCallout: 'none' }}
           >
             {/* Visual holding progress ring */}
             {pressProgress > 0 && (
-              <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none z-20">
+              <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none z-20 overflow-visible">
                 <circle
                   cx="28"
                   cy="28"
