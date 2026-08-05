@@ -66,6 +66,7 @@ interface SidebarProps {
   currentUser?: any;
   onAddReminder?: (reminder: QuickReminder) => void;
   onOpenStreakHub?: () => void;
+  onOpenRankingModal?: () => void;
 }
 
 interface SearchResult {
@@ -95,7 +96,8 @@ export default function Sidebar({
   onLogout,
   currentUser,
   onAddReminder,
-  onOpenStreakHub
+  onOpenStreakHub,
+  onOpenRankingModal
 }: SidebarProps) {
   
   // Animation/HUD state
@@ -454,6 +456,7 @@ export default function Sidebar({
   // Navigation Items
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', desc: 'Portal principal', icon: LayoutDashboard },
+    { id: 'classificacao', label: 'Ligas & Ranking', desc: 'Divisões e posição', icon: Trophy },
     { id: 'resumo', label: 'Vida em resumo', desc: 'Painel holístico', icon: Compass },
     { id: 'checklist', label: 'Missões Diárias', desc: 'Metas e rotinas diárias', icon: CheckSquare },
     { id: 'rotina', label: 'Rotina Semanal', desc: 'Hábitos frequentes', icon: Clock },
@@ -479,6 +482,16 @@ export default function Sidebar({
       action: () => {
         setMobileMenuOpen(false);
         setSearchOpen(true);
+      }
+    },
+    {
+      id: 'classificacao',
+      label: 'Ligas & Ranking',
+      desc: 'Divisões e posições',
+      icon: Trophy,
+      action: () => {
+        setActiveTab('classificacao');
+        setMobileMenuOpen(false);
       }
     },
     {
@@ -761,43 +774,45 @@ export default function Sidebar({
       </div>
 
       {/* 2. MOBILE HEADER BAR (TOP UTILITIES) */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-[#09090b]/90 backdrop-blur-md border-b border-zinc-900/60 flex items-center justify-between px-4 z-40 select-none">
+      {activeTab !== 'classificacao' && activeTab !== 'ligas' && (
+        <div className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-[#09090b]/90 backdrop-blur-md border-b border-zinc-900/60 flex items-center justify-between px-4 z-40 select-none">
 
-        {/* Left Side: User Image only */}
-        <button 
-          onClick={() => setActiveTab('perfil')}
-          className="flex items-center active:scale-95 transition-transform"
-          title="Ver seu Perfil"
-        >
-          <img 
-            src={userPhoto} 
-            alt={userName} 
-            className="h-8 w-8 rounded-full object-cover border border-orange-500/20 shadow-[0_0_8px_rgba(249,115,22,0.15)]" 
-            referrerPolicy="no-referrer"
-          />
-        </button>
-
-        {/* Right Side: Icons aligned to the right */}
-        <div className="flex items-center gap-3">
-          {/* Quick Search */}
+          {/* Left Side: User Image only */}
           <button 
-            onClick={() => setSearchOpen(true)}
-            className="p-2 bg-zinc-900/40 text-zinc-400 hover:text-orange-500 rounded-xl border border-zinc-800/80 transition-all active:scale-95 flex items-center justify-center"
-            title="Buscar Geral"
+            onClick={() => setActiveTab('perfil')}
+            className="flex items-center active:scale-95 transition-transform"
+            title="Ver seu Perfil"
           >
-            <Search className="h-4.5 w-4.5" />
+            <img 
+              src={userPhoto} 
+              alt={userName} 
+              className="h-8 w-8 rounded-full object-cover border border-orange-500/20 shadow-[0_0_8px_rgba(249,115,22,0.15)]" 
+              referrerPolicy="no-referrer"
+            />
           </button>
 
-          {/* Mobile Fullscreen Toggle Button */}
-          <button 
-            onClick={toggleFullscreen}
-            className="p-2 bg-zinc-900/40 text-zinc-400 hover:text-white rounded-xl border border-zinc-800/80 transition-all active:scale-95 flex items-center justify-center"
-            title="Modo Tela Cheia"
-          >
-            {isFullscreen ? <Minimize className="h-4.5 w-4.5 text-orange-500" /> : <Maximize className="h-4.5 w-4.5" />}
-          </button>
+          {/* Right Side: Icons aligned to the right */}
+          <div className="flex items-center gap-3">
+            {/* Quick Search */}
+            <button 
+              onClick={() => setSearchOpen(true)}
+              className="p-2 bg-zinc-900/40 text-zinc-400 hover:text-orange-500 rounded-xl border border-zinc-800/80 transition-all active:scale-95 flex items-center justify-center"
+              title="Buscar Geral"
+            >
+              <Search className="h-4.5 w-4.5" />
+            </button>
+
+            {/* Mobile Fullscreen Toggle Button */}
+            <button 
+              onClick={toggleFullscreen}
+              className="p-2 bg-zinc-900/40 text-zinc-400 hover:text-white rounded-xl border border-zinc-800/80 transition-all active:scale-95 flex items-center justify-center"
+              title="Modo Tela Cheia"
+            >
+              {isFullscreen ? <Minimize className="h-4.5 w-4.5 text-orange-500" /> : <Maximize className="h-4.5 w-4.5" />}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* 2b. MOBILE DRAWER SLIDING MENU */}
       <AnimatePresence>
@@ -842,10 +857,31 @@ export default function Sidebar({
                   </div>
                 </div>
                 
+                {/* Classificação & Ligas button */}
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    if (onOpenRankingModal) onOpenRankingModal();
+                  }}
+                  className="mt-2 w-full flex items-center justify-between hover:bg-purple-500/10 p-2 rounded-xl transition-all group cursor-pointer bg-zinc-900/40 border border-zinc-850/80"
+                  title="Abrir Ranking de Ligas & Classificação"
+                >
+                  <span className="text-[10px] text-zinc-300 group-hover:text-purple-300 flex items-center gap-1.5 font-mono font-bold">
+                    <Trophy className="h-3.5 w-3.5 text-amber-400 fill-amber-500/20" />
+                    <span>Classificação & Ligas</span>
+                  </span>
+                  <span className="text-[10px] font-bold text-amber-400 font-mono bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 rounded-md">
+                    Nível {level}
+                  </span>
+                </button>
+
                 {/* Micro Streak */}
                 <button
-                  onClick={onOpenStreakHub}
-                  className="mt-3 w-full pt-3 border-t border-zinc-900 flex items-center justify-between hover:bg-orange-500/10 p-2 rounded-xl transition-all group cursor-pointer bg-zinc-900/40 border border-zinc-850/80"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    if (onOpenStreakHub) onOpenStreakHub();
+                  }}
+                  className="mt-2 w-full flex items-center justify-between hover:bg-orange-500/10 p-2 rounded-xl transition-all group cursor-pointer bg-zinc-900/40 border border-zinc-850/80"
                   title="Abrir Central de Ofensivas & Congelamento"
                 >
                   <span className="text-[10px] text-zinc-300 group-hover:text-orange-300 flex items-center gap-1.5 font-mono font-bold">

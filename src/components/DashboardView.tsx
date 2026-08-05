@@ -92,6 +92,7 @@ interface DashboardViewProps {
   customCards?: any[];
   setCustomCards?: React.Dispatch<React.SetStateAction<any[]>>;
   onOpenStreakHub?: () => void;
+  onOpenRankingModal?: () => void;
 }
 
 export default function DashboardView({
@@ -113,7 +114,8 @@ export default function DashboardView({
   routine = [],
   customCards: propCustomCards,
   setCustomCards: propSetCustomCards,
-  onOpenStreakHub
+  onOpenStreakHub,
+  onOpenRankingModal
 }: DashboardViewProps) {
   const [seederApplied, setSeederApplied] = useState(false);
 
@@ -525,10 +527,15 @@ export default function DashboardView({
         </div>
 
         {/* Level Indicator Pill */}
-        <div id="level-pill" className="flex items-center gap-3 bg-zinc-950/80 border border-zinc-800/80 px-4 py-2.5 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.5)]">
-          <Trophy className="h-4.5 w-4.5 text-orange-500 fill-orange-500/10 animate-bounce" />
+        <div 
+          id="level-pill" 
+          onClick={onOpenRankingModal}
+          title="Abrir Central de Ligas e Classificação"
+          className="flex items-center gap-3 bg-zinc-950/80 hover:bg-zinc-900 border border-zinc-800/80 hover:border-orange-500/50 px-4 py-2.5 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.5)] cursor-pointer transition-all group"
+        >
+          <Trophy className="h-4.5 w-4.5 text-orange-500 fill-orange-500/10 group-hover:scale-110 transition-transform animate-bounce" />
           <div className="text-left">
-            <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest block">Classificação</span>
+            <span className="text-[10px] text-zinc-500 group-hover:text-orange-400 font-bold uppercase tracking-widest block transition-colors">Classificação</span>
             <span className="text-xs font-black text-white font-mono">Nível {level}</span>
           </div>
         </div>

@@ -46,6 +46,7 @@ interface ProfileViewProps {
   habits: Habit[];
   routine: RoutineItem[];
   onOpenStreakHub?: () => void;
+  onOpenRankingModal?: () => void;
 }
 
 export default function ProfileView({
@@ -66,7 +67,8 @@ export default function ProfileView({
   finances = [],
   habits = [],
   routine = [],
-  onOpenStreakHub
+  onOpenStreakHub,
+  onOpenRankingModal
 }: ProfileViewProps) {
   // Bio state
   const [bio, setBio] = useState(() => {
@@ -313,13 +315,17 @@ export default function ProfileView({
               <span className="font-mono text-white font-black">{streak} Dias</span>
             </div>
           </button>
-          <div className="flex items-center gap-3 bg-zinc-950 border border-zinc-850 px-4 py-2 rounded-2xl">
-            <Trophy className="h-5 w-5 text-orange-500 fill-orange-500/10" />
-            <div>
-              <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest block">Classe de Foco</span>
+          <button
+            onClick={onOpenRankingModal}
+            className="flex items-center gap-3 bg-zinc-950 border border-zinc-850 hover:border-amber-500/50 px-4 py-2 rounded-2xl transition-all cursor-pointer group"
+            title="Abrir Central de Ligas & Classificação"
+          >
+            <Trophy className="h-5 w-5 text-orange-500 fill-orange-500/10 group-hover:scale-110 transition-transform" />
+            <div className="text-left">
+              <span className="text-[10px] text-zinc-500 group-hover:text-amber-400 font-bold uppercase tracking-widest block transition-colors">Classificação & Ligas</span>
               <span className="text-xs font-black text-white uppercase font-mono">Nível {level}</span>
             </div>
-          </div>
+          </button>
         </div>
       </div>
 

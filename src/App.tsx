@@ -35,6 +35,8 @@ import HabitsTrackerView from './components/HabitsTrackerView';
 import AnuaisView from './components/AnuaisView';
 import RemindersView from './components/RemindersView';
 import StreakHubModal from './components/StreakHubModal';
+import { LeagueRankingModal } from './components/LeagueRankingModal';
+import { LeagueRankingView } from './components/LeagueRankingView';
 import { saveToSupabase, loadFromSupabase, loadMetadataFromSupabase, getSupabaseClient } from './lib/supabase';
 
 // Types
@@ -349,6 +351,7 @@ export default function App() {
   });
 
   const [isStreakHubOpen, setIsStreakHubOpen] = useState(false);
+  const [isRankingModalOpen, setIsRankingModalOpen] = useState(false);
 
   const [bookTracker, setBookTracker] = useState<BookTracker>(() => {
     try {
@@ -2341,6 +2344,18 @@ export default function App() {
             customCards={customCards}
             setCustomCards={setCustomCards}
             onOpenStreakHub={() => setIsStreakHubOpen(true)}
+            onOpenRankingModal={() => setActiveTab('classificacao')}
+          />
+        );
+      case 'classificacao':
+      case 'ligas':
+        return (
+          <LeagueRankingView
+            xpTotal={xpTotal}
+            level={level}
+            userName={userName}
+            addXp={addXp}
+            onClose={() => setActiveTab('dashboard')}
           />
         );
       case 'checklist':
@@ -2534,6 +2549,7 @@ export default function App() {
             habits={habits}
             routine={routine}
             onOpenStreakHub={() => setIsStreakHubOpen(true)}
+            onOpenRankingModal={() => setActiveTab('classificacao')}
           />
         );
       case 'configuracoes':
@@ -2675,6 +2691,7 @@ export default function App() {
         currentUser={currentUser}
         onAddReminder={(newRem) => setReminders(prev => [newRem, ...prev])}
         onOpenStreakHub={() => setIsStreakHubOpen(true)}
+        onOpenRankingModal={() => setIsRankingModalOpen(true)}
       />
 
       {/* 2. Main Workspace Area (responsive margin/padding for the fixed desktop HUD and mobile header) */}
@@ -2689,7 +2706,11 @@ export default function App() {
         <div className="absolute bottom-1/4 left-1/4 w-[400px] h-[400px] bg-amber-600/5 rounded-full blur-[100px] pointer-events-none" />
 
         <div 
-          className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative overflow-x-hidden"
+          className={`mx-auto py-8 relative overflow-x-hidden transition-all duration-300 ${
+            activeTab === 'classificacao' || activeTab === 'ligas'
+              ? 'w-full max-w-full px-2 sm:px-4 lg:px-6'
+              : 'max-w-6xl px-4 sm:px-6 lg:px-8'
+          }`}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
@@ -2844,6 +2865,16 @@ export default function App() {
         onUpdateMasterStreak={setStreak}
         onNavigateToTab={(tabId) => setActiveTab(tabId)}
         xpTotal={xpTotal}
+        addXp={addXp}
+      />
+
+      {/* Central de Ligas e Classificação (Duolingo Style Ranking) */}
+      <LeagueRankingModal
+        isOpen={isRankingModalOpen}
+        onClose={() => setIsRankingModalOpen(false)}
+        xpTotal={xpTotal}
+        level={level}
+        userName={userName}
         addXp={addXp}
       />
     </div>
