@@ -38,6 +38,7 @@ import StreakHubModal from './components/StreakHubModal';
 import { LeagueRankingModal } from './components/LeagueRankingModal';
 import { LeagueRankingView } from './components/LeagueRankingView';
 import { saveToSupabase, loadFromSupabase, loadMetadataFromSupabase, getSupabaseClient } from './lib/supabase';
+import { OfflineNotificationBanner } from './components/OfflineNotificationBanner';
 
 // Types
 import { 
@@ -2661,6 +2662,7 @@ export default function App() {
   if (!currentUser || isAuthModalOpen) {
     return (
       <div className="fixed inset-0 w-full h-full overflow-hidden bg-black">
+        <OfflineNotificationBanner />
         <AuthModal 
           isOpen={true} 
           onSuccess={handleAuthSuccess} 
@@ -2671,6 +2673,8 @@ export default function App() {
 
   return (
     <div id="main-app-container" className="flex flex-col lg:flex-row min-h-screen bg-[#040405] text-zinc-300 font-sans">
+      {/* PWA Offline / Reconnected Banner */}
+      <OfflineNotificationBanner />
       
       {/* 1. Dynamic HUD Navigation (Sidebar and mobile header integrated) */}
       <Sidebar 
