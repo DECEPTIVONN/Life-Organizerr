@@ -22,7 +22,10 @@ import {
   Check,
   Grid,
   Gift,
-  Lock
+  Lock,
+  Medal,
+  Gem,
+  Crown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -220,6 +223,15 @@ export const StreakHubModal: React.FC<StreakHubModalProps> = ({
     journal: Calendar
   };
 
+  const MILESTONE_CONFIG: Record<string, { Icon: React.ElementType; color: string; bg: string; border: string }> = {
+    m3: { Icon: Flame, color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/30' },
+    m7: { Icon: Award, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30' },
+    m14: { Icon: Medal, color: 'text-slate-300', bg: 'bg-slate-400/10', border: 'border-slate-400/30' },
+    m30: { Icon: Trophy, color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/30' },
+    m60: { Icon: Gem, color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/30' },
+    m100: { Icon: Crown, color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/30' },
+  };
+
   // Heatmap intensity background colors
   const getIntensityColor = (intensity: number) => {
     switch (intensity) {
@@ -330,9 +342,10 @@ export const StreakHubModal: React.FC<StreakHubModalProps> = ({
                       onClose();
                       onNavigateToTab('checklist');
                     }}
-                    className="px-4 py-2 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-bold text-xs rounded-xl shadow-md transition-all shrink-0 font-mono cursor-pointer"
+                    className="px-4 py-2 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-bold text-xs rounded-xl shadow-md transition-all shrink-0 font-mono cursor-pointer flex items-center gap-1.5"
                   >
-                    Ir para Checklist 🔥
+                    <span>Ir para Checklist</span>
+                    <Flame className="h-3.5 w-3.5 text-white fill-white/20" />
                   </button>
                 )}
               </motion.div>
@@ -379,7 +392,7 @@ export const StreakHubModal: React.FC<StreakHubModalProps> = ({
                         className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold rounded-xl border border-zinc-700 flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer"
                       >
                         <Share2 className="h-3.5 w-3.5 text-orange-400" />
-                        {showShareCard ? 'Ocultar Card' : '🎴 Card Compartilhável'}
+                        {showShareCard ? 'Ocultar Card' : 'Card Compartilhável'}
                       </button>
                       <button
                         onClick={() => setShowFreezeInfo(!showFreezeInfo)}
@@ -400,13 +413,14 @@ export const StreakHubModal: React.FC<StreakHubModalProps> = ({
                     >
                       <div className="space-y-1.5 text-center sm:text-left">
                         <div className="flex items-center justify-center sm:justify-start gap-2">
-                          <Flame className="h-5 w-5 text-orange-500 animate-pulse" />
+                          <Sparkles className="h-4 w-4 text-orange-400 animate-pulse" />
                           <span className="text-xs font-bold text-orange-300 uppercase font-mono tracking-wider">
                             Constância em Foco • Banner do Dia
                           </span>
                         </div>
-                        <h3 className="text-lg font-black text-white font-mono">
-                          🔥 {data.masterStreak} DIAS EM COMBO ININTERRUPTO
+                        <h3 className="text-lg font-black text-white font-mono flex items-center justify-center sm:justify-start gap-2">
+                          <Flame className="h-5 w-5 text-orange-500 fill-orange-500/20" />
+                          <span>{data.masterStreak} DIAS EM COMBO ININTERRUPTO</span>
                         </h3>
                         <p className="text-xs text-zinc-400">
                           Nível: <strong className="text-amber-400">{flameTier.tier}</strong> • Maior Sequência: <strong className="text-white">{data.bestMasterStreak} dias</strong>
@@ -417,7 +431,7 @@ export const StreakHubModal: React.FC<StreakHubModalProps> = ({
                         onClick={handleCopyShareCard}
                         className="px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs rounded-xl flex items-center gap-2 shadow-lg shadow-orange-500/20 transition-all shrink-0 cursor-pointer"
                       >
-                        {copiedText ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                        {copiedText ? <Check className="h-4 w-4 text-emerald-300" /> : <Copy className="h-4 w-4" />}
                         {copiedText ? 'Copiado!' : 'Copiar Texto'}
                       </button>
                     </motion.div>
@@ -430,11 +444,13 @@ export const StreakHubModal: React.FC<StreakHubModalProps> = ({
                       animate={{ opacity: 1, height: 'auto' }}
                       className="mt-4 pt-4 border-t border-zinc-800 text-xs text-zinc-400 space-y-2 leading-relaxed"
                     >
-                      <p>
-                        <strong className="text-orange-400">🛡️ Congelamento de Ofensiva (Streak Freeze):</strong> Se você pular um dia sem registrar tarefas, um escudo de congelamento é consumido automaticamente salvando sua sequência.
+                      <p className="flex items-start gap-1.5">
+                        <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                        <span><strong className="text-orange-400">Congelamento de Ofensiva (Streak Freeze):</strong> Se você pular um dia sem registrar tarefas, um escudo de congelamento é consumido automaticamente salvando sua sequência.</span>
                       </p>
-                      <p>
-                        <strong className="text-orange-400">🔥 Resgate de Ofensiva:</strong> Se você não possuía escudos e perdeu o streak ontem, você pode resgatá-lo hoje completando um desafio de alta produtividade.
+                      <p className="flex items-start gap-1.5">
+                        <Flame className="h-4 w-4 text-orange-400 shrink-0 mt-0.5" />
+                        <span><strong className="text-orange-400">Resgate de Ofensiva:</strong> Se você não possuía escudos e perdeu o streak ontem, você pode resgatá-lo hoje completando um desafio de alta produtividade.</span>
                       </p>
                     </motion.div>
                   )}
@@ -650,6 +666,8 @@ export const StreakHubModal: React.FC<StreakHubModalProps> = ({
                     {STREAK_MILESTONES.map((m) => {
                       const isUnlocked = data.masterStreak >= m.daysRequired;
                       const isClaimed = data.claimedMilestones?.includes(m.id);
+                      const config = MILESTONE_CONFIG[m.id] || { Icon: Trophy, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30' };
+                      const MilestoneIcon = config.Icon;
 
                       return (
                         <div
@@ -663,20 +681,31 @@ export const StreakHubModal: React.FC<StreakHubModalProps> = ({
                           }`}
                         >
                           <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-2.5">
-                              <div className={`p-2 rounded-xl border text-xs font-bold font-mono ${
+                            <div className="flex items-center gap-3">
+                              <div className={`p-2.5 rounded-xl border shrink-0 ${
                                 isClaimed
-                                  ? 'bg-zinc-800 border-zinc-700 text-zinc-400'
+                                  ? 'bg-zinc-800/80 border-zinc-700 text-zinc-500'
                                   : isUnlocked
-                                  ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
-                                  : 'bg-zinc-900 border-zinc-800 text-zinc-500'
+                                  ? `${config.bg} ${config.border} ${config.color}`
+                                  : 'bg-zinc-900 border-zinc-800 text-zinc-600'
                               }`}>
-                                {m.badge}
+                                <MilestoneIcon className="h-5 w-5" />
                               </div>
                               <div>
-                                <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
-                                  {m.title}
-                                </h4>
+                                <div className="flex items-center gap-2 mb-0.5">
+                                  <h4 className="text-xs font-bold text-white">
+                                    {m.title}
+                                  </h4>
+                                  <span className={`text-[9px] font-extrabold uppercase font-mono px-2 py-0.5 rounded-md border ${
+                                    isClaimed
+                                      ? 'bg-zinc-800 text-zinc-400 border-zinc-700'
+                                      : isUnlocked
+                                      ? `${config.bg} ${config.color} ${config.border}`
+                                      : 'bg-zinc-900 text-zinc-500 border-zinc-800'
+                                  }`}>
+                                    {m.badge}
+                                  </span>
+                                </div>
                                 <p className="text-[10px] text-zinc-400">{m.description}</p>
                               </div>
                             </div>
@@ -789,13 +818,14 @@ export const StreakHubModal: React.FC<StreakHubModalProps> = ({
           </div>
 
           {/* Footer Bar */}
-          <div className="p-4 border-t border-zinc-800 bg-zinc-950/80 flex items-center justify-between">
-            <span className="text-[11px] text-zinc-500 font-mono">
-              ⚡ Ofensiva ativa gera bônus constante de XP diário
-            </span>
+          <div className="p-4 border-t border-zinc-800 bg-zinc-950/80 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-[11px] text-zinc-400 font-mono">
+              <Zap className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+              <span>Ofensiva ativa gera bônus constante de XP diário</span>
+            </div>
             <button
               onClick={onClose}
-              className="px-5 py-2 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-xl shadow-lg shadow-orange-500/20 transition-all"
+              className="px-5 py-2 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-xl shadow-lg shadow-orange-500/20 transition-all cursor-pointer shrink-0"
             >
               Concluído
             </button>

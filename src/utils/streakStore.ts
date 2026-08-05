@@ -21,12 +21,12 @@ export interface StreakMilestone {
 }
 
 export const STREAK_MILESTONES: StreakMilestone[] = [
-  { id: 'm3', daysRequired: 3, title: 'Primeira Centelha', description: '3 dias seguidos de foco total', xpReward: 50, badge: '🔥 Centelha' },
-  { id: 'm7', daysRequired: 7, title: 'Hábito de Bronze', description: '1 semana ininterrupta de disciplina', xpReward: 150, badge: '🥉 Bronze 7D' },
-  { id: 'm14', daysRequired: 14, title: 'Dominador Semanal', description: '2 semanas consecutivas de vitórias', xpReward: 350, badge: '🥈 Prata 14D' },
-  { id: 'm30', daysRequired: 30, title: 'Chama Inabalável', description: '1 mês inteiro de foco de alto nível', xpReward: 800, badge: '🥇 Ouro 30D' },
-  { id: 'm60', daysRequired: 60, title: 'Mestre do Raciocínio', description: '60 dias de evolução sem interrupção', xpReward: 1800, badge: '💎 Diamante 60D' },
-  { id: 'm100', daysRequired: 100, title: 'Lenda de Foco', description: '100 dias de constância épica', xpReward: 5000, badge: '👑 Lenda 100D' }
+  { id: 'm3', daysRequired: 3, title: 'Primeira Centelha', description: '3 dias seguidos de foco total', xpReward: 50, badge: 'Centelha' },
+  { id: 'm7', daysRequired: 7, title: 'Hábito de Bronze', description: '1 semana ininterrupta de disciplina', xpReward: 150, badge: 'Bronze 7D' },
+  { id: 'm14', daysRequired: 14, title: 'Dominador Semanal', description: '2 semanas consecutivas de vitórias', xpReward: 350, badge: 'Prata 14D' },
+  { id: 'm30', daysRequired: 30, title: 'Chama Inabalável', description: '1 mês inteiro de foco de alto nível', xpReward: 800, badge: 'Ouro 30D' },
+  { id: 'm60', daysRequired: 60, title: 'Mestre do Raciocínio', description: '60 dias de evolução sem interrupção', xpReward: 1800, badge: 'Diamante 60D' },
+  { id: 'm100', daysRequired: 100, title: 'Lenda de Foco', description: '100 dias de constância épica', xpReward: 5000, badge: 'Lenda 100D' }
 ];
 
 export interface WeeklyStreakQuest {

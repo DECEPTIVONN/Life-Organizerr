@@ -845,14 +845,16 @@ export default function Sidebar({
                 {/* Micro Streak */}
                 <button
                   onClick={onOpenStreakHub}
-                  className="mt-3 w-full pt-3 border-t border-zinc-900 flex items-center justify-between hover:bg-orange-500/10 p-1.5 rounded-lg transition-colors group cursor-pointer"
+                  className="mt-3 w-full pt-3 border-t border-zinc-900 flex items-center justify-between hover:bg-orange-500/10 p-2 rounded-xl transition-all group cursor-pointer bg-zinc-900/40 border border-zinc-850/80"
                   title="Abrir Central de Ofensivas & Congelamento"
                 >
-                  <span className="text-[10px] text-gray-400 group-hover:text-orange-300 flex items-center gap-1 font-mono">
-                    <Flame className="h-3.5 w-3.5 text-orange-500 animate-pulse" /> Central de Ofensivas:
+                  <span className="text-[10px] text-zinc-300 group-hover:text-orange-300 flex items-center gap-1.5 font-mono font-bold">
+                    <Flame className="h-3.5 w-3.5 text-orange-500 fill-orange-500/20 animate-pulse" />
+                    <span>Central de Ofensivas</span>
                   </span>
-                  <span className="text-[10px] font-bold text-orange-400 font-mono bg-orange-500/10 border border-orange-500/20 px-2 py-0.5 rounded-md">
-                    🔥 {streak} dias
+                  <span className="text-[10px] font-bold text-orange-400 font-mono bg-orange-500/10 border border-orange-500/25 px-2 py-0.5 rounded-md flex items-center gap-1">
+                    <Flame className="h-3 w-3 text-orange-500 fill-orange-500/20" />
+                    <span>{streak} {streak === 1 ? 'dia' : 'dias'}</span>
                   </span>
                 </button>
               </div>
