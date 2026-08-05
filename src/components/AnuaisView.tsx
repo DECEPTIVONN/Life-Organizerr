@@ -631,7 +631,7 @@ export default function AnuaisView({
 
   // Build the dynamic checklist for the daily workspace view
   const buildDailyChecklist = (dateStr: string) => {
-    const list = [...dailyTasks];
+    const list = dailyTasks.filter((t: any) => t.isRecurring !== false || !t.createdDate || t.createdDate === dateStr);
     
     // Merge routine tasks
     if (routine) {

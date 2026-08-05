@@ -516,15 +516,17 @@ export default function App() {
               }
             }
 
-            const resetTasks = parsed.map((t: DailyTask) => ({
-              ...t,
-              completed: false,
-              subtasks: t.subtasks?.map((s) => ({ ...s, completed: false }))
-            }));
+            const resetTasks = parsed
+              .filter((t: DailyTask) => t.isRecurring !== false || (t.createdDate && t.createdDate === todayStr))
+              .map((t: DailyTask) => ({
+                ...t,
+                completed: false,
+                subtasks: t.subtasks?.map((s) => ({ ...s, completed: false }))
+              }));
             localStorage.setItem('mbc_last_daily_reset', todayStr);
             return resetTasks;
           }
-          return parsed;
+          return parsed.filter((t: DailyTask) => t.isRecurring !== false || !t.createdDate || t.createdDate === todayStr);
         }
       }
     } catch (e) {
@@ -1964,11 +1966,14 @@ export default function App() {
         });
 
         // Reset tasks for the new todayStr
-        setDailyTasks(prev => prev.map(t => ({
-          ...t,
-          completed: false,
-          subtasks: t.subtasks?.map(s => ({ ...s, completed: false }))
-        })));
+        setDailyTasks(prev => prev
+          .filter(t => t.isRecurring !== false || (t.createdDate && t.createdDate === todayStr))
+          .map(t => ({
+            ...t,
+            completed: false,
+            subtasks: t.subtasks?.map(s => ({ ...s, completed: false }))
+          }))
+        );
         localStorage.setItem('mbc_last_daily_reset', todayStr);
       }
     };

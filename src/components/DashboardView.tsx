@@ -363,10 +363,15 @@ export default function DashboardView({
     ? Math.round((goals.reduce((acc, g) => acc + (g.actionsDone / g.actionsTotal), 0) / goals.length) * 100) 
     : 0;
 
+  // Filter daily tasks for today
+  const dNow = new Date();
+  const todayDateStr = `${dNow.getFullYear()}-${String(dNow.getMonth() + 1).padStart(2, '0')}-${String(dNow.getDate()).padStart(2, '0')}`;
+  const todayTasks = dailyTasks.filter(t => t.isRecurring !== false || !t.createdDate || t.createdDate === todayDateStr);
+
   // Calculate Checklist completion rate for today
-  const completedChecklistCount = dailyTasks.filter(t => t.completed).length;
-  const checklistPercent = dailyTasks.length > 0 
-    ? Math.round((completedChecklistCount / dailyTasks.length) * 100) 
+  const completedChecklistCount = todayTasks.filter(t => t.completed).length;
+  const checklistPercent = todayTasks.length > 0 
+    ? Math.round((completedChecklistCount / todayTasks.length) * 100) 
     : 0;
 
   // Calculate Habits completed today
@@ -420,7 +425,7 @@ export default function DashboardView({
     {
       id: 'checklist',
       title: 'Checklist Diário',
-      subtitle: `${completedChecklistCount} de ${dailyTasks.length} rituais diários`,
+      subtitle: `${completedChecklistCount} de ${todayTasks.length} rituais diários`,
       progress: checklistPercent,
       icon: CheckSquare,
       color: 'from-orange-500 to-amber-500'
@@ -645,7 +650,7 @@ export default function DashboardView({
             </div>
             <div className="mt-4">
               <span className="text-4xl font-black text-white font-mono drop-shadow-md">{completedChecklistCount}</span>
-              <span className="text-xs text-gray-400 ml-2 font-bold">DE {dailyTasks.length} RITUAIS</span>
+              <span className="text-xs text-gray-400 ml-2 font-bold">DE {todayTasks.length} RITUAIS</span>
             </div>
             <div className="mt-2 border-t border-zinc-800/80 pt-2">
               <div className="w-full bg-[#18181b]/90 h-1.5 rounded-full overflow-hidden border border-zinc-800/50">
@@ -1241,7 +1246,7 @@ export default function DashboardView({
                   </p>
 
                   <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1 scrollbar-thin">
-                    {dailyTasks.map(task => (
+                    {todayTasks.map(task => (
                       <div 
                         key={task.id} 
                         className={`p-3 rounded-xl border flex items-center justify-between transition-all ${
@@ -1281,7 +1286,7 @@ export default function DashboardView({
                       </div>
                     ))}
 
-                    {dailyTasks.length === 0 && (
+                    {todayTasks.length === 0 && (
                       <div className="py-12 text-center text-zinc-500 border border-dashed border-zinc-850 rounded-2xl bg-zinc-950/20">
                         <CheckSquare className="h-8 w-8 text-zinc-600 mx-auto mb-2" />
                         <p className="text-xs">Nenhum ritual cadastrado para hoje.</p>
@@ -1295,11 +1300,11 @@ export default function DashboardView({
                     )}
                   </div>
 
-                  {dailyTasks.length > 0 && (
+                  {todayTasks.length > 0 && (
                     <div className="mt-4 pt-4 border-t border-zinc-900 flex justify-between items-center text-xs">
                       <span className="text-zinc-500 font-medium">Status de Conclusão:</span>
                       <span className="text-emerald-400 font-extrabold font-mono flex items-center gap-1">
-                        <CheckCircle className="h-3.5 w-3.5" /> {completedChecklistCount}/{dailyTasks.length} Cumpridos
+                        <CheckCircle className="h-3.5 w-3.5" /> {completedChecklistCount}/{todayTasks.length} Cumpridos
                       </span>
                     </div>
                   )}

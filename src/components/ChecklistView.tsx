@@ -188,18 +188,32 @@ export default function ChecklistView({
   // Active tasks for selectedDate
   const activeTasks = (() => {
     if (selectedDate === todayStr) {
-      return dailyTasks;
+      return dailyTasks.filter(t => t.isRecurring !== false || !t.createdDate || t.createdDate === todayStr);
     }
     const note = calendarNotes?.find(n => n.date === selectedDate);
     if (note && note.checklist && note.checklist.length > 0) {
-      return note.checklist;
+      return note.checklist.filter(t => t.isRecurring !== false || !t.createdDate || t.createdDate === selectedDate);
     }
-    return dailyTasks.map(t => ({
+    return dailyTasks.filter(t => t.isRecurring !== false || !t.createdDate || t.createdDate === selectedDate).map(t => ({
       ...t,
       completed: false,
       subtasks: t.subtasks?.map(s => ({ ...s, completed: false }))
     }));
   })();
+
+  // Automatically remove stale non-recurring tasks from dailyTasks when on today
+  useEffect(() => {
+    if (isToday && dailyTasks.length > 0) {
+      const hasStaleNonRecurring = dailyTasks.some(
+        t => t.isRecurring === false && t.createdDate && t.createdDate !== todayStr
+      );
+      if (hasStaleNonRecurring) {
+        setDailyTasks(prev => prev.filter(
+          t => t.isRecurring !== false || !t.createdDate || t.createdDate === todayStr
+        ));
+      }
+    }
+  }, [isToday, todayStr, dailyTasks, setDailyTasks]);
 
   const updateActiveTasks = (updater: (prev: DailyTask[]) => DailyTask[]) => {
     if (selectedDate === todayStr) {
@@ -790,6 +804,7 @@ export default function ChecklistView({
             category: editCategory,
             period: editPeriod,
             isRecurring: editIsRecurring,
+            createdDate: t.createdDate || selectedDate || todayStr,
             reminderTime: editReminderTime.trim() || undefined,
             subtasks: editSubtasks
           };

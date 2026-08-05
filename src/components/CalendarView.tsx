@@ -111,7 +111,7 @@ export default function CalendarView({
   // Helper to construct/update a day's checklist incorporating dailyTasks (morning, general, night) 
   // as well as the virtual Leitura and Bíblia tasks.
   const getFullDailyTasks = (): DailyTask[] => {
-    const list = [...dailyTasks];
+    const list = dailyTasks.filter(t => t.isRecurring !== false || !t.createdDate || t.createdDate === selectedDateStr);
     
     // Add weekly routine tasks for the selected day of the week
     if (selectedDateStr && routine) {
