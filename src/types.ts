@@ -132,6 +132,7 @@ export interface RoutineItem {
   task: string;
   completed: boolean;
   isEveryDay?: boolean;
+  isWeeklyRecurring?: boolean;
   completedDays?: number[]; // indices of days completed (0-6)
   category?: string; // e.g., "Trabalho", "Exercício", "Estudo", "Lazer", "Rotina", "Outro"
   reminderTime?: string; // e.g., "08:00"

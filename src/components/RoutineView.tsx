@@ -68,6 +68,7 @@ export default function RoutineView({
   const [reminderTime, setReminderTime] = useState('07:30');
   const [taskText, setTaskText] = useState('');
   const [isEveryDay, setIsEveryDay] = useState(false);
+  const [isWeeklyRecurring, setIsWeeklyRecurring] = useState(true);
   const [viewMode, setViewMode] = useState<'lista' | 'quadro'>('lista');
 
   // Edit / Clear states
@@ -76,6 +77,7 @@ export default function RoutineView({
   const [editReminderTime, setEditReminderTime] = useState('07:30');
   const [editTaskText, setEditTaskText] = useState('');
   const [editIsEveryDay, setEditIsEveryDay] = useState(false);
+  const [editIsWeeklyRecurring, setEditIsWeeklyRecurring] = useState(true);
   const [editSelectedDay, setEditSelectedDay] = useState<number>(1);
   const [showClearModal, setShowClearModal] = useState(false);
 
@@ -344,6 +346,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
       task: taskText.trim(),
       completed: false,
       isEveryDay,
+      isWeeklyRecurring,
       completedDays: [],
       reminderTime: reminderTime.trim() || time
     };
@@ -351,6 +354,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
     setRoutine([...routine, newItem]);
     setTaskText('');
     setIsEveryDay(false);
+    setIsWeeklyRecurring(true);
     setIsAdding(false);
 
     // Reward XP
@@ -385,6 +389,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
     setEditReminderTime(item.reminderTime || item.time || '08:00');
     setEditTaskText(item.task || '');
     setEditIsEveryDay(!!item.isEveryDay);
+    setEditIsWeeklyRecurring(item.isWeeklyRecurring !== false);
     setEditSelectedDay(item.dayOfWeek >= 0 ? item.dayOfWeek : selectedDay);
   };
 
@@ -399,6 +404,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
           time: editTime,
           task: editTaskText.trim(),
           isEveryDay: editIsEveryDay,
+          isWeeklyRecurring: editIsWeeklyRecurring,
           dayOfWeek: editIsEveryDay ? -1 : editSelectedDay,
           reminderTime: editReminderTime.trim() || editTime
         };
@@ -560,31 +566,6 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                   />
                 </div>
               </div>
-
-              {/* Quick Presets for Custom Time Intervals */}
-              <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mr-1">Atalhos de Horário:</span>
-                {['7:30 - 8:43', '07:30 - 08:43', '08:00 - 09:00', '09:00 - 10:30', '14:00 - 15:30', '19:00 - 20:00'].map((preset) => (
-                  <button
-                    key={preset}
-                    type="button"
-                    onClick={() => {
-                      setTime(preset);
-                      const firstTimeMatch = preset.match(/\d{1,2}:\d{2}/);
-                      if (firstTimeMatch) {
-                        setReminderTime(firstTimeMatch[0]);
-                      }
-                    }}
-                    className={`px-2 py-0.5 text-[10px] font-mono rounded-md border transition-all ${
-                      time === preset
-                        ? 'bg-orange-500/20 border-orange-500/50 text-orange-400 font-bold'
-                        : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'
-                    }`}
-                  >
-                    {preset}
-                  </button>
-                ))}
-              </div>
             </div>
 
             {/* Repetition Options Selector (IMPROVED DESIGN / CHECHBOX UPGRADE) */}
@@ -641,6 +622,23 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                   </div>
                 </button>
               </div>
+            </div>
+
+            {/* Checkbox: Repetir Semanalmente */}
+            <div className="pt-2 border-t border-zinc-850 flex items-center justify-between">
+              <label htmlFor="add-repeat-weekly" className="flex items-center gap-2.5 cursor-pointer text-xs font-bold text-zinc-300 hover:text-white select-none">
+                <input
+                  id="add-repeat-weekly"
+                  type="checkbox"
+                  checked={isWeeklyRecurring}
+                  onChange={(e) => setIsWeeklyRecurring(e.target.checked)}
+                  className="w-4 h-4 rounded border-zinc-700 bg-zinc-950 text-orange-500 focus:ring-orange-500/20 focus:ring-offset-0 cursor-pointer accent-orange-500"
+                />
+                <span>Repetir semanalmente</span>
+              </label>
+              <span className="text-[10px] font-mono text-zinc-500">
+                {isWeeklyRecurring ? 'Atividade Recorrente' : 'Atividade Pontual (Única)'}
+              </span>
             </div>
 
             <div className="flex justify-end gap-2 pt-2 border-t border-zinc-800">
@@ -733,11 +731,15 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                         {item.task}
                       </span>
 
-                      {item.isEveryDay && (
+                      {item.isEveryDay ? (
                         <span className="text-[9px] bg-orange-500/10 text-orange-400 border border-orange-500/20 px-1.5 py-0.5 rounded font-mono uppercase tracking-wide inline-flex items-center gap-0.5 flex-shrink-0">
                           Todos os dias
                         </span>
-                      )}
+                      ) : item.isWeeklyRecurring === false ? (
+                        <span className="text-[9px] bg-zinc-800 text-zinc-400 border border-zinc-700/60 px-1.5 py-0.5 rounded font-mono uppercase tracking-wide inline-flex items-center gap-0.5 flex-shrink-0">
+                          Não se repete
+                        </span>
+                      ) : null}
 
                       {item.reminderTime && (
                         <span className="text-[9px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-1.5 py-0.5 rounded font-mono font-bold uppercase tracking-wide inline-flex items-center gap-0.5 flex-shrink-0">
@@ -829,9 +831,11 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                 <span className="font-mono text-[9px] text-orange-500 font-bold bg-orange-500/5 px-1 py-0.5 rounded">
                                   {item.time}
                                 </span>
-                                {item.isEveryDay && (
+                                {item.isEveryDay ? (
                                   <span className="text-[7px] font-bold text-gray-500 uppercase tracking-widest">Diário</span>
-                                )}
+                                ) : item.isWeeklyRecurring === false ? (
+                                  <span className="text-[7px] font-bold text-zinc-500 uppercase tracking-widest">Pontual</span>
+                                ) : null}
                               </div>
 
                               <p className={`text-[10.5px] leading-snug font-medium break-words ${isItemCompleted ? 'line-through text-gray-500' : 'text-zinc-300'}`}>
@@ -1751,12 +1755,12 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1 flex items-center justify-between">
                         <span>Horário Atividade</span>
-                        <span className="text-[9px] text-orange-400 font-mono">Ex: 7:30 - 8:43</span>
+                        <span className="text-[9px] text-orange-400 font-mono">Ex: 07:30 - 08:43</span>
                       </label>
                       <input
                         type="text"
@@ -1769,7 +1773,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                             setEditReminderTime(firstTimeMatch[0]);
                           }
                         }}
-                        placeholder="Ex: 7:30 - 8:43 ou 08:00"
+                        placeholder="Ex: 07:30 - 08:43 ou 08:00"
                         className="w-full bg-zinc-900 border border-zinc-800 focus:border-orange-500/50 rounded-xl px-3.5 py-2.5 text-xs text-white outline-none font-mono placeholder:text-zinc-600 transition-all"
                         required
                       />
@@ -1777,7 +1781,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
 
                     <div>
                       <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1 flex items-center gap-1">
-                        <Bell className="h-3 w-3 text-orange-500" /> Alarme
+                        <Bell className="h-3.5 w-3.5 text-orange-500" /> Horário do Lembrete
                       </label>
                       <input
                         type="time"
@@ -1788,47 +1792,41 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                     </div>
                   </div>
 
-                  {/* Preset buttons inside edit modal */}
-                  <div className="flex flex-wrap gap-1.5 pt-0.5">
-                    {['7:30 - 8:43', '07:30 - 08:43', '08:00 - 09:00', '14:00 - 15:30'].map((preset) => (
-                      <button
-                        key={preset}
-                        type="button"
-                        onClick={() => {
-                          setEditTime(preset);
-                          const firstTimeMatch = preset.match(/\d{1,2}:\d{2}/);
-                          if (firstTimeMatch) {
-                            setEditReminderTime(firstTimeMatch[0]);
-                          }
-                        }}
-                        className={`px-2 py-0.5 text-[10px] font-mono rounded-md border transition-all ${
-                          editTime === preset
-                            ? 'bg-orange-500/20 border-orange-500/50 text-orange-400 font-bold'
-                            : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
-                        }`}
-                      >
-                        {preset}
-                      </button>
-                    ))}
+                  {/* Contextual Reminder Info Note */}
+                  <div className="bg-orange-500/5 border border-orange-500/20 rounded-xl p-2.5 flex items-start gap-2">
+                    <Bell className="h-3.5 w-3.5 text-orange-400 shrink-0 mt-0.5" />
+                    <div className="text-[11px] text-zinc-300 leading-snug">
+                      <span className="font-bold text-orange-400 block mb-0.5">Lembrete Configurado:</span>
+                      {editReminderTime ? (
+                        <span>
+                          Notificação recorrente programada para <strong className="text-white font-mono">{editReminderTime}</strong> no(s) dia(s):{' '}
+                          <strong className="text-orange-300">
+                            {editIsEveryDay ? 'Todos os Dias (Dom a Sáb)' : `Toda ${daysOfWeek.find(d => d.id === editSelectedDay)?.fullName}`}
+                          </strong>
+                        </span>
+                      ) : (
+                        <span className="text-zinc-500 italic">Sem lembrete numérico ativo. Defina um horário acima para disparar alertas.</span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                  <div>
-                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1.5">
-                      Frequência
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setEditIsEveryDay(!editIsEveryDay)}
-                      className={`w-full py-2.5 px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                        editIsEveryDay
-                          ? 'bg-orange-500/10 border-orange-500/30 text-orange-400'
-                          : 'bg-zinc-900 border-zinc-800 text-zinc-400'
-                      }`}
-                    >
-                      {editIsEveryDay ? 'Todos os Dias' : 'Dia Específico'}
-                    </button>
-                  </div>
+                <div>
+                  <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1.5">
+                    Frequência de Dias
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setEditIsEveryDay(!editIsEveryDay)}
+                    className={`w-full py-2.5 px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                      editIsEveryDay
+                        ? 'bg-orange-500/10 border-orange-500/30 text-orange-400'
+                        : 'bg-zinc-900 border-zinc-800 text-zinc-400'
+                    }`}
+                  >
+                    {editIsEveryDay ? 'Todos os Dias' : 'Dia Específico'}
+                  </button>
+                </div>
 
                 {!editIsEveryDay && (
                   <div>
@@ -1853,6 +1851,23 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                     </div>
                   </div>
                 )}
+
+                {/* Checkbox: Repetir Semanalmente */}
+                <div className="pt-2 border-t border-zinc-900 flex items-center justify-between">
+                  <label htmlFor="edit-repeat-weekly" className="flex items-center gap-2.5 cursor-pointer text-xs font-bold text-zinc-300 hover:text-white select-none">
+                    <input
+                      id="edit-repeat-weekly"
+                      type="checkbox"
+                      checked={editIsWeeklyRecurring}
+                      onChange={(e) => setEditIsWeeklyRecurring(e.target.checked)}
+                      className="w-4 h-4 rounded border-zinc-700 bg-zinc-950 text-orange-500 focus:ring-orange-500/20 focus:ring-offset-0 cursor-pointer accent-orange-500"
+                    />
+                    <span>Repetir semanalmente</span>
+                  </label>
+                  <span className="text-[10px] font-mono text-zinc-500">
+                    {editIsWeeklyRecurring ? 'Atividade Recorrente' : 'Atividade Pontual'}
+                  </span>
+                </div>
 
                 <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-900">
                   <button
