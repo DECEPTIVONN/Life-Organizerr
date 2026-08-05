@@ -392,6 +392,9 @@ export default function ChecklistView({
   const [cellStartTime, setCellStartTime] = useState('08:00');
   const [cellEndTime, setCellEndTime] = useState('09:00');
   const [cellSelectedDays, setCellSelectedDays] = useState<number[]>([1]);
+  const [cellIsWeeklyRecurring, setCellIsWeeklyRecurring] = useState(true);
+  const [cellEnableReminder, setCellEnableReminder] = useState(true);
+  const [cellReminderTime, setCellReminderTime] = useState('08:00');
   const [showClearModal, setShowClearModal] = useState(false);
 
   // ----------------------------------------------------
@@ -514,6 +517,9 @@ export default function ChecklistView({
     const effStartTime = block.startTime || hour;
     setCellStartTime(effStartTime);
     setCellEndTime(block.endTime || getNextHour(hour));
+    setCellIsWeeklyRecurring(block.isWeeklyRecurring !== false);
+    setCellEnableReminder(Boolean(block.reminderTime));
+    setCellReminderTime(block.reminderTime || effStartTime);
 
     // Find all keys and days in gridRoutine matching this block text and start time
     const matchedKeys: string[] = [];
@@ -544,6 +550,9 @@ export default function ChecklistView({
     setCellStartTime(hour);
     setCellEndTime(getNextHour(hour));
     setCellSelectedDays([dayId]);
+    setCellIsWeeklyRecurring(true);
+    setCellEnableReminder(true);
+    setCellReminderTime(hour);
     setIsAddingBlock(true);
   };
 
@@ -2505,7 +2514,7 @@ export default function ChecklistView({
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: 15 }}
                   transition={{ type: "spring", duration: 0.35 }}
-                  className="cursor-default bg-zinc-950 border border-zinc-850 w-full max-w-md my-auto rounded-2xl overflow-hidden shadow-2xl flex flex-col"
+                  className="cursor-default bg-zinc-950 border border-zinc-850 w-full max-w-md sm:max-w-xl md:max-w-3xl lg:max-w-4xl my-auto rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
                 >
                   {/* Header */}
                   <div className="p-5 border-b border-zinc-900 flex items-center justify-between">
@@ -2524,145 +2533,242 @@ export default function ChecklistView({
                   </div>
 
                   {/* Form */}
-                  <div className="p-5 space-y-5">
-                    {/* Atividade */}
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider block">Atividade</label>
-                      <input
-                        type="text"
-                        value={cellText}
-                        onChange={(e) => setCellText(e.target.value)}
-                        placeholder="Nome do bloco de tempo"
-                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500/50 transition-colors"
-                        maxLength={40}
-                        autoFocus
-                      />
-                    </div>
+                  <div className="p-5 space-y-6 overflow-y-auto flex-1">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                      {/* Left Column: Activity Name, Category, Days */}
+                      <div className="space-y-4">
+                        {/* Atividade */}
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider block">Atividade</label>
+                          <input
+                            type="text"
+                            value={cellText}
+                            onChange={(e) => setCellText(e.target.value)}
+                            placeholder="Nome do bloco de tempo"
+                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500/50 transition-colors"
+                            maxLength={40}
+                            autoFocus
+                          />
+                        </div>
 
-                    {/* Dias da Semana (Selecione Vários) */}
-                    <div className="space-y-2">
-                      <label className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider block">Dias da semana (selecione vários)</label>
-                      <div className="flex gap-1.5 justify-between">
-                        {DAYS.map((day) => {
-                          const isSelected = cellSelectedDays.includes(day.id);
-                          const dayLabel = day.name.substring(0, 3); // "Seg", "Ter", etc.
-                          return (
-                            <button
-                              key={day.id}
-                              type="button"
-                              onClick={() => {
-                                if (cellSelectedDays.includes(day.id)) {
-                                  // Don't allow empty days list
-                                  if (cellSelectedDays.length > 1) {
-                                    setCellSelectedDays(cellSelectedDays.filter(id => id !== day.id));
+                        {/* Categoria */}
+                        <div className="space-y-2">
+                          <label className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider block">Categoria</label>
+                          <div className="grid grid-cols-3 gap-2">
+                            {[
+                              { id: 'Trabalho', icon: Briefcase, color: 'bg-indigo-600' },
+                              { id: 'Exercício', icon: Dumbbell, color: 'bg-emerald-600' },
+                              { id: 'Estudo', icon: BookOpen, color: 'bg-amber-600' },
+                              { id: 'Lazer', icon: Gamepad2, color: 'bg-rose-600' },
+                              { id: 'Rotina', icon: Coffee, color: 'bg-violet-500' },
+                              { id: 'Outro', icon: MoreHorizontal, color: 'bg-zinc-700' }
+                            ].map((cat) => {
+                              const isSelected = cellColor.toLowerCase() === cat.id.toLowerCase();
+                              const IconComponent = cat.icon;
+                              return (
+                                <button
+                                  key={cat.id}
+                                  type="button"
+                                  onClick={() => setCellColor(cat.id)}
+                                  className={`py-2 px-3 rounded-xl border text-xs font-bold flex flex-col items-center gap-1.5 transition-all ${
+                                    isSelected
+                                      ? `${cat.color} border-transparent text-white scale-[1.03] shadow-md`
+                                      : 'bg-zinc-900 border-zinc-850 text-zinc-400 hover:text-white hover:border-zinc-750'
+                                  }`}
+                                >
+                                  <IconComponent className="h-4 w-4" />
+                                  <span>{cat.id}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Dias da Semana (Selecione Vários) */}
+                        <div className="space-y-2">
+                          <label className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider block">Dias da semana (selecione vários)</label>
+                          <div className="flex gap-1.5 justify-between">
+                            {DAYS.map((day) => {
+                              const isSelected = cellSelectedDays.includes(day.id);
+                              const dayLabel = day.name.substring(0, 3);
+                              return (
+                                <button
+                                  key={day.id}
+                                  type="button"
+                                  onClick={() => {
+                                    if (cellSelectedDays.includes(day.id)) {
+                                      if (cellSelectedDays.length > 1) {
+                                        setCellSelectedDays(cellSelectedDays.filter(id => id !== day.id));
+                                      }
+                                    } else {
+                                      setCellSelectedDays([...cellSelectedDays, day.id]);
+                                    }
+                                  }}
+                                  className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all ${
+                                    isSelected
+                                      ? 'bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-500/10 shadow-orange-500/25 border-transparent'
+                                      : 'bg-zinc-900 border-zinc-850 text-zinc-400 hover:text-white hover:border-zinc-750'
+                                  }`}
+                                >
+                                  {dayLabel}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right Column: Schedule, Enhanced Checkboxes & Reminder */}
+                      <div className="space-y-4">
+                        {/* Início & Fim */}
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider block">Horário do Bloco</label>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <span className="text-[9px] text-zinc-500 uppercase font-mono block">Início</span>
+                              <input
+                                type="text"
+                                value={cellStartTime}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setCellStartTime(val);
+                                  const firstTimeMatch = val.match(/\d{1,2}:\d{2}/);
+                                  if (firstTimeMatch) {
+                                    setCellReminderTime(firstTimeMatch[0]);
                                   }
-                                } else {
-                                  setCellSelectedDays([...cellSelectedDays, day.id]);
-                                }
-                              }}
-                              className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all ${
-                                isSelected
-                                  ? 'bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-500/10 shadow-orange-500/25 border-transparent'
-                                  : 'bg-zinc-900 border-zinc-850 text-zinc-400 hover:text-white hover:border-zinc-750'
-                              }`}
-                            >
-                              {dayLabel}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
+                                }}
+                                placeholder="07:30"
+                                className="w-full bg-zinc-900 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono transition-colors"
+                              />
+                            </div>
 
-                    {/* Início & Fim */}
-                    <div className="space-y-2">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider block flex items-center justify-between">
-                            <span>Início</span>
-                            <span className="text-[9px] text-orange-400 font-mono font-normal">ex: 07:30</span>
-                          </label>
-                          <input
-                            type="text"
-                            value={cellStartTime}
-                            onChange={(e) => setCellStartTime(e.target.value)}
-                            placeholder="07:30"
-                            className="w-full bg-zinc-900 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono transition-colors"
-                          />
+                            <div className="space-y-1">
+                              <span className="text-[9px] text-zinc-500 uppercase font-mono block">Fim</span>
+                              <input
+                                type="text"
+                                value={cellEndTime}
+                                onChange={(e) => setCellEndTime(e.target.value)}
+                                placeholder="08:43"
+                                className="w-full bg-zinc-900 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono transition-colors"
+                              />
+                            </div>
+                          </div>
                         </div>
 
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider block flex items-center justify-between">
-                            <span>Fim</span>
-                            <span className="text-[9px] text-orange-400 font-mono font-normal">ex: 08:43</span>
+                        {/* Enhanced Checkboxes */}
+                        <div className="space-y-2.5 pt-1">
+                          <label className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider block">
+                            Opções e Lembretes
                           </label>
-                          <input
-                            type="text"
-                            value={cellEndTime}
-                            onChange={(e) => setCellEndTime(e.target.value)}
-                            placeholder="08:43"
-                            className="w-full bg-zinc-900 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono transition-colors"
-                          />
-                        </div>
-                      </div>
 
-                      {/* Quick Presets for Custom Intervals */}
-                      <div className="flex flex-wrap gap-1.5 pt-1">
-                        <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider self-center">Atalhos:</span>
-                        {[
-                          { label: '7:30 - 8:43', start: '07:30', end: '08:43' },
-                          { label: '08:00 - 09:00', start: '08:00', end: '09:00' },
-                          { label: '09:00 - 10:30', start: '09:00', end: '10:30' },
-                          { label: '14:00 - 15:30', start: '14:00', end: '15:30' }
-                        ].map((preset) => (
-                          <button
-                            key={preset.label}
-                            type="button"
-                            onClick={() => {
-                              setCellStartTime(preset.start);
-                              setCellEndTime(preset.end);
-                            }}
-                            className={`px-2 py-0.5 text-[9px] font-mono rounded border transition-all ${
-                              cellStartTime === preset.start && cellEndTime === preset.end
-                                ? 'bg-orange-500/20 border-orange-500/50 text-orange-400 font-bold'
-                                : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+                          {/* Checkbox 1: Repetir Semanalmente */}
+                          <label 
+                            className={`group flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer select-none ${
+                              cellIsWeeklyRecurring
+                                ? 'bg-orange-500/10 border-orange-500/40 text-white shadow-sm'
+                                : 'bg-zinc-900/80 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
                             }`}
                           >
-                            {preset.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+                            <div className="flex items-center gap-3">
+                              <div className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${
+                                cellIsWeeklyRecurring
+                                  ? 'bg-orange-500 text-white shadow-md shadow-orange-500/30 ring-2 ring-orange-500/20'
+                                  : 'bg-zinc-950 border border-zinc-700 text-transparent group-hover:border-zinc-500'
+                              }`}>
+                                <Check className="h-3.5 w-3.5 stroke-[3]" />
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-xs font-bold">Repetir semanalmente</span>
+                                <span className="text-[10px] text-zinc-400">
+                                  {cellIsWeeklyRecurring ? 'Bloco recorrente todas as semanas' : 'Bloco pontual (único)'}
+                                </span>
+                              </div>
+                            </div>
+                            <input
+                              type="checkbox"
+                              checked={cellIsWeeklyRecurring}
+                              onChange={(e) => setCellIsWeeklyRecurring(e.target.checked)}
+                              className="sr-only"
+                            />
+                          </label>
 
-                    {/* Categoria */}
-                    <div className="space-y-2">
-                      <label className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider block">Categoria</label>
-                      <div className="grid grid-cols-3 gap-2">
-                        {[
-                          { id: 'Trabalho', icon: Briefcase, color: 'bg-indigo-600' },
-                          { id: 'Exercício', icon: Dumbbell, color: 'bg-emerald-600' },
-                          { id: 'Estudo', icon: BookOpen, color: 'bg-amber-600' },
-                          { id: 'Lazer', icon: Gamepad2, color: 'bg-rose-600' },
-                          { id: 'Rotina', icon: Coffee, color: 'bg-violet-500' },
-                          { id: 'Outro', icon: MoreHorizontal, color: 'bg-zinc-700' }
-                        ].map((cat) => {
-                          const isSelected = cellColor.toLowerCase() === cat.id.toLowerCase();
-                          const IconComponent = cat.icon;
-                          return (
-                            <button
-                              key={cat.id}
-                              type="button"
-                              onClick={() => setCellColor(cat.id)}
-                              className={`py-2 px-3 rounded-xl border text-xs font-bold flex flex-col items-center gap-1.5 transition-all ${
-                                isSelected
-                                  ? `${cat.color} border-transparent text-white scale-[1.03] shadow-md`
-                                  : 'bg-zinc-900 border-zinc-850 text-zinc-400 hover:text-white hover:border-zinc-750'
-                              }`}
-                            >
-                              <IconComponent className="h-4 w-4" />
-                              <span>{cat.id}</span>
-                            </button>
-                          );
-                        })}
+                          {/* Checkbox 2: Receber Lembrete (Notificação) */}
+                          <label 
+                            className={`group flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer select-none ${
+                              cellEnableReminder
+                                ? 'bg-orange-500/10 border-orange-500/40 text-white shadow-sm'
+                                : 'bg-zinc-900/80 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${
+                                cellEnableReminder
+                                  ? 'bg-orange-500 text-white shadow-md shadow-orange-500/30 ring-2 ring-orange-500/20'
+                                  : 'bg-zinc-950 border border-zinc-700 text-transparent group-hover:border-zinc-500'
+                              }`}>
+                                <Check className="h-3.5 w-3.5 stroke-[3]" />
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-xs font-bold flex items-center gap-1.5">
+                                  <Bell className="h-3.5 w-3.5 text-orange-400" /> Receber lembrete (Notificação)
+                                </span>
+                                <span className="text-[10px] text-zinc-400">
+                                  {cellEnableReminder ? 'Notificação ativa no horário configurado' : 'Sem notificações para este bloco'}
+                                </span>
+                              </div>
+                            </div>
+                            <input
+                              type="checkbox"
+                              checked={cellEnableReminder}
+                              onChange={(e) => setCellEnableReminder(e.target.checked)}
+                              className="sr-only"
+                            />
+                          </label>
+                        </div>
+
+                        {/* Reminder Time Input if enabled */}
+                        {cellEnableReminder && (
+                          <div className="space-y-2 pt-1 animate-fadeIn">
+                            <label className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider block flex items-center justify-between">
+                              <span className="flex items-center gap-1.5">
+                                <Bell className="h-3.5 w-3.5 text-orange-500" /> Horário do Lembrete
+                              </span>
+                              {cellReminderTime && (
+                                <button
+                                  type="button"
+                                  onClick={() => setCellReminderTime('')}
+                                  className="text-[9px] text-zinc-500 hover:text-orange-400 lowercase font-mono"
+                                >
+                                  limpar
+                                </button>
+                              )}
+                            </label>
+                            <input
+                              type="time"
+                              value={cellReminderTime}
+                              onChange={(e) => setCellReminderTime(e.target.value)}
+                              className="w-full bg-zinc-900 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono transition-colors"
+                            />
+
+                            {/* Notificação Lembrete Status Note */}
+                            <div className="bg-orange-500/5 border border-orange-500/20 rounded-xl p-2.5 flex items-start gap-2">
+                              <Bell className="h-3.5 w-3.5 text-orange-400 shrink-0 mt-0.5" />
+                              <div className="text-[11px] text-zinc-300 leading-snug">
+                                <span className="font-bold text-orange-400 block mb-0.5">Lembrete Programado:</span>
+                                {cellReminderTime ? (
+                                  <span>
+                                    Notificação {cellIsWeeklyRecurring ? 'recorrente' : 'pontual'} para às <strong className="text-white font-mono">{cellReminderTime}</strong> no(s) dia(s):{' '}
+                                    <strong className="text-orange-300">
+                                      {cellSelectedDays.map(id => DAYS.find(d => d.id === id)?.name.substring(0, 3)).join(', ')}
+                                    </strong>
+                                  </span>
+                                ) : (
+                                  <span className="text-zinc-500 italic">Nenhum horário definido acima.</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -2688,7 +2794,7 @@ export default function ChecklistView({
                         <Trash2 className="h-3.5 w-3.5" /> Excluir
                       </button>
                     ) : (
-                      <div /> // placeholder for alignment
+                      <div />
                     )}
 
                     <div className="flex gap-2">
@@ -2722,7 +2828,9 @@ export default function ChecklistView({
                               text: cellText.trim(),
                               color: cellColor,
                               startTime: cellStartTime,
-                              endTime: cellEndTime
+                              endTime: cellEndTime,
+                              isWeeklyRecurring: cellIsWeeklyRecurring,
+                              reminderTime: cellEnableReminder ? (cellReminderTime.trim() || undefined) : undefined
                             };
                           });
 

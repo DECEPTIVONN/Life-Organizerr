@@ -69,6 +69,7 @@ export default function RoutineView({
   const [taskText, setTaskText] = useState('');
   const [isEveryDay, setIsEveryDay] = useState(false);
   const [isWeeklyRecurring, setIsWeeklyRecurring] = useState(true);
+  const [enableReminder, setEnableReminder] = useState(true);
   const [viewMode, setViewMode] = useState<'lista' | 'quadro'>('lista');
 
   // Edit / Clear states
@@ -78,6 +79,7 @@ export default function RoutineView({
   const [editTaskText, setEditTaskText] = useState('');
   const [editIsEveryDay, setEditIsEveryDay] = useState(false);
   const [editIsWeeklyRecurring, setEditIsWeeklyRecurring] = useState(true);
+  const [editEnableReminder, setEditEnableReminder] = useState(true);
   const [editSelectedDay, setEditSelectedDay] = useState<number>(1);
   const [showClearModal, setShowClearModal] = useState(false);
 
@@ -348,13 +350,14 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
       isEveryDay,
       isWeeklyRecurring,
       completedDays: [],
-      reminderTime: reminderTime.trim() || time
+      reminderTime: enableReminder ? (reminderTime.trim() || time) : undefined
     };
 
     setRoutine([...routine, newItem]);
     setTaskText('');
     setIsEveryDay(false);
     setIsWeeklyRecurring(true);
+    setEnableReminder(true);
     setIsAdding(false);
 
     // Reward XP
@@ -390,6 +393,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
     setEditTaskText(item.task || '');
     setEditIsEveryDay(!!item.isEveryDay);
     setEditIsWeeklyRecurring(item.isWeeklyRecurring !== false);
+    setEditEnableReminder(Boolean(item.reminderTime));
     setEditSelectedDay(item.dayOfWeek >= 0 ? item.dayOfWeek : selectedDay);
   };
 
@@ -406,7 +410,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
           isEveryDay: editIsEveryDay,
           isWeeklyRecurring: editIsWeeklyRecurring,
           dayOfWeek: editIsEveryDay ? -1 : editSelectedDay,
-          reminderTime: editReminderTime.trim() || editTime
+          reminderTime: editEnableReminder ? (editReminderTime.trim() || editTime) : undefined
         };
       }
       return item;
@@ -1724,7 +1728,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="cursor-default bg-zinc-950 border border-zinc-800 rounded-2xl p-6 max-w-md w-full my-auto space-y-5 text-left shadow-2xl"
+              className="cursor-default bg-zinc-950 border border-zinc-800 rounded-2xl p-6 max-w-md sm:max-w-xl md:max-w-3xl lg:max-w-4xl w-full my-auto space-y-5 text-left shadow-2xl max-h-[90vh] overflow-y-auto"
             >
               <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
                 <div className="flex items-center gap-2">
@@ -1740,26 +1744,71 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                 </button>
               </div>
 
-              <form onSubmit={handleSaveEditTask} className="space-y-4">
-                <div>
-                  <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1.5">
-                    Nome da Atividade
-                  </label>
-                  <input
-                    type="text"
-                    value={editTaskText}
-                    onChange={(e) => setEditTaskText(e.target.value)}
-                    placeholder="Ex: Treino de Musculação"
-                    className="w-full bg-zinc-900 border border-zinc-800 focus:border-orange-500/50 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-600 outline-none transition-all"
-                    required
-                  />
-                </div>
+              <form onSubmit={handleSaveEditTask} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                  {/* Left Column: Name & Frequency */}
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1.5">
+                        Nome da Atividade
+                      </label>
+                      <input
+                        type="text"
+                        value={editTaskText}
+                        onChange={(e) => setEditTaskText(e.target.value)}
+                        placeholder="Ex: Treino de Musculação"
+                        className="w-full bg-zinc-900 border border-zinc-800 focus:border-orange-500/50 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-600 outline-none transition-all"
+                        required
+                      />
+                    </div>
 
-                <div className="space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1.5">
+                        Frequência de Dias
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setEditIsEveryDay(!editIsEveryDay)}
+                        className={`w-full py-2.5 px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                          editIsEveryDay
+                            ? 'bg-orange-500/10 border-orange-500/30 text-orange-400'
+                            : 'bg-zinc-900 border-zinc-800 text-zinc-400'
+                        }`}
+                      >
+                        {editIsEveryDay ? 'Todos os Dias' : 'Dia Específico'}
+                      </button>
+                    </div>
+
+                    {!editIsEveryDay && (
+                      <div>
+                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1.5">
+                          Dia da Semana
+                        </label>
+                        <div className="grid grid-cols-7 gap-1">
+                          {daysOfWeek.map((day) => (
+                            <button
+                              key={day.id}
+                              type="button"
+                              onClick={() => setEditSelectedDay(day.id)}
+                              className={`py-2 text-[10px] font-bold rounded-lg border transition-all ${
+                                editSelectedDay === day.id
+                                  ? 'bg-orange-500 border-orange-500 text-white'
+                                  : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-white'
+                              }`}
+                            >
+                              {day.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Right Column: Time, Checkboxes & Reminders */}
+                  <div className="space-y-4">
                     <div>
                       <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1 flex items-center justify-between">
-                        <span>Horário Atividade</span>
+                        <span>Horário da Atividade</span>
                         <span className="text-[9px] text-orange-400 font-mono">Ex: 07:30 - 08:43</span>
                       </label>
                       <input
@@ -1779,101 +1828,130 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                       />
                     </div>
 
-                    <div>
-                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1 flex items-center gap-1">
-                        <Bell className="h-3.5 w-3.5 text-orange-500" /> Horário do Lembrete
+                    {/* Enhanced Checkboxes */}
+                    <div className="space-y-2.5 pt-1">
+                      <label className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider block">
+                        Opções e Lembretes
                       </label>
-                      <input
-                        type="time"
-                        value={editReminderTime}
-                        onChange={(e) => setEditReminderTime(e.target.value)}
-                        className="w-full bg-zinc-900 border border-zinc-800 focus:border-orange-500/50 rounded-xl px-3.5 py-2.5 text-xs text-white outline-none font-mono transition-all"
-                      />
-                    </div>
-                  </div>
 
-                  {/* Contextual Reminder Info Note */}
-                  <div className="bg-orange-500/5 border border-orange-500/20 rounded-xl p-2.5 flex items-start gap-2">
-                    <Bell className="h-3.5 w-3.5 text-orange-400 shrink-0 mt-0.5" />
-                    <div className="text-[11px] text-zinc-300 leading-snug">
-                      <span className="font-bold text-orange-400 block mb-0.5">Lembrete Configurado:</span>
-                      {editReminderTime ? (
-                        <span>
-                          Notificação recorrente programada para <strong className="text-white font-mono">{editReminderTime}</strong> no(s) dia(s):{' '}
-                          <strong className="text-orange-300">
-                            {editIsEveryDay ? 'Todos os Dias (Dom a Sáb)' : `Toda ${daysOfWeek.find(d => d.id === editSelectedDay)?.fullName}`}
-                          </strong>
-                        </span>
-                      ) : (
-                        <span className="text-zinc-500 italic">Sem lembrete numérico ativo. Defina um horário acima para disparar alertas.</span>
-                      )}
+                      {/* Checkbox 1: Repetir Semanalmente */}
+                      <label 
+                        className={`group flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer select-none ${
+                          editIsWeeklyRecurring
+                            ? 'bg-orange-500/10 border-orange-500/40 text-white shadow-sm'
+                            : 'bg-zinc-900/80 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${
+                            editIsWeeklyRecurring
+                              ? 'bg-orange-500 text-white shadow-md shadow-orange-500/30 ring-2 ring-orange-500/20'
+                              : 'bg-zinc-950 border border-zinc-700 text-transparent group-hover:border-zinc-500'
+                          }`}>
+                            <Check className="h-3.5 w-3.5 stroke-[3]" />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-xs font-bold">Repetir semanalmente</span>
+                            <span className="text-[10px] text-zinc-400">
+                              {editIsWeeklyRecurring ? 'Atividade recorrente todas as semanas' : 'Atividade pontual (única)'}
+                            </span>
+                          </div>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={editIsWeeklyRecurring}
+                          onChange={(e) => setEditIsWeeklyRecurring(e.target.checked)}
+                          className="sr-only"
+                        />
+                      </label>
+
+                      {/* Checkbox 2: Receber Lembrete (Notificação) */}
+                      <label 
+                        className={`group flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer select-none ${
+                          editEnableReminder
+                            ? 'bg-orange-500/10 border-orange-500/40 text-white shadow-sm'
+                            : 'bg-zinc-900/80 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${
+                            editEnableReminder
+                              ? 'bg-orange-500 text-white shadow-md shadow-orange-500/30 ring-2 ring-orange-500/20'
+                              : 'bg-zinc-950 border border-zinc-700 text-transparent group-hover:border-zinc-500'
+                          }`}>
+                            <Check className="h-3.5 w-3.5 stroke-[3]" />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-xs font-bold flex items-center gap-1.5">
+                              <Bell className="h-3.5 w-3.5 text-orange-400" /> Receber lembrete (Notificação)
+                            </span>
+                            <span className="text-[10px] text-zinc-400">
+                              {editEnableReminder ? 'Notificação de alerta ativa' : 'Sem notificações/alertas para esta atividade'}
+                            </span>
+                          </div>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={editEnableReminder}
+                          onChange={(e) => setEditEnableReminder(e.target.checked)}
+                          className="sr-only"
+                        />
+                      </label>
                     </div>
+
+                    {/* Reminder Time Input if enabled */}
+                    {editEnableReminder && (
+                      <div className="space-y-2 pt-1 animate-fadeIn">
+                        <div>
+                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1 flex items-center justify-between">
+                            <span className="flex items-center gap-1.5">
+                              <Bell className="h-3.5 w-3.5 text-orange-500" /> Horário do Lembrete
+                            </span>
+                            {editReminderTime && (
+                              <button
+                                type="button"
+                                onClick={() => setEditReminderTime('')}
+                                className="text-[9px] text-zinc-500 hover:text-orange-400 lowercase font-mono"
+                              >
+                                limpar
+                              </button>
+                            )}
+                          </label>
+                          <input
+                            type="time"
+                            value={editReminderTime}
+                            onChange={(e) => setEditReminderTime(e.target.value)}
+                            className="w-full bg-zinc-900 border border-zinc-800 focus:border-orange-500/50 rounded-xl px-3.5 py-2.5 text-xs text-white outline-none font-mono transition-all"
+                          />
+                        </div>
+
+                        {/* Contextual Reminder Info Note */}
+                        <div className="bg-orange-500/5 border border-orange-500/20 rounded-xl p-2.5 flex items-start gap-2">
+                          <Bell className="h-3.5 w-3.5 text-orange-400 shrink-0 mt-0.5" />
+                          <div className="text-[11px] text-zinc-300 leading-snug">
+                            <span className="font-bold text-orange-400 block mb-0.5">Lembrete Programado:</span>
+                            {editReminderTime ? (
+                              <span>
+                                Notificação {editIsWeeklyRecurring ? 'recorrente' : 'pontual'} programada para <strong className="text-white font-mono">{editReminderTime}</strong> no(s) dia(s):{' '}
+                                <strong className="text-orange-300">
+                                  {editIsEveryDay ? 'Todos os Dias (Dom a Sáb)' : `Toda ${daysOfWeek.find(d => d.id === editSelectedDay)?.fullName}`}
+                                </strong>
+                              </span>
+                            ) : (
+                              <span className="text-zinc-500 italic">Defina o horário do alarme no campo acima.</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                <div>
-                  <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1.5">
-                    Frequência de Dias
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setEditIsEveryDay(!editIsEveryDay)}
-                    className={`w-full py-2.5 px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                      editIsEveryDay
-                        ? 'bg-orange-500/10 border-orange-500/30 text-orange-400'
-                        : 'bg-zinc-900 border-zinc-800 text-zinc-400'
-                    }`}
-                  >
-                    {editIsEveryDay ? 'Todos os Dias' : 'Dia Específico'}
-                  </button>
-                </div>
-
-                {!editIsEveryDay && (
-                  <div>
-                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1.5">
-                      Dia da Semana
-                    </label>
-                    <div className="grid grid-cols-7 gap-1">
-                      {daysOfWeek.map((day) => (
-                        <button
-                          key={day.id}
-                          type="button"
-                          onClick={() => setEditSelectedDay(day.id)}
-                          className={`py-2 text-[10px] font-bold rounded-lg border transition-all ${
-                            editSelectedDay === day.id
-                              ? 'bg-orange-500 border-orange-500 text-white'
-                              : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-white'
-                          }`}
-                        >
-                          {day.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Checkbox: Repetir Semanalmente */}
-                <div className="pt-2 border-t border-zinc-900 flex items-center justify-between">
-                  <label htmlFor="edit-repeat-weekly" className="flex items-center gap-2.5 cursor-pointer text-xs font-bold text-zinc-300 hover:text-white select-none">
-                    <input
-                      id="edit-repeat-weekly"
-                      type="checkbox"
-                      checked={editIsWeeklyRecurring}
-                      onChange={(e) => setEditIsWeeklyRecurring(e.target.checked)}
-                      className="w-4 h-4 rounded border-zinc-700 bg-zinc-950 text-orange-500 focus:ring-orange-500/20 focus:ring-offset-0 cursor-pointer accent-orange-500"
-                    />
-                    <span>Repetir semanalmente</span>
-                  </label>
-                  <span className="text-[10px] font-mono text-zinc-500">
-                    {editIsWeeklyRecurring ? 'Atividade Recorrente' : 'Atividade Pontual'}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-900">
+                <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-900">
                   <button
                     type="button"
                     onClick={() => setEditingItem(null)}
-                    className="px-4 py-2 rounded-xl text-xs font-semibold text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-800"
+                    className="px-4 py-2 rounded-xl text-xs font-semibold text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-800 hover:bg-zinc-850 transition-colors"
                   >
                     Cancelar
                   </button>
