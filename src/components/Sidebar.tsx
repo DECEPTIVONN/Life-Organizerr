@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { sendSystemNotification } from '../lib/notificationHelper';
 import { 
   LayoutDashboard, 
   CheckSquare, 
@@ -186,22 +187,16 @@ export default function Sidebar({
       pomodoroPhaseEndTimestamp: phaseEndTs
     };
 
-    // Immediate Web Browser Notification on Creation
-    if (typeof Notification !== 'undefined') {
-      if (Notification.permission === 'granted') {
-        const modeLabel = quickModalType === 'pomodoro'
-          ? 'Sessão Pomodoro Iniciada'
-          : quickModalType === 'timer'
-          ? '⏱️ Timer Iniciado'
-          : '⏰ Alerta de Cronômetro Ativo';
-        new Notification(`${modeLabel}: ${newReminder.title}`, {
-          body: `Contagem ativa! (${quickHours > 0 ? `${quickHours}h ` : ''}${quickMinutes}min). Notificação agendada para as ${formattedTarget}.`,
-          icon: '/icon.png'
-        });
-      } else if (Notification.permission !== 'denied') {
-        Notification.requestPermission();
-      }
-    }
+    // Immediate System Notification on Creation
+    const modeLabel = quickModalType === 'pomodoro'
+      ? 'Sessão Pomodoro Iniciada'
+      : quickModalType === 'timer'
+      ? '⏱️ Timer Iniciado'
+      : '⏰ Alerta de Cronômetro Ativo';
+    sendSystemNotification(`${modeLabel}: ${newReminder.title}`, {
+      body: `Contagem ativa! (${quickHours > 0 ? `${quickHours}h ` : ''}${quickMinutes}min). Notificação agendada para as ${formattedTarget}.`,
+      tag: `quick-reminder-${newReminder.id}`
+    });
 
     if (onAddReminder) {
       onAddReminder(newReminder);

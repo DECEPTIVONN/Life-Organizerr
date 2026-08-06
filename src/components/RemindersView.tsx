@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { QuickReminder } from '../types';
 import { PomodoroIcon } from './icons/PomodoroIcon';
+import { sendSystemNotification, requestNotificationPermission } from '../lib/notificationHelper';
 
 export const getCategoryIcon = (cat?: string) => {
   switch (cat) {
@@ -175,13 +176,11 @@ export default function RemindersView({
             if (now >= r.targetTimestamp) {
               hasChanges = true;
               if (r.soundEnabled) playReminderChime();
-              if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-                const iconPrefix = r.mode === 'pomodoro' ? '🍅' : '⏰';
-                new Notification(`${iconPrefix} Lembrete Concluído: ${r.title}`, {
-                  body: r.description || `Tempo total atingido! ${r.category ? `[${r.category}]` : ''}`,
-                  icon: '/icon.png'
-                });
-              }
+              const iconPrefix = r.mode === 'pomodoro' ? '🍅' : '⏰';
+              sendSystemNotification(`${iconPrefix} Lembrete Concluído: ${r.title}`, {
+                body: r.description || `Tempo total atingido! ${r.category ? `[${r.category}]` : ''}`,
+                tag: `reminder-${r.id}`
+              });
               setActiveAlarm(r);
               return {
                 ...r,
@@ -197,12 +196,10 @@ export default function RemindersView({
                 // Focus phase ended -> Start break phase
                 if (r.soundEnabled) playReminderChime();
                 const breakMins = r.pomodoroBreakMinutes || 5;
-                if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-                  new Notification(`☕ Hora da Pausa! - ${r.title}`, {
-                    body: `Ciclo de foco finalizado! Descanse por ${breakMins} minutos.`,
-                    icon: '/icon.png'
-                  });
-                }
+                sendSystemNotification(`☕ Hora da Pausa! - ${r.title}`, {
+                  body: `Ciclo de foco finalizado! Descanse por ${breakMins} minutos.`,
+                  tag: `pomo-break-${r.id}`
+                });
                 return {
                   ...r,
                   pomodoroCurrentPhase: 'break' as const,
@@ -213,12 +210,10 @@ export default function RemindersView({
                 if (r.soundEnabled) playReminderChime();
                 const focusMins = r.pomodoroFocusMinutes || 25;
                 const nextCycle = (r.pomodoroCurrentCycle || 1) + 1;
-                if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-                  new Notification(`⚡ Fim da Pausa! De volta ao Foco - ${r.title}`, {
-                    body: `Hora de retomar o foco (Ciclo ${nextCycle}${r.pomodoroTotalCycles ? ` de ${r.pomodoroTotalCycles}` : ''}).`,
-                    icon: '/icon.png'
-                  });
-                }
+                sendSystemNotification(`⚡ Fim da Pausa! De volta ao Foco - ${r.title}`, {
+                  body: `Hora de retomar o foco (Ciclo ${nextCycle}${r.pomodoroTotalCycles ? ` de ${r.pomodoroTotalCycles}` : ''}).`,
+                  tag: `pomo-focus-${r.id}`
+                });
                 return {
                   ...r,
                   pomodoroCurrentPhase: 'focus' as const,
@@ -235,12 +230,10 @@ export default function RemindersView({
             if (now >= fullScheduledTs) {
               hasChanges = true;
               if (r.soundEnabled) playReminderChime();
-              if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-                new Notification(`⏰ Horário Chegado: ${r.title}`, {
-                  body: r.description || `Hora agendada (${r.scheduledTime}) atingida!`,
-                  icon: '/icon.png'
-                });
-              }
+              sendSystemNotification(`⏰ Horário Chegado: ${r.title}`, {
+                body: r.description || `Hora agendada (${r.scheduledTime}) atingida!`,
+                tag: `reminder-sched-${r.id}`
+              });
               setActiveAlarm(r);
               return {
                 ...r,
@@ -313,27 +306,21 @@ export default function RemindersView({
     setReminders(prev => [newReminder, ...prev]);
     addXp(15);
 
-    // Immediate Web Browser Notification on Creation
-    if (typeof Notification !== 'undefined') {
-      if (Notification.permission === 'granted') {
-        const modeLabel = mode === 'pomodoro'
-          ? 'Sessão Pomodoro'
-          : mode === 'timer'
-          ? '⏱️ Timer Iniciado'
-          : mode === 'cronometer'
-          ? '⏰ Alerta Agendado'
-          : '🔔 Lembrete Criado';
-        const formattedTarget = targetTs ? new Date(targetTs).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : scheduledTime || 'Ativo';
-        new Notification(`${modeLabel}: ${title.trim()}`, {
-          body: (mode === 'timer' || mode === 'pomodoro')
-            ? `Contagem regressiva iniciada. Notificação agendada para as ${formattedTarget}.`
-            : `Lembrete/alerta ativo em segundo plano (${formattedTarget}).`,
-          icon: '/icon.png'
-        });
-      } else if (Notification.permission !== 'denied') {
-        Notification.requestPermission();
-      }
-    }
+    // Immediate System Notification on Creation
+    const modeLabel = mode === 'pomodoro'
+      ? 'Sessão Pomodoro'
+      : mode === 'timer'
+      ? '⏱️ Timer Iniciado'
+      : mode === 'cronometer'
+      ? '⏰ Alerta Agendado'
+      : '🔔 Lembrete Criado';
+    const formattedTarget = targetTs ? new Date(targetTs).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : scheduledTime || 'Ativo';
+    sendSystemNotification(`${modeLabel}: ${title.trim()}`, {
+      body: (mode === 'timer' || mode === 'pomodoro')
+        ? `Contagem regressiva iniciada. Notificação agendada para as ${formattedTarget}.`
+        : `Lembrete/alerta ativo em segundo plano (${formattedTarget}).`,
+      tag: `new-reminder-${newReminder.id}`
+    });
 
     // Reset form
     setTitle('');

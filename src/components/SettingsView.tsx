@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { requestNotificationPermission, sendSystemNotification } from '../lib/notificationHelper';
 import { 
   User, 
   Lock, 
@@ -1663,6 +1664,55 @@ export default function SettingsView({
 
             {/* Switch items */}
             <div className="space-y-4">
+              {/* System & Background PWA Notifications Master Card */}
+              <div className="p-4 bg-orange-950/20 border border-orange-500/30 rounded-2xl space-y-3">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h4 className="text-xs font-bold text-orange-400 flex items-center gap-1.5">
+                      <Bell className="h-4 w-4 text-orange-400 animate-pulse" />
+                      Notificações do Sistema & Segundo Plano (PWA)
+                    </h4>
+                    <p className="text-[10px] text-zinc-400 mt-1 leading-relaxed">
+                      Permite que os alarmes, timers e lembretes do TRONUS apareçam diretamente na central do sistema operacional (Windows, Android, iOS, macOS), mesmo com a aba ou o navegador fechados.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-orange-500/20">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const granted = await requestNotificationPermission();
+                      if (granted) {
+                        sendSystemNotification('Notificações Ativas!', {
+                          body: 'O TRONUS enviará seus alertas e alarmes em segundo plano.',
+                          tag: 'tronus-perm-test'
+                        });
+                      } else {
+                        alert('Permissão de notificação negada ou bloqueada no navegador. Habilite nas configurações do seu navegador ou sistema operacional.');
+                      }
+                    }}
+                    className="px-3.5 py-1.5 bg-orange-500 hover:bg-orange-600 text-black text-xs font-bold rounded-xl transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <CheckCircle className="h-3.5 w-3.5" />
+                    Ativar Notificações no Dispositivo
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      sendSystemNotification('⏰ Teste de Alarme TRONUS', {
+                        body: 'Notificação do sistema funcionando em segundo plano!',
+                        tag: 'test-alarm-pwa'
+                      });
+                    }}
+                    className="px-3.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-700 text-xs font-semibold rounded-xl transition-all cursor-pointer"
+                  >
+                    ⚡ Testar Disparo Agora
+                  </button>
+                </div>
+              </div>
+
               {/* Espaço Diário & Fé Reminder */}
               <div className="p-4 bg-zinc-950 border border-zinc-900 rounded-2xl space-y-3">
                 <div className="flex items-center justify-between">

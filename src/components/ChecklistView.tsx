@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { sendSystemNotification } from '../lib/notificationHelper';
 import { 
   CheckSquare, 
   Plus, 
@@ -285,16 +286,10 @@ export default function ChecklistView({
           const notifKey = `notified_${task.id}_${todayStr}_${currentHHMM}`;
           if (!localStorage.getItem(notifKey)) {
             localStorage.setItem(notifKey, '1');
-            if (Notification.permission === 'granted') {
-              try {
-                new Notification(`Lembrete TRONUS: ${task.text}`, {
-                  body: `Horário planejado: ${task.reminderTime} | Pilar: ${task.category}`,
-                  icon: '/pwa_app_icon_1784938132164.jpg'
-                });
-              } catch (e) {
-                console.warn('Could not display notification:', e);
-              }
-            }
+            sendSystemNotification(`Lembrete TRONUS: ${task.text}`, {
+              body: `Horário planejado: ${task.reminderTime} | Pilar: ${task.category}`,
+              tag: `task-${task.id}`
+            });
           }
         }
       });

@@ -39,6 +39,7 @@ import { LeagueRankingModal } from './components/LeagueRankingModal';
 import { LeagueRankingView } from './components/LeagueRankingView';
 import { saveToSupabase, loadFromSupabase, loadMetadataFromSupabase, getSupabaseClient } from './lib/supabase';
 import { OfflineNotificationBanner } from './components/OfflineNotificationBanner';
+import { sendSystemNotification, syncAlarmsToServiceWorker } from './lib/notificationHelper';
 
 // Types
 import { 
@@ -1238,8 +1239,24 @@ export default function App() {
     return () => clearInterval(heartbeatInterval);
   }, [userEmail, syncKey]);
 
-  // --- Central Notification Scheduler ---
+  // --- Central Notification Scheduler & SW Alarm Synchronizer ---
   const notifiedKeysRef = useRef<Set<string>>(new Set());
+
+  // Synchronize active alarms/reminders/tasks with Service Worker for background persistence
+  useEffect(() => {
+    const dailySpaceNotifEnabled = localStorage.getItem('mbc_daily_workspace_notif_enabled') !== 'false';
+    const dailySpaceTime = localStorage.getItem('mbc_daily_workspace_reminder_time') || '21:00';
+
+    syncAlarmsToServiceWorker({
+      reminders,
+      dailyTasks,
+      routine,
+      notes,
+      calendarNotes,
+      dailySpaceEnabled: dailySpaceNotifEnabled,
+      dailySpaceTime
+    });
+  }, [reminders, dailyTasks, routine, notes, calendarNotes]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || typeof Notification === 'undefined') return;
@@ -1261,9 +1278,9 @@ export default function App() {
           const key = `routine-${item.id}-${todayDateStr}-${currentHHMM}`;
           if (!notifiedKeysRef.current.has(key)) {
             notifiedKeysRef.current.add(key);
-            new Notification(`Lembrete de Rotina: ${item.task}`, {
+            sendSystemNotification(`Lembrete de Rotina: ${item.task}`, {
               body: `Horário planejado: ${item.time} | Rotina Diária`,
-              icon: '/favicon.ico'
+              tag: `routine-${item.id}`
             });
           }
         }
@@ -1302,9 +1319,9 @@ export default function App() {
           const key = `note-${n.id}-${todayDateStr}-${currentHHMM}`;
           if (!notifiedKeysRef.current.has(key)) {
             notifiedKeysRef.current.add(key);
-            new Notification(`Lembrete de Nota: ${n.title}`, {
+            sendSystemNotification(`Lembrete de Nota: ${n.title}`, {
               body: n.content ? n.content.substring(0, 100) : 'Lembrete de anotação',
-              icon: '/favicon.ico'
+              tag: `note-${n.id}`
             });
           }
         }
@@ -1317,9 +1334,9 @@ export default function App() {
           const key = `calnote-${cn.id}-${todayDateStr}-${currentHHMM}`;
           if (!notifiedKeysRef.current.has(key)) {
             notifiedKeysRef.current.add(key);
-            new Notification(`Lembrete de Anotação: ${cn.title}`, {
+            sendSystemNotification(`Lembrete de Anotação: ${cn.title}`, {
               body: cn.content ? cn.content.substring(0, 100) : 'Lembrete da Agenda',
-              icon: '/favicon.ico'
+              tag: `calnote-${cn.id}`
             });
           }
         }
@@ -1332,9 +1349,9 @@ export default function App() {
           const key = `task-${task.id}-${todayDateStr}-${currentHHMM}`;
           if (!notifiedKeysRef.current.has(key)) {
             notifiedKeysRef.current.add(key);
-            new Notification(`Lembrete de Tarefa: ${task.text}`, {
+            sendSystemNotification(`Lembrete de Tarefa: ${task.text}`, {
               body: `Horário: ${task.reminderTime} | Pilar: ${task.category}`,
-              icon: '/favicon.ico'
+              tag: `task-${task.id}`
             });
           }
         }
@@ -1366,9 +1383,9 @@ export default function App() {
                   const key = `gcal-${ev.id}-${todayDateStr}-${currentHHMM}`;
                   if (!notifiedKeysRef.current.has(key)) {
                     notifiedKeysRef.current.add(key);
-                    new Notification(`Google Agenda: ${ev.summary || 'Evento do dia'}`, {
+                    sendSystemNotification(`Google Agenda: ${ev.summary || 'Evento do dia'}`, {
                       body: ev.description ? ev.description.substring(0, 100) : `Evento no Google Agenda agendado para hoje`,
-                      icon: '/favicon.ico'
+                      tag: `gcal-${ev.id}`
                     });
                   }
                 }
@@ -1387,15 +1404,15 @@ export default function App() {
         const key = `dailyworkspace-${todayDateStr}-${currentHHMM}`;
         if (!notifiedKeysRef.current.has(key)) {
           notifiedKeysRef.current.add(key);
-          new Notification('Espaço Diário & Fé', {
+          sendSystemNotification('Espaço Diário & Fé', {
             body: 'Hora de registrar suas reflexões do dia, checklist, orações e hábitos!',
-            icon: '/favicon.ico'
+            tag: 'dailyworkspace'
           });
         }
       }
     };
 
-    const interval = setInterval(checkNotifications, 120000);
+    const interval = setInterval(checkNotifications, 30000);
     checkNotifications();
 
     return () => clearInterval(interval);
