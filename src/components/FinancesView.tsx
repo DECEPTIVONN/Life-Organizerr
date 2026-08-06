@@ -686,12 +686,12 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
 
   // Sub-tab Navbar Item List
   const subTabItems = [
-    { id: 'dashboard', label: 'DASHBOARD', icon: LayoutDashboard },
-    { id: 'extrato', label: 'EXTRATO', icon: FileText },
-    { id: 'planejamento', label: 'PLANEJAMENTO', icon: Target },
-    { id: 'investimentos', label: 'INVESTIMENTOS', icon: PiggyBank },
-    { id: 'contas', label: 'CONTAS', icon: CreditCard },
-    { id: 'dividas', label: 'DÍVIDAS', icon: AlertTriangle },
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'extrato', label: 'Extrato', icon: FileText },
+    { id: 'planejamento', label: 'Planejamento', icon: Target },
+    { id: 'investimentos', label: 'Investimentos', icon: PiggyBank },
+    { id: 'contas', label: 'Contas & Cartões', icon: CreditCard },
+    { id: 'dividas', label: 'Dívidas & Passivos', icon: AlertTriangle },
   ] as const;
 
   return (
@@ -749,7 +749,7 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
           {/* Section Title with Glow Line & Clip-path Polygon Decoration */}
           <div className="section-title">
-            <h2>DASHBOARD FINANCEIRO</h2>
+            <h2>Dashboard Financeiro</h2>
             <div className="section-title-subtitle">Visão Geral, Indicadores & Saúde do Capital</div>
           </div>
 
@@ -1003,7 +1003,7 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
           {/* Section Title */}
           <div className="section-title">
-            <h2>EXTRATO DE TRANSAÇÕES</h2>
+            <h2>Extrato de Transações</h2>
             <div className="section-title-subtitle">Lançamentos, Visão Mensal, Anual e Matriz Consolidada</div>
           </div>
 
@@ -1488,7 +1488,7 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
           {/* Section Title */}
           <div className="section-title">
-            <h2>PLANEJAMENTO FINANCEIRO</h2>
+            <h2>Planejamento Financeiro</h2>
             <div className="section-title-subtitle">Regra 50/30/20, Reserva de Emergência & Simuladores de Metas</div>
           </div>
 
@@ -1688,7 +1688,7 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
       {activeTab === 'investimentos' && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
           <div className="section-title">
-            <h2>CARTEIRA DE INVESTIMENTOS</h2>
+            <h2>Carteira de Investimentos</h2>
             <div className="section-title-subtitle">Gestão de Ativos, Aportes & Renda Passiva</div>
           </div>
 
@@ -1703,7 +1703,7 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
           {/* Section Title */}
           <div className="section-title">
-            <h2>GESTÃO DE CONTAS & CARTÕES</h2>
+            <h2>Gestão de Contas & Cartões</h2>
             <div className="section-title-subtitle">Saldos Bancários, Carteiras Digitais & Limites de Crédito</div>
           </div>
 
@@ -1844,7 +1844,7 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
           {/* Section Title */}
           <div className="section-title">
-            <h2>DÍVIDAS & FINANCIAMENTOS</h2>
+            <h2>Dívidas & Passivos</h2>
             <div className="section-title-subtitle">Controle de Passivos, Juros & Estratégias de Quitação</div>
           </div>
 
