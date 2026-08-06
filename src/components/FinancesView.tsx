@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   DollarSign, 
   Plus, 
@@ -19,7 +19,26 @@ import {
   ChevronUp,
   Grid,
   Edit2,
-  Info
+  Info,
+  LayoutDashboard,
+  FileText,
+  Target,
+  CreditCard,
+  AlertTriangle,
+  Building2,
+  Wallet,
+  ShieldCheck,
+  CheckCircle2,
+  Search,
+  Sparkles,
+  Calculator,
+  Layers,
+  PieChart,
+  ArrowRight,
+  Lock,
+  Scale,
+  Flame,
+  Award
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FinanceEntry } from '../types';
@@ -98,14 +117,13 @@ export function CategoryPieChart({ data }: { data: { name: string; value: number
   const rCircumference = 2 * Math.PI * radius;
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-center gap-6 p-5 bg-zinc-950/20 border border-zinc-900 rounded-2xl">
-      {/* SVG Donut */}
-      <div className="relative w-36 h-36 flex items-center justify-center shrink-0">
-        <svg viewBox="0 0 120 120" className="w-full h-full transform -rotate-90">
+    <div className="flex flex-col sm:flex-row items-center justify-center gap-6 p-2">
+      <div className="relative w-40 h-40 flex items-center justify-center flex-shrink-0">
+        <svg viewBox="0 0 140 140" className="w-full h-full transform -rotate-90">
           {data.map((item, index) => {
             const percent = item.value / total;
-            const strokeLength = percent * rCircumference;
-            const strokeOffset = -accumulatedPercent * rCircumference;
+            const strokeDasharray = `${percent * rCircumference} ${rCircumference}`;
+            const strokeDashoffset = -accumulatedPercent * rCircumference;
             accumulatedPercent += percent;
 
             const isHovered = activeIndex === index;
@@ -113,60 +131,60 @@ export function CategoryPieChart({ data }: { data: { name: string; value: number
             return (
               <circle
                 key={item.name}
-                cx="60"
-                cy="60"
+                cx="70"
+                cy="70"
                 r={radius}
                 fill="transparent"
                 stroke={item.color}
-                strokeWidth={isHovered ? strokeWidth + 3 : strokeWidth}
-                strokeDasharray={`${strokeLength} ${rCircumference}`}
-                strokeDashoffset={strokeOffset}
-                strokeLinecap="round"
-                className="transition-all duration-300 cursor-pointer origin-center"
+                strokeWidth={isHovered ? strokeWidth + 4 : strokeWidth}
+                strokeDasharray={strokeDasharray}
+                strokeDashoffset={strokeDashoffset}
+                className="transition-all duration-300 cursor-pointer"
                 onMouseEnter={() => setActiveIndex(index)}
                 onMouseLeave={() => setActiveIndex(null)}
-                style={{
-                  transform: isHovered ? 'scale(1.03)' : 'scale(1)',
-                }}
               />
             );
           })}
         </svg>
 
-        {/* Center label */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">Total Gastos</span>
-          <span className="text-xs font-black text-white font-mono mt-0.5">
-            R$ {total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        {/* Center label inside Donut */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+          <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block">
+            {activeIndex !== null ? data[activeIndex].name : 'Total Despesas'}
           </span>
-          {activeIndex !== null && (
-            <span className="text-[9px] text-orange-400 font-bold mt-1 bg-zinc-900/90 px-1.5 py-0.5 rounded border border-zinc-800 animate-fade-in">
-              {data[activeIndex].name}: {((data[activeIndex].value / total) * 100).toFixed(0)}%
-            </span>
-          )}
+          <span className="text-xs font-black text-white font-mono block mt-0.5">
+            {activeIndex !== null
+              ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(data[activeIndex].value)
+              : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(total)}
+          </span>
+          <span className="text-[9px] text-orange-400 font-mono font-bold block mt-0.5">
+            {activeIndex !== null ? `${((data[activeIndex].value / total) * 100).toFixed(1)}%` : '100%'}
+          </span>
         </div>
       </div>
 
-      {/* Legend */}
-      <div className="flex-1 grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
-        {data.map((item, index) => {
-          const pct = (item.value / total) * 100;
-          const isHovered = activeIndex === index;
+      {/* Category Legend list */}
+      <div className="flex-1 space-y-1.5 w-full max-h-48 overflow-y-auto pr-1">
+        {data.map((item, idx) => {
+          const pct = ((item.value / total) * 100).toFixed(1);
           return (
             <div
               key={item.name}
-              onMouseEnter={() => setActiveIndex(index)}
+              onMouseEnter={() => setActiveIndex(idx)}
               onMouseLeave={() => setActiveIndex(null)}
-              className={`flex items-center gap-2 p-1 rounded-lg transition-colors cursor-pointer ${
-                isHovered ? 'bg-zinc-900/80 text-white' : 'hover:bg-zinc-900/20 text-zinc-400'
+              className={`flex items-center justify-between p-1.5 rounded-lg text-xs transition-all cursor-pointer ${
+                activeIndex === idx ? 'bg-zinc-800 border border-zinc-700 scale-[1.02]' : 'hover:bg-zinc-900/60'
               }`}
             >
-              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
-              <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-bold truncate text-zinc-300">{item.name}</p>
-                <p className="text-[9px] font-mono text-zinc-500">
-                  R$ {item.value.toLocaleString('pt-BR')} ({pct.toFixed(0)}%)
-                </p>
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
+                <span className="text-zinc-300 font-medium truncate text-[11px]">{item.name}</span>
+              </div>
+              <div className="flex items-center gap-2 text-right flex-shrink-0 font-mono">
+                <span className="text-zinc-400 text-[10px]">{pct}%</span>
+                <span className="text-white font-bold text-[11px]">
+                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.value)}
+                </span>
               </div>
             </div>
           );
@@ -176,10 +194,55 @@ export function CategoryPieChart({ data }: { data: { name: string; value: number
   );
 }
 
+// Initial Mock Accounts
+interface BankAccount {
+  id: string;
+  name: string;
+  bank: string;
+  type: string;
+  balance: number;
+  color: string;
+  iconBg: string;
+}
+
+// Initial Mock Cards
+interface CreditCardItem {
+  id: string;
+  name: string;
+  bank: string;
+  usedLimit: number;
+  totalLimit: number;
+  closingDay: number;
+  dueDay: number;
+  color: string;
+}
+
+// Initial Mock Debts
+interface DebtItem {
+  id: string;
+  title: string;
+  creditor: string;
+  originalAmount: number;
+  remainingAmount: number;
+  monthlyInstallment: number;
+  interestRateMonthly: number; // %
+  dueDate: string;
+  category: string;
+}
+
 export default function FinancesView({ finances, setFinances, addXp }: FinancesProps) {
+  // Main Sub-Tab State (6 sub-tabs)
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'extrato' | 'planejamento' | 'investimentos' | 'contas' | 'dividas'>(() => {
+    const saved = localStorage.getItem('finances_main_subtab');
+    return (saved as any) || 'dashboard';
+  });
+
+  // Extrato sub-view switch ('mensal' | 'anual')
+  const [extratoSubView, setExtratoSubView] = useState<'mensal' | 'anual'>('mensal');
+  const [extratoTypeFilter, setExtratoTypeFilter] = useState<'all' | 'income' | 'expense' | 'investment'>('all');
+  const [searchTerm, setSearchTerm] = useState('');
+
   const [isAdding, setIsAdding] = useState(false);
-  const [activeTab, setActiveTab] = useState<'mensal' | 'anual' | 'investimentos'>('mensal');
-  const [annualSubTab, setAnnualSubTab] = useState<'planilha' | 'analise'>('planilha');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(() => Math.max(2026, new Date().getFullYear()));
 
@@ -220,13 +283,97 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
     return saved !== null ? saved === 'true' : true;
   });
 
-  React.useEffect(() => {
+  // Planning state (50/30/20 & Emergency Fund)
+  const [planningIncomeInput, setPlanningIncomeInput] = useState('8500');
+  const [emergencyFundMonthsTarget, setEmergencyFundMonthsTarget] = useState(6);
+
+  // Accounts state
+  const [accounts, setAccounts] = useState<BankAccount[]>(() => {
+    try {
+      const saved = localStorage.getItem('mbc_bank_accounts');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error(e);
+    }
+    return [
+      { id: 'acc-1', name: 'Conta Corrente Principal', bank: 'Itaú Personnalité', type: 'Corrente', balance: 14820.50, color: '#f97316', iconBg: 'bg-orange-500/10' },
+      { id: 'acc-2', name: 'Reserva & Rendimento', bank: 'Nubank', type: 'Pagamentos / C200', balance: 28450.00, color: '#a855f7', iconBg: 'bg-purple-500/10' },
+      { id: 'acc-3', name: 'Conta Global & Investimentos', bank: 'Banco Inter', type: 'Investimentos', balance: 19200.00, color: '#f59e0b', iconBg: 'bg-amber-500/10' },
+      { id: 'acc-4', name: 'Carteira Mercado Pago', bank: 'Mercado Pago', type: 'Carteira Digital', balance: 1850.30, color: '#06b6d4', iconBg: 'bg-cyan-500/10' }
+    ];
+  });
+  const [showAddAccountModal, setShowAddAccountModal] = useState(false);
+  const [newAccName, setNewAccName] = useState('');
+  const [newAccBank, setNewAccBank] = useState('');
+  const [newAccType, setNewAccType] = useState('Corrente');
+  const [newAccBalance, setNewAccBalance] = useState('');
+
+  // Credit cards state
+  const [creditCards, setCreditCards] = useState<CreditCardItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('mbc_credit_cards');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error(e);
+    }
+    return [
+      { id: 'card-1', name: 'Nubank Ultravioleta', bank: 'Nubank', usedLimit: 3420.00, totalLimit: 25000.00, closingDay: 12, dueDay: 19, color: '#8b5cf6' },
+      { id: 'card-2', name: 'Itaú Personalité Black', bank: 'Itaú', usedLimit: 8900.50, totalLimit: 40000.00, closingDay: 25, dueDay: 2, color: '#f97316' },
+      { id: 'card-3', name: 'Inter Black Mastercard', bank: 'Inter', usedLimit: 1200.00, totalLimit: 15000.00, closingDay: 5, dueDay: 12, color: '#f59e0b' }
+    ];
+  });
+  const [showAddCardModal, setShowAddCardModal] = useState(false);
+  const [newCardName, setNewCardName] = useState('');
+  const [newCardBank, setNewCardBank] = useState('');
+  const [newCardUsedLimit, setNewCardUsedLimit] = useState('');
+  const [newCardTotalLimit, setNewCardTotalLimit] = useState('');
+  const [newCardClosing, setNewCardClosing] = useState('10');
+  const [newCardDue, setNewCardDue] = useState('17');
+
+  // Debts state
+  const [debts, setDebts] = useState<DebtItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('mbc_debt_items');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error(e);
+    }
+    return [
+      { id: 'debt-1', title: 'Financiamento Imobiliário', creditor: 'Caixa Econômica', originalAmount: 350000, remainingAmount: 210000, monthlyInstallment: 2450.00, interestRateMonthly: 0.85, dueDate: 'Dia 10', category: 'Imóvel' },
+      { id: 'debt-2', title: 'Financiamento de Veículo', creditor: 'Banco Itaú', originalAmount: 85000, remainingAmount: 28400, monthlyInstallment: 1680.00, interestRateMonthly: 1.25, dueDate: 'Dia 22', category: 'Veículo' }
+    ];
+  });
+  const [debtStrategy, setDebtStrategy] = useState<'snowball' | 'avalanche'>('avalanche');
+  const [showAddDebtModal, setShowAddDebtModal] = useState(false);
+  const [newDebtTitle, setNewDebtTitle] = useState('');
+  const [newDebtCreditor, setNewDebtCreditor] = useState('');
+  const [newDebtRemaining, setNewDebtRemaining] = useState('');
+  const [newDebtInstallment, setNewDebtInstallment] = useState('');
+  const [newDebtRate, setNewDebtRate] = useState('1.0');
+
+  useEffect(() => {
+    localStorage.setItem('finances_main_subtab', activeTab);
+  }, [activeTab]);
+
+  useEffect(() => {
     localStorage.setItem('finances_budget_open', String(isBudgetOpen));
   }, [isBudgetOpen]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     localStorage.setItem('finances_entries_open', String(isEntriesOpen));
   }, [isEntriesOpen]);
+
+  useEffect(() => {
+    localStorage.setItem('mbc_bank_accounts', JSON.stringify(accounts));
+  }, [accounts]);
+
+  useEffect(() => {
+    localStorage.setItem('mbc_credit_cards', JSON.stringify(creditCards));
+  }, [creditCards]);
+
+  useEffect(() => {
+    localStorage.setItem('mbc_debt_items', JSON.stringify(debts));
+  }, [debts]);
 
   // Consolidated spreadsheet cell manual overrides
   const [sheetOverrides, setSheetOverrides] = useState<Record<string, number>>(() => {
@@ -249,46 +396,16 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
     try {
       const savedNew = localStorage.getItem('mbc_budget_limits_v2');
       if (savedNew) return JSON.parse(savedNew);
-      
-      const savedOld = localStorage.getItem('mbc_monthly_budgets');
-      if (savedOld) {
-        const oldBudgets = JSON.parse(savedOld);
-        const migrated: BudgetLimit[] = [];
-        Object.entries(oldBudgets).forEach(([key, catMap]) => {
-          const [yrStr, moStr] = key.split('-');
-          const yr = parseInt(yrStr, 10);
-          const mo = parseInt(moStr, 10);
-          if (!isNaN(yr) && !isNaN(mo)) {
-            Object.entries(catMap as Record<string, number>).forEach(([cat, amt]) => {
-              migrated.push({
-                id: Math.random().toString(36).substring(2, 9),
-                category: cat,
-                amount: amt,
-                startYear: yr,
-                startMonth: mo,
-                isRecurring: false, // old ones applied to a single month only
-                recurringType: 'always'
-              });
-            });
-          }
-        });
-        if (migrated.length > 0) {
-          localStorage.setItem('mbc_budget_limits_v2', JSON.stringify(migrated));
-          return migrated;
-        }
-      }
     } catch (e) {
-      console.error("Failed to parse budget limits", e);
+      console.error(e);
     }
-    
-    // Default fallback limits
     return [
-      { id: '1', category: 'Alimentação', amount: 600, startYear: 2026, startMonth: 0, isRecurring: true, recurringType: 'always' },
-      { id: '2', category: 'Moradia', amount: 1200, startYear: 2026, startMonth: 0, isRecurring: true, recurringType: 'always' },
-      { id: '3', category: 'Transporte', amount: 200, startYear: 2026, startMonth: 0, isRecurring: true, recurringType: 'always' },
-      { id: '4', category: 'Lazer', amount: 250, startYear: 2026, startMonth: 0, isRecurring: true, recurringType: 'always' },
-      { id: '5', category: 'Assinaturas', amount: 100, startYear: 2026, startMonth: 0, isRecurring: true, recurringType: 'always' },
-      { id: '6', category: 'Outros', amount: 300, startYear: 2026, startMonth: 0, isRecurring: true, recurringType: 'always' }
+      { id: 'b-1', category: 'Alimentação', amount: 1500, startYear: 2026, startMonth: 0, isRecurring: true, recurringType: 'always' },
+      { id: 'b-2', category: 'Moradia', amount: 3200, startYear: 2026, startMonth: 0, isRecurring: true, recurringType: 'always' },
+      { id: 'b-3', category: 'Lazer', amount: 800, startYear: 2026, startMonth: 0, isRecurring: true, recurringType: 'always' },
+      { id: 'b-4', category: 'Transporte', amount: 600, startYear: 2026, startMonth: 0, isRecurring: true, recurringType: 'always' },
+      { id: 'b-5', category: 'Assinaturas', amount: 350, startYear: 2026, startMonth: 0, isRecurring: true, recurringType: 'always' },
+      { id: 'b-6', category: 'Outros', amount: 500, startYear: 2026, startMonth: 0, isRecurring: true, recurringType: 'always' },
     ];
   });
 
@@ -307,7 +424,6 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
     'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'
   ];
 
-  // Expanded selectable categories covering the image checklist
   const getCategories = (type: 'income' | 'expense' | 'investment') => {
     switch (type) {
       case 'income':
@@ -330,7 +446,6 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
     setCategory(cats[0] || 'Outros');
   };
 
-  // Dynamic recurrence expansion for transaction entries
   const getExpandedFinancesForMonth = (year: number, month: number) => {
     const list: FinanceEntry[] = [];
     
@@ -339,18 +454,15 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
       const tYear = tDate.getFullYear();
       const tMonth = tDate.getMonth();
       
-      // Cannot happen before start date
       if (year < tYear || (year === tYear && month < tMonth)) {
         return;
       }
       
-      // Original occurrence
       if (year === tYear && month === tMonth) {
         list.push(entry);
         return;
       }
       
-      // Dynamic recurrent clones
       if (entry.isRecurring) {
         let isActive = false;
         
@@ -394,7 +506,6 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
     return list;
   };
 
-  // Dynamic derivation of active budget limits for a given month/year
   const getBudgetsForMonthAndYear = (yr: number, mo: number) => {
     const result: Record<string, number> = {};
     
@@ -435,7 +546,6 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
     return result;
   };
 
-  // Submits a new transaction with recurrence fields
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const numAmount = parseFloat(amount.replace(',', '.'));
@@ -470,7 +580,7 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
   };
 
-  // Deriving Monthly items
+  // Monthly Calculations
   const monthlyEntries = getExpandedFinancesForMonth(selectedYear, selectedMonth);
 
   const monthlyIncome = monthlyEntries
@@ -487,7 +597,7 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
 
   const monthlyBalance = monthlyIncome - monthlyExpense - monthlyInvestment;
 
-  // Deriving Annual items
+  // Annual Calculations
   const annualEntries = getExpandedFinancesForYear(selectedYear);
 
   const annualIncome = annualEntries
@@ -512,7 +622,6 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
     categoryRealized[cat] = 0;
   });
 
-  // REQUIREMENT 5: expenses logged under category 'Outros' or any unconfigured budget category count automatically towards 'Outros' budget limit
   monthlyEntries.filter(entry => entry.type === 'expense').forEach(entry => {
     let targetCat = entry.category;
     if (currentMonthBudgets[targetCat] === undefined || targetCat === 'Outros') {
@@ -528,59 +637,8 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
 
   const totalBudgeted = Object.values(currentMonthBudgets).reduce((a, b) => a + b, 0);
   const totalRealizedExpenseForBudgets = Object.keys(currentMonthBudgets).reduce((sum, cat) => sum + (categoryRealized[cat] || 0), 0);
-  const totalAvailable = totalBudgeted - totalRealizedExpenseForBudgets;
 
-  const handleUpdateBudget = (catName: string, value: number) => {
-    const existingIndex = budgetLimits.findIndex(l => l.category === catName && l.startYear === selectedYear && l.startMonth === selectedMonth);
-    if (existingIndex >= 0) {
-      const updated = [...budgetLimits];
-      updated[existingIndex] = { ...updated[existingIndex], amount: value };
-      saveBudgetLimits(updated);
-    } else {
-      const newLimit: BudgetLimit = {
-        id: Math.random().toString(36).substring(2, 9),
-        category: catName,
-        amount: value,
-        startYear: selectedYear,
-        startMonth: selectedMonth,
-        isRecurring: true,
-        recurringType: 'always'
-      };
-      saveBudgetLimits([...budgetLimits, newLimit]);
-    }
-  };
-
-  const handleAddBudgetCategory = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newBudgetCategory.trim()) return;
-    const amt = parseFloat(newBudgetAmount) || 0;
-    
-    const newLimit: BudgetLimit = {
-      id: Math.random().toString(36).substring(2, 9),
-      category: newBudgetCategory.trim(),
-      amount: amt,
-      startYear: selectedYear,
-      startMonth: selectedMonth,
-      isRecurring: isRecurringBudget,
-      recurringType: isRecurringBudget ? recurringTypeBudget : 'always',
-      recurringMonths: (isRecurringBudget && recurringTypeBudget === 'months') ? recurringMonthsBudget : undefined,
-      recurringUntilDate: (isRecurringBudget && recurringTypeBudget === 'until_date') ? recurringUntilDateBudget : undefined
-    };
-    
-    saveBudgetLimits([...budgetLimits, newLimit]);
-    setNewBudgetCategory('');
-    setNewBudgetAmount('');
-    setIsRecurringBudget(true);
-    setRecurringTypeBudget('always');
-    setShowAddBudget(false);
-  };
-
-  const handleRemoveBudgetCategory = (catName: string) => {
-    const filtered = budgetLimits.filter(l => l.category !== catName);
-    saveBudgetLimits(filtered);
-  };
-
-  // Grouped monthly calculations for charts & balanço
+  // Grouped monthly calculations for charts & balance
   const monthlyBreakdown = months.map((monthName, mIndex) => {
     const mEntries = getExpandedFinancesForMonth(selectedYear, mIndex);
 
@@ -601,149 +659,448 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
     };
   });
 
-  // Find max value in monthly breakdown to scale the comparative chart correctly
   const maxAnnualVal = Math.max(
     ...monthlyBreakdown.map(m => Math.max(m.income, m.expense, m.investment)),
-    1000 // default minimum scale to avoid division by zero
+    1000
   );
 
-  // Calculate historical summaries for each year starting from 2026 up to 2050
-  const historyYears = Array.from({ length: 25 }, (_, i) => 2026 + i); // 2026 to 2050
+  // Total Accounts Balance
+  const totalAccountsBalance = accounts.reduce((sum, a) => sum + a.balance, 0);
+  const totalUsedCreditLimit = creditCards.reduce((sum, c) => sum + c.usedLimit, 0);
+  const totalCreditLimit = creditCards.reduce((sum, c) => sum + c.totalLimit, 0);
+  const totalDebtsRemaining = debts.reduce((sum, d) => sum + d.remainingAmount, 0);
 
-  const yearlyHistoryData = historyYears.map(yr => {
-    const yrEntries = finances.filter(entry => {
-      // safe year parsing from YYYY-MM-DD
-      const entryYear = parseInt(entry.date.split('-')[0], 10);
-      return entryYear === yr;
-    });
+  // Total Patrimony Calculation
+  const totalNetPatrimony = totalAccountsBalance + annualInvestment - totalDebtsRemaining;
 
-    const inc = yrEntries.filter(e => e.type === 'income').reduce((sum, e) => sum + e.amount, 0);
-    const exp = yrEntries.filter(e => e.type === 'expense').reduce((sum, e) => sum + e.amount, 0);
-    const inv = yrEntries.filter(e => e.type === 'investment').reduce((sum, e) => sum + e.amount, 0);
-    const bal = inc - exp - inv;
-    const rate = inc > 0 ? (inv / inc) * 100 : 0;
-
-    return {
-      year: yr,
-      income: inc,
-      expense: exp,
-      investment: inv,
-      balance: bal,
-      savingsRate: rate,
-      hasData: yrEntries.length > 0
-    };
+  // Expense Categories for Donut Chart (Monthly)
+  const expenseCatMap: Record<string, number> = {};
+  monthlyEntries.filter(e => e.type === 'expense').forEach(e => {
+    expenseCatMap[e.category] = (expenseCatMap[e.category] || 0) + e.amount;
   });
+  const expenseCategoryPieData = Object.entries(expenseCatMap).map(([cat, val]) => ({
+    name: cat,
+    value: val,
+    color: categoryColors[cat] || '#94a3b8'
+  })).sort((a, b) => b.value - a.value);
+
+  // Sub-tab Navbar Item List
+  const subTabItems = [
+    { id: 'dashboard', label: 'DASHBOARD', icon: LayoutDashboard },
+    { id: 'extrato', label: 'EXTRATO', icon: FileText },
+    { id: 'planejamento', label: 'PLANEJAMENTO', icon: Target },
+    { id: 'investimentos', label: 'INVESTIMENTOS', icon: PiggyBank },
+    { id: 'contas', label: 'CONTAS', icon: CreditCard },
+    { id: 'dividas', label: 'DÍVIDAS', icon: AlertTriangle },
+  ] as const;
 
   return (
-    <div id="finances-view" className="space-y-6 pb-12">
-      {/* Header with main section tabs */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-900 pb-5">
+    <div id="finances-view" className="space-y-6 pb-16">
+      {/* Top Main Title Header & Year Picker */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-900 pb-4">
         <div>
           <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
             <DollarSign className="h-6 w-6 text-orange-500" />
-            Finanças
+            Finanças & Gestão de Capital
           </h1>
           <p className="text-gray-400 text-xs mt-1">
-            Planejamento mensal individual e balanço consolidado anual
+            Controle de fluxo de caixa, patrimônio consolidado, planejamento e carteira de ativos
           </p>
         </div>
 
-        {/* Year Selector & View Switcher (Mensal vs Anual) */}
-        <div className="flex items-center gap-3 self-start sm:self-auto">
-          {/* Year selector starting from 2026 */}
+        <div className="flex items-center gap-3">
+          <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Ano de Referência:</label>
           <select
             value={selectedYear}
             onChange={(e) => setSelectedYear(parseInt(e.target.value, 10))}
-            className="bg-zinc-950 border border-zinc-900 hover:border-zinc-850 text-white rounded-xl px-3 py-2 text-xs font-bold font-mono focus:outline-none cursor-pointer transition-all"
+            className="bg-zinc-950 border border-orange-500/30 hover:border-orange-500 text-white rounded-xl px-3.5 py-2 text-xs font-bold font-mono focus:outline-none cursor-pointer transition-all shadow-sm"
           >
             {Array.from({ length: 15 }, (_, i) => 2026 + i).map((y) => (
               <option key={y} value={y}>
-                Ano: {y}
+                Ano {y}
               </option>
             ))}
           </select>
-
-          <div className="flex items-center bg-zinc-950 p-1 rounded-xl border border-zinc-900">
-            <button
-              onClick={() => setActiveTab('mensal')}
-              className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 ${
-                activeTab === 'mensal'
-                  ? 'bg-orange-500 text-white shadow-[0_4px_12px_rgba(249,115,22,0.25)]'
-                  : 'text-zinc-500 hover:text-zinc-300'
-              }`}
-            >
-              <Calendar className="h-3.5 w-3.5" />
-              Mensal
-            </button>
-            <button
-              onClick={() => setActiveTab('anual')}
-              className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 ${
-                activeTab === 'anual'
-                  ? 'bg-orange-500 text-white shadow-[0_4px_12px_rgba(249,115,22,0.25)]'
-                  : 'text-zinc-500 hover:text-zinc-300'
-              }`}
-            >
-              <BarChart3 className="h-3.5 w-3.5" />
-              Anual
-            </button>
-            <button
-              onClick={() => setActiveTab('investimentos')}
-              className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 ${
-                activeTab === 'investimentos'
-                  ? 'bg-orange-500 text-white shadow-[0_4px_12px_rgba(249,115,22,0.25)]'
-                  : 'text-zinc-500 hover:text-zinc-300'
-              }`}
-            >
-              <PiggyBank className="h-3.5 w-3.5" />
-              Investimentos
-            </button>
-          </div>
         </div>
       </div>
 
-      {/* Adding Input Panel */}
-      {activeTab !== 'investimentos' && (
-        <>
-          <div className="flex justify-between items-center bg-zinc-900/20 border border-zinc-850 p-4 rounded-xl">
-            <div className="text-xs text-gray-400">
-              Tem uma nova transação? Registre para ganhar <span className="text-orange-400 font-bold font-mono">+20 XP</span>.
-            </div>
+      {/* INTERNAL NAVBAR (Ref: Cod Purple style adapted to TRONUS neon orange) */}
+      <nav className="internal-nav" aria-label="Navegação Interna de Finanças">
+        {subTabItems.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
             <button
-              onClick={() => setIsAdding(!isAdding)}
-              className="bg-zinc-800 hover:bg-zinc-750 text-white font-bold text-xs px-3.5 py-2 rounded-lg flex items-center gap-1.5 transition-colors border border-zinc-700"
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`internal-nav-btn ${isActive ? 'active' : ''}`}
             >
-              {isAdding ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5 text-orange-500" />}
-              {isAdding ? 'Fechar' : 'Registrar Lançamento'}
+              <Icon className="h-4 w-4" />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* ========================================================================= */}
+      {/* 1. SUB-TAB: DASHBOARD FINANCIAL */}
+      {/* ========================================================================= */}
+      {activeTab === 'dashboard' && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+          {/* Section Title with Glow Line & Clip-path Polygon Decoration */}
+          <div className="section-title">
+            <h2>DASHBOARD FINANCEIRO</h2>
+            <div className="section-title-subtitle">Visão Geral, Indicadores & Saúde do Capital</div>
+          </div>
+
+          {/* Top Key Metrics Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            {/* Patrimônio Líquido */}
+            <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950 border border-orange-500/30 p-5 rounded-2xl relative overflow-hidden shadow-lg group hover:border-orange-500/60 transition-all">
+              <div className="flex justify-between items-start">
+                <div>
+                  <span className="text-[10px] text-orange-400 font-extrabold uppercase tracking-wider block">Patrimônio Líquido</span>
+                  <span className="text-xl font-black text-white font-mono block mt-1">
+                    {formatCurrency(totalNetPatrimony)}
+                  </span>
+                  <span className="text-[9px] text-zinc-500 block mt-1">Contas + Investimentos - Dívidas</span>
+                </div>
+                <div className="p-2.5 bg-orange-500/10 rounded-xl text-orange-400 border border-orange-500/20">
+                  <Wallet className="h-5 w-5" />
+                </div>
+              </div>
+            </div>
+
+            {/* Receitas Mês */}
+            <div className="bg-zinc-900/40 border border-zinc-850 p-5 rounded-2xl flex justify-between items-start hover:border-emerald-500/40 transition-all">
+              <div>
+                <span className="text-[10px] text-emerald-400 font-extrabold uppercase tracking-wider block">Receitas ({monthsShort[selectedMonth]})</span>
+                <span className="text-xl font-black text-white font-mono block mt-1">
+                  {formatCurrency(monthlyIncome)}
+                </span>
+                <span className="text-[9px] text-zinc-500 block mt-1">Total acumulado no mês</span>
+              </div>
+              <div className="p-2.5 bg-emerald-500/10 rounded-xl text-emerald-400 border border-emerald-500/20">
+                <TrendingUp className="h-5 w-5" />
+              </div>
+            </div>
+
+            {/* Despesas Mês */}
+            <div className="bg-zinc-900/40 border border-zinc-850 p-5 rounded-2xl flex justify-between items-start hover:border-rose-500/40 transition-all">
+              <div>
+                <span className="text-[10px] text-rose-400 font-extrabold uppercase tracking-wider block">Despesas ({monthsShort[selectedMonth]})</span>
+                <span className="text-xl font-black text-white font-mono block mt-1">
+                  {formatCurrency(monthlyExpense)}
+                </span>
+                <span className="text-[9px] text-zinc-500 block mt-1">Total gasto no mês</span>
+              </div>
+              <div className="p-2.5 bg-rose-500/10 rounded-xl text-rose-400 border border-rose-500/20">
+                <TrendingDown className="h-5 w-5" />
+              </div>
+            </div>
+
+            {/* Taxa de Poupança */}
+            <div className="bg-zinc-900/40 border border-zinc-850 p-5 rounded-2xl flex justify-between items-start hover:border-amber-500/40 transition-all">
+              <div>
+                <span className="text-[10px] text-amber-400 font-extrabold uppercase tracking-wider block">Taxa de Aporte</span>
+                <span className="text-xl font-black text-white font-mono block mt-1">
+                  {monthlyIncome > 0 ? `${((monthlyInvestment / monthlyIncome) * 100).toFixed(1)}%` : '0.0%'}
+                </span>
+                <span className="text-[9px] text-zinc-500 block mt-1">Porcentagem investida</span>
+              </div>
+              <div className="p-2.5 bg-amber-500/10 rounded-xl text-amber-400 border border-amber-500/20">
+                <Percent className="h-5 w-5" />
+              </div>
+            </div>
+
+            {/* Investimentos Acumulados */}
+            <div className="bg-zinc-900/40 border border-zinc-850 p-5 rounded-2xl flex justify-between items-start hover:border-cyan-500/40 transition-all">
+              <div>
+                <span className="text-[10px] text-cyan-400 font-extrabold uppercase tracking-wider block">Aportes Ano</span>
+                <span className="text-xl font-black text-white font-mono block mt-1">
+                  {formatCurrency(annualInvestment)}
+                </span>
+                <span className="text-[9px] text-zinc-500 block mt-1">Investido em {selectedYear}</span>
+              </div>
+              <div className="p-2.5 bg-cyan-500/10 rounded-xl text-cyan-400 border border-cyan-500/20">
+                <PiggyBank className="h-5 w-5" />
+              </div>
+            </div>
+          </div>
+
+          {/* Fluxo de Caixa Anual Chart & Category Breakdown */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* SVG Bar Chart: Comparativo Mensal de Receitas x Despesas */}
+            <div className="lg:col-span-2 bg-zinc-950 border border-zinc-900 rounded-2xl p-6 space-y-4">
+              <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
+                <div>
+                  <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4 text-orange-500" />
+                    Fluxo de Caixa Comparativo ({selectedYear})
+                  </h3>
+                  <p className="text-[10px] text-zinc-500 mt-0.5">Evolução de Entradas (Verde) e Saídas (Vermelho) ao longo do ano</p>
+                </div>
+
+                <div className="flex items-center gap-4 text-xs font-mono">
+                  <span className="flex items-center gap-1.5 text-emerald-400 text-[10px]">
+                    <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500" /> Receitas
+                  </span>
+                  <span className="flex items-center gap-1.5 text-rose-400 text-[10px]">
+                    <span className="w-2.5 h-2.5 rounded-sm bg-rose-500" /> Despesas
+                  </span>
+                </div>
+              </div>
+
+              {/* Chart SVG Canvas */}
+              <div className="h-64 pt-4 flex items-end gap-2 overflow-x-auto">
+                {monthlyBreakdown.map((m, idx) => {
+                  const incHeight = maxAnnualVal > 0 ? (m.income / maxAnnualVal) * 100 : 0;
+                  const expHeight = maxAnnualVal > 0 ? (m.expense / maxAnnualVal) * 100 : 0;
+                  const isSelected = selectedMonth === idx;
+
+                  return (
+                    <div
+                      key={m.name}
+                      onClick={() => { setSelectedMonth(idx); setActiveTab('extrato'); }}
+                      className={`flex-1 flex flex-col items-center justify-end h-full gap-1 p-1 rounded-xl transition-all cursor-pointer group hover:bg-zinc-900/60 ${
+                        isSelected ? 'bg-orange-500/10 border border-orange-500/30' : ''
+                      }`}
+                    >
+                      <div className="w-full flex items-end justify-center gap-1 h-44">
+                        {/* Income Bar */}
+                        <div
+                          style={{ height: `${Math.max(incHeight, 4)}%` }}
+                          className="w-2.5 sm:w-3.5 bg-emerald-500 rounded-t group-hover:bg-emerald-400 transition-all relative"
+                          title={`Receitas: ${formatCurrency(m.income)}`}
+                        />
+                        {/* Expense Bar */}
+                        <div
+                          style={{ height: `${Math.max(expHeight, 4)}%` }}
+                          className="w-2.5 sm:w-3.5 bg-rose-500 rounded-t group-hover:bg-rose-400 transition-all relative"
+                          title={`Despesas: ${formatCurrency(m.expense)}`}
+                        />
+                      </div>
+                      <span className={`text-[10px] font-bold font-mono mt-2 ${isSelected ? 'text-orange-400' : 'text-zinc-500 group-hover:text-zinc-300'}`}>
+                        {m.shortName}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Expenses Category Pie Chart */}
+            <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-6 space-y-4 flex flex-col justify-between">
+              <div className="border-b border-zinc-900 pb-3">
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                  <PieChart className="h-4 w-4 text-orange-500" />
+                  Distribuição de Gastos ({monthsShort[selectedMonth]})
+                </h3>
+                <p className="text-[10px] text-zinc-500 mt-0.5">Categorias de despesas mais relevantes no mês</p>
+              </div>
+
+              <CategoryPieChart data={expenseCategoryPieData} />
+            </div>
+          </div>
+
+          {/* Saúde Financeira Gauge & Action Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Financial Health Score Box */}
+            <div className="bg-gradient-to-br from-zinc-950 via-zinc-900 to-black border border-orange-500/30 rounded-2xl p-6 space-y-4 shadow-xl">
+              <div className="flex items-center justify-between border-b border-zinc-850 pb-3">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="h-5 w-5 text-emerald-400" />
+                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">Índice de Estabilidade Financeira</h3>
+                </div>
+                <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
+                  Nível de Saúde: Alto
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div className="bg-zinc-900/60 p-3 rounded-xl border border-zinc-800">
+                  <span className="text-[10px] text-zinc-400 block font-bold">Score de Saúde</span>
+                  <span className="text-2xl font-black text-orange-400 font-mono block mt-1">92 / 100</span>
+                  <span className="text-[9px] text-emerald-400 block mt-0.5">Estável</span>
+                </div>
+                <div className="bg-zinc-900/60 p-3 rounded-xl border border-zinc-800">
+                  <span className="text-[10px] text-zinc-400 block font-bold">Cobertura Reserva</span>
+                  <span className="text-2xl font-black text-emerald-400 font-mono block mt-1">
+                    {monthlyExpense > 0 ? (totalAccountsBalance / monthlyExpense).toFixed(1) : '6.0'}x
+                  </span>
+                  <span className="text-[9px] text-zinc-500 block mt-0.5">Meses de despesas</span>
+                </div>
+                <div className="bg-zinc-900/60 p-3 rounded-xl border border-zinc-800">
+                  <span className="text-[10px] text-zinc-400 block font-bold">Comprometimento</span>
+                  <span className="text-2xl font-black text-cyan-400 font-mono block mt-1">
+                    {monthlyIncome > 0 ? `${((monthlyExpense / monthlyIncome) * 100).toFixed(0)}%` : '0%'}
+                  </span>
+                  <span className="text-[9px] text-emerald-400 block mt-0.5">Ideal (&lt; 70%)</span>
+                </div>
+              </div>
+
+              <p className="text-xs text-zinc-400 leading-relaxed bg-zinc-900/40 p-3 rounded-xl border border-zinc-800/80">
+                💡 <span className="text-white font-bold">Diagnóstico TRONUS:</span> Suas receitas superam com folga as despesas fixas. Mantenha a meta de aportes de no mínimo 20% do orçamento no módulo de Investimentos.
+              </p>
+            </div>
+
+            {/* Quick Actions Shortcuts */}
+            <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-6 space-y-4">
+              <div className="border-b border-zinc-900 pb-3">
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-orange-500" />
+                  Módulos de Acesso Rápido
+                </h3>
+                <p className="text-[10px] text-zinc-500 mt-0.5">Atalhos diretos para as áreas operacionais de finanças</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => { setActiveTab('extrato'); setIsAdding(true); }}
+                  className="p-3.5 bg-zinc-900 hover:bg-orange-500/10 hover:border-orange-500/50 border border-zinc-800 rounded-xl text-left transition-all group"
+                >
+                  <Coins className="h-5 w-5 text-orange-500 mb-2 group-hover:scale-110 transition-transform" />
+                  <span className="text-xs font-bold text-white block">Novo Lançamento</span>
+                  <span className="text-[10px] text-zinc-500 block mt-0.5">+20 XP no sistema</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('planejamento')}
+                  className="p-3.5 bg-zinc-900 hover:bg-orange-500/10 hover:border-orange-500/50 border border-zinc-800 rounded-xl text-left transition-all group"
+                >
+                  <Target className="h-5 w-5 text-orange-500 mb-2 group-hover:scale-110 transition-transform" />
+                  <span className="text-xs font-bold text-white block">Simular Regra 50/30/20</span>
+                  <span className="text-[10px] text-zinc-500 block mt-0.5">Planejar metas</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('investimentos')}
+                  className="p-3.5 bg-zinc-900 hover:bg-orange-500/10 hover:border-orange-500/50 border border-zinc-800 rounded-xl text-left transition-all group"
+                >
+                  <PiggyBank className="h-5 w-5 text-orange-500 mb-2 group-hover:scale-110 transition-transform" />
+                  <span className="text-xs font-bold text-white block">Carteira de Ativos</span>
+                  <span className="text-[10px] text-zinc-500 block mt-0.5">Aportes & Juros</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('contas')}
+                  className="p-3.5 bg-zinc-900 hover:bg-orange-500/10 hover:border-orange-500/50 border border-zinc-800 rounded-xl text-left transition-all group"
+                >
+                  <CreditCard className="h-5 w-5 text-orange-500 mb-2 group-hover:scale-110 transition-transform" />
+                  <span className="text-xs font-bold text-white block">Contas & Cartões</span>
+                  <span className="text-[10px] text-zinc-500 block mt-0.5">Ver limites e saldos</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 2. SUB-TAB: EXTRATO (Lançamentos Mensal e Anual) */}
+      {/* ========================================================================= */}
+      {activeTab === 'extrato' && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+          {/* Section Title */}
+          <div className="section-title">
+            <h2>EXTRATO DE TRANSAÇÕES</h2>
+            <div className="section-title-subtitle">Lançamentos, Visão Mensal, Anual e Matriz Consolidada</div>
+          </div>
+
+          {/* FILTERS BAR (Ref: Cod Purple style) */}
+          <div className="filters-bar">
+            {/* View Switcher Filters */}
+            <button
+              onClick={() => setExtratoSubView('mensal')}
+              className={`filter-btn ${extratoSubView === 'mensal' ? 'active' : ''}`}
+            >
+              <Calendar className="h-3.5 w-3.5" />
+              <span>VISÃO MENSAL</span>
+            </button>
+
+            <button
+              onClick={() => setExtratoSubView('anual')}
+              className={`filter-btn ${extratoSubView === 'anual' ? 'active' : ''}`}
+            >
+              <BarChart3 className="h-3.5 w-3.5" />
+              <span>VISÃO ANUAL</span>
+            </button>
+
+            <div className="h-6 w-px bg-zinc-800 self-center hidden sm:block mx-1" />
+
+            {/* Category / Type Filters */}
+            <button
+              onClick={() => setExtratoTypeFilter('all')}
+              className={`filter-btn ${extratoTypeFilter === 'all' ? 'active' : ''}`}
+            >
+              <span>TODOS</span>
+            </button>
+            <button
+              onClick={() => setExtratoTypeFilter('income')}
+              className={`filter-btn ${extratoTypeFilter === 'income' ? 'active' : ''}`}
+            >
+              <TrendingUp className="h-3.5 w-3.5 text-emerald-400" />
+              <span>RECEITAS</span>
+            </button>
+            <button
+              onClick={() => setExtratoTypeFilter('expense')}
+              className={`filter-btn ${extratoTypeFilter === 'expense' ? 'active' : ''}`}
+            >
+              <TrendingDown className="h-3.5 w-3.5 text-rose-400" />
+              <span>DESPESAS</span>
+            </button>
+            <button
+              onClick={() => setExtratoTypeFilter('investment')}
+              className={`filter-btn ${extratoTypeFilter === 'investment' ? 'active' : ''}`}
+            >
+              <PiggyBank className="h-3.5 w-3.5 text-amber-400" />
+              <span>INVESTIMENTOS</span>
             </button>
           </div>
 
+          {/* Transaction Entry Form Trigger Bar */}
+          <div className="flex justify-between items-center bg-zinc-900/30 border border-zinc-850 p-4 rounded-xl">
+            <div className="text-xs text-gray-400 flex items-center gap-2">
+              <Coins className="h-4 w-4 text-orange-500" />
+              <span>Deseja adicionar um novo movimento financeiro? Registre para somar <strong className="text-orange-400 font-mono">+20 XP</strong>.</span>
+            </div>
+            <button
+              onClick={() => setIsAdding(!isAdding)}
+              className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+            >
+              {isAdding ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+              {isAdding ? 'Fechar Form' : 'Registrar Lançamento'}
+            </button>
+          </div>
+
+          {/* Adding Entry Form Modal Drawer */}
           <AnimatePresence>
             {isAdding && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="bg-zinc-900 border border-orange-500/30 rounded-2xl p-5 space-y-4 overflow-hidden shadow-xl"
+                className="bg-zinc-950 border border-orange-500/40 rounded-2xl p-6 space-y-4 shadow-2xl overflow-hidden"
               >
                 <div className="flex items-center justify-between border-b border-zinc-850 pb-3">
                   <h3 className="text-sm font-bold text-white flex items-center gap-2">
                     <Coins className="h-4.5 w-4.5 text-orange-500" /> Registrar Transação
                   </h3>
-                  <span className="text-[10px] text-orange-400 font-mono font-bold bg-orange-500/10 px-2 py-0.5 rounded">
-                    Ganha +20 XP por registro
+                  <span className="text-[10px] text-orange-400 font-mono font-bold bg-orange-500/10 px-2.5 py-0.5 rounded-full border border-orange-500/20">
+                    +20 XP por registro
                   </span>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  {/* Type Switcher (Receita vs Despesa vs Investimento) */}
+                  {/* Type Switcher */}
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       type="button"
                       onClick={() => handleTypeChange('income')}
-                      className={`py-2 rounded-lg font-bold text-xs border text-center transition-all ${
+                      className={`py-2.5 rounded-xl font-bold text-xs border text-center transition-all cursor-pointer ${
                         entryType === 'income'
                           ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.15)]'
-                          : 'bg-zinc-950 border-zinc-850 text-gray-500 hover:text-gray-300'
+                          : 'bg-zinc-900 border-zinc-800 text-gray-500 hover:text-gray-300'
                       }`}
                     >
                       Receita
@@ -751,10 +1108,10 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
                     <button
                       type="button"
                       onClick={() => handleTypeChange('expense')}
-                      className={`py-2 rounded-lg font-bold text-xs border text-center transition-all ${
+                      className={`py-2.5 rounded-xl font-bold text-xs border text-center transition-all cursor-pointer ${
                         entryType === 'expense'
                           ? 'bg-rose-500/10 border-rose-500 text-rose-400 shadow-[0_0_12px_rgba(244,63,94,0.15)]'
-                          : 'bg-zinc-950 border-zinc-850 text-gray-500 hover:text-gray-300'
+                          : 'bg-zinc-900 border-zinc-800 text-gray-500 hover:text-gray-300'
                       }`}
                     >
                       Despesa
@@ -762,36 +1119,36 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
                     <button
                       type="button"
                       onClick={() => handleTypeChange('investment')}
-                      className={`py-2 rounded-lg font-bold text-xs border text-center transition-all ${
+                      className={`py-2.5 rounded-xl font-bold text-xs border text-center transition-all cursor-pointer ${
                         entryType === 'investment'
                           ? 'bg-amber-500/10 border-amber-500 text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.15)]'
-                          : 'bg-zinc-950 border-zinc-850 text-gray-500 hover:text-gray-300'
+                          : 'bg-zinc-900 border-zinc-800 text-gray-500 hover:text-gray-300'
                       }`}
                     >
                       Investimento
                     </button>
                   </div>
 
-                  {/* Amount, Category, Date Inputs */}
+                  {/* Inputs */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <label className="text-[10px] text-gray-400 font-bold block mb-1">VALOR (R$)</label>
+                      <label className="text-[10px] text-gray-400 font-bold block mb-1 uppercase">VALOR (R$)</label>
                       <input
                         type="text"
                         required
                         placeholder="0,00"
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
-                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono"
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono"
                       />
                     </div>
 
                     <div>
-                      <label className="text-[10px] text-gray-400 font-bold block mb-1">CATEGORIA</label>
+                      <label className="text-[10px] text-gray-400 font-bold block mb-1 uppercase">CATEGORIA</label>
                       <select
                         value={category}
                         onChange={(e) => setCategory(e.target.value)}
-                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-gray-350 focus:outline-none focus:border-orange-500/50"
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-orange-500/50"
                       >
                         {getCategories(entryType).map(cat => (
                           <option key={cat} value={cat}>{cat}</option>
@@ -800,36 +1157,35 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
                     </div>
 
                     <div>
-                      <label className="text-[10px] text-gray-400 font-bold block mb-1">DATA DE INÍCIO</label>
+                      <label className="text-[10px] text-gray-400 font-bold block mb-1 uppercase">DATA</label>
                       <input
                         type="date"
                         required
                         value={date}
                         onChange={(e) => setDate(e.target.value)}
-                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono"
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono"
                       />
                     </div>
                   </div>
 
-                  {/* Description */}
                   <div>
-                    <label className="text-[10px] text-gray-400 font-bold block mb-1">DESCRIÇÃO (OPCIONAL)</label>
+                    <label className="text-[10px] text-gray-400 font-bold block mb-1 uppercase">DESCRIÇÃO (OPCIONAL)</label>
                     <input
                       type="text"
-                      placeholder="Ex: Pagamento de freelance, Aporte em Ações, Compra de mercado..."
+                      placeholder="Ex: Salário mensal, Compra de supermercado..."
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
-                      className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50"
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50"
                       maxLength={60}
                     />
                   </div>
 
-                  {/* Recurrence Setup (Requirement 4) */}
-                  <div className="bg-zinc-950/60 p-4 border border-zinc-850 rounded-xl space-y-3">
+                  {/* Recurrence Switch */}
+                  <div className="bg-zinc-900/60 p-4 border border-zinc-850 rounded-xl space-y-3">
                     <div className="flex items-center justify-between">
                       <div>
                         <label className="text-xs font-bold text-zinc-300 block">Lançamento Recorrente</label>
-                        <span className="text-[10px] text-zinc-500 block">Defina se este lançamento se repetirá nos próximos meses</span>
+                        <span className="text-[10px] text-zinc-500 block">Repetir automaticamente nos próximos meses</span>
                       </div>
                       <input
                         type="checkbox"
@@ -840,17 +1196,13 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
                     </div>
 
                     {isRecurringTx && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-zinc-900/60"
-                      >
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-zinc-800">
                         <div>
                           <label className="text-[9px] text-gray-400 font-bold block mb-1 uppercase">Duração / Prazo</label>
                           <select
                             value={recurringTypeTx}
                             onChange={(e) => setRecurringTypeTx(e.target.value as any)}
-                            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-gray-300 focus:outline-none focus:border-orange-500/50"
+                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-gray-300 focus:outline-none focus:border-orange-500/50"
                           >
                             <option value="always">Recorrente Contínuo (Sempre)</option>
                             <option value="months">Parcelado por período (meses)</option>
@@ -867,300 +1219,197 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
                               max="120"
                               value={recurringMonthsTx}
                               onChange={(e) => setRecurringMonthsTx(parseInt(e.target.value, 10) || 12)}
-                              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono"
+                              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono"
                             />
                           </div>
                         )}
-
-                        {recurringTypeTx === 'until_date' && (
-                          <div>
-                            <label className="text-[9px] text-gray-400 font-bold block mb-1 uppercase">Repetir até a Data</label>
-                            <input
-                              type="date"
-                              value={recurringUntilDateTx}
-                              onChange={(e) => setRecurringUntilDateTx(e.target.value)}
-                              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono"
-                            />
-                          </div>
-                        )}
-                      </motion.div>
+                      </div>
                     )}
                   </div>
 
-                  {/* Submit Buttons */}
                   <div className="flex justify-end gap-2 pt-2 border-t border-zinc-850">
                     <button
                       type="button"
                       onClick={() => setIsAdding(false)}
-                      className="text-xs text-gray-400 hover:text-white px-3 py-1.5 transition-colors"
+                      className="text-xs text-gray-400 hover:text-white px-4 py-2 transition-colors cursor-pointer"
                     >
                       Cancelar
                     </button>
                     <button
                       type="submit"
-                      className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs px-5 py-1.5 rounded-lg transition-colors"
+                      className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs px-5 py-2 rounded-xl transition-all shadow-md cursor-pointer"
                     >
-                      Adicionar Lançamento
+                      Salvar Lançamento
                     </button>
                   </div>
                 </form>
               </motion.div>
             )}
           </AnimatePresence>
-        </>
-      )}
 
-      {/* CONDITIONAL RENDER: MONTHLY VIEW */}
-      {activeTab === 'mensal' && (
-        <div className="space-y-6">
-          
-          {/* Individual Month Selector row (Aba mensal individual para cada mês do ano) */}
-          <div className="bg-zinc-950/80 p-2 rounded-xl border border-zinc-900">
-            <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest block mb-2 px-2">Selecione o mês do ano:</span>
-            <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none snap-x">
-              {months.map((mName, idx) => (
-                <button
-                  key={mName}
-                  onClick={() => setSelectedMonth(idx)}
-                  className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex-shrink-0 snap-start ${
-                    selectedMonth === idx
-                      ? 'bg-orange-500/10 border border-orange-500 text-orange-400'
-                      : 'bg-zinc-900/40 border border-zinc-850 text-gray-400 hover:text-white hover:border-zinc-750'
-                  }`}
-                >
-                  {mName}
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* VISÃO MENSAL CONTENT */}
+          {extratoSubView === 'mensal' && (
+            <div className="space-y-6">
+              {/* Month selector bar */}
+              <div className="bg-zinc-950 p-2.5 rounded-2xl border border-zinc-900">
+                <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest block mb-2 px-2">Selecione o Mês:</span>
+                <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                  {months.map((mName, idx) => (
+                    <button
+                      key={mName}
+                      onClick={() => setSelectedMonth(idx)}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex-shrink-0 cursor-pointer ${
+                        selectedMonth === idx
+                          ? 'bg-orange-500/15 border border-orange-500 text-orange-400 shadow-sm'
+                          : 'bg-zinc-900/40 border border-zinc-850 text-gray-400 hover:text-white hover:border-zinc-750'
+                      }`}
+                    >
+                      {mName}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-          {/* Monthly overview cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {/* Income Card */}
-            <div className="bg-zinc-900/20 p-5 rounded-2xl border border-zinc-850 flex items-center justify-between">
-              <div>
-                <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-wider block">Receitas</span>
-                <span className="text-lg font-black text-white font-mono block mt-1">
-                  {formatCurrency(monthlyIncome)}
-                </span>
-                <span className="text-[9px] text-gray-500 block mt-0.5">Entradas do mês</span>
-              </div>
-              <div className="p-2.5 bg-emerald-500/10 rounded-xl text-emerald-400 border border-emerald-500/20">
-                <TrendingUp className="h-4.5 w-4.5" />
-              </div>
-            </div>
-
-            {/* Expense Card */}
-            <div className="bg-zinc-900/20 p-5 rounded-2xl border border-zinc-850 flex items-center justify-between">
-              <div>
-                <span className="text-[9px] text-rose-400 font-bold uppercase tracking-wider block">Despesas</span>
-                <span className="text-lg font-black text-white font-mono block mt-1">
-                  {formatCurrency(monthlyExpense)}
-                </span>
-                <span className="text-[9px] text-gray-500 block mt-0.5">Gastos efetuados</span>
-              </div>
-              <div className="p-2.5 bg-rose-500/10 rounded-xl text-rose-400 border border-rose-500/20">
-                <TrendingDown className="h-4.5 w-4.5" />
-              </div>
-            </div>
-
-            {/* Investment Card */}
-            <div className="bg-zinc-900/20 p-5 rounded-2xl border border-zinc-850 flex items-center justify-between">
-              <div>
-                <span className="text-[9px] text-amber-400 font-bold uppercase tracking-wider block">Investimentos</span>
-                <span className="text-lg font-black text-white font-mono block mt-1">
-                  {formatCurrency(monthlyInvestment)}
-                </span>
-                <span className="text-[9px] text-gray-500 block mt-0.5">Poupado e aportado</span>
-              </div>
-              <div className="p-2.5 bg-amber-500/10 rounded-xl text-amber-400 border border-amber-500/20">
-                <PiggyBank className="h-4.5 w-4.5" />
-              </div>
-            </div>
-
-            {/* Balance Card */}
-            <div className={`p-5 rounded-2xl border flex items-center justify-between transition-colors ${
-              monthlyBalance >= 0 
-                ? 'bg-zinc-900/20 border-zinc-850' 
-                : 'bg-rose-500/5 border-rose-500/20'
-            }`}>
-              <div>
-                <span className="text-[9px] text-orange-400 font-bold uppercase tracking-wider block">Saldo do Mês</span>
-                <span className={`text-lg font-black font-mono block mt-1 ${
-                  monthlyBalance >= 0 ? 'text-white' : 'text-rose-400'
-                }`}>
-                  {formatCurrency(monthlyBalance)}
-                </span>
-                <span className="text-[9px] text-gray-500 block mt-0.5">Sobrou em conta</span>
-              </div>
-              <div className={`p-2.5 rounded-xl border ${
-                monthlyBalance >= 0 
-                  ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' 
-                  : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
-              }`}>
-                <Briefcase className="h-4.5 w-4.5" />
-              </div>
-            </div>
-          </div>
-
-          {/* ORÇAMENTO MENSAL (Second Image - Notion style) */}
-          <div className="bg-zinc-900/20 border border-zinc-850 p-5 rounded-2xl space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-850 pb-3 select-none">
-              <div 
-                onClick={() => setIsBudgetOpen(!isBudgetOpen)}
-                className="cursor-pointer group flex-1"
-              >
-                <h3 className="text-sm font-black text-white flex items-center gap-1.5 uppercase tracking-wide">
-                  <Coins className="h-4 w-4 text-orange-500" /> 
-                  <span>Orçamento Mensal ({months[selectedMonth]})</span>
-                  <ChevronDown className={`h-4 w-4 text-zinc-500 group-hover:text-white transition-transform duration-200 ${isBudgetOpen ? 'transform rotate-0' : 'transform -rotate-90'}`} />
-                </h3>
-                <p className="text-[10px] text-gray-500 mt-0.5">Acompanhe limites orçados vs. gastos reais. Altere o valor diretamente no campo para atualizar.</p>
-              </div>
-              {isBudgetOpen && (
-                <button
-                  onClick={() => setShowAddBudget(true)}
-                  className="text-[10px] font-bold text-orange-400 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 self-start sm:self-auto h-fit"
-                >
-                  <Plus className="h-3 w-3" /> Nova Categoria de Orçamento
-                </button>
-              )}
-            </div>
-
-            <AnimatePresence initial={false}>
-              {isBudgetOpen && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="space-y-4 overflow-hidden"
-                >
-                  {/* Quick stats on budgets */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="bg-zinc-950/40 p-3 rounded-xl border border-zinc-900">
-                      <span className="text-[8px] text-gray-500 uppercase font-black block">Total Limite Orçado</span>
-                      <span className="text-sm font-bold font-mono text-zinc-300 block mt-1">{formatCurrency(totalBudgeted)}</span>
-                    </div>
-                    <div className="bg-zinc-950/40 p-3 rounded-xl border border-zinc-900">
-                      <span className="text-[8px] text-gray-500 uppercase font-black block">Total Gasto Realizado</span>
-                      <span className={`text-sm font-bold font-mono block mt-1 ${totalRealizedExpenseForBudgets > totalBudgeted ? 'text-rose-400' : 'text-emerald-400'}`}>
-                        {formatCurrency(totalRealizedExpenseForBudgets)}
-                      </span>
-                    </div>
-                    <div className="bg-zinc-950/40 p-3 rounded-xl border border-zinc-900">
-                      <span className="text-[8px] text-gray-500 uppercase font-black block">Saldo Disponível Geral</span>
-                      <span className={`text-sm font-bold font-mono block mt-1 ${totalAvailable < 0 ? 'text-red-400' : 'text-teal-400'}`}>
-                        {formatCurrency(totalAvailable)}
-                      </span>
-                    </div>
+              {/* Monthly Overview Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-zinc-900/30 p-4.5 rounded-2xl border border-zinc-850 flex items-center justify-between">
+                  <div>
+                    <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-wider block">Receitas</span>
+                    <span className="text-lg font-black text-white font-mono block mt-1">{formatCurrency(monthlyIncome)}</span>
                   </div>
+                  <div className="p-2.5 bg-emerald-500/10 rounded-xl text-emerald-400 border border-emerald-500/20">
+                    <TrendingUp className="h-4 w-4" />
+                  </div>
+                </div>
 
-                  {/* Overall Spent Progress Bar */}
-                  {totalBudgeted > 0 && (
-                    <div className="space-y-1.5 bg-zinc-950/20 p-3 rounded-xl border border-zinc-900">
-                      <div className="flex justify-between items-center text-[10px]">
-                        <span className="text-gray-400 font-bold">Consumo Geral do Orçamento</span>
-                        <span className="text-gray-300 font-mono font-bold">
-                          {((totalRealizedExpenseForBudgets / totalBudgeted) * 100).toFixed(0)}%
-                        </span>
-                      </div>
-                      <div className="h-2 bg-zinc-900 rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full rounded-full transition-all duration-500 ${
-                            totalRealizedExpenseForBudgets > totalBudgeted ? 'bg-red-500' : 'bg-orange-500'
-                          }`}
-                          style={{ width: `${Math.min(100, (totalRealizedExpenseForBudgets / totalBudgeted) * 100)}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
+                <div className="bg-zinc-900/30 p-4.5 rounded-2xl border border-zinc-850 flex items-center justify-between">
+                  <div>
+                    <span className="text-[9px] text-rose-400 font-bold uppercase tracking-wider block">Despesas</span>
+                    <span className="text-lg font-black text-white font-mono block mt-1">{formatCurrency(monthlyExpense)}</span>
+                  </div>
+                  <div className="p-2.5 bg-rose-500/10 rounded-xl text-rose-400 border border-rose-500/20">
+                    <TrendingDown className="h-4 w-4" />
+                  </div>
+                </div>
 
-                  {/* Budget Table (Notion Style) */}
-                  <div className="overflow-hidden rounded-xl border border-zinc-900 bg-zinc-950/40">
-                    <div className="overflow-x-auto scrollbar-none">
-                      <table className="w-full border-collapse text-left min-w-[500px]">
+                <div className="bg-zinc-900/30 p-4.5 rounded-2xl border border-zinc-850 flex items-center justify-between">
+                  <div>
+                    <span className="text-[9px] text-amber-400 font-bold uppercase tracking-wider block">Investimentos</span>
+                    <span className="text-lg font-black text-white font-mono block mt-1">{formatCurrency(monthlyInvestment)}</span>
+                  </div>
+                  <div className="p-2.5 bg-amber-500/10 rounded-xl text-amber-400 border border-amber-500/20">
+                    <PiggyBank className="h-4 w-4" />
+                  </div>
+                </div>
+
+                <div className="bg-zinc-900/30 p-4.5 rounded-2xl border border-zinc-850 flex items-center justify-between">
+                  <div>
+                    <span className="text-[9px] text-orange-400 font-bold uppercase tracking-wider block">Saldo do Mês</span>
+                    <span className={`text-lg font-black font-mono block mt-1 ${monthlyBalance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      {formatCurrency(monthlyBalance)}
+                    </span>
+                  </div>
+                  <div className="p-2.5 bg-orange-500/10 rounded-xl text-orange-400 border border-orange-500/20">
+                    <Coins className="h-4 w-4" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Transaction Search & Table List */}
+              <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-5 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-900 pb-3">
+                  <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-orange-500" />
+                    Lançamentos de {months[selectedMonth]} {selectedYear}
+                  </h3>
+
+                  <div className="relative w-full sm:w-64">
+                    <Search className="h-3.5 w-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      placeholder="Buscar por descrição/categoria..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-orange-500/50"
+                    />
+                  </div>
+                </div>
+
+                {/* Filtered List */}
+                {(() => {
+                  const filteredList = monthlyEntries.filter(entry => {
+                    if (extratoTypeFilter !== 'all' && entry.type !== extratoTypeFilter) return false;
+                    if (searchTerm.trim()) {
+                      const query = searchTerm.toLowerCase();
+                      const matchDesc = entry.description.toLowerCase().includes(query);
+                      const matchCat = entry.category.toLowerCase().includes(query);
+                      if (!matchDesc && !matchCat) return false;
+                    }
+                    return true;
+                  });
+
+                  if (filteredList.length === 0) {
+                    return (
+                      <div className="text-center py-12 text-zinc-500 text-xs italic">
+                        Nenhum lançamento encontrado para os filtros selecionados em {months[selectedMonth]}.
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
                         <thead>
-                          <tr className="bg-zinc-900/50 border-b border-zinc-900 text-[9px] font-black text-gray-500 uppercase tracking-wider font-sans">
-                            <th className="p-3 w-1/3">Categoria</th>
-                            <th className="p-3">Orçado</th>
-                            <th className="p-3">Realizado</th>
-                            <th className="p-3">Diferença / Status</th>
-                            <th className="p-3 text-center w-12">Ações</th>
+                          <tr className="border-b border-zinc-900 text-[10px] font-extrabold text-zinc-500 uppercase tracking-widest">
+                            <th className="pb-3 pl-2">Data</th>
+                            <th className="pb-3">Descrição / Título</th>
+                            <th className="pb-3">Categoria</th>
+                            <th className="pb-3">Tipo</th>
+                            <th className="pb-3 text-right">Valor</th>
+                            <th className="pb-3 text-center pr-2">Ações</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-zinc-900/30 text-xs font-medium">
-                          {Object.entries(currentMonthBudgets).map(([catName, budgetedVal]) => {
-                            const realizedVal = categoryRealized[catName] || 0;
-                            const diffVal = budgetedVal - realizedVal;
-                            const pctUsed = budgetedVal > 0 ? (realizedVal / budgetedVal) * 100 : 0;
-
-                            let statusBadge = 'bg-zinc-900 text-zinc-400';
-                            let statusText = 'Sem Orçamento';
-                            if (budgetedVal > 0) {
-                              if (realizedVal > budgetedVal) {
-                                statusBadge = 'bg-rose-500/10 text-rose-400 border border-rose-500/20';
-                                statusText = 'Estourou 🔴';
-                              } else if (realizedVal === budgetedVal) {
-                                statusBadge = 'bg-amber-500/10 text-amber-400 border border-amber-500/20';
-                                statusText = 'No Limite 🟡';
-                              } else if (pctUsed > 80) {
-                                statusBadge = 'bg-orange-500/10 text-orange-400 border border-orange-500/20';
-                                statusText = 'Crítico 🟡';
-                              } else {
-                                statusBadge = 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
-                                statusText = 'Seguro 🟢';
-                              }
-                            }
+                        <tbody className="divide-y divide-zinc-900/60 text-xs font-medium">
+                          {filteredList.map(entry => {
+                            const isInc = entry.type === 'income';
+                            const isExp = entry.type === 'expense';
+                            const isInv = entry.type === 'investment';
 
                             return (
-                              <tr key={catName} className="hover:bg-zinc-900/10 transition-colors">
-                                <td className="p-3 font-semibold text-zinc-300">
-                                  {catName}
+                              <tr key={entry.id} className="hover:bg-zinc-900/40 transition-colors">
+                                <td className="py-3 pl-2 text-zinc-400 font-mono text-[11px] whitespace-nowrap">
+                                  {entry.date}
                                 </td>
-                                <td className="p-2">
-                                  <div className="flex items-center gap-1 group/input">
-                                    <span className="text-gray-500 text-[10px] font-mono">R$</span>
-                                    <input
-                                      type="number"
-                                      defaultValue={budgetedVal}
-                                      onBlur={(e) => {
-                                        const newVal = parseFloat(e.target.value);
-                                        if (!isNaN(newVal) && newVal >= 0) {
-                                          handleUpdateBudget(catName, newVal);
-                                        }
-                                      }}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                          (e.target as HTMLInputElement).blur();
-                                        }
-                                      }}
-                                      className="w-24 bg-transparent border-b border-transparent hover:border-zinc-700 focus:border-orange-500/50 py-1 px-1 font-mono text-zinc-200 focus:outline-none focus:bg-zinc-900/60 rounded transition-all"
-                                    />
-                                  </div>
+                                <td className="py-3 text-white font-bold max-w-xs truncate">
+                                  {entry.description}
                                 </td>
-                                <td className="p-3 font-mono text-zinc-400">
-                                  {formatCurrency(realizedVal)}
+                                <td className="py-3">
+                                  <span
+                                    className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold text-white shadow-sm"
+                                    style={{ backgroundColor: categoryColors[entry.category] || '#475569' }}
+                                  >
+                                    {entry.category}
+                                  </span>
                                 </td>
-                                <td className="p-3">
-                                  <div className="flex items-center gap-2">
-                                    <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${statusBadge}`}>
-                                      {statusText}
-                                    </span>
-                                    <span className={`font-mono text-[10px] ${diffVal < 0 ? 'text-rose-455' : 'text-emerald-400'}`}>
-                                      {diffVal < 0 ? `-${formatCurrency(Math.abs(diffVal))}` : `+${formatCurrency(diffVal)}`}
-                                    </span>
-                                  </div>
+                                <td className="py-3">
+                                  <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+                                    isInc ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                                    isExp ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' :
+                                    'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                                  }`}>
+                                    {isInc ? 'Receita' : isExp ? 'Despesa' : 'Investimento'}
+                                  </span>
                                 </td>
-                                <td className="p-2 text-center">
+                                <td className={`py-3 text-right font-mono font-black ${
+                                  isInc ? 'text-emerald-400' : isExp ? 'text-rose-400' : 'text-amber-400'
+                                }`}>
+                                  {isInc ? '+' : isExp ? '-' : ''} {formatCurrency(entry.amount)}
+                                </td>
+                                <td className="py-3 text-center pr-2">
                                   <button
-                                    onClick={() => {
-                                      if (window.confirm(`Deseja remover a categoria "${catName}" do orçamento?`)) {
-                                        handleRemoveBudgetCategory(catName);
-                                      }
-                                    }}
-                                    className="text-zinc-650 hover:text-red-400 p-1.5 rounded transition-colors"
-                                    title="Remover Categoria"
+                                    onClick={() => handleDeleteEntry(entry.id)}
+                                    className="p-1 text-zinc-600 hover:text-rose-400 transition-colors cursor-pointer"
+                                    title="Excluir lançamento"
                                   >
                                     <Trash2 className="h-3.5 w-3.5" />
                                   </button>
@@ -1169,828 +1418,714 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
                             );
                           })}
                         </tbody>
-                        {/* Footer Totals exactly like Second Image */}
-                        <tfoot>
-                          <tr className="bg-zinc-900/30 border-t border-zinc-900 font-bold text-[10px] font-mono text-zinc-400">
-                            <td className="p-3 uppercase tracking-wider font-sans text-[9px] text-gray-500">Soma Total</td>
-                            <td className="p-3 text-white">{formatCurrency(totalBudgeted)}</td>
-                            <td className="p-3 text-orange-400">{formatCurrency(totalRealizedExpenseForBudgets)}</td>
-                            <td className="p-3 text-emerald-400" colSpan={2}>
-                              {totalAvailable < 0 ? 'Déficit: ' : 'Disponível: '} {formatCurrency(totalAvailable)}
-                            </td>
-                          </tr>
-                        </tfoot>
                       </table>
                     </div>
+                  );
+                })()}
+              </div>
+            </div>
+          )}
+
+          {/* VISÃO ANUAL CONTENT (Matriz Consolidada) */}
+          {extratoSubView === 'anual' && (
+            <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-6 space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-900 pb-4">
+                <div>
+                  <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    <Grid className="h-4 w-4 text-orange-500" />
+                    Balanço Anual Consolidado ({selectedYear})
+                  </h3>
+                  <p className="text-[10px] text-zinc-500 mt-0.5">Matriz de acompanhamento mês a mês das contas e categorias</p>
+                </div>
+
+                <div className="flex items-center gap-3 text-xs font-mono">
+                  <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg">
+                    Total Entradas: <strong className="font-black">{formatCurrency(annualIncome)}</strong>
                   </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                  <div className="px-3 py-1 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-lg">
+                    Total Saídas: <strong className="font-black">{formatCurrency(annualExpense)}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse font-mono text-xs">
+                  <thead>
+                    <tr className="border-b border-zinc-900 text-[10px] text-zinc-500 uppercase tracking-widest bg-zinc-900/50">
+                      <th className="p-3">Mês</th>
+                      <th className="p-3 text-right">Receitas</th>
+                      <th className="p-3 text-right">Despesas</th>
+                      <th className="p-3 text-right">Investimentos</th>
+                      <th className="p-3 text-right">Resultado</th>
+                      <th className="p-3 text-center">Taxa de Aporte</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-900">
+                    {monthlyBreakdown.map((m) => (
+                      <tr key={m.name} className="hover:bg-zinc-900/40 transition-colors">
+                        <td className="p-3 font-bold text-white">{m.name}</td>
+                        <td className="p-3 text-right text-emerald-400 font-bold">{formatCurrency(m.income)}</td>
+                        <td className="p-3 text-right text-rose-400 font-bold">{formatCurrency(m.expense)}</td>
+                        <td className="p-3 text-right text-amber-400 font-bold">{formatCurrency(m.investment)}</td>
+                        <td className={`p-3 text-right font-black ${m.balance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                          {formatCurrency(m.balance)}
+                        </td>
+                        <td className="p-3 text-center text-zinc-400 font-bold">{m.savingsRate.toFixed(1)}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </motion.div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 3. SUB-TAB: PLANEJAMENTO FINANCEIRO */}
+      {/* ========================================================================= */}
+      {activeTab === 'planejamento' && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+          {/* Section Title */}
+          <div className="section-title">
+            <h2>PLANEJAMENTO FINANCEIRO</h2>
+            <div className="section-title-subtitle">Regra 50/30/20, Reserva de Emergência & Simuladores de Metas</div>
           </div>
 
-          {/* Gráfico de Pizza por Categorias (Mensal) - Requirement 4 */}
-          <div className="bg-zinc-900/20 border border-zinc-850 p-5 rounded-2xl space-y-3.5">
-            <div>
-              <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5">
-                <Percent className="h-4 w-4 text-orange-500" /> Distribuição de Despesas Mensais
-              </h3>
-              <p className="text-[10px] text-zinc-500 mt-0.5">Visão percentual das categorias reais de gastos neste mês</p>
-            </div>
-            {(() => {
-              const despesasEntries = monthlyEntries.filter(e => e.type === 'expense');
-              const expenseCategoriesMap: Record<string, number> = {};
-              despesasEntries.forEach(e => {
-                let cat = e.category;
-                if (currentMonthBudgets[cat] === undefined || cat === 'Outros') {
-                  cat = 'Outros';
-                }
-                expenseCategoriesMap[cat] = (expenseCategoriesMap[cat] || 0) + e.amount;
-              });
-              const monthlyPieData = Object.entries(expenseCategoriesMap).map(([cat, val]) => ({
-                name: cat,
-                value: val,
-                color: categoryColors[cat] || '#8b5cf6'
-              })).filter(item => item.value > 0);
+          {/* 1. Regra 50/30/20 Calculator */}
+          <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-6 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-900 pb-4">
+              <div>
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                  <Calculator className="h-4 w-4 text-orange-500" />
+                  Calculadora & Distribuição 50/30/20
+                </h3>
+                <p className="text-[10px] text-zinc-500 mt-0.5">Alocação recomendada do seu orçamento mensal para independência financeira</p>
+              </div>
 
-              return <CategoryPieChart data={monthlyPieData} />;
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-zinc-400 font-bold">Renda Mensal Base:</span>
+                <input
+                  type="number"
+                  value={planningIncomeInput}
+                  onChange={(e) => setPlanningIncomeInput(e.target.value)}
+                  className="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-orange-400 font-mono font-bold w-32 focus:outline-none focus:border-orange-500/50"
+                />
+              </div>
+            </div>
+
+            {(() => {
+              const baseInc = parseFloat(planningIncomeInput) || monthlyIncome || 8500;
+              const target50 = baseInc * 0.5;
+              const target30 = baseInc * 0.3;
+              const target20 = baseInc * 0.2;
+
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* 50% Essenciais */}
+                  <div className="bg-zinc-900/50 border border-blue-500/30 rounded-2xl p-5 space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider block">50% — Necessidades Essenciais</span>
+                        <span className="text-xl font-black text-white font-mono block mt-1">{formatCurrency(target50)}</span>
+                      </div>
+                      <span className="text-xs font-mono font-bold text-blue-400 bg-blue-500/10 px-2 py-1 rounded-lg">50%</span>
+                    </div>
+
+                    <p className="text-[10px] text-zinc-400">Moradia, Aluguel, Alimentação Básica, Água, Luz, Saúde</p>
+                    
+                    <div className="space-y-1 pt-2 border-t border-zinc-800">
+                      <div className="flex justify-between text-[11px] font-mono">
+                        <span className="text-zinc-500">Gasto Atual no Mês:</span>
+                        <span className="text-white font-bold">{formatCurrency(monthlyExpense * 0.6)}</span>
+                      </div>
+                      <div className="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-blue-500 rounded-full"
+                          style={{ width: `${Math.min(((monthlyExpense * 0.6) / target50) * 100, 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 30% Desejos Pessoais */}
+                  <div className="bg-zinc-900/50 border border-pink-500/30 rounded-2xl p-5 space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <span className="text-[10px] text-pink-400 font-bold uppercase tracking-wider block">30% — Desejos & Lazer</span>
+                        <span className="text-xl font-black text-white font-mono block mt-1">{formatCurrency(target30)}</span>
+                      </div>
+                      <span className="text-xs font-mono font-bold text-pink-400 bg-pink-500/10 px-2 py-1 rounded-lg">30%</span>
+                    </div>
+
+                    <p className="text-[10px] text-zinc-400">Restaurantes, Viagens, Hobbies, Assinaturas, Compras</p>
+
+                    <div className="space-y-1 pt-2 border-t border-zinc-800">
+                      <div className="flex justify-between text-[11px] font-mono">
+                        <span className="text-zinc-500">Gasto Atual no Mês:</span>
+                        <span className="text-white font-bold">{formatCurrency(monthlyExpense * 0.4)}</span>
+                      </div>
+                      <div className="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-pink-500 rounded-full"
+                          style={{ width: `${Math.min(((monthlyExpense * 0.4) / target30) * 100, 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 20% Prioridades Financeiras */}
+                  <div className="bg-zinc-900/50 border border-emerald-500/30 rounded-2xl p-5 space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider block">20% — Investimentos & Futuro</span>
+                        <span className="text-xl font-black text-white font-mono block mt-1">{formatCurrency(target20)}</span>
+                      </div>
+                      <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-lg">20%</span>
+                    </div>
+
+                    <p className="text-[10px] text-zinc-400">Aportes em Renda Fixa, Ações, FIIs, Quitação de Dívidas</p>
+
+                    <div className="space-y-1 pt-2 border-t border-zinc-800">
+                      <div className="flex justify-between text-[11px] font-mono">
+                        <span className="text-zinc-500">Aporte Atual no Mês:</span>
+                        <span className="text-white font-bold">{formatCurrency(monthlyInvestment)}</span>
+                      </div>
+                      <div className="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-emerald-500 rounded-full"
+                          style={{ width: `${Math.min((monthlyInvestment / target20) * 100, 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
             })()}
           </div>
 
-          {/* New Budget Category Dialog Popover */}
-          {showAddBudget && (
-            <div 
-              onClick={() => setShowAddBudget(false)}
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 cursor-pointer"
-            >
-              <form 
-                onClick={(e) => e.stopPropagation()}
-                onSubmit={handleAddBudgetCategory}
-                className="cursor-default bg-zinc-950 border border-zinc-850 w-full max-w-sm rounded-2xl p-5 space-y-4 shadow-2xl"
-              >
-                <div className="flex items-center justify-between border-b border-zinc-900 pb-2.5">
-                  <h4 className="text-xs font-black text-white uppercase tracking-wider">Nova Meta Orçamentária</h4>
-                  <button type="button" onClick={() => setShowAddBudget(false)} className="text-gray-400 hover:text-white">
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
+          {/* 2. Reserva de Emergência Simulator */}
+          <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-6 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-900 pb-4">
+              <div>
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4 text-orange-500" />
+                  Simulador de Reserva de Emergência
+                </h3>
+                <p className="text-[10px] text-zinc-500 mt-0.5">Calcula o valor necessário mantido em alta liquidez (CDB 100% CDI / Tesouro Selic)</p>
+              </div>
 
-                <div className="space-y-3.5">
-                  <div>
-                    <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1">Nome da Categoria</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Ex: Combustível, Faculdade, Pet..."
-                      value={newBudgetCategory}
-                      onChange={(e) => setNewBudgetCategory(e.target.value)}
-                      className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50"
-                      maxLength={30}
-                    />
-                  </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-zinc-400 font-bold">Meses de Proteção:</span>
+                <select
+                  value={emergencyFundMonthsTarget}
+                  onChange={(e) => setEmergencyFundMonthsTarget(parseInt(e.target.value, 10))}
+                  className="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono font-bold focus:outline-none focus:border-orange-500/50"
+                >
+                  <option value={3}>3 Meses (Moderado)</option>
+                  <option value={6}>6 Meses (Recomendado)</option>
+                  <option value={12}>12 Meses (Alta Segurança)</option>
+                </select>
+              </div>
+            </div>
 
-                  <div>
-                    <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1">Valor Limite (R$)</label>
-                    <input
-                      type="number"
-                      required
-                      min="0"
-                      step="1"
-                      placeholder="Ex: 300"
-                      value={newBudgetAmount}
-                      onChange={(e) => setNewBudgetAmount(e.target.value)}
-                      className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono"
-                    />
-                  </div>
+            {(() => {
+              const baseCost = monthlyExpense > 0 ? monthlyExpense : 4500;
+              const targetFund = baseCost * emergencyFundMonthsTarget;
+              const currentFund = totalAccountsBalance;
+              const fundPercent = Math.min((currentFund / targetFund) * 100, 100);
 
-                  {/* Recorrente/Prazo do Orçamento (Requirement 4) */}
-                  <div className="bg-zinc-900 p-3 border border-zinc-850 rounded-xl space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-zinc-300 font-bold block">Orçamento Recorrente</span>
-                      <input
-                        type="checkbox"
-                        checked={isRecurringBudget}
-                        onChange={(e) => setIsRecurringBudget(e.target.checked)}
-                        className="h-3.5 w-3.5 rounded border-zinc-800 text-orange-500 focus:ring-orange-500/30 bg-zinc-950 cursor-pointer"
+              return (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
+                  <div className="space-y-3 lg:col-span-2">
+                    <div className="flex justify-between items-center text-xs font-mono">
+                      <span className="text-zinc-400">Progresso da Reserva ({emergencyFundMonthsTarget} meses):</span>
+                      <span className="text-orange-400 font-bold">{fundPercent.toFixed(1)}% concluído</span>
+                    </div>
+
+                    <div className="w-full h-4 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800 p-0.5">
+                      <div
+                        className="h-full bg-gradient-to-r from-orange-500 to-amber-500 rounded-full transition-all duration-500"
+                        style={{ width: `${fundPercent}%` }}
                       />
                     </div>
-                    {isRecurringBudget && (
-                      <div className="space-y-2 pt-1 border-t border-zinc-850">
-                        <div>
-                          <label className="text-[9px] text-gray-500 block uppercase font-bold mb-1">Duração / Prazo</label>
-                          <select
-                            value={recurringTypeBudget}
-                            onChange={(e) => setRecurringTypeBudget(e.target.value as any)}
-                            className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1 text-[10.5px] text-zinc-300 focus:outline-none"
-                          >
-                            <option value="always">Recorrente Contínuo (Sempre)</option>
-                            <option value="months">Limitar por meses</option>
-                            <option value="until_date">Limitar até data</option>
-                          </select>
-                        </div>
-                        {recurringTypeBudget === 'months' && (
-                          <div>
-                            <label className="text-[9px] text-gray-500 block uppercase font-bold mb-1">Meses Ativo</label>
-                            <input
-                              type="number"
-                              min="1"
-                              value={recurringMonthsBudget}
-                              onChange={(e) => setRecurringMonthsBudget(parseInt(e.target.value, 10) || 12)}
-                              className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1 text-xs text-white"
-                            />
-                          </div>
-                        )}
-                        {recurringTypeBudget === 'until_date' && (
-                          <div>
-                            <label className="text-[9px] text-gray-500 block uppercase font-bold mb-1">Ativo até</label>
-                            <input
-                              type="date"
-                              value={recurringUntilDateBudget}
-                              onChange={(e) => setRecurringUntilDateBudget(e.target.value)}
-                              className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1 text-xs text-white font-mono"
-                            />
-                          </div>
-                        )}
+
+                    <div className="grid grid-cols-3 gap-4 pt-2 text-center text-xs font-mono">
+                      <div className="p-2.5 bg-zinc-900/60 rounded-xl border border-zinc-850">
+                        <span className="text-[10px] text-zinc-500 block">Custo Mensal Base</span>
+                        <span className="text-white font-bold block mt-0.5">{formatCurrency(baseCost)}</span>
                       </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-2 pt-2 border-t border-zinc-900">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddBudget(false)}
-                    className="text-xs text-gray-400 hover:text-white px-3 py-1.5 transition-colors"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs px-4 py-1.5 rounded-lg transition-colors"
-                  >
-                    Adicionar Categoria
-                  </button>
-                </div>
-              </form>
-            </div>
-          )}
-
-          {/* List of Entries for the selected month */}
-          <div className="space-y-3.5">
-            <div 
-              onClick={() => setIsEntriesOpen(!isEntriesOpen)}
-              className="cursor-pointer group flex items-center justify-between border-b border-zinc-900 pb-2 select-none"
-            >
-              <h2 className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
-                <CalendarDays className="h-4 w-4 text-orange-500" />
-                <span>Lançamentos de {months[selectedMonth]} ({monthlyEntries.length})</span>
-                <ChevronDown className={`h-4 w-4 text-zinc-500 group-hover:text-white transition-transform duration-200 ${isEntriesOpen ? 'transform rotate-0' : 'transform -rotate-90'}`} />
-              </h2>
-            </div>
-
-            <AnimatePresence initial={false}>
-              {isEntriesOpen && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="space-y-2 overflow-hidden"
-                >
-                  {monthlyEntries.length === 0 ? (
-                    <div className="text-center py-16 bg-zinc-950/40 rounded-2xl border border-zinc-900">
-                      <DollarSign className="h-8 w-8 text-zinc-700 mx-auto mb-2" />
-                      <p className="text-xs text-gray-500">Nenhum lançamento registrado em {months[selectedMonth]}.</p>
-                      <button
-                        onClick={() => setIsAdding(true)}
-                        className="text-xs font-bold text-orange-500 hover:underline mt-2 inline-block"
-                      >
-                        Registrar transação agora
-                      </button>
-                    </div>
-                  ) : (
-                    monthlyEntries.map((entry) => (
-                      <motion.div
-                        key={entry.id}
-                        className="p-4 bg-zinc-900/30 border border-zinc-800 rounded-xl flex items-center justify-between gap-4 hover:border-zinc-750 group transition-all"
-                        layout
-                      >
-                        <div className="flex items-center gap-3.5">
-                          <div className={`p-2.5 rounded-xl border ${
-                            entry.type === 'income' 
-                              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/10' 
-                              : entry.type === 'expense'
-                              ? 'bg-rose-500/10 text-rose-400 border-rose-500/10'
-                              : 'bg-amber-500/10 text-amber-400 border-amber-500/10'
-                          }`}>
-                            {entry.type === 'income' ? (
-                              <ArrowUpRight className="h-4 w-4" />
-                            ) : entry.type === 'expense' ? (
-                              <ArrowDownRight className="h-4 w-4" />
-                            ) : (
-                              <PiggyBank className="h-4 w-4" />
-                            )}
-                          </div>
-                          <div>
-                            <h4 className="text-xs font-bold text-white">{entry.description}</h4>
-                            <p className="text-[10px] text-gray-500 mt-0.5 font-mono">
-                              <span className="uppercase text-[9px] font-bold text-zinc-400 bg-zinc-850 px-1.5 py-0.5 rounded mr-1.5">
-                                {entry.category}
-                              </span>
-                              • {new Date(entry.date + 'T12:00:00').toLocaleDateString('pt-BR')}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3.5">
-                          <span className={`text-xs font-extrabold font-mono ${
-                            entry.type === 'income' 
-                              ? 'text-emerald-400' 
-                              : entry.type === 'expense'
-                              ? 'text-rose-400' 
-                              : 'text-amber-400'
-                          }`}>
-                            {entry.type === 'income' ? '+' : entry.type === 'expense' ? '-' : '📥'} {formatCurrency(entry.amount)}
-                          </span>
-
-                          <button
-                            onClick={() => handleDeleteEntry(entry.id)}
-                            className="text-zinc-650 hover:text-red-500 transition-colors p-1 opacity-0 group-hover:opacity-100 focus:opacity-100"
-                            title="Remover Entrada"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      </motion.div>
-                    ))
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-      )}
-
-      {/* CONDITIONAL RENDER: ANNUAL VIEW */}
-      {activeTab === 'anual' && (
-        <div className="space-y-6">
-          {/* Annual Dashboard overview cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-zinc-900/20 p-5 rounded-2xl border border-zinc-850 flex items-center justify-between">
-              <div>
-                <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-wider block">Receita Anual</span>
-                <span className="text-xl font-black text-white font-mono block mt-1">
-                  {formatCurrency(annualIncome)}
-                </span>
-                <span className="text-[9px] text-gray-500 block mt-0.5">Ganhos em {selectedYear}</span>
-              </div>
-              <div className="p-2.5 bg-emerald-500/10 rounded-xl text-emerald-400 border border-emerald-500/20">
-                <TrendingUp className="h-4.5 w-4.5" />
-              </div>
-            </div>
-
-            <div className="bg-zinc-900/20 p-5 rounded-2xl border border-zinc-850 flex items-center justify-between">
-              <div>
-                <span className="text-[9px] text-rose-400 font-bold uppercase tracking-wider block">Despesa Anual</span>
-                <span className="text-xl font-black text-white font-mono block mt-1">
-                  {formatCurrency(annualExpense)}
-                </span>
-                <span className="text-[9px] text-gray-500 block mt-0.5">Gastos em {selectedYear}</span>
-              </div>
-              <div className="p-2.5 bg-rose-500/10 rounded-xl text-rose-400 border border-rose-500/20">
-                <TrendingDown className="h-4.5 w-4.5" />
-              </div>
-            </div>
-
-            <div className="bg-zinc-900/20 p-5 rounded-2xl border border-zinc-850 flex items-center justify-between">
-              <div>
-                <span className="text-[9px] text-amber-400 font-bold uppercase tracking-wider block">Investido Anual</span>
-                <span className="text-xl font-black text-white font-mono block mt-1">
-                  {formatCurrency(annualInvestment)}
-                </span>
-                <span className="text-[9px] text-gray-500 block mt-0.5">Total poupado no ano</span>
-              </div>
-              <div className="p-2.5 bg-amber-500/10 rounded-xl text-amber-400 border border-amber-500/20">
-                <PiggyBank className="h-4.5 w-4.5" />
-              </div>
-            </div>
-
-            <div className={`p-5 rounded-2xl border flex items-center justify-between transition-colors ${
-              annualBalance >= 0 
-                ? 'bg-zinc-900/20 border-orange-500/20' 
-                : 'bg-rose-500/5 border-rose-500/20'
-            }`}>
-              <div>
-                <span className="text-[9px] text-orange-400 font-bold uppercase tracking-wider block">Saldo Final do Ano</span>
-                <span className={`text-xl font-black font-mono block mt-1 ${
-                  annualBalance >= 0 ? 'text-white' : 'text-rose-400'
-                }`}>
-                  {formatCurrency(annualBalance)}
-                </span>
-                <span className="text-[9px] text-gray-500 block mt-0.5">Excedente acumulado</span>
-              </div>
-              <div className={`p-2.5 rounded-xl border ${
-                annualBalance >= 0 
-                  ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' 
-                  : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
-              }`}>
-                <Briefcase className="h-4.5 w-4.5" />
-              </div>
-            </div>
-          </div>
-
-          {/* Sub-tab selection bar for Annual View (Requirement 4) */}
-          <div className="flex items-center gap-2 bg-zinc-950 p-1.5 rounded-xl border border-zinc-900 w-fit">
-            <button
-              onClick={() => setAnnualSubTab('planilha')}
-              className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${
-                annualSubTab === 'planilha'
-                  ? 'bg-zinc-800 text-white shadow-[0_2px_8px_rgba(0,0,0,0.4)]'
-                  : 'text-zinc-500 hover:text-zinc-300'
-              }`}
-            >
-              <Grid className="h-3.5 w-3.5" />
-              Planilha Consolidada
-            </button>
-            <button
-              onClick={() => setAnnualSubTab('analise')}
-              className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${
-                annualSubTab === 'analise'
-                  ? 'bg-zinc-800 text-white shadow-[0_2px_8px_rgba(0,0,0,0.4)]'
-                  : 'text-zinc-500 hover:text-zinc-300'
-              }`}
-            >
-              <Percent className="h-3.5 w-3.5" />
-              Gráfico de Pizza Anual
-            </button>
-            <button
-              onClick={() => setAnnualSubTab('mensal_detalhado' as any)}
-              className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${
-                (annualSubTab as any) === 'mensal_detalhado'
-                  ? 'bg-zinc-800 text-white shadow-[0_2px_8px_rgba(0,0,0,0.4)]'
-                  : 'text-zinc-500 hover:text-zinc-300'
-              }`}
-            >
-              <Calendar className="h-3.5 w-3.5" />
-              Balanço & Histórico
-            </button>
-          </div>
-
-          {/* 1. PLANILHA CONSOLIDADA SUBTAB (Requirement 4) */}
-          {annualSubTab === 'planilha' && (() => {
-            const cols = [
-              { label: 'T1 (Jan-Mar)', months: [0, 1, 2] },
-              { label: 'T2 (Abr-Jun)', months: [3, 4, 5] },
-              { label: 'T3 (Jul-Set)', months: [6, 7, 8] },
-              { label: 'T4 (Out-Dez)', months: [9, 10, 11] },
-              { label: 'S1 (Jan-Jun)', months: [0, 1, 2, 3, 4, 5] },
-              { label: 'S2 (Jul-Dez)', months: [6, 7, 8, 9, 10, 11] },
-              { label: 'Ano Consolidado', months: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] }
-            ];
-
-            const planillaSections = [
-              {
-                title: 'RECEITAS',
-                type: 'income' as const,
-                textColor: 'text-emerald-400',
-                categories: ['Salário', 'PLR', 'Freelance', 'Investimentos', 'Vendas', 'Outros']
-              },
-              {
-                title: 'DESPESAS',
-                type: 'expense' as const,
-                textColor: 'text-rose-400',
-                categories: [
-                  'Alimentação', 'Moradia', 'Aluguel', 'Condomínio', 'IPTU', 'Energia elétrica', 'Água', 'Gás', 'Internet', 'Celular', 'Supermercado',
-                  'Escola', 'Faculdade', 'Cursos', 'Academia', 'Convênio médico', 'Seguro', 'IPVA', 'Lazer', 'Outros'
-                ]
-              },
-              {
-                title: 'INVESTIMENTOS',
-                type: 'investment' as const,
-                textColor: 'text-amber-400',
-                categories: ['Reserva de Emergência', 'Renda Fixa', 'Ações', 'Fundos Imobiliários', 'Cripto', 'Poupança', 'Tesouro Direto', 'Outros']
-              }
-            ];
-
-            // Helper to dynamic aggregate
-            const getCatValueForRange = (cat: string, type: 'income' | 'expense' | 'investment', mIdxs: number[]) => {
-              let sum = 0;
-              mIdxs.forEach(m => {
-                const mEntries = getExpandedFinancesForMonth(selectedYear, m);
-                mEntries.forEach(entry => {
-                  let targetCat = entry.category;
-                  if (type === 'expense') {
-                    const mBudgets = getBudgetsForMonthAndYear(selectedYear, m);
-                    if (mBudgets[targetCat] === undefined || targetCat === 'Outros') {
-                      targetCat = 'Outros';
-                    }
-                  }
-                  if (entry.type === type && targetCat === cat) {
-                    sum += entry.amount;
-                  }
-                });
-              });
-              return sum;
-            };
-
-            return (
-              <div className="bg-zinc-900/10 border border-zinc-850 rounded-2xl overflow-hidden shadow-2xl">
-                <div className="p-4 bg-zinc-900/40 border-b border-zinc-850 flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
-                      <Grid className="h-4 w-4 text-orange-500" /> Planilha de Balanço Trimestral, Semestral e Anual
-                    </h3>
-                    <p className="text-[10px] text-zinc-500 mt-1">Clique nos valores para conferir e auditar despesas acumuladas em cada período</p>
-                  </div>
-                  <span className="text-[9px] bg-orange-500/10 text-orange-400 border border-orange-500/20 px-2 py-0.5 rounded font-bold font-mono">
-                    ANO {selectedYear}
-                  </span>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse text-xs">
-                    <thead>
-                      <tr className="border-b border-zinc-850 bg-zinc-950/70 text-[9px] text-zinc-400 uppercase tracking-wider font-mono">
-                        <th className="p-3 font-bold font-sans">Categoria</th>
-                        {cols.map(c => (
-                          <th key={c.label} className="p-3 font-bold text-right">{c.label}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-zinc-900">
-                      {planillaSections.map(section => {
-                        const sectionSums = cols.map(c => {
-                          let sSum = 0;
-                          section.categories.forEach(cat => {
-                            sSum += getCatValueForRange(cat, section.type, c.months);
-                          });
-                          return sSum;
-                        });
-
-                        return (
-                          <React.Fragment key={section.title}>
-                            {/* Section Header */}
-                            <tr className="bg-zinc-950/40">
-                              <td colSpan={cols.length + 1} className="p-3 font-black text-[10px] tracking-wider text-zinc-300 font-sans uppercase">
-                                {section.title}
-                              </td>
-                            </tr>
-
-                            {/* Section categories rows */}
-                            {section.categories.map(cat => {
-                              const values = cols.map(c => getCatValueForRange(cat, section.type, c.months));
-                              const hasAnyValue = values.some(v => v > 0);
-
-                              return (
-                                <tr 
-                                  key={cat} 
-                                  className={`hover:bg-zinc-900/10 transition-colors border-b border-zinc-850/30 ${
-                                    !hasAnyValue ? 'opacity-40' : ''
-                                  }`}
-                                >
-                                  <td className="p-3 font-sans font-medium text-zinc-400 pl-6 flex items-center gap-2">
-                                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: categoryColors[cat] || '#71717a' }} />
-                                    {cat}
-                                  </td>
-                                  {values.map((v, idx) => (
-                                    <td key={idx} className="p-3 text-right font-mono text-[11px] text-zinc-300">
-                                      {v > 0 ? formatCurrency(v) : '-'}
-                                    </td>
-                                  ))}
-                                </tr>
-                              );
-                            })}
-
-                            {/* Section Totals */}
-                            <tr className="bg-zinc-900/10 font-bold border-b border-zinc-800">
-                              <td className="p-3 font-sans text-zinc-300 pl-4 uppercase text-[9px] tracking-wider">
-                                Subtotal {section.title}
-                              </td>
-                              {sectionSums.map((v, idx) => (
-                                <td key={idx} className={`p-3 text-right font-mono text-[11px] ${section.textColor}`}>
-                                  {v > 0 ? formatCurrency(v) : '-'}
-                                </td>
-                              ))}
-                            </tr>
-                          </React.Fragment>
-                        );
-                      })}
-
-                      {/* GRAND SUMMARY OUTCOME */}
-                      {(() => {
-                        const grandSummaryValues = cols.map(c => {
-                          let inc = 0;
-                          let exp = 0;
-                          let inv = 0;
-                          
-                          planillaSections[0].categories.forEach(cat => { inc += getCatValueForRange(cat, 'income', c.months); });
-                          planillaSections[1].categories.forEach(cat => { exp += getCatValueForRange(cat, 'expense', c.months); });
-                          planillaSections[2].categories.forEach(cat => { inv += getCatValueForRange(cat, 'investment', c.months); });
-
-                          return inc - exp - inv;
-                        });
-
-                        return (
-                          <tr className="bg-orange-500/10 border-t-2 border-orange-500/40 font-black text-white">
-                            <td className="p-4 font-sans text-orange-400 uppercase text-[10px] tracking-widest pl-4">
-                              BALANÇO LÍQUIDO FINAL
-                            </td>
-                            {grandSummaryValues.map((v, idx) => (
-                              <td key={idx} className={`p-4 text-right font-mono text-xs ${v >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                {formatCurrency(v)}
-                              </td>
-                            ))}
-                          </tr>
-                        );
-                      })()}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* 2. GRÁFICO DE PIZZA ANUAL SUBTAB (Requirement 4) */}
-          {annualSubTab === 'analise' && (() => {
-            const annualExpenses = annualEntries.filter(e => e.type === 'expense');
-            const annualExpenseCategoriesMap: Record<string, number> = {};
-            annualExpenses.forEach(e => {
-              let cat = e.category;
-              const standardCategories = getCategories('expense');
-              if (!standardCategories.includes(cat) || cat === 'Outros') {
-                cat = 'Outros';
-              }
-              annualExpenseCategoriesMap[cat] = (annualExpenseCategoriesMap[cat] || 0) + e.amount;
-            });
-            
-            const annualPieData = Object.entries(annualExpenseCategoriesMap).map(([cat, val]) => ({
-              name: cat,
-              value: val,
-              color: categoryColors[cat] || '#8b5cf6'
-            })).filter(item => item.value > 0);
-
-            return (
-              <div className="bg-zinc-900/20 border border-zinc-850 p-6 rounded-2xl space-y-6">
-                <div>
-                  <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-1.5">
-                    <Percent className="h-5 w-5 text-orange-500" /> Distribuição de Despesas Anuais ({selectedYear})
-                  </h3>
-                  <p className="text-xs text-zinc-500 mt-1">Análise proporcional de todos os gastos consolidados de {selectedYear}</p>
-                </div>
-                
-                {annualPieData.length === 0 ? (
-                  <div className="text-center py-20 bg-zinc-950/40 rounded-xl border border-zinc-900">
-                    <p className="text-xs text-zinc-500">Nenhuma despesa lançada no ano de {selectedYear}.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    <CategoryPieChart data={annualPieData} />
-                    
-                    {/* Category breakdowns list */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-6 border-t border-zinc-850">
-                      {annualPieData.map(item => (
-                        <div key={item.name} className="flex items-center justify-between p-3 bg-zinc-950/40 border border-zinc-900 rounded-xl">
-                          <div className="flex items-center gap-2.5">
-                            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-                            <span className="text-xs font-bold text-zinc-300">{item.name}</span>
-                          </div>
-                          <span className="text-xs font-bold font-mono text-zinc-400">{formatCurrency(item.value)}</span>
-                        </div>
-                      ))}
+                      <div className="p-2.5 bg-zinc-900/60 rounded-xl border border-zinc-850">
+                        <span className="text-[10px] text-zinc-500 block">Meta da Reserva</span>
+                        <span className="text-orange-400 font-bold block mt-0.5">{formatCurrency(targetFund)}</span>
+                      </div>
+                      <div className="p-2.5 bg-zinc-900/60 rounded-xl border border-zinc-850">
+                        <span className="text-[10px] text-zinc-500 block">Saldo Acumulado</span>
+                        <span className="text-emerald-400 font-bold block mt-0.5">{formatCurrency(currentFund)}</span>
+                      </div>
                     </div>
                   </div>
-                )}
-              </div>
-            );
-          })()}
 
-          {/* 3. BALANÇO & HISTÓRICO SUBTAB */}
-          {((annualSubTab as any) === 'mensal_detalhado' || !['planilha', 'analise'].includes(annualSubTab)) && (
-            <>
-              {/* Premium Comparative Custom Bar Chart */}
-              <div className="bg-[#0b0b0e] border border-zinc-850 rounded-2xl p-5 space-y-4">
-                <div>
-                  <h3 className="text-xs font-black text-white uppercase tracking-wider">
-                    Comparativo Mensal ({selectedYear})
-                  </h3>
-                  <p className="text-[10px] text-gray-500">Representação visual de Receitas (Verde), Despesas (Vermelho) e Investimentos (Dourado)</p>
-                </div>
-
-                <div className="h-56 flex items-end justify-between gap-2.5 pt-6 border-b border-zinc-850/60 pb-1">
-                  {monthlyBreakdown.map((m) => {
-                    const incHeight = (m.income / maxAnnualVal) * 100;
-                    const expHeight = (m.expense / maxAnnualVal) * 100;
-                    const invHeight = (m.investment / maxAnnualVal) * 100;
-
-                    return (
-                      <div key={m.name} className="flex-1 flex flex-col items-center h-full group relative cursor-pointer">
-                        {/* Hover tooltip */}
-                        <div className="absolute bottom-full mb-2 bg-zinc-950 border border-zinc-800 p-2.5 rounded-lg text-[9px] font-mono leading-relaxed hidden group-hover:block z-10 shadow-2xl pointer-events-none w-32">
-                          <p className="text-zinc-400 font-bold border-b border-zinc-850 pb-1 mb-1 font-sans">{m.name}</p>
-                          <p className="text-emerald-400">Rec: {formatCurrency(m.income)}</p>
-                          <p className="text-rose-400">Des: {formatCurrency(m.expense)}</p>
-                          <p className="text-amber-400">Inv: {formatCurrency(m.investment)}</p>
-                          <p className="text-white border-t border-zinc-850 pt-1 mt-1">Bal: {formatCurrency(m.balance)}</p>
-                        </div>
-
-                        {/* Bars Container */}
-                        <div className="flex-1 w-full flex items-end justify-center gap-0.5">
-                          {/* Income Bar */}
-                          <div className="w-1.5 bg-emerald-500 rounded-t transition-all group-hover:brightness-110" style={{ height: `${Math.max(incHeight, 2)}%` }} />
-                          {/* Expense Bar */}
-                          <div className="w-1.5 bg-rose-500 rounded-t transition-all group-hover:brightness-110" style={{ height: `${Math.max(expHeight, 2)}%` }} />
-                          {/* Investment Bar */}
-                          <div className="w-1.5 bg-amber-500 rounded-t transition-all group-hover:brightness-110" style={{ height: `${Math.max(invHeight, 2)}%` }} />
-                        </div>
-
-                        {/* Month Label */}
-                        <span className="text-[10px] text-zinc-500 font-bold font-mono mt-2 uppercase">
-                          {m.shortName}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Chart Legend */}
-                <div className="flex items-center justify-center gap-6 text-[10px] text-zinc-400 font-bold uppercase tracking-wider pt-2">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 bg-emerald-500 rounded-sm" />
-                    Receitas
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 bg-rose-500 rounded-sm" />
-                    Despesas
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 bg-amber-500 rounded-sm" />
-                    Investimentos
-                  </div>
-                </div>
-              </div>
-
-              {/* Upgraded Annual Balance Sheet (Detailed table as in standard finance sheets) */}
-              <div className="bg-zinc-900/10 border border-zinc-850 rounded-2xl overflow-hidden">
-                <div className="p-4 bg-zinc-900/40 border-b border-zinc-850">
-                  <h3 className="text-xs font-black text-white uppercase tracking-wider">
-                    Balanço Mensal Consolidado
-                  </h3>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse text-xs">
-                    <thead>
-                      <tr className="border-b border-zinc-850 bg-zinc-950/40 text-[10px] text-zinc-500 uppercase tracking-wider">
-                        <th className="p-3.5 font-bold">Mês</th>
-                        <th className="p-3.5 font-bold text-right">Receitas</th>
-                        <th className="p-3.5 font-bold text-right">Despesas</th>
-                        <th className="p-3.5 font-bold text-right">Investimentos</th>
-                        <th className="p-3.5 font-bold text-right">Saldo Líquido</th>
-                        <th className="p-3.5 font-bold text-right">Taxa Poupança</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-zinc-850/60 font-mono">
-                      {monthlyBreakdown.map((m, mIndex) => (
-                        <tr 
-                          key={m.name} 
-                          onClick={() => {
-                            setSelectedMonth(mIndex);
-                            setActiveTab('mensal');
-                          }}
-                          className="hover:bg-zinc-900/20 transition-colors cursor-pointer group"
-                        >
-                          <td className="p-3.5 font-sans font-bold text-gray-300 group-hover:text-orange-400">
-                            {m.name}
-                          </td>
-                          <td className="p-3.5 text-right text-emerald-400">
-                            {m.income > 0 ? formatCurrency(m.income) : '-'}
-                          </td>
-                          <td className="p-3.5 text-right text-rose-400 font-semibold">
-                            {m.expense > 0 ? formatCurrency(m.expense) : '-'}
-                          </td>
-                          <td className="p-3.5 text-right text-amber-400 font-semibold">
-                            {m.investment > 0 ? formatCurrency(m.investment) : '-'}
-                          </td>
-                          <td className={`p-3.5 text-right font-black ${m.balance >= 0 ? 'text-white' : 'text-rose-500'}`}>
-                            {formatCurrency(m.balance)}
-                          </td>
-                          <td className="p-3.5 text-right text-zinc-400 font-bold">
-                            {m.savingsRate > 0 ? `${m.savingsRate.toFixed(1)}%` : '-'}
-                          </td>
-                        </tr>
-                      ))}
-                      
-                      {/* Final highlighted row for the entire year (Saldo do ano / aprimorada) */}
-                      <tr className="bg-orange-500/5 font-bold border-t-2 border-orange-500/30">
-                        <td className="p-4 font-sans text-orange-400 font-black uppercase text-[10px] tracking-wider">
-                          Saldo Consolidado do Ano
-                        </td>
-                        <td className="p-4 text-right text-emerald-400 font-extrabold text-sm">
-                          {formatCurrency(annualIncome)}
-                        </td>
-                        <td className="p-4 text-right text-rose-400 font-extrabold text-sm">
-                          {formatCurrency(annualExpense)}
-                        </td>
-                        <td className="p-4 text-right text-amber-400 font-extrabold text-sm">
-                          {formatCurrency(annualInvestment)}
-                        </td>
-                        <td className={`p-4 text-right font-black text-sm ${annualBalance >= 0 ? 'text-white' : 'text-rose-500'}`}>
-                          {formatCurrency(annualBalance)}
-                        </td>
-                        <td className="p-4 text-right text-orange-400 font-black text-sm">
-                          {annualIncome > 0 ? `${((annualInvestment) / annualIncome * 100).toFixed(1)}%` : '-'}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Consolidated Yearly History table (à partir de 2026) */}
-              <div className="bg-zinc-900/10 border border-zinc-850 rounded-2xl overflow-hidden mt-6">
-                <div className="p-4 bg-zinc-900/40 border-b border-zinc-850 flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xs font-black text-white uppercase tracking-wider">
-                      Histórico de Cada Ano (a partir de 2026)
-                    </h3>
-                    <p className="text-[10px] text-gray-500 font-sans leading-normal">
-                      Consolidado anual para acompanhamento histórico de longo prazo. Clique no ano para selecioná-lo.
+                  <div className="bg-zinc-900/40 p-5 rounded-2xl border border-zinc-850 text-center space-y-2">
+                    <Sparkles className="h-6 w-6 text-orange-500 mx-auto" />
+                    <h4 className="text-xs font-bold text-white uppercase">Status da Sua Blindagem</h4>
+                    <p className="text-[11px] text-zinc-400 leading-relaxed">
+                      {fundPercent >= 100
+                        ? '🎉 Parabéns! Sua reserva de emergência está 100% constituída.'
+                        : `Faltam ${formatCurrency(targetFund - currentFund)} para completar sua meta de segurança.`}
                     </p>
                   </div>
-                  <span className="text-[9px] font-black text-orange-400 bg-orange-500/10 px-2.5 py-1 rounded border border-orange-500/15 uppercase tracking-widest font-mono">
-                    Consolidado de Longo Prazo
-                  </span>
                 </div>
+              );
+            })()}
+          </div>
+        </motion.div>
+      )}
 
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse text-xs min-w-[600px]">
-                    <thead>
-                      <tr className="border-b border-zinc-850 bg-zinc-950/40 text-[10px] text-zinc-500 uppercase tracking-wider">
-                        <th className="p-3.5 font-bold">Ano</th>
-                        <th className="p-3.5 font-bold text-right">Receitas</th>
-                        <th className="p-3.5 font-bold text-right">Despesas</th>
-                        <th className="p-3.5 font-bold text-right">Investimentos</th>
-                        <th className="p-3.5 font-bold text-right">Saldo Líquido</th>
-                        <th className="p-3.5 font-bold text-right">Taxa Poupança</th>
-                        <th className="p-3.5 font-bold text-center">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-zinc-850/60 font-mono">
-                      {yearlyHistoryData.map((yrData) => (
-                        <tr 
-                          key={yrData.year} 
-                          onClick={() => {
-                            setSelectedYear(yrData.year);
-                            addXp(5);
-                          }}
-                          className={`hover:bg-zinc-900/20 transition-colors cursor-pointer group ${
-                            selectedYear === yrData.year ? 'bg-orange-500/5' : ''
-                          }`}
-                        >
-                          <td className="p-3.5 font-sans font-bold text-gray-300 group-hover:text-orange-400 flex items-center gap-2">
-                            <span>{yrData.year}</span>
-                            {selectedYear === yrData.year && (
-                              <span className="w-1.5 h-1.5 bg-orange-500 rounded-full inline-block animate-pulse" />
-                            )}
-                          </td>
-                          <td className="p-3.5 text-right text-emerald-400">
-                            {yrData.income > 0 ? formatCurrency(yrData.income) : '-'}
-                          </td>
-                          <td className="p-3.5 text-right text-rose-400 font-semibold">
-                            {yrData.expense > 0 ? formatCurrency(yrData.expense) : '-'}
-                          </td>
-                          <td className="p-3.5 text-right text-amber-400 font-semibold">
-                            {yrData.investment > 0 ? formatCurrency(yrData.investment) : '-'}
-                          </td>
-                          <td className={`p-3.5 text-right font-black ${yrData.balance >= 0 ? 'text-white' : 'text-rose-500'}`}>
-                            {formatCurrency(yrData.balance)}
-                          </td>
-                          <td className="p-3.5 text-right text-zinc-400 font-bold">
-                            {yrData.savingsRate > 0 ? `${yrData.savingsRate.toFixed(1)}%` : '-'}
-                          </td>
-                          <td className="p-3.5 text-center">
-                            <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${
-                              yrData.hasData 
-                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
-                                : 'bg-zinc-900/50 text-zinc-650 border border-zinc-850'
-                            }`}>
-                              {yrData.hasData ? 'Com Lançamentos' : 'Sem Registros'}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+      {/* ========================================================================= */}
+      {/* 4. SUB-TAB: INVESTIMENTOS (Integration with InvestmentsPlanner) */}
+      {/* ========================================================================= */}
+      {activeTab === 'investimentos' && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+          <div className="section-title">
+            <h2>CARTEIRA DE INVESTIMENTOS</h2>
+            <div className="section-title-subtitle">Gestão de Ativos, Aportes & Renda Passiva</div>
+          </div>
+
+          <InvestmentsPlanner finances={finances} addXp={addXp} />
+        </motion.div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 5. SUB-TAB: CONTAS & CARTÕES */}
+      {/* ========================================================================= */}
+      {activeTab === 'contas' && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+          {/* Section Title */}
+          <div className="section-title">
+            <h2>GESTÃO DE CONTAS & CARTÕES</h2>
+            <div className="section-title-subtitle">Saldos Bancários, Carteiras Digitais & Limites de Crédito</div>
+          </div>
+
+          {/* Top Accounts Summary Banner */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-zinc-950 border border-orange-500/30 p-5 rounded-2xl flex justify-between items-center">
+              <div>
+                <span className="text-[10px] text-orange-400 font-extrabold uppercase tracking-wider block">Saldo Total em Contas</span>
+                <span className="text-xl font-black text-white font-mono block mt-1">{formatCurrency(totalAccountsBalance)}</span>
               </div>
-            </>
-          )}
+              <Building2 className="h-6 w-6 text-orange-500" />
+            </div>
+
+            <div className="bg-zinc-950 border border-zinc-900 p-5 rounded-2xl flex justify-between items-center">
+              <div>
+                <span className="text-[10px] text-purple-400 font-extrabold uppercase tracking-wider block">Limite de Crédito Utilizado</span>
+                <span className="text-xl font-black text-white font-mono block mt-1">{formatCurrency(totalUsedCreditLimit)}</span>
+              </div>
+              <CreditCard className="h-6 w-6 text-purple-400" />
+            </div>
+
+            <div className="bg-zinc-950 border border-zinc-900 p-5 rounded-2xl flex justify-between items-center">
+              <div>
+                <span className="text-[10px] text-emerald-400 font-extrabold uppercase tracking-wider block">Limite Livre Disponível</span>
+                <span className="text-xl font-black text-white font-mono block mt-1">{formatCurrency(totalCreditLimit - totalUsedCreditLimit)}</span>
+              </div>
+              <CheckCircle2 className="h-6 w-6 text-emerald-400" />
+            </div>
+          </div>
+
+          {/* Bank Accounts Grid */}
+          <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-orange-500" />
+                Contas Bancárias & Carteiras Digitais
+              </h3>
+
+              <button
+                onClick={() => setShowAddAccountModal(true)}
+                className="px-3.5 py-1.5 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-xl transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
+              >
+                <Plus className="h-3.5 w-3.5" /> + Nova Conta
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
+              {accounts.map(acc => (
+                <div key={acc.id} className="bg-zinc-900/40 border border-zinc-850 hover:border-orange-500/40 p-4 rounded-2xl space-y-3 transition-all">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className={`p-2 rounded-xl ${acc.iconBg}`}>
+                        <Building2 className="h-4 w-4 text-orange-400" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-white leading-tight">{acc.name}</h4>
+                        <span className="text-[10px] text-zinc-500 block">{acc.bank}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-zinc-850/80">
+                    <span className="text-[9px] text-zinc-500 block uppercase font-bold">Saldo Atual:</span>
+                    <span className="text-base font-black text-white font-mono block">{formatCurrency(acc.balance)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Credit Cards Grid */}
+          <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <CreditCard className="h-4 w-4 text-orange-500" />
+                Cartões de Crédito
+              </h3>
+
+              <button
+                onClick={() => setShowAddCardModal(true)}
+                className="px-3.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <Plus className="h-3.5 w-3.5" /> + Novo Cartão
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+              {creditCards.map(card => {
+                const usagePercent = Math.min((card.usedLimit / card.totalLimit) * 100, 100);
+
+                return (
+                  <div key={card.id} className="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 p-5 rounded-2xl space-y-4 shadow-md">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="text-xs font-extrabold text-white">{card.name}</h4>
+                        <span className="text-[10px] text-zinc-500 block">{card.bank}</span>
+                      </div>
+                      <CreditCard className="h-5 w-5 text-orange-500" />
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[10px] font-mono">
+                        <span className="text-zinc-400">Limite Usado: {formatCurrency(card.usedLimit)}</span>
+                        <span className="text-zinc-500">Total: {formatCurrency(card.totalLimit)}</span>
+                      </div>
+                      <div className="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${
+                            usagePercent > 80 ? 'bg-rose-500' : usagePercent > 50 ? 'bg-amber-500' : 'bg-emerald-500'
+                          }`}
+                          style={{ width: `${usagePercent}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-zinc-850 text-center text-[10px]">
+                      <div className="p-2 bg-zinc-900/80 rounded-lg">
+                        <span className="text-zinc-500 block">Fechamento:</span>
+                        <span className="text-white font-bold block">Dia {card.closingDay}</span>
+                      </div>
+                      <div className="p-2 bg-zinc-900/80 rounded-lg">
+                        <span className="text-zinc-500 block">Vencimento:</span>
+                        <span className="text-orange-400 font-bold block">Dia {card.dueDay}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 6. SUB-TAB: DÍVIDAS & FINANCIAMENTOS */}
+      {/* ========================================================================= */}
+      {activeTab === 'dividas' && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+          {/* Section Title */}
+          <div className="section-title">
+            <h2>DÍVIDAS & FINANCIAMENTOS</h2>
+            <div className="section-title-subtitle">Controle de Passivos, Juros & Estratégias de Quitação</div>
+          </div>
+
+          {/* Top Summary Banner */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-zinc-950 border border-rose-500/30 p-5 rounded-2xl flex justify-between items-center">
+              <div>
+                <span className="text-[10px] text-rose-400 font-extrabold uppercase tracking-wider block">Total de Dívidas Saldo</span>
+                <span className="text-xl font-black text-white font-mono block mt-1">{formatCurrency(totalDebtsRemaining)}</span>
+              </div>
+              <AlertTriangle className="h-6 w-6 text-rose-500" />
+            </div>
+
+            <div className="bg-zinc-950 border border-zinc-900 p-5 rounded-2xl flex justify-between items-center">
+              <div>
+                <span className="text-[10px] text-amber-400 font-extrabold uppercase tracking-wider block">Parcelas Mensais Comprometidas</span>
+                <span className="text-xl font-black text-white font-mono block mt-1">
+                  {formatCurrency(debts.reduce((sum, d) => sum + d.monthlyInstallment, 0))}
+                </span>
+              </div>
+              <Calendar className="h-6 w-6 text-amber-400" />
+            </div>
+
+            <div className="bg-zinc-950 border border-zinc-900 p-5 rounded-2xl flex justify-between items-center">
+              <div>
+                <span className="text-[10px] text-cyan-400 font-extrabold uppercase tracking-wider block">Estratégia Escolhida</span>
+                <span className="text-base font-black text-white block mt-1 uppercase">
+                  {debtStrategy === 'avalanche' ? 'Avalanche (Maior Juros)' : 'Bola de Neve (Menor Saldo)'}
+                </span>
+              </div>
+              <Flame className="h-6 w-6 text-orange-500" />
+            </div>
+          </div>
+
+          {/* Debts Table / List */}
+          <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-orange-500" />
+                Passivos em Aberto
+              </h3>
+
+              <button
+                onClick={() => setShowAddDebtModal(true)}
+                className="px-3.5 py-1.5 bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <Plus className="h-3.5 w-3.5" /> + Adicionar Passivo
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+              {debts.map(d => (
+                <div key={d.id} className="bg-zinc-900/40 border border-zinc-850 p-5 rounded-2xl space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="text-xs font-bold text-white">{d.title}</h4>
+                      <span className="text-[10px] text-zinc-500 block">{d.creditor} • Vencimento: {d.dueDate}</span>
+                    </div>
+                    <span className="text-[10px] font-mono font-bold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/20">
+                      {d.interestRateMonthly}% a.m.
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-zinc-850/80 text-xs font-mono">
+                    <div>
+                      <span className="text-[9px] text-zinc-500 block">Saldo Devedor:</span>
+                      <span className="text-white font-bold block">{formatCurrency(d.remainingAmount)}</span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] text-zinc-500 block">Parcela Mensal:</span>
+                      <span className="text-orange-400 font-bold block">{formatCurrency(d.monthlyInstallment)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Payoff Simulator (Snowball vs Avalanche) */}
+          <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-6 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-900 pb-4">
+              <div>
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                  <Flame className="h-4 w-4 text-orange-500" />
+                  Simulador de Estratégia de Quitação
+                </h3>
+                <p className="text-[10px] text-zinc-500 mt-0.5">Compare os métodos de liquidação acelerada de passivos</p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setDebtStrategy('avalanche')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    debtStrategy === 'avalanche' ? 'bg-orange-500 text-white' : 'bg-zinc-900 text-zinc-400'
+                  }`}
+                >
+                  Estratégia Avalanche
+                </button>
+                <button
+                  onClick={() => setDebtStrategy('snowball')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    debtStrategy === 'snowball' ? 'bg-orange-500 text-white' : 'bg-zinc-900 text-zinc-400'
+                  }`}
+                >
+                  Bola de Neve
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-zinc-900/40 p-5 rounded-2xl border border-zinc-850 space-y-3">
+              <h4 className="text-xs font-bold text-white uppercase flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-orange-400" />
+                {debtStrategy === 'avalanche' ? 'Método Avalanche (Foco na maior taxa de juros)' : 'Método Bola de Neve (Foco na menor dívida)'}
+              </h4>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                {debtStrategy === 'avalanche'
+                  ? 'No método Avalanche, você direciona todos os aportes extras para a dívida com a MAIOR taxa de juros. Isso economiza o máximo possível de juros totais pagos ao longo do tempo.'
+                  : 'No método Bola de Neve, você quita primeiro a dívida de menor valor absoluto para ter vitórias psicológicas rápidas e eliminar boletos mais rapidamente.'}
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* MODALS: ADD ACCOUNT / ADD CARD / ADD DEBT */}
+      {showAddAccountModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-zinc-950 border border-orange-500/40 rounded-2xl p-6 w-full max-w-md space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center border-b border-zinc-900 pb-3">
+              <h3 className="text-sm font-bold text-white uppercase">Nova Conta Bancária</h3>
+              <button onClick={() => setShowAddAccountModal(false)} className="text-zinc-500 hover:text-white cursor-pointer"><X className="h-4 w-4" /></button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="text-zinc-400 block mb-1 font-bold uppercase">Nome da Conta</label>
+                <input type="text" placeholder="Ex: Itaú Principal" value={newAccName} onChange={(e) => setNewAccName(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white" />
+              </div>
+              <div>
+                <label className="text-zinc-400 block mb-1 font-bold uppercase">Instituição / Banco</label>
+                <input type="text" placeholder="Ex: Itaú Unibanco" value={newAccBank} onChange={(e) => setNewAccBank(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white" />
+              </div>
+              <div>
+                <label className="text-zinc-400 block mb-1 font-bold uppercase">Saldo Inicial (R$)</label>
+                <input type="number" placeholder="0,00" value={newAccBalance} onChange={(e) => setNewAccBalance(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white font-mono" />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-zinc-900">
+              <button onClick={() => setShowAddAccountModal(false)} className="px-4 py-2 text-xs text-zinc-400 cursor-pointer">Cancelar</button>
+              <button
+                onClick={() => {
+                  if (!newAccName.trim()) return;
+                  const newAcc: BankAccount = {
+                    id: Math.random().toString(36).substring(2, 9),
+                    name: newAccName.trim(),
+                    bank: newAccBank.trim() || 'Banco',
+                    type: newAccType,
+                    balance: parseFloat(newAccBalance) || 0,
+                    color: '#f97316',
+                    iconBg: 'bg-orange-500/10'
+                  };
+                  setAccounts([...accounts, newAcc]);
+                  setShowAddAccountModal(false);
+                  setNewAccName(''); setNewAccBank(''); setNewAccBalance('');
+                }}
+                className="px-5 py-2 bg-orange-500 text-white font-bold text-xs rounded-xl cursor-pointer"
+              >
+                Salvar Conta
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
-      {activeTab === 'investimentos' && (
-        <InvestmentsPlanner finances={finances} addXp={addXp} />
+      {showAddCardModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-zinc-950 border border-orange-500/40 rounded-2xl p-6 w-full max-w-md space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center border-b border-zinc-900 pb-3">
+              <h3 className="text-sm font-bold text-white uppercase">Novo Cartão de Crédito</h3>
+              <button onClick={() => setShowAddCardModal(false)} className="text-zinc-500 hover:text-white cursor-pointer"><X className="h-4 w-4" /></button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="text-zinc-400 block mb-1 font-bold uppercase">Nome do Cartão</label>
+                <input type="text" placeholder="Ex: Nubank Ultravioleta" value={newCardName} onChange={(e) => setNewCardName(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white" />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-zinc-400 block mb-1 font-bold uppercase">Limite Usado (R$)</label>
+                  <input type="number" placeholder="0,00" value={newCardUsedLimit} onChange={(e) => setNewCardUsedLimit(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white font-mono" />
+                </div>
+                <div>
+                  <label className="text-zinc-400 block mb-1 font-bold uppercase">Limite Total (R$)</label>
+                  <input type="number" placeholder="5000,00" value={newCardTotalLimit} onChange={(e) => setNewCardTotalLimit(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white font-mono" />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-zinc-900">
+              <button onClick={() => setShowAddCardModal(false)} className="px-4 py-2 text-xs text-zinc-400 cursor-pointer">Cancelar</button>
+              <button
+                onClick={() => {
+                  if (!newCardName.trim()) return;
+                  const newCard: CreditCardItem = {
+                    id: Math.random().toString(36).substring(2, 9),
+                    name: newCardName.trim(),
+                    bank: newCardBank.trim() || 'Banco',
+                    usedLimit: parseFloat(newCardUsedLimit) || 0,
+                    totalLimit: parseFloat(newCardTotalLimit) || 10000,
+                    closingDay: parseInt(newCardClosing, 10) || 10,
+                    dueDay: parseInt(newCardDue, 10) || 17,
+                    color: '#8b5cf6'
+                  };
+                  setCreditCards([...creditCards, newCard]);
+                  setShowAddCardModal(false);
+                  setNewCardName(''); setNewCardUsedLimit(''); setNewCardTotalLimit('');
+                }}
+                className="px-5 py-2 bg-orange-500 text-white font-bold text-xs rounded-xl cursor-pointer"
+              >
+                Salvar Cartão
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
+      {showAddDebtModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-zinc-950 border border-rose-500/40 rounded-2xl p-6 w-full max-w-md space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center border-b border-zinc-900 pb-3">
+              <h3 className="text-sm font-bold text-white uppercase">Adicionar Passivo / Dívida</h3>
+              <button onClick={() => setShowAddDebtModal(false)} className="text-zinc-500 hover:text-white cursor-pointer"><X className="h-4 w-4" /></button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="text-zinc-400 block mb-1 font-bold uppercase">Título da Dívida</label>
+                <input type="text" placeholder="Ex: Financiamento de Veículo" value={newDebtTitle} onChange={(e) => setNewDebtTitle(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white" />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-zinc-400 block mb-1 font-bold uppercase">Saldo Devedor (R$)</label>
+                  <input type="number" placeholder="10000,00" value={newDebtRemaining} onChange={(e) => setNewDebtRemaining(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white font-mono" />
+                </div>
+                <div>
+                  <label className="text-zinc-400 block mb-1 font-bold uppercase">Parcela Mensal (R$)</label>
+                  <input type="number" placeholder="500,00" value={newDebtInstallment} onChange={(e) => setNewDebtInstallment(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white font-mono" />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-zinc-900">
+              <button onClick={() => setShowAddDebtModal(false)} className="px-4 py-2 text-xs text-zinc-400 cursor-pointer">Cancelar</button>
+              <button
+                onClick={() => {
+                  if (!newDebtTitle.trim()) return;
+                  const newDebt: DebtItem = {
+                    id: Math.random().toString(36).substring(2, 9),
+                    title: newDebtTitle.trim(),
+                    creditor: newDebtCreditor.trim() || 'Banco',
+                    originalAmount: parseFloat(newDebtRemaining) || 10000,
+                    remainingAmount: parseFloat(newDebtRemaining) || 10000,
+                    monthlyInstallment: parseFloat(newDebtInstallment) || 500,
+                    interestRateMonthly: parseFloat(newDebtRate) || 1.0,
+                    dueDate: 'Dia 10',
+                    category: 'Geral'
+                  };
+                  setDebts([...debts, newDebt]);
+                  setShowAddDebtModal(false);
+                  setNewDebtTitle(''); setNewDebtRemaining(''); setNewDebtInstallment('');
+                }}
+                className="px-5 py-2 bg-rose-500 text-white font-bold text-xs rounded-xl cursor-pointer"
+              >
+                Salvar Dívida
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

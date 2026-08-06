@@ -25,7 +25,7 @@ export async function sendSystemNotification(
   const granted = await requestNotificationPermission();
   if (!granted) return false;
 
-  const defaultOptions: NotificationOptions = {
+  const defaultOptions: NotificationOptions & { vibrate?: number[]; renotify?: boolean } = {
     icon: '/icon-192.png',
     badge: '/favicon-32x32.png',
     vibrate: [300, 100, 300, 100, 300],
