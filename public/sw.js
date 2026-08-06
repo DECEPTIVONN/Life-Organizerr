@@ -1,8 +1,14 @@
 // Service Worker for TRONUS Planner PWA (Offline & Cache Support)
-const CACHE_NAME = 'tronus-planner-pwa-v3';
+const CACHE_NAME = 'tronus-planner-pwa-v4';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
+  '/favicon.ico',
+  '/favicon-32x32.png',
+  '/favicon-16x16.png',
+  '/apple-touch-icon.png',
+  '/icon-192.png',
+  '/icon-512.png',
   '/manifest.json',
   '/assets/tronus_icon.jpg'
 ];
