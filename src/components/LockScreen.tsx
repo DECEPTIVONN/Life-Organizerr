@@ -156,12 +156,49 @@ export default function LockScreen({
         </h2>
 
         {/* Locking description inspired by premium dashboard interfaces */}
-        <p className="text-[11px] text-zinc-400/90 max-w-xs mx-auto leading-relaxed mb-10 select-none">
-          O bloqueio do app está ativado. Digite sua <span className="text-zinc-200 font-bold">Senha de Bloqueio do App</span> para acessar o <span className="text-orange-500 font-black tracking-widest font-mono">PLANNER</span>.
+        <p className="text-[11px] text-zinc-400/90 max-w-xs mx-auto leading-relaxed mb-8 select-none">
+          {appLockBiometricEnabled ? (
+            <>
+              Desbloqueio por digital ativado. Toque na <span className="text-orange-400 font-bold">Impressão Digital</span> ou digite sua senha.
+            </>
+          ) : (
+            <>
+              O bloqueio do app está ativado. Digite sua <span className="text-zinc-200 font-bold">Senha de Bloqueio do App</span> para acessar o <span className="text-orange-500 font-black tracking-widest font-mono">PLANNER</span>.
+            </>
+          )}
         </p>
 
-        {/* Password input & controls */}
-        <div className="w-full max-w-[320px] space-y-5">
+        {/* Password & Biometric unlock controls */}
+        <div className="w-full max-w-[320px] space-y-4">
+          
+          {/* PRIMARY OPTION: Fingerprint Unlock Button (when biometric is enabled) */}
+          {appLockBiometricEnabled && (
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={handleBiometricUnlock}
+                disabled={isBiometricAuthenticating}
+                className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white font-black text-xs py-4 rounded-2xl flex items-center justify-center gap-3 transition-all duration-300 shadow-[0_4px_25px_rgba(249,115,22,0.35)] hover:shadow-[0_6px_35px_rgba(249,115,22,0.5)] active:scale-[0.98] cursor-pointer"
+              >
+                {isBiometricAuthenticating ? (
+                  <Loader2 className="h-5 w-5 animate-spin text-white" />
+                ) : (
+                  <Fingerprint className="h-6 w-6 text-white stroke-[2.2]" />
+                )}
+                <span className="uppercase tracking-[0.18em] font-sans text-xs">
+                  {isBiometricAuthenticating ? 'Lendo Digital...' : 'Desbloquear com Digital'}
+                </span>
+              </button>
+
+              <div className="flex items-center gap-3 py-1">
+                <div className="h-[1px] flex-1 bg-zinc-800/80" />
+                <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">Ou use a senha</span>
+                <div className="h-[1px] flex-1 bg-zinc-800/80" />
+              </div>
+            </div>
+          )}
+
+          {/* SECONDARY / DEFAULT OPTION: Password Input */}
           <div className="relative group">
             {/* Input background glow and dynamic border colors on hover/focus */}
             <div className="absolute -inset-0.5 bg-gradient-to-r from-orange-500/10 via-purple-600/10 to-amber-500/10 rounded-2xl blur opacity-60 group-focus-within:opacity-100 transition duration-500" />
@@ -183,7 +220,7 @@ export default function LockScreen({
               }}
               placeholder="••••••••"
               className="relative w-full bg-zinc-950/60 hover:bg-zinc-950/80 focus:bg-black/90 border border-zinc-900 focus:border-orange-500/40 rounded-2xl pl-12 pr-14 py-4 text-xs text-center text-white placeholder-zinc-700 focus:outline-none transition-all duration-300 font-mono tracking-[0.6em] font-black shadow-2xl"
-              autoFocus
+              autoFocus={!appLockBiometricEnabled}
             />
             
             <button
@@ -209,32 +246,17 @@ export default function LockScreen({
             )}
           </AnimatePresence>
 
-          {/* Unlock Action Button - Beautiful bright orange-to-amber premium gradient with white text */}
+          {/* Unlock Action Button */}
           <button
             onClick={handleUnlock}
-            className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white font-black text-xs py-4 rounded-2xl transition-all duration-300 shadow-[0_4px_24px_rgba(249,115,22,0.25)] hover:shadow-[0_4px_30px_rgba(249,115,22,0.45)] active:scale-[0.98] font-sans uppercase tracking-[0.2em] cursor-pointer"
+            className={`w-full text-xs font-bold rounded-2xl transition-all duration-300 font-sans uppercase tracking-[0.18em] cursor-pointer ${
+              appLockBiometricEnabled
+                ? 'bg-zinc-900 hover:bg-zinc-850 text-zinc-300 py-3.5 border border-zinc-800 hover:border-zinc-700'
+                : 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white font-black py-4 shadow-[0_4px_24px_rgba(249,115,22,0.25)] hover:shadow-[0_4px_30px_rgba(249,115,22,0.45)]'
+            }`}
           >
-            Desbloquear por Senha
+            Entrar com Senha
           </button>
-
-          {/* Biometric Fingerprint Button */}
-          {appLockBiometricEnabled && (
-            <button
-              type="button"
-              onClick={handleBiometricUnlock}
-              disabled={isBiometricAuthenticating}
-              className="w-full bg-zinc-950/90 hover:bg-zinc-900 border border-orange-500/40 text-orange-400 font-bold text-xs py-3.5 rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-[0_0_20px_rgba(249,115,22,0.15)] hover:shadow-[0_0_25px_rgba(249,115,22,0.3)] active:scale-[0.98] cursor-pointer"
-            >
-              {isBiometricAuthenticating ? (
-                <Loader2 className="h-4 w-4 animate-spin text-orange-400" />
-              ) : (
-                <Fingerprint className="h-5 w-5 text-orange-400 stroke-[2.2]" />
-              )}
-              <span className="uppercase tracking-widest font-mono text-[11px]">
-                {isBiometricAuthenticating ? 'Lendo Digital...' : 'Entrar com Digital'}
-              </span>
-            </button>
-          )}
         </div>
 
         {/* Forgot password link */}
