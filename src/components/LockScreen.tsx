@@ -75,6 +75,7 @@ export default function LockScreen({
       localStorage.removeItem('mbc_app_lock_enabled');
       localStorage.removeItem('mbc_app_lock_password');
       localStorage.removeItem('mbc_app_lock_timeout');
+      localStorage.removeItem('mbc_app_lock_biometric_enabled');
       
       // Reload app to apply
       window.location.reload();

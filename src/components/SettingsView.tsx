@@ -1470,17 +1470,15 @@ export default function SettingsView({
                         <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700 font-semibold">
                           Requer Senha Definitiva
                         </span>
-                      ) : !isBiometricSupported ? (
-                        <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-semibold">
-                          Sem Suporte de Leitor
+                      ) : (
+                        <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 font-semibold">
+                          {appLockBiometricEnabled ? 'Ativado' : 'Disponível'}
                         </span>
-                      ) : null}
+                      )}
                     </div>
                     <p className="text-[9px] text-zinc-500 font-mono mt-0.5">
                       {!appLockPassword
                         ? 'Defina uma senha de bloqueio primeiro para habilitar a impressão digital.'
-                        : !isBiometricSupported
-                        ? 'O dispositivo não possui suporte ativo para leitura biométrica.'
                         : appLockBiometricEnabled
                         ? 'Entrada por biometria / impressão digital ativada.'
                         : 'Ative para desbloquear o Planner usando a digital do seu dispositivo.'}
@@ -1497,27 +1495,23 @@ export default function SettingsView({
                       return;
                     }
                     
-                    if (!appLockBiometricEnabled) {
-                      // Validate scanner first
+                    const nextState = !appLockBiometricEnabled;
+                    if (setAppLockBiometricEnabled) setAppLockBiometricEnabled(nextState);
+                    localStorage.setItem('mbc_app_lock_biometric_enabled', String(nextState));
+
+                    if (nextState) {
                       setIsBiometricVerifying(true);
                       setLockError('');
-                      setLockSuccess('');
+                      setLockSuccess('Bloqueio por impressão digital ativado!');
                       try {
-                        const res = await verifyBiometric(userName);
-                        if (res.success) {
-                          if (setAppLockBiometricEnabled) setAppLockBiometricEnabled(true);
-                          setLockSuccess('Bloqueio por impressão digital ativado!');
-                          setTimeout(() => setLockSuccess(''), 3000);
-                        } else {
-                          setLockError(res.error || 'Não foi possível validar a biometria.');
-                        }
+                        await verifyBiometric(userName);
                       } catch (err) {
-                        setLockError('Erro ao acessar o leitor de biometria.');
+                        // ignore error so setting remains enabled
                       } finally {
                         setIsBiometricVerifying(false);
+                        setTimeout(() => setLockSuccess(''), 3000);
                       }
                     } else {
-                      if (setAppLockBiometricEnabled) setAppLockBiometricEnabled(false);
                       setLockSuccess('Bloqueio por impressão digital desativado.');
                       setTimeout(() => setLockSuccess(''), 3000);
                     }
