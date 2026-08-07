@@ -183,13 +183,13 @@ export const LeagueRankingView: React.FC<LeagueRankingViewProps> = ({
       <div className="w-full max-w-full space-y-4 sm:space-y-5">
         
         {/* 1. Full-Width Top Navigation Header */}
-        <div className="w-full bg-[#0c0a15] border border-zinc-800/80 rounded-2xl p-2 sm:p-2.5 flex items-center justify-between gap-3 shadow-lg">
+        <div className="w-full bg-[#0c0c0e] border border-zinc-800/80 rounded-2xl p-2 sm:p-2.5 flex items-center justify-between gap-3 shadow-lg">
           <div className="flex-1 bg-zinc-950/80 p-1 rounded-xl border border-zinc-800/80 flex items-center gap-1">
             <button
               onClick={() => setActiveTab('weekly')}
               className={`flex-1 py-2.5 px-4 rounded-lg text-xs font-black font-mono uppercase tracking-wider transition-all flex items-center justify-center cursor-pointer ${
                 isWeekly
-                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-500/20 border border-purple-400/30'
+                  ? 'bg-gradient-to-r from-orange-600 to-orange-500 text-white shadow-md shadow-orange-500/20 border border-orange-400/30'
                   : 'text-zinc-400 hover:text-white hover:bg-zinc-900/60'
               }`}
             >
@@ -200,7 +200,7 @@ export const LeagueRankingView: React.FC<LeagueRankingViewProps> = ({
               onClick={() => setActiveTab('monthly')}
               className={`flex-1 py-2.5 px-4 rounded-lg text-xs font-black font-mono uppercase tracking-wider transition-all flex items-center justify-center cursor-pointer ${
                 !isWeekly
-                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-500/20 border border-purple-400/30'
+                  ? 'bg-gradient-to-r from-orange-600 to-orange-500 text-white shadow-md shadow-orange-500/20 border border-orange-400/30'
                   : 'text-zinc-400 hover:text-white hover:bg-zinc-900/60'
               }`}
             >
@@ -239,7 +239,7 @@ export const LeagueRankingView: React.FC<LeagueRankingViewProps> = ({
         )}
 
         {/* 2. Full-Width Hero Division Banner (No icon in front of division name) */}
-        <div className="relative w-full p-5 sm:p-7 rounded-2xl bg-gradient-to-r from-[#100d20] via-[#0c0a16] to-[#120f24] border border-zinc-800/80 shadow-xl overflow-hidden flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="relative w-full p-5 sm:p-7 rounded-2xl bg-gradient-to-r from-zinc-900 via-zinc-950 to-zinc-900 border border-zinc-800/80 shadow-xl overflow-hidden flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div 
             className="absolute inset-0 opacity-15 pointer-events-none transition-all duration-500" 
             style={{ backgroundColor: currentLeague.glowColor }} 
@@ -250,20 +250,20 @@ export const LeagueRankingView: React.FC<LeagueRankingViewProps> = ({
               <h2 className="text-xl sm:text-2xl lg:text-3xl font-black uppercase font-serif tracking-wide text-white">
                 {currentLeague.divisionName}
               </h2>
-              <p className="text-[11px] text-purple-400 font-extrabold font-mono tracking-widest uppercase mt-0.5">
+              <p className="text-[11px] text-orange-400 font-extrabold font-mono tracking-widest uppercase mt-0.5">
                 {isWeekly ? 'LIGA SEMANAL ATIVA' : 'LIGA MENSAL ATIVA'}
               </p>
             </div>
           </div>
 
           <div className="relative z-10 px-4 py-2 rounded-xl bg-zinc-950/90 border border-zinc-800 text-xs font-black font-mono text-zinc-300 flex items-center gap-2 shadow-inner">
-            <Clock className="h-4 w-4 text-purple-400" />
+            <Clock className="h-4 w-4 text-orange-400" />
             <span>{getDaysRemaining()}</span>
           </div>
         </div>
 
         {/* 3. Full-Width Stepper Roadmap */}
-        <div className="w-full p-6 sm:p-8 rounded-2xl bg-[#0c0a15] border border-zinc-800/80 shadow-xl relative overflow-hidden">
+        <div className="w-full p-6 sm:p-8 rounded-2xl bg-[#0c0c0e] border border-zinc-800/80 shadow-xl relative overflow-hidden">
           <div className="relative flex items-center justify-between w-full max-w-5xl mx-auto px-4 sm:px-8">
             
             {/* Connecting line behind icons */}
@@ -279,7 +279,7 @@ export const LeagueRankingView: React.FC<LeagueRankingViewProps> = ({
                     <div
                       className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 ${
                         isCurrent
-                          ? 'bg-[#1e1738] border-2 border-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.5)] scale-110 ring-4 ring-purple-500/20 text-purple-300'
+                          ? 'bg-orange-500/15 border-2 border-orange-400 shadow-[0_0_20px_var(--accent-glow)] scale-110 ring-4 ring-orange-500/20 text-orange-300'
                           : isUnlocked
                           ? 'bg-zinc-900 border border-emerald-500/50 text-emerald-400'
                           : 'bg-zinc-950 border border-zinc-800 text-zinc-600 opacity-60'
@@ -293,7 +293,7 @@ export const LeagueRankingView: React.FC<LeagueRankingViewProps> = ({
                           </div>
                         </div>
                       ) : (
-                        renderLeagueIcon(l.badgeIcon, `h-5 w-5 ${isCurrent ? l.color : 'text-zinc-600'}`)
+                        renderLeagueIcon(l.badgeIcon, `h-5 w-5 ${isCurrent ? 'text-orange-400' : isUnlocked ? l.color : 'text-zinc-600'}`)
                       )}
                     </div>
 
@@ -306,7 +306,7 @@ export const LeagueRankingView: React.FC<LeagueRankingViewProps> = ({
 
                   <span
                     className={`text-[11px] font-black uppercase font-mono tracking-wider ${
-                      isCurrent ? l.color : isUnlocked ? 'text-zinc-300' : 'text-zinc-600'
+                      isCurrent ? 'text-orange-400' : isUnlocked ? l.color : 'text-zinc-600'
                     }`}
                   >
                     {l.name}
@@ -348,8 +348,8 @@ export const LeagueRankingView: React.FC<LeagueRankingViewProps> = ({
                   animate={{ opacity: 1, y: 0 }}
                   className={`w-full p-4 sm:p-5 rounded-2xl border transition-all flex items-center justify-between gap-4 shadow-md ${
                     participant.isUser
-                      ? 'bg-[#18122c] border-purple-500/60 shadow-[0_0_25px_rgba(168,85,247,0.2)] ring-1 ring-purple-500/40'
-                      : 'bg-[#0c0a15] border-zinc-800/80 hover:border-zinc-700/80'
+                      ? 'bg-orange-500/10 border-orange-500/60 shadow-[0_0_25px_var(--accent-glow)] ring-1 ring-orange-500/40'
+                      : 'bg-[#0c0c0e] border-zinc-800/80 hover:border-zinc-700/80'
                   }`}
                 >
                   <div className="flex items-center gap-3.5 min-w-0">
@@ -374,7 +374,11 @@ export const LeagueRankingView: React.FC<LeagueRankingViewProps> = ({
                     )}
 
                     {/* Avatar Circle with initials */}
-                    <div className="w-10 h-10 rounded-full bg-purple-600/20 border border-purple-500/40 text-purple-300 flex items-center justify-center shrink-0 shadow-inner">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 shadow-inner ${
+                      participant.isUser 
+                        ? 'bg-orange-500/20 border border-orange-500/40 text-orange-300' 
+                        : 'bg-zinc-800/60 border border-zinc-700/60 text-zinc-300'
+                    }`}>
                       <span className="text-sm font-black font-mono uppercase">
                         {participant.name.substring(0, 2)}
                       </span>
@@ -400,7 +404,9 @@ export const LeagueRankingView: React.FC<LeagueRankingViewProps> = ({
 
                   {/* XP Score Badge */}
                   <div className="text-right shrink-0">
-                    <span className="text-sm sm:text-base font-black font-mono text-purple-300 px-4 py-2 rounded-xl bg-zinc-950/90 border border-zinc-800/80 shadow-inner">
+                    <span className={`text-sm sm:text-base font-black font-mono px-4 py-2 rounded-xl bg-zinc-950/90 border shadow-inner ${
+                      participant.isUser ? 'text-orange-300 border-orange-500/40' : 'text-zinc-300 border-zinc-800/80'
+                    }`}>
                       {participant.xp} XP
                     </span>
                   </div>
@@ -411,7 +417,7 @@ export const LeagueRankingView: React.FC<LeagueRankingViewProps> = ({
         </div>
 
         {/* 5. Bottom Controls & Info Section */}
-        <div className="w-full bg-[#0c0a15] border border-zinc-800/80 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="w-full bg-[#0c0c0e] border border-zinc-800/80 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-xs font-bold text-zinc-400">
             <TrendingUp className="h-4 w-4 text-emerald-400" />
             <span>Classificação atualizada em tempo real conforme você cumpre tarefas</span>
@@ -419,9 +425,9 @@ export const LeagueRankingView: React.FC<LeagueRankingViewProps> = ({
 
           <button
             onClick={() => setShowInfo(!showInfo)}
-            className="text-xs font-bold text-zinc-400 hover:text-purple-300 transition-colors flex items-center gap-2 cursor-pointer"
+            className="text-xs font-bold text-zinc-400 hover:text-orange-300 transition-colors flex items-center gap-2 cursor-pointer"
           >
-            <Info className="h-4 w-4 text-purple-400" />
+            <Info className="h-4 w-4 text-orange-400" />
             <span>{showInfo ? 'Ocultar Explicação dos Oponentes' : 'Entenda quem são seus Oponentes e Regras'}</span>
           </button>
         </div>
@@ -431,9 +437,9 @@ export const LeagueRankingView: React.FC<LeagueRankingViewProps> = ({
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
-            className="w-full p-6 rounded-2xl bg-[#0c0a15] border border-zinc-800/80 text-xs text-zinc-300 space-y-3 leading-relaxed font-sans"
+            className="w-full p-6 rounded-2xl bg-[#0c0c0e] border border-zinc-800/80 text-xs text-zinc-300 space-y-3 leading-relaxed font-sans"
           >
-            <h4 className="text-sm font-black text-white font-mono uppercase tracking-wider text-purple-300">
+            <h4 className="text-sm font-black font-mono uppercase tracking-wider text-orange-300">
               REGRAS DAS LIGAS MBC & OPONENTES
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
@@ -443,9 +449,9 @@ export const LeagueRankingView: React.FC<LeagueRankingViewProps> = ({
                 <p><strong className="text-rose-400">🔴 Rebaixamento (Últimos colocados):</strong> Caem para a divisão anterior.</p>
               </div>
               <div className="space-y-1.5 bg-zinc-950/80 p-3 rounded-xl border border-zinc-800/80">
-                <strong className="text-purple-300 font-mono uppercase">COMO O XP É GERADO:</strong>
+                <strong className="text-orange-300 font-mono uppercase">COMO O XP É GERADO:</strong>
                 <p className="text-[11px] text-zinc-400">
-                  - <strong>Seu XP:</strong> É calculated em tempo real com base no cumprimento das suas tarefas e hábitos diários.<br/>
+                  - <strong>Seu XP:</strong> É calculado em tempo real com base no cumprimento das suas tarefas e hábitos diários.<br/>
                   - <strong>Prime:</strong> Representa sua melhor versão teórica (se você fizesse ainda mais do que o previsto).<br/>
                   - <strong>Alfredo:</strong> Cumpre 100% de todas as tarefas.<br/>
                   - <strong>Alberto:</strong> Disciplinado na maioria dos dias, buscando evolução.<br/>

@@ -2510,7 +2510,8 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                           <TagInputWithMention
                             value={journalText}
                             onChange={setJournalText}
-                            rows={6}
+                            rows={12}
+                            className="flex-1 h-full min-h-[260px] sm:min-h-[320px] lg:min-h-[380px]"
                             openTagManagerModal={() => setIsTagModalOpen(true)}
                             placeholder="Escreva aqui como foi o seu dia, suas vitórias, lições aprendidas e sentimentos... Use @ para invocar tags ou @# para criar."
                           />
@@ -2715,7 +2716,8 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                 <TagInputWithMention
                                   value={gratitudeText}
                                   onChange={setGratitudeText}
-                                  rows={5}
+                                  rows={12}
+                                  className="flex-1 h-full min-h-[260px] sm:min-h-[320px] lg:min-h-[380px]"
                                   openTagManagerModal={() => setIsTagModalOpen(true)}
                                   placeholder="Liste o que você é grato hoje... Use @ para invocar tags ou @# para criar."
                                 />
@@ -2740,7 +2742,8 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                 <TagInputWithMention
                                   value={decreesText}
                                   onChange={setDecreesText}
-                                  rows={5}
+                                  rows={12}
+                                  className="flex-1 h-full min-h-[260px] sm:min-h-[320px] lg:min-h-[380px]"
                                   openTagManagerModal={() => setIsTagModalOpen(true)}
                                   placeholder="Declare palavras de vitória... Use @ para invocar tags ou @# para criar."
                                 />
@@ -2765,7 +2768,8 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                 <TagInputWithMention
                                   value={prayerText}
                                   onChange={setPrayerText}
-                                  rows={5}
+                                  rows={12}
+                                  className="flex-1 h-full min-h-[260px] sm:min-h-[320px] lg:min-h-[380px]"
                                   openTagManagerModal={() => setIsTagModalOpen(true)}
                                   placeholder="Sua oração ou meditação sagrada de hoje... Use @ para invocar tags ou @# para criar."
                                 />

@@ -317,12 +317,12 @@ export default function ProfileView({
           </button>
           <button
             onClick={onOpenRankingModal}
-            className="flex items-center gap-3 bg-zinc-950 border border-zinc-850 hover:border-amber-500/50 px-4 py-2 rounded-2xl transition-all cursor-pointer group"
+            className="flex items-center gap-3 bg-zinc-950 border border-zinc-850 hover:border-orange-500/50 px-4 py-2 rounded-2xl transition-all cursor-pointer group"
             title="Abrir Central de Ligas & Classificação"
           >
             <Trophy className="h-5 w-5 text-orange-500 fill-orange-500/10 group-hover:scale-110 transition-transform" />
             <div className="text-left">
-              <span className="text-[10px] text-zinc-500 group-hover:text-amber-400 font-bold uppercase tracking-widest block transition-colors">Classificação & Ligas</span>
+              <span className="text-[10px] text-zinc-500 group-hover:text-orange-400 font-bold uppercase tracking-widest block transition-colors">Classificação & Ligas</span>
               <span className="text-xs font-black text-white uppercase font-mono">Nível {level}</span>
             </div>
           </button>

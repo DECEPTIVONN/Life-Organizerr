@@ -184,9 +184,9 @@ export function getLeagueParticipants(
       xp: displayUserXP,
       isUser: true,
       countryFlag: 'BR',
-      badgeBg: 'bg-purple-600/30 text-purple-300 border border-purple-500/50 shadow-sm shadow-purple-500/20',
-      textColor: 'text-purple-300 font-extrabold',
-      borderColor: 'border-purple-500/60',
+      badgeBg: 'bg-orange-500/20 text-orange-300 border border-orange-500/50 shadow-sm shadow-orange-500/20',
+      textColor: 'text-orange-300 font-extrabold',
+      borderColor: 'border-orange-500/60',
     },
     {
       id: 'prime',

@@ -2643,7 +2643,7 @@ export default function AnuaisView({
                           onChange={(e) => setGratitudeText(e.target.value)}
                           onKeyDown={(e) => handleAutoListKeyDown(e, gratitudeText, setGratitudeText)}
                           placeholder="Liste 3 motivos para agradecer hoje..."
-                          className="w-full min-h-[200px] bg-zinc-950 border border-zinc-900 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-none font-sans leading-relaxed"
+                          className="w-full flex-1 min-h-[280px] sm:min-h-[340px] bg-zinc-950 border border-zinc-900 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-y font-sans leading-relaxed"
                         />
                       )}
 
@@ -2653,7 +2653,7 @@ export default function AnuaisView({
                           onChange={(e) => setDecreesText(e.target.value)}
                           onKeyDown={(e) => handleAutoListKeyDown(e, decreesText, setDecreesText)}
                           placeholder="Eu sou..."
-                          className="w-full min-h-[200px] bg-zinc-950 border border-zinc-900 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-none font-sans leading-relaxed"
+                          className="w-full flex-1 min-h-[280px] sm:min-h-[340px] bg-zinc-950 border border-zinc-900 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-y font-sans leading-relaxed"
                         />
                       )}
 
@@ -2663,7 +2663,7 @@ export default function AnuaisView({
                           onChange={(e) => setPrayerText(e.target.value)}
                           onKeyDown={(e) => handleAutoListKeyDown(e, prayerText, setPrayerText)}
                           placeholder="Sua oração pessoal..."
-                          className="w-full min-h-[200px] bg-zinc-950 border border-zinc-900 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-none font-sans leading-relaxed"
+                          className="w-full flex-1 min-h-[280px] sm:min-h-[340px] bg-zinc-950 border border-zinc-900 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-y font-sans leading-relaxed"
                         />
                       )}
                     </div>

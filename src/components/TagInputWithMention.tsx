@@ -122,16 +122,20 @@ export default function TagInputWithMention({
   // Group tags
   const availableGroups = Array.from(new Set([...DEFAULT_TAG_GROUPS, ...tags.map(t => t.group)])).filter(Boolean);
 
+  const isFlex = className.includes('flex-1') || className.includes('h-full') || className.includes('h-') || rows >= 8;
+
   return (
-    <div className="relative w-full space-y-1.5">
-      <div className="relative">
+    <div className={`relative w-full ${isFlex ? 'flex-1 flex flex-col min-h-[220px]' : 'space-y-1.5'}`}>
+      <div className={`relative ${isFlex ? 'flex-1 flex flex-col' : ''}`}>
         <textarea
           ref={textareaRef}
           value={value}
           onChange={handleTextareaChange}
           placeholder={placeholder}
           rows={rows}
-          className={`w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500/80 transition-all resize-y ${className}`}
+          className={`w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500/80 transition-all resize-y ${
+            isFlex ? 'flex-1 h-full min-h-[220px] sm:min-h-[280px] lg:min-h-[340px]' : ''
+          } ${className}`}
         />
 
         {/* Floating Quick Action Button */}
@@ -168,7 +172,7 @@ export default function TagInputWithMention({
       {showDropdown && (
         <div
           ref={dropdownRef}
-          className="absolute left-0 bottom-full mb-2 z-50 w-80 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-3 space-y-2 text-xs overflow-hidden backdrop-blur-xl animate-in fade-in slide-in-from-bottom-2 duration-150"
+          className="absolute left-0 top-full mt-1.5 z-50 w-80 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-3 space-y-2 text-xs overflow-hidden backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-150 ring-1 ring-white/10"
         >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2 px-1">
@@ -225,7 +229,7 @@ export default function TagInputWithMention({
             </div>
           ) : (
             /* Mention Selection Mode with Hierarchical Navigation */
-            <div className="max-h-60 overflow-y-auto space-y-3 pr-1">
+            <div className="max-h-64 overflow-y-auto space-y-3 pr-1">
               
               {/* Back button if inside sub-tag view */}
               {selectedParentTag && (
@@ -304,49 +308,61 @@ export default function TagInputWithMention({
                     ))}
                 </div>
               ) : (
-                /* Showing Groups and Main Tags */
+                /* Showing Groups and Main Tags in a Clean Tree Hierarchy */
                 availableGroups.map(groupName => {
                   const groupTags = tags.filter(t => t.group === groupName);
+                  if (groupTags.length === 0) return null;
+
+                  // Filter to get only root tags in this group
+                  const rootGroupTags = groupTags.filter(t => 
+                    !groupTags.some(p => p.id !== t.id && (p.id === t.parentTagId || p.name === t.parentTagName))
+                  );
+
+                  const renderTagTree = (tag: TagItem, level: number = 0): React.ReactNode => {
+                    const subTags = tags.filter(st => st.id !== tag.id && (st.parentTagId === tag.id || (st.parentTagName && st.parentTagName === tag.name)));
+                    const hasSubTags = subTags.length > 0;
+
+                    return (
+                      <div key={tag.id} className="space-y-1">
+                        <button
+                          type="button"
+                          onClick={() => insertTagIntoText(tag.name)}
+                          className={`w-full text-left px-2.5 py-1.5 rounded-lg bg-zinc-950 hover:bg-zinc-800/90 text-zinc-200 flex items-center justify-between border border-zinc-800/60 transition-all group ${
+                            level > 0 ? 'bg-zinc-950/70 border-zinc-850' : ''
+                          }`}
+                        >
+                          <span className="flex items-center gap-2 min-w-0">
+                            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: tag.color }} />
+                            <span className={`font-semibold truncate ${level > 0 ? 'text-[11px] text-zinc-300' : 'text-xs'}`}>
+                              #{tag.name}
+                            </span>
+                          </span>
+
+                          {hasSubTags && (
+                            <span className="text-[9px] text-orange-400 font-mono bg-orange-500/10 px-1.5 py-0.5 rounded border border-orange-500/20 shrink-0">
+                              {subTags.length} sub-tag{subTags.length > 1 ? 's' : ''}
+                            </span>
+                          )}
+                        </button>
+
+                        {hasSubTags && (
+                          <div className="ml-3 pl-2.5 border-l-2 border-orange-500/30 space-y-1 my-1">
+                            {subTags.map(subTag => renderTagTree(subTag, level + 1))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  };
 
                   return (
-                    <div key={groupName} className="space-y-1">
+                    <div key={groupName} className="space-y-1.5">
                       <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider px-1 flex items-center gap-1">
                         <Folder className="h-3 w-3 text-orange-400" />
                         {groupName}
                       </div>
 
                       <div className="grid grid-cols-1 gap-1">
-                        {groupTags.map(tag => {
-                          const subTags = tags.filter(st => st.parentTagId === tag.id || st.parentTagName === tag.name);
-                          const hasSubTags = subTags.length > 0;
-
-                          return (
-                            <button
-                              key={tag.id}
-                              type="button"
-                              onClick={() => {
-                                if (hasSubTags) {
-                                  setSelectedParentTag(tag);
-                                } else {
-                                  insertTagIntoText(tag.name);
-                                }
-                              }}
-                              className="w-full text-left px-2.5 py-1.5 rounded-lg bg-zinc-950 hover:bg-zinc-800 text-zinc-200 flex items-center justify-between border border-zinc-800/60 transition-colors group"
-                            >
-                              <span className="flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: tag.color }} />
-                                <span className="font-semibold text-xs">#{tag.name}</span>
-                              </span>
-
-                              {hasSubTags ? (
-                                <span className="text-[10px] text-orange-400 flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
-                                  {subTags.length} sub-tags
-                                  <ChevronRight className="h-3 w-3" />
-                                </span>
-                              ) : null}
-                            </button>
-                          );
-                        })}
+                        {rootGroupTags.map(tag => renderTagTree(tag, 0))}
                       </div>
                     </div>
                   );

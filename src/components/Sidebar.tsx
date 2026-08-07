@@ -858,10 +858,10 @@ export default function Sidebar({
                     setMobileMenuOpen(false);
                     if (onOpenRankingModal) onOpenRankingModal();
                   }}
-                  className="mt-2 w-full flex items-center justify-between hover:bg-purple-500/10 p-2 rounded-xl transition-all group cursor-pointer bg-zinc-900/40 border border-zinc-850/80"
+                  className="mt-2 w-full flex items-center justify-between hover:bg-orange-500/10 p-2 rounded-xl transition-all group cursor-pointer bg-zinc-900/40 border border-zinc-850/80"
                   title="Abrir Ranking de Ligas & Classificação"
                 >
-                  <span className="text-[10px] text-zinc-300 group-hover:text-purple-300 flex items-center gap-1.5 font-mono font-bold">
+                  <span className="text-[10px] text-zinc-300 group-hover:text-orange-400 flex items-center gap-1.5 font-mono font-bold">
                     <Trophy className="h-3.5 w-3.5 text-amber-400 fill-amber-500/20" />
                     <span>Classificação & Ligas</span>
                   </span>
