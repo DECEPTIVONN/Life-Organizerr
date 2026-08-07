@@ -1,25 +1,30 @@
-import React, { useState } from 'react';
-import { Eye, EyeOff, ShieldAlert, X, Info, Lock, ShieldCheck, KeyRound } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Eye, EyeOff, ShieldAlert, X, Info, Lock, ShieldCheck, KeyRound, Fingerprint, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { verifyBiometric } from '../utils/biometricAuth';
 
 interface LockScreenProps {
   userName: string;
   userPhoto: string;
   correctPassword?: string;
   onUnlock: () => void;
+  appLockBiometricEnabled?: boolean;
 }
 
 export default function LockScreen({
   userName,
   userPhoto,
   correctPassword = '',
-  onUnlock
+  onUnlock,
+  appLockBiometricEnabled = false
 }: LockScreenProps) {
   const [passwordInput, setPasswordInput] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [showForgotHelp, setShowForgotHelp] = useState(false);
   const [shakeTrigger, setShakeTrigger] = useState(false);
+  const [isBiometricAuthenticating, setIsBiometricAuthenticating] = useState(false);
+  const [hasTriggeredBiometric, setHasTriggeredBiometric] = useState(false);
 
   const handleUnlock = () => {
     if (passwordInput === correctPassword) {
@@ -35,6 +40,34 @@ export default function LockScreen({
       }
     }
   };
+
+  const handleBiometricUnlock = async () => {
+    setIsBiometricAuthenticating(true);
+    setErrorMsg('');
+    try {
+      const res = await verifyBiometric(userName);
+      if (res.success) {
+        onUnlock();
+      } else if (res.error) {
+        setErrorMsg(res.error);
+      }
+    } catch (err) {
+      setErrorMsg('Erro na leitura da digital. Digite sua senha.');
+    } finally {
+      setIsBiometricAuthenticating(false);
+    }
+  };
+
+  useEffect(() => {
+    if (appLockBiometricEnabled && !hasTriggeredBiometric) {
+      setHasTriggeredBiometric(true);
+      // Small timeout to allow component layout mount
+      const timer = setTimeout(() => {
+        handleBiometricUnlock();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [appLockBiometricEnabled, hasTriggeredBiometric]);
 
   const handleResetPasswordWithDataLossWarning = () => {
     if (confirm("⚠️ ATENÇÃO: Limpar a senha local irá remover as configurações de segurança atuais. Caso não possua uma Chave de Sincronização Cloud ativa, seus dados locais também podem ser redefinidos. Deseja continuar?")) {
@@ -181,8 +214,27 @@ export default function LockScreen({
             onClick={handleUnlock}
             className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white font-black text-xs py-4 rounded-2xl transition-all duration-300 shadow-[0_4px_24px_rgba(249,115,22,0.25)] hover:shadow-[0_4px_30px_rgba(249,115,22,0.45)] active:scale-[0.98] font-sans uppercase tracking-[0.2em] cursor-pointer"
           >
-            Desbloquear
+            Desbloquear por Senha
           </button>
+
+          {/* Biometric Fingerprint Button */}
+          {appLockBiometricEnabled && (
+            <button
+              type="button"
+              onClick={handleBiometricUnlock}
+              disabled={isBiometricAuthenticating}
+              className="w-full bg-zinc-950/90 hover:bg-zinc-900 border border-orange-500/40 text-orange-400 font-bold text-xs py-3.5 rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-[0_0_20px_rgba(249,115,22,0.15)] hover:shadow-[0_0_25px_rgba(249,115,22,0.3)] active:scale-[0.98] cursor-pointer"
+            >
+              {isBiometricAuthenticating ? (
+                <Loader2 className="h-4 w-4 animate-spin text-orange-400" />
+              ) : (
+                <Fingerprint className="h-5 w-5 text-orange-400 stroke-[2.2]" />
+              )}
+              <span className="uppercase tracking-widest font-mono text-[11px]">
+                {isBiometricAuthenticating ? 'Lendo Digital...' : 'Entrar com Digital'}
+              </span>
+            </button>
+          )}
         </div>
 
         {/* Forgot password link */}

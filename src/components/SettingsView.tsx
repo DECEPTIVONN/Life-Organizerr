@@ -35,8 +35,10 @@ import {
   ShieldCheck,
   Sliders,
   CheckCircle2,
-  Palette
+  Palette,
+  Fingerprint
 } from 'lucide-react';
+import { isPlatformAuthenticatorAvailable, verifyBiometric } from '../utils/biometricAuth';
 import ColorSchemeModal from './ColorSchemeModal';
 import { THEME_PRESETS, applyThemeColor } from '../utils/themeColors';
 import { motion, AnimatePresence } from 'motion/react';
@@ -117,6 +119,8 @@ interface SettingsViewProps {
   setAppLockTimeout: (timeout: number) => void;
   isAppLocked: boolean;
   setIsAppLocked: (locked: boolean) => void;
+  appLockBiometricEnabled?: boolean;
+  setAppLockBiometricEnabled?: (enabled: boolean) => void;
 }
 
 type SettingsScreen = 
@@ -177,6 +181,8 @@ export default function SettingsView({
   setAppLockTimeout,
   isAppLocked,
   setIsAppLocked,
+  appLockBiometricEnabled = false,
+  setAppLockBiometricEnabled,
   activeThemePreset = 'default',
   setActiveThemePreset,
   customThemeHex = '#3396f3',
@@ -185,6 +191,16 @@ export default function SettingsView({
   
   // Theme Color Scheme Modal State
   const [isColorSchemeModalOpen, setIsColorSchemeModalOpen] = useState(false);
+
+  // Biometric device support check
+  const [isBiometricSupported, setIsBiometricSupported] = useState(false);
+  const [isBiometricVerifying, setIsBiometricVerifying] = useState(false);
+
+  useEffect(() => {
+    isPlatformAuthenticatorAvailable().then(supported => {
+      setIsBiometricSupported(supported);
+    });
+  }, []);
 
   // Navigation stack state
   const [localCurrentScreen, setLocalCurrentScreen] = useState<SettingsScreen>('main');
@@ -1432,6 +1448,87 @@ export default function SettingsView({
                   className={`w-9 h-5 rounded-full p-0.5 transition-all ${appLockEnabled ? 'bg-orange-500/40' : 'bg-zinc-800'}`}
                 >
                   <div className={`w-4 h-4 rounded-full transition-all ${appLockEnabled ? 'translate-x-4 bg-orange-500 shadow-[0_0_6px_#f97316]' : 'translate-x-0 bg-zinc-500'}`} />
+                </button>
+              </div>
+
+              {/* Toggle Impressão Digital / Biometria */}
+              <div className={`flex items-center justify-between p-4 bg-[#111115] border border-zinc-900 rounded-2xl transition-all ${
+                !appLockPassword ? 'opacity-65' : ''
+              }`}>
+                <div className="flex items-start gap-3">
+                  <div className={`p-2 rounded-xl border mt-0.5 ${
+                    appLockBiometricEnabled && appLockPassword
+                      ? 'bg-orange-500/10 border-orange-500/30 text-orange-400'
+                      : 'bg-zinc-900 border-zinc-800 text-zinc-500'
+                  }`}>
+                    <Fingerprint className="h-4 w-4 stroke-[2]" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h5 className="text-xs font-bold text-zinc-200">Bloqueio por Impressão Digital</h5>
+                      {!appLockPassword ? (
+                        <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700 font-semibold">
+                          Requer Senha Definitiva
+                        </span>
+                      ) : !isBiometricSupported ? (
+                        <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-semibold">
+                          Sem Suporte de Leitor
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="text-[9px] text-zinc-500 font-mono mt-0.5">
+                      {!appLockPassword
+                        ? 'Defina uma senha de bloqueio primeiro para habilitar a impressão digital.'
+                        : !isBiometricSupported
+                        ? 'O dispositivo não possui suporte ativo para leitura biométrica.'
+                        : appLockBiometricEnabled
+                        ? 'Entrada por biometria / impressão digital ativada.'
+                        : 'Ative para desbloquear o Planner usando a digital do seu dispositivo.'}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={!appLockPassword || isBiometricVerifying}
+                  onClick={async () => {
+                    if (!appLockPassword) {
+                      setLockError('Defina uma senha de bloqueio primeiro para ativar a biometria!');
+                      return;
+                    }
+                    
+                    if (!appLockBiometricEnabled) {
+                      // Validate scanner first
+                      setIsBiometricVerifying(true);
+                      setLockError('');
+                      setLockSuccess('');
+                      try {
+                        const res = await verifyBiometric(userName);
+                        if (res.success) {
+                          if (setAppLockBiometricEnabled) setAppLockBiometricEnabled(true);
+                          setLockSuccess('Bloqueio por impressão digital ativado!');
+                          setTimeout(() => setLockSuccess(''), 3000);
+                        } else {
+                          setLockError(res.error || 'Não foi possível validar a biometria.');
+                        }
+                      } catch (err) {
+                        setLockError('Erro ao acessar o leitor de biometria.');
+                      } finally {
+                        setIsBiometricVerifying(false);
+                      }
+                    } else {
+                      if (setAppLockBiometricEnabled) setAppLockBiometricEnabled(false);
+                      setLockSuccess('Bloqueio por impressão digital desativado.');
+                      setTimeout(() => setLockSuccess(''), 3000);
+                    }
+                  }}
+                  className={`w-9 h-5 rounded-full p-0.5 transition-all ${
+                    appLockBiometricEnabled && appLockPassword ? 'bg-orange-500/40' : 'bg-zinc-800'
+                  } ${!appLockPassword ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                >
+                  <div className={`w-4 h-4 rounded-full transition-all ${
+                    appLockBiometricEnabled && appLockPassword ? 'translate-x-4 bg-orange-500 shadow-[0_0_6px_#f97316]' : 'translate-x-0 bg-zinc-500'
+                  }`} />
                 </button>
               </div>
 

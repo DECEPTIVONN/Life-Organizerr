@@ -126,6 +126,10 @@ export default function App() {
     return saved ? parseInt(saved, 10) : -1;
   });
 
+  const [appLockBiometricEnabled, setAppLockBiometricEnabled] = useState(() => {
+    return localStorage.getItem('mbc_app_lock_biometric_enabled') === 'true';
+  });
+
   const [isAppLocked, setIsAppLocked] = useState(() => {
     const enabled = localStorage.getItem('mbc_app_lock_enabled') === 'true';
     const pass = localStorage.getItem('mbc_app_lock_password') || '';
@@ -438,6 +442,10 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('mbc_app_lock_timeout', String(appLockTimeout));
   }, [appLockTimeout]);
+
+  useEffect(() => {
+    localStorage.setItem('mbc_app_lock_biometric_enabled', String(appLockBiometricEnabled));
+  }, [appLockBiometricEnabled]);
 
   useEffect(() => {
     if (!appLockEnabled || !appLockPassword || appLockTimeout <= 0 || isAppLocked) {
@@ -2615,6 +2623,8 @@ export default function App() {
             setAppLockTimeout={setAppLockTimeout}
             isAppLocked={isAppLocked}
             setIsAppLocked={setIsAppLocked}
+            appLockBiometricEnabled={appLockBiometricEnabled}
+            setAppLockBiometricEnabled={setAppLockBiometricEnabled}
             activeThemePreset={activeThemePreset}
             setActiveThemePreset={setActiveThemePreset}
             customThemeHex={customThemeHex}
@@ -2632,6 +2642,7 @@ export default function App() {
         userName={userName}
         userPhoto={userPhoto}
         correctPassword={appLockPassword}
+        appLockBiometricEnabled={appLockBiometricEnabled}
         onUnlock={() => setIsAppLocked(false)}
       />
     );
