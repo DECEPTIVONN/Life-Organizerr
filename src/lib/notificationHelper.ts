@@ -75,13 +75,16 @@ export async function syncAlarmsToServiceWorker(payload: {
   calendarNotes?: any[];
   dailySpaceEnabled?: boolean;
   dailySpaceTime?: string;
+  backgroundEnabled?: boolean;
 }) {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
 
   const alarms: ScheduledAlarmItem[] = [];
 
+  const isBgEnabled = payload.backgroundEnabled !== false;
+
   // 1. Reminders (Pomodoro, Timer, Cronometer, Schedule)
-  if (payload.reminders) {
+  if (isBgEnabled && payload.reminders) {
     payload.reminders.forEach((r) => {
       if (r.status !== 'active' || r.paused) return;
 
@@ -115,7 +118,7 @@ export async function syncAlarmsToServiceWorker(payload: {
   }
 
   // 2. Daily Tasks (Checklist Inegociável)
-  if (payload.dailyTasks) {
+  if (isBgEnabled && payload.dailyTasks) {
     payload.dailyTasks.forEach((t) => {
       if (!t.reminderTime || t.completed) return;
       alarms.push({
@@ -129,7 +132,7 @@ export async function syncAlarmsToServiceWorker(payload: {
   }
 
   // 3. Routine Items
-  if (payload.routine) {
+  if (isBgEnabled && payload.routine) {
     payload.routine.forEach((item) => {
       if (!item.reminderTime) return;
       alarms.push({
@@ -144,7 +147,7 @@ export async function syncAlarmsToServiceWorker(payload: {
   }
 
   // 4. Standalone Notes
-  if (payload.notes) {
+  if (isBgEnabled && payload.notes) {
     payload.notes.forEach((n) => {
       if (!n.reminderTime || n.archived) return;
       alarms.push({
@@ -158,7 +161,7 @@ export async function syncAlarmsToServiceWorker(payload: {
   }
 
   // 5. Calendar Notes
-  if (payload.calendarNotes) {
+  if (isBgEnabled && payload.calendarNotes) {
     payload.calendarNotes.forEach((cn) => {
       if (!cn.reminderTime) return;
       alarms.push({
@@ -172,7 +175,7 @@ export async function syncAlarmsToServiceWorker(payload: {
   }
 
   // 6. Espaço Diário & Fé
-  if (payload.dailySpaceEnabled !== false && payload.dailySpaceTime) {
+  if (isBgEnabled && payload.dailySpaceEnabled !== false && payload.dailySpaceTime) {
     alarms.push({
       id: 'daily-space-reminder',
       title: 'Espaço Diário & Fé',

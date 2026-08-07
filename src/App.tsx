@@ -1252,18 +1252,28 @@ export default function App() {
 
   // Synchronize active alarms/reminders/tasks with Service Worker for background persistence
   useEffect(() => {
-    const dailySpaceNotifEnabled = localStorage.getItem('mbc_daily_workspace_notif_enabled') !== 'false';
-    const dailySpaceTime = localStorage.getItem('mbc_daily_workspace_reminder_time') || '21:00';
+    const doSync = () => {
+      const dailySpaceNotifEnabled = localStorage.getItem('mbc_daily_workspace_notif_enabled') !== 'false';
+      const dailySpaceTime = localStorage.getItem('mbc_daily_workspace_reminder_time') || '21:00';
+      const bgNotifEnabled = localStorage.getItem('mbc_background_notifications_enabled') !== 'false';
 
-    syncAlarmsToServiceWorker({
-      reminders,
-      dailyTasks,
-      routine,
-      notes,
-      calendarNotes,
-      dailySpaceEnabled: dailySpaceNotifEnabled,
-      dailySpaceTime
-    });
+      syncAlarmsToServiceWorker({
+        reminders,
+        dailyTasks,
+        routine,
+        notes,
+        calendarNotes,
+        dailySpaceEnabled: dailySpaceNotifEnabled,
+        dailySpaceTime,
+        backgroundEnabled: bgNotifEnabled
+      });
+    };
+
+    doSync();
+
+    const handleStorageChange = () => doSync();
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, [reminders, dailyTasks, routine, notes, calendarNotes]);
 
   useEffect(() => {
@@ -1271,6 +1281,7 @@ export default function App() {
 
     const checkNotifications = async () => {
       if (Notification.permission !== 'granted') return;
+      if (localStorage.getItem('mbc_background_notifications_enabled') === 'false') return;
 
       const now = new Date();
       const pad = (n: number) => String(n).padStart(2, '0');

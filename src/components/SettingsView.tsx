@@ -248,6 +248,9 @@ export default function SettingsView({
   const [notifDaily, setNotifDaily] = useState(true);
   const [notifFinances, setNotifFinances] = useState(false);
   const [notifRoutine, setNotifRoutine] = useState(true);
+  const [notifBackground, setNotifBackground] = useState(() => {
+    return localStorage.getItem('mbc_background_notifications_enabled') !== 'false';
+  });
   const [dailyWorkspaceNotifEnabled, setDailyWorkspaceNotifEnabled] = useState(() => {
     return localStorage.getItem('mbc_daily_workspace_notif_enabled') !== 'false';
   });
@@ -1769,38 +1772,59 @@ export default function SettingsView({
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-orange-500/20">
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      const granted = await requestNotificationPermission();
-                      if (granted) {
-                        sendSystemNotification('Notificações Ativas!', {
-                          body: 'O TRONUS enviará seus alertas e alarmes em segundo plano.',
-                          tag: 'tronus-perm-test'
-                        });
-                      } else {
-                        alert('Permissão de notificação negada ou bloqueada no navegador. Habilite nas configurações do seu navegador ou sistema operacional.');
-                      }
-                    }}
-                    className="px-3.5 py-1.5 bg-orange-500 hover:bg-orange-600 text-black text-xs font-bold rounded-xl transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <CheckCircle className="h-3.5 w-3.5" />
-                    Ativar Notificações no Dispositivo
-                  </button>
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-orange-500/20">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const granted = await requestNotificationPermission();
+                        if (granted) {
+                          sendSystemNotification('Notificações Ativas!', {
+                            body: 'O TRONUS enviará seus alertas e alarmes em segundo plano.',
+                            tag: 'tronus-perm-test'
+                          });
+                        } else {
+                          alert('Permissão de notificação negada ou bloqueada no navegador. Habilite nas configurações do seu navegador ou sistema operacional.');
+                        }
+                      }}
+                      className="px-3.5 py-1.5 bg-orange-500 hover:bg-orange-600 text-black text-xs font-bold rounded-xl transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <CheckCircle className="h-3.5 w-3.5" />
+                      Ativar Notificações
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      sendSystemNotification('⏰ Teste de Alarme TRONUS', {
-                        body: 'Notificação do sistema funcionando em segundo plano!',
-                        tag: 'test-alarm-pwa'
-                      });
-                    }}
-                    className="px-3.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-700 text-xs font-semibold rounded-xl transition-all cursor-pointer"
-                  >
-                    ⚡ Testar Disparo Agora
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sendSystemNotification('⏰ Teste de Alarme TRONUS', {
+                          body: 'Notificação do sistema funcionando em segundo plano!',
+                          tag: 'test-alarm-pwa'
+                        });
+                      }}
+                      className="px-3.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-700 text-xs font-semibold rounded-xl transition-all cursor-pointer"
+                    >
+                      ⚡ Testar Disparo
+                    </button>
+                  </div>
+
+                  {/* Toggle para disparo em segundo plano */}
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] font-mono font-bold text-orange-300 uppercase">
+                      Alertas em Segundo Plano ({notifBackground ? 'Ativado' : 'Desativado'})
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = !notifBackground;
+                        setNotifBackground(next);
+                        localStorage.setItem('mbc_background_notifications_enabled', String(next));
+                        window.dispatchEvent(new Event('storage'));
+                      }}
+                      className={`w-9 h-5 rounded-full p-0.5 transition-all cursor-pointer ${notifBackground ? 'bg-orange-500' : 'bg-zinc-800'}`}
+                    >
+                      <div className={`w-4 h-4 rounded-full bg-white transition-all ${notifBackground ? 'translate-x-4' : 'translate-x-0 bg-zinc-500'}`} />
+                    </button>
+                  </div>
                 </div>
               </div>
 
