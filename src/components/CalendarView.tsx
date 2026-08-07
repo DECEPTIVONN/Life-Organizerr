@@ -2321,7 +2321,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="cursor-default bg-[#0a0a0c] border border-zinc-800 rounded-3xl w-full max-w-4xl h-full max-h-[85vh] my-auto flex flex-col overflow-hidden shadow-2xl shadow-orange-500/5 text-left"
+              className="cursor-default bg-[#0a0a0c] border border-zinc-800 rounded-3xl w-full max-w-6xl h-full max-h-[85vh] my-auto flex flex-col overflow-hidden shadow-2xl shadow-orange-500/5 text-left"
             >
               <div ref={panelRef} className="flex flex-col h-full overflow-hidden">
           
@@ -2546,7 +2546,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                           </form>
 
                           {/* Checklist Items list */}
-                          <div className="flex-1 overflow-y-auto max-h-[195px] space-y-1.5 pr-1 scrollbar-thin">
+                          <div className="flex-1 overflow-y-auto min-h-[260px] sm:min-h-[320px] lg:min-h-[380px] max-h-[500px] space-y-1.5 pr-1 scrollbar-thin">
                             {dayChecklist.length === 0 ? (
                               <div className="text-center py-8 border border-dashed border-zinc-900 rounded-xl animate-pulse">
                                 <p className="text-[11px] text-zinc-500">Nenhuma tarefa para este dia.</p>

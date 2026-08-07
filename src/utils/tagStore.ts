@@ -110,7 +110,10 @@ export function createNewTag(
   parentTagId?: string,
   parentTagName?: string
 ): TagItem {
-  const cleanName = name.replace(/^[@#]+/, '').trim();
+  const cleanName = name.replace(/^[@#]+/, '').replace(/#/g, '').trim();
+  if (!cleanName) {
+    throw new Error('Tag name cannot be empty');
+  }
   const existingTags = loadStoredTags();
   
   // Check if exists

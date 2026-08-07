@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Tag as TagIcon, Plus, ChevronRight, X, Sparkles, Folder } from 'lucide-react';
-import { TagItem, loadStoredTags, createNewTag, DEFAULT_TAG_GROUPS } from '../utils/tagStore';
+import { Tag as TagIcon, Plus, ChevronRight, X, Sparkles, Folder, Palette } from 'lucide-react';
+import { TagItem, loadStoredTags, createNewTag, DEFAULT_TAG_GROUPS, COLOR_PALETTE } from '../utils/tagStore';
 
 interface TagInputWithMentionProps {
   value: string;
@@ -10,6 +10,49 @@ interface TagInputWithMentionProps {
   className?: string;
   rows?: number;
   openTagManagerModal?: () => void;
+}
+
+// Helper to compute exact caret / text line coordinates inside textarea
+function getCaretCoordinates(element: HTMLTextAreaElement, position: number) {
+  const properties = [
+    'direction', 'boxSizing', 'width', 'height', 'overflowX', 'overflowY',
+    'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth',
+    'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+    'fontStyle', 'fontVariant', 'fontWeight', 'fontStretch', 'fontSize',
+    'fontSizeAdjust', 'lineHeight', 'fontFamily', 'textAlign', 'textTransform',
+    'textIndent', 'textDecoration', 'letterSpacing', 'wordSpacing', 'tabSize'
+  ];
+
+  const div = document.createElement('div');
+  div.id = 'input-textarea-caret-position-mirror-div';
+  document.body.appendChild(div);
+
+  const style = div.style;
+  const computed = window.getComputedStyle(element);
+
+  style.whiteSpace = 'pre-wrap';
+  style.wordWrap = 'break-word';
+  style.position = 'absolute';
+  style.visibility = 'hidden';
+
+  properties.forEach(prop => {
+    // @ts-ignore
+    style[prop] = computed[prop];
+  });
+
+  div.textContent = element.value.substring(0, position);
+  const span = document.createElement('span');
+  span.textContent = element.value.substring(position, position + 1) || '.';
+  div.appendChild(span);
+
+  const coordinates = {
+    top: span.offsetTop + (parseInt(computed.borderTopWidth) || 0),
+    left: span.offsetLeft + (parseInt(computed.borderLeftWidth) || 0),
+    height: parseInt(computed.lineHeight) || 18,
+  };
+
+  document.body.removeChild(div);
+  return coordinates;
 }
 
 export default function TagInputWithMention({
@@ -25,15 +68,59 @@ export default function TagInputWithMention({
   const [showDropdown, setShowDropdown] = useState(false);
   const [dropdownQuery, setDropdownQuery] = useState('');
   const [isCreationMode, setIsCreationMode] = useState(false);
+  const [newTagNameInput, setNewTagNameInput] = useState('');
+  const [selectedColor, setSelectedColor] = useState('#f59e0b');
   const [selectedParentGroup, setSelectedParentGroup] = useState<string | null>(null);
   const [selectedParentTag, setSelectedParentTag] = useState<TagItem | null>(null);
+  const [dropdownPos, setDropdownPos] = useState({ top: 38, left: 12 });
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const backdropRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setTags(loadStoredTags());
   }, [showDropdown]);
+
+  useEffect(() => {
+    if (isCreationMode) {
+      const clean = dropdownQuery.replace(/^[@#]+/, '').replace(/#/g, '');
+      setNewTagNameInput(clean);
+    }
+  }, [dropdownQuery, isCreationMode]);
+
+  // Sync scrolling between textarea and backdrop layer
+  const handleScroll = () => {
+    if (textareaRef.current && backdropRef.current) {
+      backdropRef.current.scrollTop = textareaRef.current.scrollTop;
+      backdropRef.current.scrollLeft = textareaRef.current.scrollLeft;
+    }
+  };
+
+  // Recalculate dropdown position on exact line where `@` or `@#` is typed
+  const updateDropdownPosition = (targetIndex: number) => {
+    if (!textareaRef.current) return;
+    try {
+      const coords = getCaretCoordinates(textareaRef.current, targetIndex);
+      const scrollTop = textareaRef.current.scrollTop;
+      const scrollLeft = textareaRef.current.scrollLeft;
+      const textareaWidth = textareaRef.current.clientWidth || 320;
+      const textareaHeight = textareaRef.current.clientHeight || 200;
+
+      let top = coords.top - scrollTop + coords.height + 4;
+      let left = Math.max(8, Math.min(coords.left - scrollLeft, textareaWidth - 320));
+
+      // If opening near bottom edge, flip above the line
+      if (top + 260 > textareaHeight && top > 200) {
+        top = Math.max(8, coords.top - scrollTop - 260);
+      }
+
+      setDropdownPos({ top, left });
+    } catch (err) {
+      // Fallback
+      setDropdownPos({ top: 40, left: 12 });
+    }
+  };
 
   // Handle textarea text changes & check for `@` or `@#`
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -46,24 +133,26 @@ export default function TagInputWithMention({
     const lastAtHash = textBeforeCursor.lastIndexOf('@#');
     const lastAt = textBeforeCursor.lastIndexOf('@');
 
-    if (lastAtHash !== -1 && lastAtHash >= textBeforeCursor.length - 20) {
-      // Inline tag creation mode
+    if (lastAtHash !== -1 && lastAtHash >= textBeforeCursor.length - 25) {
+      // Inline tag creation mode (@#)
       const query = textBeforeCursor.substring(lastAtHash + 2);
       if (!query.includes(' ') && !query.includes('\n')) {
         setShowDropdown(true);
         setIsCreationMode(true);
-        setDropdownQuery(query);
+        setDropdownQuery(query.replace(/#/g, ''));
+        updateDropdownPosition(lastAtHash);
         return;
       }
     }
 
-    if (lastAt !== -1 && lastAt >= textBeforeCursor.length - 20) {
-      // Mention invocation mode
+    if (lastAt !== -1 && lastAt >= textBeforeCursor.length - 25) {
+      // Mention invocation mode (@)
       const query = textBeforeCursor.substring(lastAt + 1);
       if (!query.includes(' ') && !query.includes('\n')) {
         setShowDropdown(true);
         setIsCreationMode(false);
-        setDropdownQuery(query);
+        setDropdownQuery(query.replace(/#/g, ''));
+        updateDropdownPosition(lastAt);
         return;
       }
     }
@@ -75,48 +164,109 @@ export default function TagInputWithMention({
 
   // Insert tag into textarea at cursor position
   const insertTagIntoText = (tagName: string) => {
+    const cleanTagName = tagName.replace(/^[@#]+/, '').replace(/#/g, '').trim();
     if (!textareaRef.current) return;
+
     const cursorPos = textareaRef.current.selectionStart || 0;
     const textBefore = value.substring(0, cursorPos);
     const textAfter = value.substring(cursorPos);
 
-    // Find nearest `@` or `@#` before cursor
+    // Find nearest `@#` or `@` before cursor
     const lastAtHash = textBefore.lastIndexOf('@#');
     const lastAt = textBefore.lastIndexOf('@');
-    const targetIndex = lastAtHash !== -1 && lastAtHash > lastAt ? lastAtHash : lastAt;
+
+    let targetIndex = -1;
+    if (lastAtHash !== -1 && lastAtHash >= lastAt - 1) {
+      targetIndex = lastAtHash;
+    } else if (lastAt !== -1) {
+      targetIndex = lastAt;
+    }
 
     let newText = value;
     if (targetIndex !== -1) {
       const prefix = value.substring(0, targetIndex);
-      newText = `${prefix}@${tagName} ${textAfter}`;
+      // Replaces command with @TagName
+      newText = `${prefix}@${cleanTagName} ${textAfter}`;
     } else {
-      newText = `${value} @${tagName} `;
+      newText = `${value} @${cleanTagName} `;
     }
 
     onChange(newText);
     setShowDropdown(false);
+    setIsCreationMode(false);
+    setNewTagNameInput('');
     setSelectedParentGroup(null);
     setSelectedParentTag(null);
+
     if (onTagSelected) {
-      onTagSelected(tagName);
+      onTagSelected(cleanTagName);
     }
 
-    // Refocus textarea
+    // Refocus textarea and set cursor after tag
     setTimeout(() => {
       if (textareaRef.current) {
         textareaRef.current.focus();
+        const startPos = targetIndex !== -1 ? targetIndex : value.length;
+        const newCursorPos = startPos + cleanTagName.length + 2; // `@` + name + space
+        textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
       }
     }, 50);
   };
 
-  const handleCreateInlineTag = () => {
-    if (!dropdownQuery.trim()) return;
+  const handleCreateInlineTag = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const cleanName = (newTagNameInput || dropdownQuery).replace(/^[@#]+/, '').replace(/#/g, '').trim();
+    if (!cleanName) return;
+
     const group = selectedParentGroup || 'Foco';
     const parentTagId = selectedParentTag?.id;
     const parentTagName = selectedParentTag?.name;
 
-    const created = createNewTag(dropdownQuery, group, undefined, parentTagId, parentTagName);
+    const created = createNewTag(cleanName, group, selectedColor, parentTagId, parentTagName);
+    
+    // Update local state immediately
+    const updatedTags = loadStoredTags();
+    setTags(updatedTags);
+
     insertTagIntoText(created.name);
+  };
+
+  // Highlight used tags in text layer using defined tag colors
+  const renderHighlightedContent = (text: string) => {
+    if (!text) return null;
+
+    // Match tags in format @TagName, @#TagName, or #TagName
+    const regex = /(@#[^\s@#]+|@[^\s@#]+|#[^\s@#]+)/g;
+    const parts = text.split(regex);
+
+    return (
+      <>
+        {parts.map((part, i) => {
+          if (part.startsWith('@') || part.startsWith('#')) {
+            const cleanName = part.replace(/^[@#]+/, '').replace(/#/g, '').trim();
+            const matchedTag = tags.find(t => t.name.toLowerCase() === cleanName.toLowerCase());
+            const tagColor = matchedTag ? matchedTag.color : '#f97316';
+
+            return (
+              <mark
+                key={i}
+                className="bg-transparent rounded px-0.5 font-bold transition-all pointer-events-none"
+                style={{
+                  color: tagColor,
+                  backgroundColor: `${tagColor}22`,
+                  borderBottom: `2px solid ${tagColor}`,
+                  boxShadow: `0 2px 6px ${tagColor}22`
+                }}
+              >
+                {part}
+              </mark>
+            );
+          }
+          return <span key={i} className="text-white">{part}</span>;
+        })}
+        {text.endsWith('\n') && <br />}
+      </>
+    );
   };
 
   // Group tags
@@ -126,23 +276,47 @@ export default function TagInputWithMention({
 
   return (
     <div className={`relative w-full ${isFlex ? 'flex-1 flex flex-col min-h-[220px]' : 'space-y-1.5'}`}>
-      <div className={`relative ${isFlex ? 'flex-1 flex flex-col' : ''}`}>
+      <div className={`relative bg-zinc-950 border border-zinc-800 rounded-xl focus-within:border-orange-500/80 transition-all overflow-hidden ${isFlex ? 'flex-1 flex flex-col' : ''}`}>
+        
+        {/* Backdrop Layer for Tag Highlighting with assigned tag colors */}
+        <div
+          ref={backdropRef}
+          aria-hidden="true"
+          className="absolute inset-0 z-0 pointer-events-none px-3.5 py-2.5 text-xs font-sans leading-relaxed text-white whitespace-pre-wrap break-words overflow-auto select-none"
+          style={{
+            wordBreak: 'break-word',
+            color: '#ffffff'
+          }}
+        >
+          {renderHighlightedContent(value)}
+        </div>
+
+        {/* Textarea Layer (Transparent text, visible cursor, full editing capability) */}
         <textarea
           ref={textareaRef}
           value={value}
           onChange={handleTextareaChange}
+          onScroll={handleScroll}
           placeholder={placeholder}
           rows={rows}
-          className={`w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500/80 transition-all resize-y ${
+          className={`relative z-10 w-full px-3.5 py-2.5 bg-transparent text-transparent caret-orange-500 placeholder-zinc-500 text-xs font-sans leading-relaxed focus:outline-none transition-all resize-y selection:bg-orange-500/30 selection:text-white ${
             isFlex ? 'flex-1 h-full min-h-[220px] sm:min-h-[280px] lg:min-h-[340px]' : ''
           } ${className}`}
+          style={{
+            WebkitTextFillColor: 'transparent',
+            wordBreak: 'break-word'
+          }}
         />
 
         {/* Floating Quick Action Button */}
-        <div className="absolute right-2 bottom-2 flex items-center gap-1.5">
+        <div className="absolute right-2 bottom-2 z-20 flex items-center gap-1.5">
           <button
             type="button"
             onClick={() => {
+              if (!showDropdown && textareaRef.current) {
+                const cursorPos = textareaRef.current.selectionStart || value.length;
+                updateDropdownPosition(cursorPos);
+              }
               setShowDropdown(!showDropdown);
               setSelectedParentGroup(null);
               setSelectedParentTag(null);
@@ -168,11 +342,15 @@ export default function TagInputWithMention({
         </div>
       </div>
 
-      {/* Mention Dropdown Overlay */}
+      {/* Mention Dropdown Overlay - Positioned exactly at line invocation */}
       {showDropdown && (
         <div
           ref={dropdownRef}
-          className="absolute left-0 top-full mt-1.5 z-50 w-80 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-3 space-y-2 text-xs overflow-hidden backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-150 ring-1 ring-white/10"
+          style={{
+            top: `${dropdownPos.top}px`,
+            left: `${dropdownPos.left}px`
+          }}
+          className="absolute z-50 w-80 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-3 space-y-2 text-xs overflow-hidden backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-150 ring-1 ring-white/10"
         >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2 px-1">
@@ -189,14 +367,22 @@ export default function TagInputWithMention({
             </button>
           </div>
 
-          {isCreationMode || dropdownQuery.startsWith('#') ? (
+          {isCreationMode ? (
             /* Creation Mode */
-            <div className="space-y-3 p-1">
-              <div className="bg-zinc-950 p-2.5 rounded-xl border border-zinc-800">
-                <span className="text-zinc-400 text-[11px] block mb-1">Criar tag:</span>
-                <span className="font-mono font-bold text-orange-400 text-xs">
-                  #{dropdownQuery.replace(/^#/, '')}
-                </span>
+            <form onSubmit={handleCreateInlineTag} className="space-y-3 p-1">
+              <div className="space-y-1">
+                <label className="text-[10px] text-zinc-400 font-medium">Nome da Tag:</label>
+                <div className="relative flex items-center">
+                  <span className="absolute left-2.5 text-orange-400 font-bold text-xs">@</span>
+                  <input
+                    type="text"
+                    value={newTagNameInput}
+                    onChange={(e) => setNewTagNameInput(e.target.value.replace(/[@#]/g, ''))}
+                    placeholder="NomeDaTag"
+                    className="w-full pl-6 pr-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500 font-semibold"
+                    autoFocus
+                  />
+                </div>
               </div>
 
               <div className="space-y-1">
@@ -219,14 +405,30 @@ export default function TagInputWithMention({
                 </div>
               </div>
 
+              <div className="space-y-1">
+                <label className="text-[10px] text-zinc-400 font-medium">Cor da Tag:</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {COLOR_PALETTE.slice(0, 10).map(c => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setSelectedColor(c)}
+                      className={`w-5 h-5 rounded-full border-2 transition-transform ${
+                        selectedColor === c ? 'scale-125 border-white' : 'border-transparent opacity-80 hover:opacity-100'
+                      }`}
+                      style={{ backgroundColor: c }}
+                    />
+                  ))}
+                </div>
+              </div>
+
               <button
-                type="button"
-                onClick={handleCreateInlineTag}
+                type="submit"
                 className="w-full py-2 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1"
               >
                 <Plus className="h-3.5 w-3.5" /> Criar e Inserir Tag
               </button>
-            </div>
+            </form>
           ) : (
             /* Mention Selection Mode with Hierarchical Navigation */
             <div className="max-h-64 overflow-y-auto space-y-3 pr-1">
@@ -256,8 +458,8 @@ export default function TagInputWithMention({
                         className="w-full text-left px-2.5 py-1.5 rounded-lg bg-zinc-950 hover:bg-zinc-800 text-zinc-200 flex items-center justify-between transition-colors border border-zinc-800/60"
                       >
                         <span className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: t.color }} />
-                          <span className="font-semibold text-xs">#{t.name}</span>
+                          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: t.color }} />
+                          <span className="font-semibold text-xs" style={{ color: t.color }}>#{t.name}</span>
                         </span>
                         <span className="text-[10px] text-zinc-500 font-mono">{t.group}</span>
                       </button>
@@ -266,11 +468,14 @@ export default function TagInputWithMention({
                   {/* Option to create if not found */}
                   <button
                     type="button"
-                    onClick={() => setIsCreationMode(true)}
+                    onClick={() => {
+                      setIsCreationMode(true);
+                      setNewTagNameInput(dropdownQuery.replace(/^[@#]+/, '').replace(/#/g, ''));
+                    }}
                     className="w-full text-left px-2.5 py-1.5 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 font-bold text-xs flex items-center gap-2 border border-orange-500/30 transition-colors"
                   >
                     <Plus className="h-3.5 w-3.5" />
-                    <span>Criar tag "#{dropdownQuery}"</span>
+                    <span>Criar tag "{dropdownQuery.replace(/^[@#]+/, '').replace(/#/g, '')}"</span>
                   </button>
                 </div>
               ) : selectedParentTag ? (
@@ -286,8 +491,8 @@ export default function TagInputWithMention({
                     onClick={() => insertTagIntoText(selectedParentTag.name)}
                     className="w-full text-left px-2.5 py-1.5 rounded-lg bg-zinc-950 hover:bg-zinc-800 text-orange-400 font-bold flex items-center gap-2 border border-zinc-800"
                   >
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: selectedParentTag.color }} />
-                    <span>Selecionar #{selectedParentTag.name}</span>
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: selectedParentTag.color }} />
+                    <span style={{ color: selectedParentTag.color }}>Selecionar #{selectedParentTag.name}</span>
                   </button>
 
                   {/* List children sub-tags */}
@@ -301,8 +506,8 @@ export default function TagInputWithMention({
                         className="w-full text-left px-2.5 py-1.5 rounded-lg bg-zinc-950 hover:bg-zinc-800 text-zinc-200 flex items-center justify-between border border-zinc-800/60 transition-colors pl-6"
                       >
                         <span className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: subTag.color }} />
-                          <span className="font-semibold text-xs">#{subTag.name}</span>
+                          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: subTag.color }} />
+                          <span className="font-semibold text-xs" style={{ color: subTag.color }}>#{subTag.name}</span>
                         </span>
                       </button>
                     ))}
@@ -332,8 +537,8 @@ export default function TagInputWithMention({
                           }`}
                         >
                           <span className="flex items-center gap-2 min-w-0">
-                            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: tag.color }} />
-                            <span className={`font-semibold truncate ${level > 0 ? 'text-[11px] text-zinc-300' : 'text-xs'}`}>
+                            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: tag.color }} />
+                            <span className={`font-semibold truncate ${level > 0 ? 'text-[11px]' : 'text-xs'}`} style={{ color: tag.color }}>
                               #{tag.name}
                             </span>
                           </span>

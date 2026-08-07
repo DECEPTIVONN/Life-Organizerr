@@ -421,11 +421,24 @@ export default function NotesView({ notes, setNotes, addXp, freeEditMode = false
                       {note.reminderRecurrence === 'monthly' && ' (Mensal)'}
                     </span>
                   )}
-                  {note.tags.slice(0, 2).map(tag => (
-                    <span key={tag} className="text-[8px] bg-zinc-950 border border-zinc-800/40 text-zinc-400 px-1.5 py-0.5 rounded font-mono uppercase tracking-wide">
-                      {tag}
-                    </span>
-                  ))}
+                  {note.tags.slice(0, 2).map(tag => {
+                    const clean = tag.replace(/^[@#]+/, '').trim().toLowerCase();
+                    const tagObj = loadStoredTags().find(t => t.name.toLowerCase() === clean);
+                    const tagColor = tagObj?.color || '#f97316';
+                    return (
+                      <span
+                        key={tag}
+                        className="text-[8px] font-mono uppercase tracking-wide px-1.5 py-0.5 rounded border font-bold"
+                        style={{
+                          color: tagColor,
+                          backgroundColor: `${tagColor}20`,
+                          borderColor: `${tagColor}40`
+                        }}
+                      >
+                        {tag}
+                      </span>
+                    );
+                  })}
                   {note.tags.length > 2 && (
                     <span className="text-[8px] bg-zinc-950 border border-zinc-800/40 text-zinc-500 px-1.5 py-0.5 rounded font-mono">
                       +{note.tags.length - 2}
@@ -740,11 +753,24 @@ export default function NotesView({ notes, setNotes, addXp, freeEditMode = false
                       
                       {activeNote.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mt-3">
-                          {activeNote.tags.map(tag => (
-                            <span key={tag} className="text-[10px] bg-orange-500/10 border border-orange-500/10 text-orange-400 px-3 py-1 rounded-full font-mono uppercase tracking-wide font-bold">
-                              {tag}
-                            </span>
-                          ))}
+                          {activeNote.tags.map(tag => {
+                            const clean = tag.replace(/^[@#]+/, '').trim().toLowerCase();
+                            const tagObj = loadStoredTags().find(t => t.name.toLowerCase() === clean);
+                            const tagColor = tagObj?.color || '#f97316';
+                            return (
+                              <span
+                                key={tag}
+                                className="text-[10px] px-3 py-1 rounded-full font-mono uppercase tracking-wide font-bold border"
+                                style={{
+                                  color: tagColor,
+                                  backgroundColor: `${tagColor}20`,
+                                  borderColor: `${tagColor}40`
+                                }}
+                              >
+                                {tag}
+                              </span>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
