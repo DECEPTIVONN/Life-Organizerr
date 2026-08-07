@@ -211,6 +211,8 @@ interface CreditCardItem {
   id: string;
   name: string;
   bank: string;
+  last4?: string;
+  brand?: string;
   usedLimit: number;
   totalLimit: number;
   closingDay: number;
@@ -318,18 +320,113 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
       console.error(e);
     }
     return [
-      { id: 'card-1', name: 'Nubank Ultravioleta', bank: 'Nubank', usedLimit: 3420.00, totalLimit: 25000.00, closingDay: 12, dueDay: 19, color: '#8b5cf6' },
-      { id: 'card-2', name: 'Itaú Personalité Black', bank: 'Itaú', usedLimit: 8900.50, totalLimit: 40000.00, closingDay: 25, dueDay: 2, color: '#f97316' },
-      { id: 'card-3', name: 'Inter Black Mastercard', bank: 'Inter', usedLimit: 1200.00, totalLimit: 15000.00, closingDay: 5, dueDay: 12, color: '#f59e0b' }
+      { id: 'card-1', name: 'Nubank Ultravioleta', bank: 'Nubank', last4: '4829', brand: 'Mastercard Black', usedLimit: 3420.00, totalLimit: 25000.00, closingDay: 12, dueDay: 19, color: '#8b5cf6' },
+      { id: 'card-2', name: 'Itaú Personnalité Black', bank: 'Itaú', last4: '9102', brand: 'Visa Infinite', usedLimit: 8900.50, totalLimit: 40000.00, closingDay: 25, dueDay: 2, color: '#ea580c' },
+      { id: 'card-3', name: 'Inter Black Mastercard', bank: 'Banco Inter', last4: '1234', brand: 'Mastercard', usedLimit: 1200.00, totalLimit: 15000.00, closingDay: 5, dueDay: 12, color: '#d97706' }
     ];
   });
+
   const [showAddCardModal, setShowAddCardModal] = useState(false);
+  const [editingCardId, setEditingCardId] = useState<string | null>(null);
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+
+  // Form states for adding/editing card
   const [newCardName, setNewCardName] = useState('');
   const [newCardBank, setNewCardBank] = useState('');
+  const [newCardLast4, setNewCardLast4] = useState('');
+  const [newCardBrand, setNewCardBrand] = useState('Visa');
   const [newCardUsedLimit, setNewCardUsedLimit] = useState('');
   const [newCardTotalLimit, setNewCardTotalLimit] = useState('');
-  const [newCardClosing, setNewCardClosing] = useState('10');
-  const [newCardDue, setNewCardDue] = useState('17');
+  const [newCardClosing, setNewCardClosing] = useState('3');
+  const [newCardDue, setNewCardDue] = useState('10');
+  const [newCardColor, setNewCardColor] = useState('#8b5cf6');
+
+  // Quick invoice payment modal
+  const [payInvoiceCardId, setPayInvoiceCardId] = useState<string | null>(null);
+  const [payInvoiceAmount, setPayInvoiceAmount] = useState('');
+
+  const handleOpenAddCardModal = () => {
+    setEditingCardId(null);
+    setNewCardName('');
+    setNewCardBank('');
+    setNewCardLast4('');
+    setNewCardBrand('Visa');
+    setNewCardUsedLimit('');
+    setNewCardTotalLimit('');
+    setNewCardClosing('3');
+    setNewCardDue('10');
+    setNewCardColor('#8b5cf6');
+    setShowAddCardModal(true);
+  };
+
+  const handleOpenEditCardModal = (card: CreditCardItem) => {
+    setEditingCardId(card.id);
+    setNewCardName(card.name);
+    setNewCardBank(card.bank || '');
+    setNewCardLast4(card.last4 || '');
+    setNewCardBrand(card.brand || 'Visa');
+    setNewCardUsedLimit(String(card.usedLimit));
+    setNewCardTotalLimit(String(card.totalLimit));
+    setNewCardClosing(String(card.closingDay));
+    setNewCardDue(String(card.dueDay));
+    setNewCardColor(card.color || '#8b5cf6');
+    setShowAddCardModal(true);
+  };
+
+  const handleSaveCard = () => {
+    if (!newCardName.trim()) return;
+    const total = parseFloat(newCardTotalLimit) || 5000;
+    const used = parseFloat(newCardUsedLimit) || 0;
+
+    if (editingCardId) {
+      setCreditCards(creditCards.map(c => c.id === editingCardId ? {
+        ...c,
+        name: newCardName.trim(),
+        bank: newCardBank.trim() || 'Banco',
+        last4: newCardLast4.trim() || '1234',
+        brand: newCardBrand || 'Visa',
+        usedLimit: used,
+        totalLimit: total,
+        closingDay: parseInt(newCardClosing, 10) || 3,
+        dueDay: parseInt(newCardDue, 10) || 10,
+        color: newCardColor
+      } : c));
+    } else {
+      const newCard: CreditCardItem = {
+        id: Math.random().toString(36).substring(2, 9),
+        name: newCardName.trim(),
+        bank: newCardBank.trim() || 'Banco',
+        last4: newCardLast4.trim() || '1234',
+        brand: newCardBrand || 'Visa',
+        usedLimit: used,
+        totalLimit: total,
+        closingDay: parseInt(newCardClosing, 10) || 3,
+        dueDay: parseInt(newCardDue, 10) || 10,
+        color: newCardColor
+      };
+      setCreditCards([...creditCards, newCard]);
+    }
+    setShowAddCardModal(false);
+  };
+
+  const handleDeleteCard = (id: string) => {
+    if (confirm('Deseja realmente remover este cartão?')) {
+      setCreditCards(creditCards.filter(c => c.id !== id));
+      if (selectedCardId === id) setSelectedCardId(null);
+    }
+  };
+
+  const handlePayInvoice = (cardId: string) => {
+    const payAmount = parseFloat(payInvoiceAmount) || 0;
+    setCreditCards(creditCards.map(c => {
+      if (c.id === cardId) {
+        return { ...c, usedLimit: Math.max(0, c.usedLimit - payAmount) };
+      }
+      return c;
+    }));
+    setPayInvoiceCardId(null);
+    setPayInvoiceAmount('');
+  };
 
   // Debts state
   const [debts, setDebts] = useState<DebtItem[]>(() => {
@@ -1886,8 +1983,8 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
               </h3>
 
               <button
-                onClick={() => setShowAddCardModal(true)}
-                className="px-3.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+                onClick={handleOpenAddCardModal}
+                className="px-3.5 py-1.5 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-xl transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
               >
                 <Plus className="h-3.5 w-3.5" /> + Novo Cartão
               </button>
@@ -1895,26 +1992,71 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
               {creditCards.map(card => {
+                const availableLimit = card.totalLimit - card.usedLimit;
                 const usagePercent = Math.min((card.usedLimit / card.totalLimit) * 100, 100);
 
                 return (
-                  <div key={card.id} className="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 p-5 rounded-2xl space-y-4 shadow-md">
+                  <div
+                    key={card.id}
+                    onClick={() => setSelectedCardId(card.id)}
+                    className="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 hover:border-orange-500/50 p-5 rounded-2xl space-y-4 shadow-md transition-all cursor-pointer group relative overflow-hidden"
+                  >
+                    {/* Top Card Bar with Color Accent */}
                     <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="text-xs font-extrabold text-white">{card.name}</h4>
-                        <span className="text-[10px] text-zinc-500 block">{card.bank}</span>
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div
+                          className="w-8 h-8 rounded-xl flex items-center justify-center text-white font-bold shadow-sm shrink-0"
+                          style={{ backgroundColor: card.color || '#8b5cf6' }}
+                        >
+                          <CreditCard className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="text-xs font-black text-white group-hover:text-orange-400 transition-colors truncate">{card.name}</h4>
+                          <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 truncate">
+                            <span>{card.bank}</span>
+                            {card.brand && <span className="text-zinc-400">• {card.brand}</span>}
+                            {card.last4 && <span className="font-mono text-zinc-400">•••• {card.last4}</span>}
+                          </div>
+                        </div>
                       </div>
-                      <CreditCard className="h-5 w-5 text-orange-500" />
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenEditCardModal(card);
+                        }}
+                        className="p-1.5 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer shrink-0"
+                        title="Editar Cartão"
+                      >
+                        <Edit2 className="h-3.5 w-3.5" />
+                      </button>
                     </div>
 
+                    {/* 3 Core Metrics breakdown on Card */}
+                    <div className="grid grid-cols-3 gap-1.5 pt-1 text-[10px] font-mono">
+                      <div className="bg-zinc-900/80 p-2 rounded-xl border border-zinc-850 min-w-0">
+                        <span className="text-zinc-500 block text-[8px] uppercase font-sans font-bold truncate">Limite Total</span>
+                        <span className="text-zinc-200 font-extrabold block truncate">{formatCurrency(card.totalLimit)}</span>
+                      </div>
+                      <div className="bg-zinc-900/80 p-2 rounded-xl border border-zinc-850 min-w-0">
+                        <span className="text-rose-400 block text-[8px] uppercase font-sans font-bold truncate">Utilizado</span>
+                        <span className="text-rose-400 font-extrabold block truncate">{formatCurrency(card.usedLimit)}</span>
+                      </div>
+                      <div className="bg-zinc-900/80 p-2 rounded-xl border border-zinc-850 min-w-0">
+                        <span className="text-emerald-400 block text-[8px] uppercase font-sans font-bold truncate">Disponível</span>
+                        <span className="text-emerald-400 font-extrabold block truncate">{formatCurrency(availableLimit)}</span>
+                      </div>
+                    </div>
+
+                    {/* Limit Progress Bar */}
                     <div className="space-y-1">
-                      <div className="flex justify-between text-[10px] font-mono">
-                        <span className="text-zinc-400">Limite Usado: {formatCurrency(card.usedLimit)}</span>
-                        <span className="text-zinc-500">Total: {formatCurrency(card.totalLimit)}</span>
+                      <div className="flex justify-between text-[9px] font-mono">
+                        <span className="text-zinc-400 font-sans">{usagePercent.toFixed(1)}% Usado</span>
+                        <span className="text-emerald-400 font-bold">{formatCurrency(availableLimit)} livre</span>
                       </div>
                       <div className="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
                         <div
-                          className={`h-full rounded-full transition-all ${
+                          className={`h-full rounded-full transition-all duration-500 ${
                             usagePercent > 80 ? 'bg-rose-500' : usagePercent > 50 ? 'bg-amber-500' : 'bg-emerald-500'
                           }`}
                           style={{ width: `${usagePercent}%` }}
@@ -1922,15 +2064,22 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-zinc-850 text-center text-[10px]">
-                      <div className="p-2 bg-zinc-900/80 rounded-lg">
-                        <span className="text-zinc-500 block">Fechamento:</span>
+                    {/* Dates and Click Action Prompt */}
+                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-zinc-850/80 text-[10px]">
+                      <div className="p-1.5 bg-zinc-900/40 rounded-lg text-center">
+                        <span className="text-zinc-500 block text-[9px]">Fechamento:</span>
                         <span className="text-white font-bold block">Dia {card.closingDay}</span>
                       </div>
-                      <div className="p-2 bg-zinc-900/80 rounded-lg">
-                        <span className="text-zinc-500 block">Vencimento:</span>
+                      <div className="p-1.5 bg-zinc-900/40 rounded-lg text-center">
+                        <span className="text-zinc-500 block text-[9px]">Vencimento:</span>
                         <span className="text-orange-400 font-bold block">Dia {card.dueDay}</span>
                       </div>
+                    </div>
+
+                    <div className="text-center pt-0.5">
+                      <span className="text-[10px] text-orange-400/90 font-bold group-hover:underline flex items-center justify-center gap-1">
+                        Ver limite detalhado <ArrowRight className="h-3 w-3" />
+                      </span>
                     </div>
                   </div>
                 );
@@ -2123,58 +2272,360 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
         </div>
       )}
 
+      {/* ENHANCED NOVO/EDITAR CARTÃO MODAL */}
       {showAddCardModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-zinc-950 border border-orange-500/40 rounded-2xl p-6 w-full max-w-md space-y-4 shadow-2xl">
+          <div className="bg-zinc-950 border border-orange-500/40 rounded-2xl p-6 w-full max-w-lg space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
             <div className="flex justify-between items-center border-b border-zinc-900 pb-3">
-              <h3 className="text-sm font-bold text-white uppercase">Novo Cartão de Crédito</h3>
+              <div>
+                <h3 className="text-sm font-extrabold text-white uppercase tracking-wider">
+                  {editingCardId ? 'Editar Cartão' : 'Novo Cartão'}
+                </h3>
+                <p className="text-[10px] text-zinc-500 mt-0.5">Preencha os dados do seu cartão de crédito</p>
+              </div>
               <button onClick={() => setShowAddCardModal(false)} className="text-zinc-500 hover:text-white cursor-pointer"><X className="h-4 w-4" /></button>
             </div>
 
-            <div className="space-y-3 text-xs">
+            <div className="space-y-3.5 text-xs">
               <div>
-                <label className="text-zinc-400 block mb-1 font-bold uppercase">Nome do Cartão</label>
-                <input type="text" placeholder="Ex: Nubank Ultravioleta" value={newCardName} onChange={(e) => setNewCardName(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white" />
+                <label className="text-zinc-400 block mb-1 font-bold uppercase text-[10px]">Identificação do Cartão</label>
+                <input
+                  type="text"
+                  placeholder="Ex: Nubank Ultravioleta"
+                  value={newCardName}
+                  onChange={(e) => setNewCardName(e.target.value)}
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white font-medium focus:border-orange-500 focus:outline-none"
+                />
               </div>
-              <div className="grid grid-cols-2 gap-2">
+
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-zinc-400 block mb-1 font-bold uppercase">Limite Usado (R$)</label>
-                  <input type="number" placeholder="0,00" value={newCardUsedLimit} onChange={(e) => setNewCardUsedLimit(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white font-mono" />
+                  <label className="text-zinc-400 block mb-1 font-bold uppercase text-[10px]">Instituição / Banco</label>
+                  <input
+                    type="text"
+                    placeholder="Ex: Nubank"
+                    value={newCardBank}
+                    onChange={(e) => setNewCardBank(e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white font-medium focus:border-orange-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-zinc-400 block mb-1 font-bold uppercase text-[10px]">Últimos 4 Dígitos</label>
+                  <input
+                    type="text"
+                    maxLength={4}
+                    placeholder="1234"
+                    value={newCardLast4}
+                    onChange={(e) => setNewCardLast4(e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white font-mono focus:border-orange-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-zinc-400 block mb-1 font-bold uppercase text-[10px]">Bandeira</label>
+                <select
+                  value={newCardBrand}
+                  onChange={(e) => setNewCardBrand(e.target.value)}
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white focus:border-orange-500 focus:outline-none"
+                >
+                  <option value="Visa">Visa</option>
+                  <option value="Visa Infinite">Visa Infinite</option>
+                  <option value="Mastercard">Mastercard</option>
+                  <option value="Mastercard Black">Mastercard Black</option>
+                  <option value="Elo">Elo</option>
+                  <option value="American Express">American Express</option>
+                  <option value="Hipercard">Hipercard</option>
+                  <option value="Outra">Outra</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-zinc-400 block mb-1 font-bold uppercase text-[10px]">Limite Total (R$)</label>
+                  <input
+                    type="number"
+                    placeholder="5000,00"
+                    value={newCardTotalLimit}
+                    onChange={(e) => setNewCardTotalLimit(e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white font-mono focus:border-orange-500 focus:outline-none"
+                  />
                 </div>
                 <div>
-                  <label className="text-zinc-400 block mb-1 font-bold uppercase">Limite Total (R$)</label>
-                  <input type="number" placeholder="5000,00" value={newCardTotalLimit} onChange={(e) => setNewCardTotalLimit(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white font-mono" />
+                  <label className="text-zinc-400 block mb-1 font-bold uppercase text-[10px]">Fatura Atual (R$)</label>
+                  <input
+                    type="number"
+                    placeholder="0,00"
+                    value={newCardUsedLimit}
+                    onChange={(e) => setNewCardUsedLimit(e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white font-mono focus:border-orange-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-zinc-400 block mb-1 font-bold uppercase text-[10px]">Dia de Vencimento</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={31}
+                    placeholder="10"
+                    value={newCardDue}
+                    onChange={(e) => setNewCardDue(e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white font-mono focus:border-orange-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-zinc-400 block mb-1 font-bold uppercase text-[10px]">Dia de Fechamento</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={31}
+                    placeholder="3"
+                    value={newCardClosing}
+                    onChange={(e) => setNewCardClosing(e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white font-mono focus:border-orange-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-zinc-400 block mb-2 font-bold uppercase text-[10px]">Estilo / Cor</label>
+                <div className="flex items-center gap-2.5">
+                  {[
+                    { hex: '#8b5cf6', label: 'Roxo' },
+                    { hex: '#3b82f6', label: 'Azul' },
+                    { hex: '#10b981', label: 'Verde' },
+                    { hex: '#f59e0b', label: 'Amarelo' },
+                    { hex: '#dc2626', label: 'Vermelho' },
+                    { hex: '#ea580c', label: 'Laranja' },
+                    { hex: '#0d9488', label: 'Ciano' },
+                    { hex: '#27272a', label: 'Grafite' }
+                  ].map((item) => (
+                    <button
+                      key={item.hex}
+                      type="button"
+                      onClick={() => setNewCardColor(item.hex)}
+                      style={{ backgroundColor: item.hex }}
+                      className={`w-7 h-7 rounded-full cursor-pointer transition-all ${
+                        newCardColor === item.hex ? 'ring-2 ring-white scale-110' : 'opacity-80 hover:opacity-100'
+                      }`}
+                      title={item.label}
+                    />
+                  ))}
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-zinc-900">
-              <button onClick={() => setShowAddCardModal(false)} className="px-4 py-2 text-xs text-zinc-400 cursor-pointer">Cancelar</button>
+            <div className="flex justify-end gap-2 pt-3 border-t border-zinc-900">
+              <button onClick={() => setShowAddCardModal(false)} className="px-4 py-2 text-xs text-zinc-400 hover:text-white cursor-pointer">Cancelar</button>
               <button
-                onClick={() => {
-                  if (!newCardName.trim()) return;
-                  const newCard: CreditCardItem = {
-                    id: Math.random().toString(36).substring(2, 9),
-                    name: newCardName.trim(),
-                    bank: newCardBank.trim() || 'Banco',
-                    usedLimit: parseFloat(newCardUsedLimit) || 0,
-                    totalLimit: parseFloat(newCardTotalLimit) || 10000,
-                    closingDay: parseInt(newCardClosing, 10) || 10,
-                    dueDay: parseInt(newCardDue, 10) || 17,
-                    color: '#8b5cf6'
-                  };
-                  setCreditCards([...creditCards, newCard]);
-                  setShowAddCardModal(false);
-                  setNewCardName(''); setNewCardUsedLimit(''); setNewCardTotalLimit('');
-                }}
-                className="px-5 py-2 bg-orange-500 text-white font-bold text-xs rounded-xl cursor-pointer"
+                onClick={handleSaveCard}
+                className="px-5 py-2 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer"
               >
-                Salvar Cartão
+                {editingCardId ? 'Atualizar Cartão' : 'Salvar Cartão'}
               </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* SELECTED CARD INSPECTOR MODAL (LIMIT BREAKDOWN) */}
+      {selectedCardId && (() => {
+        const card = creditCards.find(c => c.id === selectedCardId);
+        if (!card) return null;
+        const availableLimit = card.totalLimit - card.usedLimit;
+        const usagePercent = Math.min((card.usedLimit / card.totalLimit) * 100, 100);
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+            <div className="bg-zinc-950 border border-orange-500/30 rounded-2xl p-6 w-full max-w-lg space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+              {/* Header */}
+              <div className="flex justify-between items-center border-b border-zinc-900 pb-3">
+                <div className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5 text-orange-500" />
+                  <h3 className="text-sm font-extrabold text-white uppercase tracking-wider">
+                    Detalhes do Cartão de Crédito
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setSelectedCardId(null)}
+                  className="text-zinc-500 hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Visual Credit Card Mockup */}
+              <div
+                className="p-5 rounded-2xl border border-white/10 space-y-4 shadow-xl text-white relative overflow-hidden"
+                style={{
+                  background: `linear-gradient(135deg, ${card.color || '#8b5cf6'} 0%, #09090b 100%)`
+                }}
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold tracking-widest text-white/70 block">{card.bank || 'Banco'}</span>
+                    <h4 className="text-base font-black tracking-wide text-white">{card.name}</h4>
+                  </div>
+                  <div className="px-2.5 py-1 bg-black/40 backdrop-blur-sm border border-white/10 rounded-lg text-[10px] font-bold uppercase tracking-wider text-white">
+                    {card.brand || 'Visa'}
+                  </div>
+                </div>
+
+                <div className="my-2 font-mono text-sm tracking-widest text-white/90">
+                  •••• •••• •••• {card.last4 || '1234'}
+                </div>
+
+                <div className="flex justify-between items-end text-[10px] text-white/80 border-t border-white/10 pt-2 font-mono">
+                  <div>
+                    <span className="block text-white/50 text-[8px] uppercase">Fechamento</span>
+                    <span className="font-bold">Dia {card.closingDay}</span>
+                  </div>
+                  <div>
+                    <span className="block text-white/50 text-[8px] uppercase">Vencimento</span>
+                    <span className="font-bold text-amber-300">Dia {card.dueDay}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3 Core Highlight KPI Cards requested by user */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-zinc-900/80 border border-zinc-800 p-3.5 rounded-xl space-y-1">
+                  <span className="text-[9px] text-zinc-400 font-extrabold uppercase tracking-wider block">Limite Total</span>
+                  <span className="text-sm font-black text-white font-mono block">{formatCurrency(card.totalLimit)}</span>
+                </div>
+
+                <div className="bg-zinc-900/80 border border-rose-500/30 p-3.5 rounded-xl space-y-1">
+                  <span className="text-[9px] text-rose-400 font-extrabold uppercase tracking-wider block">Utilizado</span>
+                  <span className="text-sm font-black text-rose-400 font-mono block">{formatCurrency(card.usedLimit)}</span>
+                </div>
+
+                <div className="bg-zinc-900/80 border border-emerald-500/30 p-3.5 rounded-xl space-y-1">
+                  <span className="text-[9px] text-emerald-400 font-extrabold uppercase tracking-wider block">Disponível</span>
+                  <span className="text-sm font-black text-emerald-400 font-mono block">{formatCurrency(availableLimit)}</span>
+                </div>
+              </div>
+
+              {/* Usage Progress Bar */}
+              <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-850 space-y-2">
+                <div className="flex justify-between text-xs font-mono">
+                  <span className="text-zinc-300 font-bold">{usagePercent.toFixed(1)}% Comprometido</span>
+                  <span className="text-emerald-400 font-bold">{formatCurrency(availableLimit)} Livre</span>
+                </div>
+                <div className="w-full h-3 bg-zinc-800 rounded-full overflow-hidden p-0.5 border border-zinc-700/50">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      usagePercent > 80 ? 'bg-rose-500' : usagePercent > 50 ? 'bg-amber-500' : 'bg-emerald-500'
+                    }`}
+                    style={{ width: `${usagePercent}%` }}
+                  />
+                </div>
+                <p className="text-[10px] text-zinc-500 text-center font-mono">
+                  {availableLimit > 0
+                    ? `Você possui ${formatCurrency(availableLimit)} de limite livre para novos gastos.`
+                    : 'Limite totalmente comprometido.'}
+                </p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-zinc-900">
+                <button
+                  onClick={() => handleDeleteCard(card.id)}
+                  className="px-3.5 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Excluir
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setPayInvoiceCardId(card.id);
+                      setPayInvoiceAmount(String(card.usedLimit));
+                    }}
+                    className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-black font-extrabold text-xs rounded-xl transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5" /> Abater / Pagar Fatura
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setSelectedCardId(null);
+                      handleOpenEditCardModal(card);
+                    }}
+                    className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-xl transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Edit2 className="h-3.5 w-3.5" /> Editar Cartão
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* PAY INVOICE / ADJUST LIMIT MODAL */}
+      {payInvoiceCardId && (() => {
+        const card = creditCards.find(c => c.id === payInvoiceCardId);
+        if (!card) return null;
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <div className="bg-zinc-950 border border-emerald-500/40 rounded-2xl p-6 w-full max-w-md space-y-4 shadow-2xl">
+              <div className="flex justify-between items-center border-b border-zinc-900 pb-3">
+                <h3 className="text-sm font-bold text-white uppercase flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                  Abater / Pagar Fatura
+                </h3>
+                <button onClick={() => setPayInvoiceCardId(null)} className="text-zinc-500 hover:text-white cursor-pointer"><X className="h-4 w-4" /></button>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <div className="p-3 bg-zinc-900 rounded-xl border border-zinc-800 space-y-1">
+                  <span className="text-zinc-400 block font-bold">{card.name}</span>
+                  <div className="flex justify-between text-zinc-300 font-mono">
+                    <span>Fatura Atual:</span>
+                    <span className="font-bold text-rose-400">{formatCurrency(card.usedLimit)}</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-zinc-400 block mb-1 font-bold uppercase">Valor a Abater / Pagar (R$)</label>
+                  <input
+                    type="number"
+                    placeholder="0,00"
+                    value={payInvoiceAmount}
+                    onChange={(e) => setPayInvoiceAmount(e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white font-mono font-bold text-base focus:border-emerald-500 focus:outline-none"
+                  />
+                </div>
+
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setPayInvoiceAmount(String(card.usedLimit))}
+                    className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 text-[10px] font-bold rounded-lg cursor-pointer"
+                  >
+                    Quitar Fatura ({formatCurrency(card.usedLimit)})
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-zinc-900">
+                <button onClick={() => setPayInvoiceCardId(null)} className="px-4 py-2 text-xs text-zinc-400 cursor-pointer">Cancelar</button>
+                <button
+                  onClick={() => handlePayInvoice(card.id)}
+                  className="px-5 py-2 bg-emerald-500 hover:bg-emerald-600 text-black font-extrabold text-xs rounded-xl shadow-md cursor-pointer"
+                >
+                  Confirmar Pagamento
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {showAddDebtModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
