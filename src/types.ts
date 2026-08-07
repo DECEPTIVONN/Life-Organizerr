@@ -241,3 +241,29 @@ export interface QuickReminder {
   pomodoroPhaseRemainingSeconds?: number;
 }
 
+export interface PortfolioAsset {
+  id: string;
+  name: string;
+  ticker?: string;
+  type: string;
+  institution?: string;
+  quantity: number;
+  purchasePrice: number;
+  currentPrice: number;
+  currency: string;
+  purchaseDate?: string;
+  notes?: string;
+  updatedAt?: string;
+}
+
+export interface InvestmentTransaction {
+  id: string;
+  type: 'Aporte' | 'Resgate' | 'Provento' | 'Rendimento' | 'Taxa';
+  assetName: string;
+  ticker?: string;
+  institution?: string;
+  amount: number;
+  date: string;
+  notes?: string;
+}
+
