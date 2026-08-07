@@ -220,17 +220,32 @@ interface CreditCardItem {
   color: string;
 }
 
-// Initial Mock Debts
-interface DebtItem {
+export interface DebtPaymentLog {
+  id: string;
+  installmentNumber: number;
+  amountPaid: number;
+  paidAt: string;
+  notes?: string;
+}
+
+export interface DebtItem {
   id: string;
   title: string;
   creditor: string;
+  type?: string;
   originalAmount: number;
   remainingAmount: number;
   monthlyInstallment: number;
-  interestRateMonthly: number; // %
+  interestRateMonthly: number; // % a.m.
+  totalInstallments: number;
+  paidInstallmentsCount: number;
   dueDate: string;
-  category: string;
+  status?: 'Em dia' | 'Atrasado' | 'Renegociado' | 'Quitado';
+  risk?: 'Baixo' | 'Médio' | 'Alto' | 'Crítico';
+  negotiable?: boolean;
+  notes?: string;
+  category?: string;
+  payments?: DebtPaymentLog[];
 }
 
 export default function FinancesView({ finances, setFinances, addXp }: FinancesProps) {
@@ -432,22 +447,244 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
   const [debts, setDebts] = useState<DebtItem[]>(() => {
     try {
       const saved = localStorage.getItem('mbc_debt_items');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
     } catch (e) {
       console.error(e);
     }
     return [
-      { id: 'debt-1', title: 'Financiamento Imobiliário', creditor: 'Caixa Econômica', originalAmount: 350000, remainingAmount: 210000, monthlyInstallment: 2450.00, interestRateMonthly: 0.85, dueDate: 'Dia 10', category: 'Imóvel' },
-      { id: 'debt-2', title: 'Financiamento de Veículo', creditor: 'Banco Itaú', originalAmount: 85000, remainingAmount: 28400, monthlyInstallment: 1680.00, interestRateMonthly: 1.25, dueDate: 'Dia 22', category: 'Veículo' }
+      {
+        id: 'debt-1',
+        title: 'Financiamento Imobiliário (Caixa Econômica)',
+        creditor: 'Caixa Econômica Federal',
+        type: 'Financiamento Imobiliário',
+        originalAmount: 350000,
+        remainingAmount: 210000,
+        monthlyInstallment: 2450.00,
+        interestRateMonthly: 0.85,
+        totalInstallments: 120,
+        paidInstallmentsCount: 57,
+        dueDate: '10',
+        status: 'Em dia',
+        risk: 'Baixo',
+        negotiable: true,
+        notes: 'Contrato Habitacional Caixa com saldo FGTS.',
+        category: 'Imóvel',
+        payments: [
+          { id: 'p1', installmentNumber: 56, amountPaid: 2450.00, paidAt: '2026-07-10', notes: 'Parcela de Julho paga em dia via débito automático.' },
+          { id: 'p2', installmentNumber: 57, amountPaid: 2450.00, paidAt: '2026-08-07', notes: 'Pago antecipadamente pelo app Caixa com desconto.' }
+        ]
+      },
+      {
+        id: 'debt-2',
+        title: 'Financiamento de Veículo (Banco Itaú)',
+        creditor: 'Banco Itaú',
+        type: 'Financiamento de Veículo',
+        originalAmount: 85000,
+        remainingAmount: 28400,
+        monthlyInstallment: 1680.00,
+        interestRateMonthly: 1.25,
+        totalInstallments: 36,
+        paidInstallmentsCount: 22,
+        dueDate: '22',
+        status: 'Em dia',
+        risk: 'Médio',
+        negotiable: true,
+        notes: 'Financiamento Itaú Veículos com taxa pré-fixada.',
+        category: 'Veículo',
+        payments: [
+          { id: 'p3', installmentNumber: 21, amountPaid: 1680.00, paidAt: '2026-06-22', notes: 'Comprovante verificado e arquivado.' },
+          { id: 'p4', installmentNumber: 22, amountPaid: 1680.00, paidAt: '2026-07-22', notes: 'Pago com desconto de pontualidade de R$ 45,00.' }
+        ]
+      }
     ];
   });
+
   const [debtStrategy, setDebtStrategy] = useState<'snowball' | 'avalanche'>('avalanche');
   const [showAddDebtModal, setShowAddDebtModal] = useState(false);
-  const [newDebtTitle, setNewDebtTitle] = useState('');
+  const [editingDebtId, setEditingDebtId] = useState<string | null>(null);
+  const [selectedDebtId, setSelectedDebtId] = useState<string | null>(null);
+
+  // Form states for adding/editing debt matching the exact screenshot fields
   const [newDebtCreditor, setNewDebtCreditor] = useState('');
+  const [newDebtType, setNewDebtType] = useState('Cartão de crédito');
+  const [newDebtOriginal, setNewDebtOriginal] = useState('');
   const [newDebtRemaining, setNewDebtRemaining] = useState('');
+  const [newDebtRate, setNewDebtRate] = useState('1.5');
   const [newDebtInstallment, setNewDebtInstallment] = useState('');
-  const [newDebtRate, setNewDebtRate] = useState('1.0');
+  const [newDebtTotalInstallments, setNewDebtTotalInstallments] = useState('12');
+  const [newDebtDueDate, setNewDebtDueDate] = useState('10');
+  const [newDebtStatus, setNewDebtStatus] = useState<'Em dia' | 'Atrasado' | 'Renegociado' | 'Quitado'>('Em dia');
+  const [newDebtRisk, setNewDebtRisk] = useState<'Baixo' | 'Médio' | 'Alto' | 'Crítico'>('Médio');
+  const [newDebtNegotiable, setNewDebtNegotiable] = useState(true);
+  const [newDebtNotes, setNewDebtNotes] = useState('');
+
+  // Payment modal state for registering installment payment
+  const [payInstallmentDebtId, setPayInstallmentDebtId] = useState<string | null>(null);
+  const [payInstallmentNumber, setPayInstallmentNumber] = useState<number>(1);
+  const [payInstallmentDate, setPayInstallmentDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
+  const [payInstallmentAmount, setPayInstallmentAmount] = useState<string>('');
+  const [payInstallmentNote, setPayInstallmentNote] = useState<string>('');
+
+  // Handlers for Debt Management
+  const handleOpenAddDebtModal = () => {
+    setEditingDebtId(null);
+    setNewDebtCreditor('');
+    setNewDebtType('Cartão de crédito');
+    setNewDebtOriginal('');
+    setNewDebtRemaining('');
+    setNewDebtRate('1.5');
+    setNewDebtInstallment('');
+    setNewDebtTotalInstallments('12');
+    setNewDebtDueDate('10');
+    setNewDebtStatus('Em dia');
+    setNewDebtRisk('Médio');
+    setNewDebtNegotiable(true);
+    setNewDebtNotes('');
+    setShowAddDebtModal(true);
+  };
+
+  const handleOpenEditDebtModal = (debt: DebtItem) => {
+    setEditingDebtId(debt.id);
+    setNewDebtCreditor(debt.creditor || '');
+    setNewDebtType(debt.type || 'Cartão de crédito');
+    setNewDebtOriginal(String(debt.originalAmount || ''));
+    setNewDebtRemaining(String(debt.remainingAmount || ''));
+    setNewDebtRate(String(debt.interestRateMonthly || '1.5'));
+    setNewDebtInstallment(String(debt.monthlyInstallment || ''));
+    setNewDebtTotalInstallments(String(debt.totalInstallments || '12'));
+    setNewDebtDueDate(String(debt.dueDate || '10'));
+    setNewDebtStatus(debt.status || 'Em dia');
+    setNewDebtRisk(debt.risk || 'Médio');
+    setNewDebtNegotiable(debt.negotiable ?? true);
+    setNewDebtNotes(debt.notes || '');
+    setShowAddDebtModal(true);
+  };
+
+  const handleAutoFillDebt = () => {
+    setNewDebtCreditor('Banco Santander');
+    setNewDebtType('Empréstimo');
+    setNewDebtOriginal('15000');
+    setNewDebtRemaining('9000');
+    setNewDebtRate('1.8');
+    setNewDebtInstallment('650');
+    setNewDebtTotalInstallments('24');
+    setNewDebtDueDate('15');
+    setNewDebtStatus('Em dia');
+    setNewDebtRisk('Médio');
+    setNewDebtNegotiable(true);
+    setNewDebtNotes('Empréstimo pessoal com parcelas fixas e débito em conta.');
+  };
+
+  const handleSaveDebt = () => {
+    if (!newDebtCreditor.trim()) return;
+
+    const original = parseFloat(newDebtOriginal) || 10000;
+    const remaining = newDebtRemaining !== '' ? parseFloat(newDebtRemaining) : original;
+    const instVal = parseFloat(newDebtInstallment) || 500;
+    const rateVal = parseFloat(newDebtRate) || 1.0;
+    const totalInst = parseInt(newDebtTotalInstallments, 10) || 12;
+
+    if (editingDebtId) {
+      setDebts(debts.map(d => d.id === editingDebtId ? {
+        ...d,
+        title: `${newDebtType} (${newDebtCreditor})`,
+        creditor: newDebtCreditor.trim(),
+        type: newDebtType,
+        originalAmount: original,
+        remainingAmount: remaining,
+        monthlyInstallment: instVal,
+        interestRateMonthly: rateVal,
+        totalInstallments: totalInst,
+        dueDate: newDebtDueDate.trim() || '10',
+        status: newDebtStatus,
+        risk: newDebtRisk,
+        negotiable: newDebtNegotiable,
+        notes: newDebtNotes.trim()
+      } : d));
+    } else {
+      const newDebt: DebtItem = {
+        id: Math.random().toString(36).substring(2, 9),
+        title: `${newDebtType} (${newDebtCreditor})`,
+        creditor: newDebtCreditor.trim(),
+        type: newDebtType,
+        originalAmount: original,
+        remainingAmount: remaining,
+        monthlyInstallment: instVal,
+        interestRateMonthly: rateVal,
+        totalInstallments: totalInst,
+        paidInstallmentsCount: 0,
+        dueDate: newDebtDueDate.trim() || '10',
+        status: newDebtStatus,
+        risk: newDebtRisk,
+        negotiable: newDebtNegotiable,
+        notes: newDebtNotes.trim(),
+        category: newDebtType,
+        payments: []
+      };
+      setDebts([...debts, newDebt]);
+    }
+    setShowAddDebtModal(false);
+  };
+
+  const handleDeleteDebt = (id: string) => {
+    if (confirm('Deseja realmente excluir esta dívida?')) {
+      setDebts(debts.filter(d => d.id !== id));
+      if (selectedDebtId === id) setSelectedDebtId(null);
+    }
+  };
+
+  const handleOpenPayInstallmentModal = (debtId: string, instNum?: number) => {
+    const debt = debts.find(d => d.id === debtId);
+    if (!debt) return;
+
+    const targetNum = instNum !== undefined
+      ? instNum
+      : Math.min((debt.paidInstallmentsCount || 0) + 1, debt.totalInstallments || 12);
+
+    setPayInstallmentDebtId(debtId);
+    setPayInstallmentNumber(targetNum);
+    setPayInstallmentDate(new Date().toISOString().split('T')[0]);
+    setPayInstallmentAmount(String(debt.monthlyInstallment || 0));
+    setPayInstallmentNote('');
+  };
+
+  const handleConfirmPayInstallment = () => {
+    if (!payInstallmentDebtId) return;
+    const paidVal = parseFloat(payInstallmentAmount) || 0;
+
+    setDebts(debts.map(d => {
+      if (d.id === payInstallmentDebtId) {
+        const existingPayments = d.payments || [];
+        const newPaymentLog: DebtPaymentLog = {
+          id: Math.random().toString(36).substring(2, 9),
+          installmentNumber: payInstallmentNumber,
+          amountPaid: paidVal,
+          paidAt: payInstallmentDate || new Date().toISOString().split('T')[0],
+          notes: payInstallmentNote.trim()
+        };
+
+        const updatedPayments = [...existingPayments, newPaymentLog];
+        const newPaidCount = Math.min((d.paidInstallmentsCount || 0) + 1, d.totalInstallments || 12);
+        const newRemaining = Math.max(0, d.remainingAmount - paidVal);
+        const newStatus = (newRemaining === 0 || newPaidCount >= (d.totalInstallments || 12)) ? 'Quitado' : d.status;
+
+        return {
+          ...d,
+          remainingAmount: newRemaining,
+          paidInstallmentsCount: newPaidCount,
+          status: newStatus,
+          payments: updatedPayments
+        };
+      }
+      return d;
+    }));
+
+    setPayInstallmentDebtId(null);
+    if (addXp) addXp(25);
+  };
 
   useEffect(() => {
     localStorage.setItem('finances_main_subtab', activeTab);
@@ -2140,38 +2377,134 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
               </h3>
 
               <button
-                onClick={() => setShowAddDebtModal(true)}
-                className="px-3.5 py-1.5 bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+                onClick={handleOpenAddDebtModal}
+                className="px-3.5 py-1.5 bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs rounded-xl transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
               >
                 <Plus className="h-3.5 w-3.5" /> + Adicionar Passivo
               </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-              {debts.map(d => (
-                <div key={d.id} className="bg-zinc-900/40 border border-zinc-850 p-5 rounded-2xl space-y-3">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="text-xs font-bold text-white">{d.title}</h4>
-                      <span className="text-[10px] text-zinc-500 block">{d.creditor} • Vencimento: {d.dueDate}</span>
-                    </div>
-                    <span className="text-[10px] font-mono font-bold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/20">
-                      {d.interestRateMonthly}% a.m.
-                    </span>
-                  </div>
+              {debts.map(d => {
+                const totalInst = d.totalInstallments || 1;
+                const paidInst = d.paidInstallmentsCount || (d.payments?.length || 0);
+                const instProgressPercent = Math.min((paidInst / totalInst) * 100, 100);
 
-                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-zinc-850/80 text-xs font-mono">
-                    <div>
-                      <span className="text-[9px] text-zinc-500 block">Saldo Devedor:</span>
-                      <span className="text-white font-bold block">{formatCurrency(d.remainingAmount)}</span>
+                return (
+                  <div
+                    key={d.id}
+                    onClick={() => setSelectedDebtId(d.id)}
+                    className="bg-gradient-to-br from-zinc-900/80 to-zinc-950 border border-zinc-850 hover:border-rose-500/50 p-5 rounded-2xl space-y-4 shadow-md transition-all cursor-pointer group relative overflow-hidden"
+                  >
+                    {/* Header */}
+                    <div className="flex justify-between items-start gap-2">
+                      <div className="space-y-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-lg bg-zinc-800 text-zinc-300 border border-zinc-700/50">
+                            {d.type || 'Dívida'}
+                          </span>
+                          {d.status && (
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border ${
+                              d.status === 'Quitado' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' :
+                              d.status === 'Atrasado' ? 'bg-rose-500/10 text-rose-400 border-rose-500/30' :
+                              d.status === 'Renegociado' ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' :
+                              'bg-cyan-500/10 text-cyan-400 border-cyan-500/30'
+                            }`}>
+                              {d.status}
+                            </span>
+                          )}
+                          {d.risk && (
+                            <span className="text-[9px] font-mono text-zinc-400 bg-zinc-800/80 px-1.5 py-0.5 rounded">
+                              Risco: {d.risk}
+                            </span>
+                          )}
+                        </div>
+                        <h4 className="text-sm font-black text-white group-hover:text-rose-400 transition-colors truncate">
+                          {d.title}
+                        </h4>
+                        <span className="text-[11px] text-zinc-400 block font-medium">
+                          {d.creditor} • Vencimento: Dia {d.dueDate}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenEditDebtModal(d);
+                          }}
+                          className="p-1.5 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
+                          title="Editar Dívida"
+                        >
+                          <Edit2 className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteDebt(d.id);
+                          }}
+                          className="p-1.5 text-zinc-500 hover:text-rose-400 hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
+                          title="Excluir Dívida"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-[9px] text-zinc-500 block">Parcela Mensal:</span>
-                      <span className="text-orange-400 font-bold block">{formatCurrency(d.monthlyInstallment)}</span>
+
+                    {/* Financial Numbers Grid */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs font-mono pt-1">
+                      <div className="bg-zinc-900/80 p-2.5 rounded-xl border border-zinc-850">
+                        <span className="text-[9px] text-zinc-500 block uppercase font-sans font-extrabold">Saldo Devedor</span>
+                        <span className="text-rose-400 font-extrabold text-sm block truncate">{formatCurrency(d.remainingAmount)}</span>
+                      </div>
+                      <div className="bg-zinc-900/80 p-2.5 rounded-xl border border-zinc-850">
+                        <span className="text-[9px] text-zinc-500 block uppercase font-sans font-extrabold">Parcela Mensal</span>
+                        <span className="text-orange-400 font-extrabold text-sm block truncate">{formatCurrency(d.monthlyInstallment)}</span>
+                      </div>
+                      <div className="bg-zinc-900/80 p-2.5 rounded-xl border border-zinc-850 col-span-2 sm:col-span-1">
+                        <span className="text-[9px] text-zinc-500 block uppercase font-sans font-extrabold">Juros Mensais</span>
+                        <span className="text-zinc-200 font-bold block truncate">{d.interestRateMonthly}% a.m.</span>
+                      </div>
+                    </div>
+
+                    {/* Installment Progress Bar */}
+                    <div className="space-y-1.5 pt-1">
+                      <div className="flex justify-between text-[10px] font-mono">
+                        <span className="text-zinc-400 font-sans font-bold flex items-center gap-1">
+                          <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                          Parcelas Pagas: <strong className="text-white">{paidInst} de {totalInst}</strong>
+                        </span>
+                        <span className="text-emerald-400 font-bold">{instProgressPercent.toFixed(1)}% amortizado</span>
+                      </div>
+                      <div className="w-full h-2.5 bg-zinc-800 rounded-full overflow-hidden p-0.5 border border-zinc-700/50">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${
+                            instProgressPercent >= 100 ? 'bg-emerald-400' : instProgressPercent > 50 ? 'bg-cyan-400' : 'bg-rose-500'
+                          }`}
+                          style={{ width: `${instProgressPercent}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Action Prompt Buttons */}
+                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-zinc-850">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenPayInstallmentModal(d.id);
+                        }}
+                        className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-black font-extrabold text-[11px] rounded-xl transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5" /> Pagar Parcela
+                      </button>
+
+                      <span className="text-[10px] text-rose-400 font-bold group-hover:underline flex items-center gap-1">
+                        Histórico de Notas ({d.payments?.length || 0}) <ArrowRight className="h-3 w-3" />
+                      </span>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -2627,59 +2960,480 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
         );
       })()}
 
+      {/* ENHANCED ADICIONAR / EDITAR DÍVIDA MODAL (EXACT MATCH OF SCREENSHOT) */}
       {showAddDebtModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-zinc-950 border border-rose-500/40 rounded-2xl p-6 w-full max-w-md space-y-4 shadow-2xl">
+          <div className="bg-zinc-950 border border-rose-500/40 rounded-2xl p-6 w-full max-w-2xl space-y-4 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+            {/* Header */}
             <div className="flex justify-between items-center border-b border-zinc-900 pb-3">
-              <h3 className="text-sm font-bold text-white uppercase">Adicionar Passivo / Dívida</h3>
-              <button onClick={() => setShowAddDebtModal(false)} className="text-zinc-500 hover:text-white cursor-pointer"><X className="h-4 w-4" /></button>
-            </div>
-
-            <div className="space-y-3 text-xs">
               <div>
-                <label className="text-zinc-400 block mb-1 font-bold uppercase">Título da Dívida</label>
-                <input type="text" placeholder="Ex: Financiamento de Veículo" value={newDebtTitle} onChange={(e) => setNewDebtTitle(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white" />
+                <h3 className="text-base font-extrabold text-white uppercase tracking-wider">
+                  {editingDebtId ? 'Editar Dívida' : 'Adicionar dívida'}
+                </h3>
+                <p className="text-[10px] text-zinc-500 mt-0.5">Cadastre o passivo com as informações das parcelas e juros</p>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-zinc-400 block mb-1 font-bold uppercase">Saldo Devedor (R$)</label>
-                  <input type="number" placeholder="10000,00" value={newDebtRemaining} onChange={(e) => setNewDebtRemaining(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white font-mono" />
-                </div>
-                <div>
-                  <label className="text-zinc-400 block mb-1 font-bold uppercase">Parcela Mensal (R$)</label>
-                  <input type="number" placeholder="500,00" value={newDebtInstallment} onChange={(e) => setNewDebtInstallment(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white font-mono" />
-                </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleAutoFillDebt}
+                  className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-amber-300 border border-amber-500/30 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Sparkles className="h-3.5 w-3.5 text-amber-400" /> Preencher para mim
+                </button>
+                <button
+                  onClick={() => setShowAddDebtModal(false)}
+                  className="text-zinc-500 hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-zinc-900">
-              <button onClick={() => setShowAddDebtModal(false)} className="px-4 py-2 text-xs text-zinc-400 cursor-pointer">Cancelar</button>
+            {/* Form Fields Grid - Two columns matching user's pinned image */}
+            <div className="space-y-3 text-xs">
+              {/* Row 1: Credor & Tipo */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-zinc-400 block mb-1 font-bold text-[11px]">Credor</label>
+                  <input
+                    type="text"
+                    placeholder="Ex: Caixa Econômica, Itaú, Nubank"
+                    value={newDebtCreditor}
+                    onChange={(e) => setNewDebtCreditor(e.target.value)}
+                    className="w-full bg-zinc-900/90 border border-zinc-800 rounded-xl px-3 py-2 text-white font-medium focus:border-rose-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-zinc-400 block mb-1 font-bold text-[11px]">Tipo</label>
+                  <select
+                    value={newDebtType}
+                    onChange={(e) => setNewDebtType(e.target.value)}
+                    className="w-full bg-zinc-900/90 border border-zinc-800 rounded-xl px-3 py-2 text-white font-medium focus:border-rose-500 focus:outline-none"
+                  >
+                    <option value="Cartão de crédito">Cartão de crédito</option>
+                    <option value="Empréstimo">Empréstimo Pessoal</option>
+                    <option value="Financiamento Imobiliário">Financiamento Imobiliário</option>
+                    <option value="Financiamento de Veículo">Financiamento de Veículo</option>
+                    <option value="Consórcio">Consórcio</option>
+                    <option value="Cheque Especial">Cheque Especial</option>
+                    <option value="Outro">Outro Passivo</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Row 2: Valor original & Saldo atual */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-zinc-400 block mb-1 font-bold text-[11px]">Valor original</label>
+                  <input
+                    type="number"
+                    placeholder="Ex: 10000,00"
+                    value={newDebtOriginal}
+                    onChange={(e) => setNewDebtOriginal(e.target.value)}
+                    className="w-full bg-zinc-900/90 border border-zinc-800 rounded-xl px-3 py-2 text-white font-mono font-medium focus:border-rose-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-zinc-400 block mb-1 font-bold text-[11px]">Saldo atual</label>
+                  <input
+                    type="number"
+                    placeholder="Ex: 8000,00"
+                    value={newDebtRemaining}
+                    onChange={(e) => setNewDebtRemaining(e.target.value)}
+                    className="w-full bg-zinc-900/90 border border-zinc-800 rounded-xl px-3 py-2 text-white font-mono font-medium focus:border-rose-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Row 3: Juros (% a.m.) & Parcela mensal */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-zinc-400 block mb-1 font-bold text-[11px]">Juros (% a.m.)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="Ex: 1.5"
+                    value={newDebtRate}
+                    onChange={(e) => setNewDebtRate(e.target.value)}
+                    className="w-full bg-zinc-900/90 border border-zinc-800 rounded-xl px-3 py-2 text-white font-mono font-medium focus:border-rose-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-zinc-400 block mb-1 font-bold text-[11px]">Parcela mensal</label>
+                  <input
+                    type="number"
+                    placeholder="Ex: 500,00"
+                    value={newDebtInstallment}
+                    onChange={(e) => setNewDebtInstallment(e.target.value)}
+                    className="w-full bg-zinc-900/90 border border-zinc-800 rounded-xl px-3 py-2 text-white font-mono font-medium focus:border-rose-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Row 4: Nº de parcelas & Dia de vencimento */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-zinc-400 block mb-1 font-bold text-[11px]">Nº de parcelas</label>
+                  <input
+                    type="number"
+                    placeholder="Ex: 24"
+                    value={newDebtTotalInstallments}
+                    onChange={(e) => setNewDebtTotalInstallments(e.target.value)}
+                    className="w-full bg-zinc-900/90 border border-zinc-800 rounded-xl px-3 py-2 text-white font-mono font-medium focus:border-rose-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-zinc-400 block mb-1 font-bold text-[11px]">Dia de vencimento</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={31}
+                    placeholder="Ex: 10"
+                    value={newDebtDueDate}
+                    onChange={(e) => setNewDebtDueDate(e.target.value)}
+                    className="w-full bg-zinc-900/90 border border-zinc-800 rounded-xl px-3 py-2 text-white font-mono font-medium focus:border-rose-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Row 5: Situação & Risco */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-zinc-400 block mb-1 font-bold text-[11px]">Situação</label>
+                  <select
+                    value={newDebtStatus}
+                    onChange={(e) => setNewDebtStatus(e.target.value as any)}
+                    className="w-full bg-zinc-900/90 border border-zinc-800 rounded-xl px-3 py-2 text-white font-medium focus:border-rose-500 focus:outline-none"
+                  >
+                    <option value="Em dia">Em dia</option>
+                    <option value="Atrasado">Atrasado</option>
+                    <option value="Renegociado">Renegociado</option>
+                    <option value="Quitado">Quitado</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-zinc-400 block mb-1 font-bold text-[11px]">Risco</label>
+                  <select
+                    value={newDebtRisk}
+                    onChange={(e) => setNewDebtRisk(e.target.value as any)}
+                    className="w-full bg-zinc-900/90 border border-zinc-800 rounded-xl px-3 py-2 text-white font-medium focus:border-rose-500 focus:outline-none"
+                  >
+                    <option value="Baixo">Baixo</option>
+                    <option value="Médio">Médio</option>
+                    <option value="Alto">Alto</option>
+                    <option value="Crítico">Crítico</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Row 6: Negociável */}
+              <div className="pt-1 flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="chk-negociavel"
+                  checked={newDebtNegotiable}
+                  onChange={(e) => setNewDebtNegotiable(e.target.checked)}
+                  className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-rose-500 focus:ring-rose-500 cursor-pointer"
+                />
+                <label htmlFor="chk-negociavel" className="text-zinc-300 font-bold text-xs cursor-pointer">
+                  Negociável
+                </label>
+              </div>
+
+              {/* Row 7: Observações */}
+              <div>
+                <label className="text-zinc-400 block mb-1 font-bold text-[11px]">Observações</label>
+                <textarea
+                  rows={2}
+                  placeholder="Anotações gerais sobre o contrato ou renegociação..."
+                  value={newDebtNotes}
+                  onChange={(e) => setNewDebtNotes(e.target.value)}
+                  className="w-full bg-zinc-900/90 border border-zinc-800 rounded-xl px-3 py-2 text-white focus:border-rose-500 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Footer Buttons */}
+            <div className="flex justify-end gap-2 pt-3 border-t border-zinc-900">
+              <button onClick={() => setShowAddDebtModal(false)} className="px-4 py-2 text-xs text-zinc-400 hover:text-white cursor-pointer">
+                Cancelar
+              </button>
               <button
-                onClick={() => {
-                  if (!newDebtTitle.trim()) return;
-                  const newDebt: DebtItem = {
-                    id: Math.random().toString(36).substring(2, 9),
-                    title: newDebtTitle.trim(),
-                    creditor: newDebtCreditor.trim() || 'Banco',
-                    originalAmount: parseFloat(newDebtRemaining) || 10000,
-                    remainingAmount: parseFloat(newDebtRemaining) || 10000,
-                    monthlyInstallment: parseFloat(newDebtInstallment) || 500,
-                    interestRateMonthly: parseFloat(newDebtRate) || 1.0,
-                    dueDate: 'Dia 10',
-                    category: 'Geral'
-                  };
-                  setDebts([...debts, newDebt]);
-                  setShowAddDebtModal(false);
-                  setNewDebtTitle(''); setNewDebtRemaining(''); setNewDebtInstallment('');
-                }}
-                className="px-5 py-2 bg-rose-500 text-white font-bold text-xs rounded-xl cursor-pointer"
+                onClick={handleSaveDebt}
+                className="px-5 py-2 bg-rose-500 hover:bg-rose-600 text-white font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer"
               >
-                Salvar Dívida
+                {editingDebtId ? 'Atualizar Dívida' : 'Salvar Dívida'}
               </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* REGISTRAR PAGAMENTO DE PARCELA COM DATA E NOTA MODAL */}
+      {payInstallmentDebtId && (() => {
+        const debt = debts.find(d => d.id === payInstallmentDebtId);
+        if (!debt) return null;
+
+        const totalInst = debt.totalInstallments || 12;
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <div className="bg-zinc-950 border border-emerald-500/40 rounded-2xl p-6 w-full max-w-md space-y-4 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+              <div className="flex justify-between items-center border-b border-zinc-900 pb-3">
+                <h3 className="text-sm font-extrabold text-white uppercase tracking-wider flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                  Registrar Pagamento de Parcela
+                </h3>
+                <button onClick={() => setPayInstallmentDebtId(null)} className="text-zinc-500 hover:text-white cursor-pointer">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Target Debt Card Info */}
+              <div className="p-3 bg-zinc-900 rounded-xl border border-zinc-800 space-y-1 text-xs">
+                <div className="flex justify-between font-bold text-white">
+                  <span>{debt.title}</span>
+                  <span className="text-emerald-400 font-mono">Parcela {payInstallmentNumber} / {totalInst}</span>
+                </div>
+                <div className="text-[10px] text-zinc-400">
+                  Credor: {debt.creditor} • Parcela Mensal Padrão: {formatCurrency(debt.monthlyInstallment)}
+                </div>
+              </div>
+
+              {/* Payment details inputs: Data de Pagamento, Valor Pago, Nota da Parcela */}
+              <div className="space-y-3 text-xs">
+                <div>
+                  <label className="text-zinc-400 block mb-1 font-bold uppercase text-[10px]">Data do Pagamento</label>
+                  <input
+                    type="date"
+                    value={payInstallmentDate}
+                    onChange={(e) => setPayInstallmentDate(e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white font-mono focus:border-emerald-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-zinc-400 block mb-1 font-bold uppercase text-[10px]">Valor Pago (R$)</label>
+                  <input
+                    type="number"
+                    placeholder="0,00"
+                    value={payInstallmentAmount}
+                    onChange={(e) => setPayInstallmentAmount(e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white font-mono font-bold text-base focus:border-emerald-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-zinc-400 block mb-1 font-bold uppercase text-[10px]">Nota / Observação da Parcela</label>
+                  <textarea
+                    rows={2}
+                    placeholder="Ex: Pago antecipadamente via PIX com desconto de R$ 50,00 no app do banco"
+                    value={payInstallmentNote}
+                    onChange={(e) => setPayInstallmentNote(e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white focus:border-emerald-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-zinc-900">
+                <button onClick={() => setPayInstallmentDebtId(null)} className="px-4 py-2 text-xs text-zinc-400 cursor-pointer">
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleConfirmPayInstallment}
+                  className="px-5 py-2 bg-emerald-500 hover:bg-emerald-600 text-black font-extrabold text-xs rounded-xl shadow-md cursor-pointer flex items-center gap-1.5"
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Confirmar Pagamento
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* DETALHES DA DÍVIDA & CRONOGRAMA DE PARCELAS COM NOTAS MODAL */}
+      {selectedDebtId && (() => {
+        const debt = debts.find(d => d.id === selectedDebtId);
+        if (!debt) return null;
+
+        const totalInst = debt.totalInstallments || 12;
+        const paidCount = debt.paidInstallmentsCount || (debt.payments?.length || 0);
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+            <div className="bg-zinc-950 border border-rose-500/30 rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+              {/* Header */}
+              <div className="flex justify-between items-start border-b border-zinc-900 pb-3">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-lg bg-zinc-800 text-zinc-300">
+                      {debt.type || 'Dívida'}
+                    </span>
+                    {debt.status && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        {debt.status}
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="text-base font-black text-white">{debt.title}</h3>
+                  <span className="text-xs text-zinc-400">Credor: {debt.creditor} • Vencimento: Dia {debt.dueDate}</span>
+                </div>
+
+                <button
+                  onClick={() => setSelectedDebtId(null)}
+                  className="text-zinc-500 hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Key Highlights Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
+                <div className="bg-zinc-900 p-3 rounded-xl border border-zinc-800">
+                  <span className="text-[9px] text-zinc-500 block uppercase font-sans font-bold">Saldo Devedor</span>
+                  <span className="text-rose-400 font-extrabold text-sm block">{formatCurrency(debt.remainingAmount)}</span>
+                </div>
+                <div className="bg-zinc-900 p-3 rounded-xl border border-zinc-800">
+                  <span className="text-[9px] text-zinc-500 block uppercase font-sans font-bold">Valor Parcela</span>
+                  <span className="text-orange-400 font-extrabold text-sm block">{formatCurrency(debt.monthlyInstallment)}</span>
+                </div>
+                <div className="bg-zinc-900 p-3 rounded-xl border border-zinc-800">
+                  <span className="text-[9px] text-zinc-500 block uppercase font-sans font-bold">Amortizado</span>
+                  <span className="text-emerald-400 font-extrabold text-sm block">{paidCount} de {totalInst}</span>
+                </div>
+                <div className="bg-zinc-900 p-3 rounded-xl border border-zinc-800">
+                  <span className="text-[9px] text-zinc-500 block uppercase font-sans font-bold">Taxa Juros</span>
+                  <span className="text-zinc-200 font-bold block">{debt.interestRateMonthly}% a.m.</span>
+                </div>
+              </div>
+
+              {/* Registered Installments Log list with Notes */}
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <h4 className="text-xs font-extrabold text-white uppercase tracking-wider flex items-center gap-1.5">
+                    <FileText className="h-4 w-4 text-orange-400" />
+                    Histórico & Cronograma das Parcelas ({totalInst} parcelas)
+                  </h4>
+
+                  <button
+                    onClick={() => handleOpenPayInstallmentModal(debt.id)}
+                    className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-black font-extrabold text-xs rounded-xl transition-all shadow-sm flex items-center gap-1 cursor-pointer"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> + Registrar Parcela Paga
+                  </button>
+                </div>
+
+                <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                  {Array.from({ length: totalInst }).map((_, idx) => {
+                    const instNumber = idx + 1;
+                    const paymentLog = debt.payments?.find(p => p.installmentNumber === instNumber);
+                    const isPaid = paymentLog !== undefined || instNumber <= paidCount;
+
+                    return (
+                      <div
+                        key={instNumber}
+                        className={`p-3 rounded-xl border text-xs transition-all ${
+                          isPaid
+                            ? 'bg-emerald-500/5 border-emerald-500/30'
+                            : 'bg-zinc-900/50 border-zinc-850'
+                        }`}
+                      >
+                        <div className="flex justify-between items-start gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className={`w-6 h-6 rounded-lg flex items-center justify-center font-mono font-bold text-[10px] ${
+                              isPaid ? 'bg-emerald-500 text-black' : 'bg-zinc-800 text-zinc-400'
+                            }`}>
+                              #{instNumber}
+                            </span>
+                            <div>
+                              <span className="font-bold text-white block">
+                                Parcela {instNumber} de {totalInst}
+                              </span>
+                              <span className="text-[10px] font-mono text-zinc-400">
+                                {isPaid
+                                  ? `Pago: ${formatCurrency(paymentLog?.amountPaid || debt.monthlyInstallment)} • Data: ${paymentLog?.paidAt || 'Registrado'}`
+                                  : `Valor Previsto: ${formatCurrency(debt.monthlyInstallment)}`}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div>
+                            {isPaid ? (
+                              <span className="px-2.5 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 rounded-lg text-[10px] font-bold flex items-center gap-1">
+                                <CheckCircle2 className="h-3 w-3" /> Paga
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => handleOpenPayInstallmentModal(debt.id, instNumber)}
+                                className="px-2.5 py-1 bg-zinc-800 hover:bg-emerald-500 hover:text-black text-zinc-300 rounded-lg text-[10px] font-bold transition-all cursor-pointer"
+                              >
+                                Pagar Parcela
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Note box attached to this specific installment */}
+                        {paymentLog?.notes && (
+                          <div className="mt-2.5 p-2 bg-zinc-900 border border-emerald-500/20 rounded-lg text-[11px] text-emerald-300 font-medium flex items-start gap-1.5">
+                            <FileText className="h-3.5 w-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                            <div>
+                              <span className="font-bold text-emerald-400 text-[10px] uppercase block">Nota do Pagamento:</span>
+                              <span>{paymentLog.notes}</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* General Debt Notes */}
+              {debt.notes && (
+                <div className="p-3 bg-zinc-900 rounded-xl border border-zinc-800 text-xs text-zinc-300 space-y-1">
+                  <span className="text-[10px] text-zinc-500 uppercase font-bold block">Observações do Contrato:</span>
+                  <p>{debt.notes}</p>
+                </div>
+              )}
+
+              {/* Modal Footer Actions */}
+              <div className="flex justify-between items-center pt-3 border-t border-zinc-900">
+                <button
+                  onClick={() => handleDeleteDebt(debt.id)}
+                  className="px-3.5 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Excluir Dívida
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setSelectedDebtId(null);
+                      handleOpenEditDebtModal(debt);
+                    }}
+                    className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Edit2 className="h-3.5 w-3.5" /> Editar Dados
+                  </button>
+                  <button
+                    onClick={() => setSelectedDebtId(null)}
+                    className="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white font-extrabold text-xs rounded-xl shadow-md cursor-pointer"
+                  >
+                    Fechar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
