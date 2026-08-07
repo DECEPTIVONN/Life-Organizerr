@@ -38,7 +38,8 @@ import {
   Lock,
   Scale,
   Flame,
-  Award
+  Award,
+  Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FinanceEntry } from '../types';
@@ -754,75 +755,75 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
           </div>
 
           {/* Top Key Metrics Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             {/* Patrimônio Líquido */}
             <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950 border border-orange-500/30 p-5 rounded-2xl relative overflow-hidden shadow-lg group hover:border-orange-500/60 transition-all">
-              <div className="flex justify-between items-start">
-                <div>
-                  <span className="text-[10px] text-orange-400 font-extrabold uppercase tracking-wider block">Patrimônio Líquido</span>
-                  <span className="text-xl font-black text-white font-mono block mt-1">
+              <div className="flex justify-between items-start gap-2">
+                <div className="min-w-0 flex-1">
+                  <span className="text-[10px] text-orange-400 font-extrabold uppercase tracking-wider block truncate">Patrimônio Líquido</span>
+                  <span className="text-xl font-black text-white font-mono block mt-1 truncate">
                     {formatCurrency(totalNetPatrimony)}
                   </span>
-                  <span className="text-[9px] text-zinc-500 block mt-1">Contas + Investimentos - Dívidas</span>
+                  <span className="text-[9px] text-zinc-500 block mt-1 truncate">Contas + Investimentos - Dívidas</span>
                 </div>
-                <div className="p-2.5 bg-orange-500/10 rounded-xl text-orange-400 border border-orange-500/20">
+                <div className="p-2.5 bg-orange-500/10 rounded-xl text-orange-400 border border-orange-500/20 shrink-0">
                   <Wallet className="h-5 w-5" />
                 </div>
               </div>
             </div>
 
             {/* Receitas Mês */}
-            <div className="bg-zinc-900/40 border border-zinc-850 p-5 rounded-2xl flex justify-between items-start hover:border-emerald-500/40 transition-all">
-              <div>
-                <span className="text-[10px] text-emerald-400 font-extrabold uppercase tracking-wider block">Receitas ({monthsShort[selectedMonth]})</span>
-                <span className="text-xl font-black text-white font-mono block mt-1">
+            <div className="bg-zinc-900/40 border border-zinc-850 p-5 rounded-2xl flex justify-between items-start gap-2 hover:border-emerald-500/40 transition-all">
+              <div className="min-w-0 flex-1">
+                <span className="text-[10px] text-emerald-400 font-extrabold uppercase tracking-wider block truncate">Receitas ({monthsShort[selectedMonth]})</span>
+                <span className="text-xl font-black text-white font-mono block mt-1 truncate">
                   {formatCurrency(monthlyIncome)}
                 </span>
-                <span className="text-[9px] text-zinc-500 block mt-1">Total acumulado no mês</span>
+                <span className="text-[9px] text-zinc-500 block mt-1 truncate">Total acumulado no mês</span>
               </div>
-              <div className="p-2.5 bg-emerald-500/10 rounded-xl text-emerald-400 border border-emerald-500/20">
+              <div className="p-2.5 bg-emerald-500/10 rounded-xl text-emerald-400 border border-emerald-500/20 shrink-0">
                 <TrendingUp className="h-5 w-5" />
               </div>
             </div>
 
             {/* Despesas Mês */}
-            <div className="bg-zinc-900/40 border border-zinc-850 p-5 rounded-2xl flex justify-between items-start hover:border-rose-500/40 transition-all">
-              <div>
-                <span className="text-[10px] text-rose-400 font-extrabold uppercase tracking-wider block">Despesas ({monthsShort[selectedMonth]})</span>
-                <span className="text-xl font-black text-white font-mono block mt-1">
+            <div className="bg-zinc-900/40 border border-zinc-850 p-5 rounded-2xl flex justify-between items-start gap-2 hover:border-rose-500/40 transition-all">
+              <div className="min-w-0 flex-1">
+                <span className="text-[10px] text-rose-400 font-extrabold uppercase tracking-wider block truncate">Despesas ({monthsShort[selectedMonth]})</span>
+                <span className="text-xl font-black text-white font-mono block mt-1 truncate">
                   {formatCurrency(monthlyExpense)}
                 </span>
-                <span className="text-[9px] text-zinc-500 block mt-1">Total gasto no mês</span>
+                <span className="text-[9px] text-zinc-500 block mt-1 truncate">Total gasto no mês</span>
               </div>
-              <div className="p-2.5 bg-rose-500/10 rounded-xl text-rose-400 border border-rose-500/20">
+              <div className="p-2.5 bg-rose-500/10 rounded-xl text-rose-400 border border-rose-500/20 shrink-0">
                 <TrendingDown className="h-5 w-5" />
               </div>
             </div>
 
             {/* Taxa de Poupança */}
-            <div className="bg-zinc-900/40 border border-zinc-850 p-5 rounded-2xl flex justify-between items-start hover:border-amber-500/40 transition-all">
-              <div>
-                <span className="text-[10px] text-amber-400 font-extrabold uppercase tracking-wider block">Taxa de Aporte</span>
-                <span className="text-xl font-black text-white font-mono block mt-1">
+            <div className="bg-zinc-900/40 border border-zinc-850 p-5 rounded-2xl flex justify-between items-start gap-2 hover:border-amber-500/40 transition-all">
+              <div className="min-w-0 flex-1">
+                <span className="text-[10px] text-amber-400 font-extrabold uppercase tracking-wider block truncate">Taxa de Aporte</span>
+                <span className="text-xl font-black text-white font-mono block mt-1 truncate">
                   {monthlyIncome > 0 ? `${((monthlyInvestment / monthlyIncome) * 100).toFixed(1)}%` : '0.0%'}
                 </span>
-                <span className="text-[9px] text-zinc-500 block mt-1">Porcentagem investida</span>
+                <span className="text-[9px] text-zinc-500 block mt-1 truncate">Porcentagem investida</span>
               </div>
-              <div className="p-2.5 bg-amber-500/10 rounded-xl text-amber-400 border border-amber-500/20">
+              <div className="p-2.5 bg-amber-500/10 rounded-xl text-amber-400 border border-amber-500/20 shrink-0">
                 <Percent className="h-5 w-5" />
               </div>
             </div>
 
             {/* Investimentos Acumulados */}
-            <div className="bg-zinc-900/40 border border-zinc-850 p-5 rounded-2xl flex justify-between items-start hover:border-cyan-500/40 transition-all">
-              <div>
-                <span className="text-[10px] text-cyan-400 font-extrabold uppercase tracking-wider block">Aportes Ano</span>
-                <span className="text-xl font-black text-white font-mono block mt-1">
+            <div className="bg-zinc-900/40 border border-zinc-850 p-5 rounded-2xl flex justify-between items-start gap-2 hover:border-cyan-500/40 transition-all">
+              <div className="min-w-0 flex-1">
+                <span className="text-[10px] text-cyan-400 font-extrabold uppercase tracking-wider block truncate">Aportes Ano</span>
+                <span className="text-xl font-black text-white font-mono block mt-1 truncate">
                   {formatCurrency(annualInvestment)}
                 </span>
-                <span className="text-[9px] text-zinc-500 block mt-1">Investido em {selectedYear}</span>
+                <span className="text-[9px] text-zinc-500 block mt-1 truncate">Investido em {selectedYear}</span>
               </div>
-              <div className="p-2.5 bg-cyan-500/10 rounded-xl text-cyan-400 border border-cyan-500/20">
+              <div className="p-2.5 bg-cyan-500/10 rounded-xl text-cyan-400 border border-cyan-500/20 shrink-0">
                 <PiggyBank className="h-5 w-5" />
               </div>
             </div>
@@ -900,6 +901,108 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
               </div>
 
               <CategoryPieChart data={expenseCategoryPieData} />
+            </div>
+          </div>
+
+          {/* Maiores Gastos & Insights Inteligentes */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Maiores Gastos Card */}
+            <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-6 space-y-4 flex flex-col justify-between min-h-[190px]">
+              <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
+                <div className="flex items-center gap-2">
+                  <PieChart className="h-4 w-4 text-amber-400" />
+                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                    Maiores Gastos
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('extrato')}
+                  className="text-xs font-semibold text-amber-400 hover:text-amber-300 transition-colors cursor-pointer"
+                >
+                  Ver tudo
+                </button>
+              </div>
+
+              {expenseCategoryPieData.length === 0 ? (
+                <div className="flex items-center justify-between p-6 bg-zinc-900/30 border border-zinc-900 rounded-xl text-zinc-500 text-xs italic">
+                  <span>Nenhum dado de gastos disponível</span>
+                  <span>Nenhuma categoria para exibir</span>
+                </div>
+              ) : (
+                <div className="space-y-3 my-auto">
+                  {expenseCategoryPieData.slice(0, 3).map((item) => {
+                    const pct = monthlyExpense > 0 ? (item.value / monthlyExpense) * 100 : 0;
+                    return (
+                      <div key={item.name} className="space-y-1 bg-zinc-900/40 p-3 rounded-xl border border-zinc-900">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-zinc-200 flex items-center gap-2">
+                            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                            {item.name}
+                          </span>
+                          <span className="font-mono font-bold text-white">
+                            {formatCurrency(item.value)}
+                          </span>
+                        </div>
+                        <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: item.color }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Insights Inteligentes Card */}
+            <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-6 space-y-4 flex flex-col justify-between min-h-[190px]">
+              <div className="border-b border-zinc-900 pb-3">
+                <div className="flex items-center gap-2">
+                  <Zap className="h-4 w-4 text-cyan-400" />
+                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                    Insights Inteligentes
+                  </h3>
+                </div>
+              </div>
+
+              <div className="space-y-3.5 my-auto">
+                {/* Insight 1: Economize */}
+                <div className="flex items-start gap-3.5 p-3.5 bg-zinc-900/40 border border-zinc-900 rounded-xl hover:border-amber-500/30 transition-all">
+                  <div className="p-2.5 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-xl shrink-0 mt-0.5">
+                    <Sparkles className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-white">
+                      {expenseCategoryPieData.length > 0
+                        ? `Economize até ${formatCurrency(expenseCategoryPieData[0].value * 0.2)}/mês`
+                        : 'Economize R$246/mês'}
+                    </h4>
+                    <p className="text-[11px] text-zinc-400 mt-0.5">
+                      {expenseCategoryPieData.length > 0
+                        ? `Reduza gastos com ${expenseCategoryPieData[0].name.toLowerCase()} em 20%.`
+                        : 'Reduza gastos com delivery em 20%'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Insight 2: Due date / Bill alert */}
+                <div className="flex items-start gap-3.5 p-3.5 bg-zinc-900/40 border border-zinc-900 rounded-xl hover:border-indigo-500/30 transition-all">
+                  <div className="p-2.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-xl shrink-0 mt-0.5">
+                    <Zap className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-white">
+                      Conta de internet vence em 3 dias
+                    </h4>
+                    <p className="text-[11px] text-zinc-400 mt-0.5">
+                      Internet: R$79,99
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
