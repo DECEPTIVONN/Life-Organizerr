@@ -28,7 +28,8 @@ import {
   Palette,
   Sparkles,
   Dumbbell,
-  Briefcase
+  Briefcase,
+  Clipboard
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Goal, BookTracker, BibleTracker, TimelineGoal, TimelineAction, VisionBoardCard } from '../types';
@@ -1535,14 +1536,77 @@ export default function GoalsView({
                         <div className="flex gap-2">
                           <input 
                             type="text"
-                            placeholder="https://exemplo.com/imagem.jpg"
+                            placeholder="https://exemplo.com/imagem.jpg ou Cole (Ctrl+V)"
                             value={imageUrlInput}
                             onChange={(e) => setImageUrlInput(e.target.value)}
+                            onPaste={(e) => {
+                              const items = e.clipboardData?.items;
+                              if (items) {
+                                for (let i = 0; i < items.length; i++) {
+                                  if (items[i].type.indexOf('image') !== -1) {
+                                    e.preventDefault();
+                                    const file = items[i].getAsFile();
+                                    if (file) {
+                                      const reader = new FileReader();
+                                      reader.onloadend = () => {
+                                        const base64String = reader.result as string;
+                                        setAreaImages(prev => ({
+                                          ...prev,
+                                          [selectedArea]: base64String
+                                        }));
+                                        setIsChangingImage(false);
+                                      };
+                                      reader.readAsDataURL(file);
+                                    }
+                                  }
+                                }
+                              }
+                            }}
                             className="flex-1 bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-orange-500/50"
                           />
                           <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                if (navigator.clipboard && navigator.clipboard.read) {
+                                  const items = await navigator.clipboard.read();
+                                  for (const item of items) {
+                                    const imageType = item.types.find(type => type.startsWith('image/'));
+                                    if (imageType) {
+                                      const blob = await item.getType(imageType);
+                                      const reader = new FileReader();
+                                      reader.onloadend = () => {
+                                        const base64String = reader.result as string;
+                                        setAreaImages(prev => ({
+                                          ...prev,
+                                          [selectedArea]: base64String
+                                        }));
+                                        setIsChangingImage(false);
+                                      };
+                                      reader.readAsDataURL(blob);
+                                      return;
+                                    }
+                                  }
+                                }
+                                if (navigator.clipboard && navigator.clipboard.readText) {
+                                  const text = await navigator.clipboard.readText();
+                                  if (text && (text.startsWith('http') || text.startsWith('data:image/'))) {
+                                    setImageUrlInput(text.trim());
+                                  }
+                                }
+                              } catch (err) {
+                                console.error('Clipboard paste failed:', err);
+                              }
+                            }}
+                            className="bg-zinc-800 hover:bg-zinc-700 text-amber-300 border border-zinc-700 font-bold text-xs px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 shrink-0 cursor-pointer"
+                            title="Colar da Área de Transferência"
+                          >
+                            <Clipboard className="h-3.5 w-3.5" />
+                            <span>Colar</span>
+                          </button>
+                          <button
                             onClick={() => handleSaveImageUrl(selectedArea)}
-                            className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs px-4 py-1.5 rounded-lg transition-colors"
+                            className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs px-4 py-1.5 rounded-lg transition-colors cursor-pointer"
                           >
                             Aplicar
                           </button>

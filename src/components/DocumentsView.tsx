@@ -10,7 +10,8 @@ import {
   Folder,
   X,
   FileText,
-  AlertCircle
+  AlertCircle,
+  Clipboard
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArchivedDocument } from '../types';
@@ -188,6 +189,37 @@ export default function DocumentsView({ documents, setDocuments, addXp }: Docume
                 </div>
               )}
             </div>
+
+            <button
+              type="button"
+              onClick={async (e) => {
+                e.stopPropagation();
+                try {
+                  if (navigator.clipboard && navigator.clipboard.read) {
+                    const items = await navigator.clipboard.read();
+                    const filesList: File[] = [];
+                    for (const item of items) {
+                      for (const type of item.types) {
+                        const blob = await item.getType(type);
+                        const file = new File([blob], `clipboard-file-${Date.now()}.${type.split('/')[1] || 'bin'}`, { type });
+                        filesList.push(file);
+                      }
+                    }
+                    if (filesList.length > 0) {
+                      const container = new DataTransfer();
+                      filesList.forEach(f => container.items.add(f));
+                      processFiles(container.files);
+                    }
+                  }
+                } catch (err) {
+                  console.error('Clipboard files paste failed:', err);
+                }
+              }}
+              className="w-full bg-zinc-900 hover:bg-zinc-800 text-amber-300 border border-zinc-800 hover:border-amber-500/40 font-bold text-xs py-2 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Clipboard className="h-4 w-4 text-amber-400" />
+              <span>Colar Arquivo / Imagem da Área de Transferência</span>
+            </button>
 
             <div className="flex items-start gap-2 bg-orange-500/5 p-3 rounded-xl border border-orange-500/10 text-[10px] text-gray-400">
               <AlertCircle className="h-4 w-4 text-orange-500 flex-shrink-0 mt-0.5" />

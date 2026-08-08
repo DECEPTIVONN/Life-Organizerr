@@ -34,7 +34,8 @@ import {
   TrendingUp,
   Pause,
   Play,
-  Folder
+  Folder,
+  Clipboard
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import TagManagementModal from './TagManagementModal';
@@ -1238,33 +1239,72 @@ export default function AnuaisView({
                   >
                     <div className="space-y-1">
                       <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider font-mono">URL da Capa de {year}</span>
-                      <input
-                        type="text"
-                        value={imageUrlInput}
-                        onChange={(e) => setImageUrlInput(e.target.value)}
-                        onPaste={(e) => {
-                          const items = e.clipboardData?.items;
-                          if (items) {
-                            for (let i = 0; i < items.length; i++) {
-                              if (items[i].type.indexOf('image') !== -1) {
-                                e.preventDefault();
-                                const file = items[i].getAsFile();
-                                if (file) {
-                                  const reader = new FileReader();
-                                  reader.onloadend = () => {
-                                    if (typeof reader.result === 'string') {
-                                      setImageUrlInput(reader.result);
-                                    }
-                                  };
-                                  reader.readAsDataURL(file);
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={imageUrlInput}
+                          onChange={(e) => setImageUrlInput(e.target.value)}
+                          onPaste={(e) => {
+                            const items = e.clipboardData?.items;
+                            if (items) {
+                              for (let i = 0; i < items.length; i++) {
+                                if (items[i].type.indexOf('image') !== -1) {
+                                  e.preventDefault();
+                                  const file = items[i].getAsFile();
+                                  if (file) {
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => {
+                                      if (typeof reader.result === 'string') {
+                                        setImageUrlInput(reader.result);
+                                      }
+                                    };
+                                    reader.readAsDataURL(file);
+                                  }
                                 }
                               }
                             }
-                          }
-                        }}
-                        placeholder="Cole a URL ou Cole uma imagem da área de transferência..."
-                        className="bg-zinc-900 border border-zinc-800 text-xs text-white rounded-xl px-3 py-2 w-full focus:outline-none focus:border-orange-500/50 font-sans"
-                      />
+                          }}
+                          placeholder="Cole a URL ou Cole uma imagem da área de transferência..."
+                          className="bg-zinc-900 border border-zinc-800 text-xs text-white rounded-xl px-3 py-2 flex-1 focus:outline-none focus:border-orange-500/50 font-sans"
+                        />
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              if (navigator.clipboard && navigator.clipboard.read) {
+                                const items = await navigator.clipboard.read();
+                                for (const item of items) {
+                                  const imageType = item.types.find(type => type.startsWith('image/'));
+                                  if (imageType) {
+                                    const blob = await item.getType(imageType);
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => {
+                                      if (typeof reader.result === 'string') {
+                                        setImageUrlInput(reader.result);
+                                      }
+                                    };
+                                    reader.readAsDataURL(blob);
+                                    return;
+                                  }
+                                }
+                              }
+                              if (navigator.clipboard && navigator.clipboard.readText) {
+                                const text = await navigator.clipboard.readText();
+                                if (text && (text.startsWith('http') || text.startsWith('data:image/'))) {
+                                  setImageUrlInput(text.trim());
+                                }
+                              }
+                            } catch (err) {
+                              console.error('Clipboard paste failed:', err);
+                            }
+                          }}
+                          className="bg-zinc-800 hover:bg-zinc-700 text-amber-300 border border-zinc-700 font-bold text-xs px-3 py-2 rounded-xl transition-all flex items-center gap-1 shrink-0 cursor-pointer"
+                          title="Colar da Área de Transferência"
+                        >
+                          <Clipboard className="h-3.5 w-3.5" />
+                          <span>Colar</span>
+                        </button>
+                      </div>
                     </div>
 
                     <div className="space-y-1">

@@ -36,7 +36,8 @@ import {
   Sliders,
   CheckCircle2,
   Palette,
-  Fingerprint
+  Fingerprint,
+  Clipboard
 } from 'lucide-react';
 import { isPlatformAuthenticatorAvailable, verifyBiometric } from '../utils/biometricAuth';
 import ColorSchemeModal from './ColorSchemeModal';
@@ -1116,6 +1117,44 @@ export default function SettingsView({
                       >
                         <Upload className="h-3 w-3 text-orange-500" />
                         <span>Carregar Arquivo</span>
+                      </button>
+                      <span className="text-zinc-800 text-[9px]">•</span>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            if (navigator.clipboard && navigator.clipboard.read) {
+                              const items = await navigator.clipboard.read();
+                              for (const item of items) {
+                                const imageType = item.types.find(type => type.startsWith('image/'));
+                                if (imageType) {
+                                  const blob = await item.getType(imageType);
+                                  const reader = new FileReader();
+                                  reader.onloadend = () => {
+                                    if (typeof reader.result === 'string') {
+                                      setEditPhoto(reader.result);
+                                    }
+                                  };
+                                  reader.readAsDataURL(blob);
+                                  return;
+                                }
+                              }
+                            }
+                            if (navigator.clipboard && navigator.clipboard.readText) {
+                              const text = await navigator.clipboard.readText();
+                              if (text && (text.startsWith('http') || text.startsWith('data:image/'))) {
+                                setEditPhoto(text.trim());
+                              }
+                            }
+                          } catch (err) {
+                            console.error('Clipboard paste error:', err);
+                          }
+                        }}
+                        className="text-[9px] font-mono font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1.5 hover:underline cursor-pointer"
+                        title="Colar mídia da área de transferência"
+                      >
+                        <Clipboard className="h-3 w-3 text-amber-400" />
+                        <span>Colar da Área de Transferência</span>
                       </button>
                     </div>
                   </div>

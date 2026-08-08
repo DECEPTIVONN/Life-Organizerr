@@ -30,7 +30,8 @@ import {
   Award,
   Edit2,
   CalendarDays,
-  Upload
+  Upload,
+  Clipboard
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Goal, DailyTask, FinanceEntry, Habit, RoutineItem } from '../types';
@@ -1076,27 +1077,61 @@ export default function DashboardView({
                 <div className="space-y-2">
                   <div className="space-y-1">
                     <label className="text-[9px] text-zinc-500 font-extrabold uppercase tracking-wider block">URL da Imagem</label>
-                    <input
-                      type="text"
-                      value={editImageUrl}
-                      onChange={(e) => setEditImageUrl(e.target.value)}
-                      onPaste={(e) => {
-                        const items = e.clipboardData?.items;
-                        if (items) {
-                          for (let i = 0; i < items.length; i++) {
-                            if (items[i].type.indexOf('image') !== -1) {
-                              e.preventDefault();
-                              const file = items[i].getAsFile();
-                              if (file) {
-                                compressImageFile(file).then(res => setEditImageUrl(res));
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={editImageUrl}
+                        onChange={(e) => setEditImageUrl(e.target.value)}
+                        onPaste={(e) => {
+                          const items = e.clipboardData?.items;
+                          if (items) {
+                            for (let i = 0; i < items.length; i++) {
+                              if (items[i].type.indexOf('image') !== -1) {
+                                e.preventDefault();
+                                const file = items[i].getAsFile();
+                                if (file) {
+                                  compressImageFile(file).then(res => setEditImageUrl(res));
+                                }
                               }
                             }
                           }
-                        }
-                      }}
-                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-[10px] text-white font-mono focus:outline-none focus:border-orange-500/50"
-                      placeholder="Cole a URL da imagem (ou Cole a imagem diretamente...)"
-                    />
+                        }}
+                        className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-[10px] text-white font-mono focus:outline-none focus:border-orange-500/50"
+                        placeholder="Cole a URL da imagem (ou Cole a imagem diretamente...)"
+                      />
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            if (navigator.clipboard && navigator.clipboard.read) {
+                              const items = await navigator.clipboard.read();
+                              for (const item of items) {
+                                const imageType = item.types.find(type => type.startsWith('image/'));
+                                if (imageType) {
+                                  const blob = await item.getType(imageType);
+                                  const file = new File([blob], 'clipboard-image.png', { type: imageType });
+                                  compressImageFile(file).then(res => setEditImageUrl(res));
+                                  return;
+                                }
+                              }
+                            }
+                            if (navigator.clipboard && navigator.clipboard.readText) {
+                              const text = await navigator.clipboard.readText();
+                              if (text && (text.startsWith('http') || text.startsWith('data:image/'))) {
+                                setEditImageUrl(text.trim());
+                              }
+                            }
+                          } catch (err) {
+                            console.error('Clipboard paste error:', err);
+                          }
+                        }}
+                        className="bg-zinc-800 hover:bg-zinc-700 text-amber-300 border border-zinc-700 font-bold text-[10px] px-3 py-1.5 rounded-xl transition-all flex items-center gap-1 shrink-0 cursor-pointer"
+                        title="Colar mídia da área de transferência"
+                      >
+                        <Clipboard className="h-3.5 w-3.5" />
+                        <span>Colar</span>
+                      </button>
+                    </div>
                   </div>
 
                   {/* New Premium Image File Upload Dropzone & Clipboard Paste Area */}
