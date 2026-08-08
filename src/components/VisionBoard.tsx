@@ -7,6 +7,7 @@ import {
   Edit3, 
   CheckCircle2, 
   Upload, 
+  Clipboard,
   Maximize2, 
   Star, 
   RotateCcw, 
@@ -16,7 +17,8 @@ import {
   Eye,
   Check,
   Columns2,
-  Columns3
+  Columns3,
+  LayoutGrid
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { VisionBoardCard } from '../types';
@@ -531,6 +533,9 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
     return 3;
   });
 
+  // Orientation Filter setting ('all' | 'horizontal' | 'vertical')
+  const [orientationFilter, setOrientationFilter] = useState<'all' | 'horizontal' | 'vertical'>('all');
+
   useEffect(() => {
     try {
       localStorage.setItem('mbc_vb_cards_per_row_v1', String(cardsPerRow));
@@ -551,11 +556,11 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
 
   // Filter logic
   const displayCards = cards.filter(c => {
-    if (currentArea) {
-      return c.area === currentArea;
+    if (currentArea && c.area !== currentArea) {
+      return false;
     }
-    if (filterArea !== 'Todas') {
-      return c.area === filterArea;
+    if (!currentArea && filterArea !== 'Todas' && c.area !== filterArea) {
+      return false;
     }
     return true;
   });
@@ -643,14 +648,68 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleProcessImageFile = (file: File) => {
     if (file && file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onloadend = () => {
         setFormImageUrl(reader.result as string);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleProcessImageFile(file);
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (items) {
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.startsWith('image/')) {
+          const file = items[i].getAsFile();
+          if (file) {
+            e.preventDefault();
+            handleProcessImageFile(file);
+            return;
+          }
+        }
+      }
+    }
+    if (e.clipboardData?.files && e.clipboardData.files.length > 0) {
+      const file = e.clipboardData.files[0];
+      if (file.type.startsWith('image/')) {
+        e.preventDefault();
+        handleProcessImageFile(file);
+      }
+    }
+  };
+
+  const handlePasteFromClipboard = async () => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.read) {
+        const items = await navigator.clipboard.read();
+        for (const item of items) {
+          const imageType = item.types.find(type => type.startsWith('image/'));
+          if (imageType) {
+            const blob = await item.getType(imageType);
+            const file = new File([blob], 'clipboard-image.png', { type: imageType });
+            handleProcessImageFile(file);
+            return;
+          }
+        }
+      }
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        const text = await navigator.clipboard.readText();
+        if (text && (text.startsWith('http') || text.startsWith('data:image/'))) {
+          setFormImageUrl(text.trim());
+        }
+      }
+    } catch (err) {
+      console.error('Clipboard read failed or permission denied:', err);
     }
   };
 
@@ -699,13 +758,55 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
             ))}
           </div>
 
+          {/* Orientation Toggle Selector (Icons only, alters existing cards) */}
+          <div className="flex items-center bg-zinc-950/90 border border-purple-500/30 rounded-xl p-1 gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={() => setOrientationFilter('all')}
+              className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                orientationFilter === 'all'
+                  ? 'bg-purple-600 text-white shadow-[0_0_12px_rgba(168,85,247,0.4)]'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
+              }`}
+              title="Formato original de cada card"
+            >
+              <LayoutGrid className="h-3.5 w-3.5 shrink-0" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setOrientationFilter('horizontal')}
+              className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                orientationFilter === 'horizontal'
+                  ? 'bg-purple-600 text-white shadow-[0_0_12px_rgba(168,85,247,0.4)]'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
+              }`}
+              title="Exibir todos em formato horizontal"
+            >
+              <RectangleHorizontal className="h-3.5 w-3.5 shrink-0" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setOrientationFilter('vertical')}
+              className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                orientationFilter === 'vertical'
+                  ? 'bg-purple-600 text-white shadow-[0_0_12px_rgba(168,85,247,0.4)]'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
+              }`}
+              title="Exibir todos em formato vertical"
+            >
+              <RectangleVertical className="h-3.5 w-3.5 shrink-0" />
+            </button>
+          </div>
+
+          {/* Add New Card (+) Button */}
           <button
             type="button"
             onClick={() => handleOpenAddModal(currentArea || undefined)}
-            className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-[0_4px_16px_rgba(249,115,22,0.3)] transition-all cursor-pointer shrink-0 whitespace-nowrap"
+            className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1 shadow-[0_4px_16px_rgba(249,115,22,0.3)] transition-all cursor-pointer shrink-0 whitespace-nowrap"
+            title="Adicionar Novo Card"
           >
             <Plus className="h-4 w-4 shrink-0" />
-            <span>+ Novo Card</span>
+            <span className="font-bold text-sm">+</span>
           </button>
 
           {cards.length === 0 && (
@@ -781,7 +882,11 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
         }`}>
           {displayCards.map(card => {
             const areaStyle = getAreaStyle(card.area);
-            const isHorizontal = (card.orientation || 'horizontal') === 'horizontal';
+            const isHorizontal = orientationFilter === 'horizontal' 
+              ? true 
+              : orientationFilter === 'vertical' 
+              ? false 
+              : (card.orientation || 'horizontal') === 'horizontal';
             const isTouched = activeTouchCardId === card.id;
 
             return (
@@ -957,7 +1062,8 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-zinc-950 border border-purple-500/40 rounded-3xl p-6 md:p-8 max-w-4xl w-full relative z-10 shadow-[0_0_50px_rgba(168,85,247,0.2)] space-y-6 max-h-[90vh] overflow-y-auto custom-scrollbar"
+              onPaste={handlePaste}
+              className="bg-zinc-950 border border-purple-500/40 rounded-3xl p-6 md:p-8 max-w-4xl lg:max-w-6xl xl:max-w-7xl w-full relative z-10 shadow-[0_0_50px_rgba(168,85,247,0.2)] space-y-6 max-h-[90vh] overflow-y-auto custom-scrollbar"
             >
               {/* Top Bar */}
               <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
@@ -986,11 +1092,11 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
                 </button>
               </div>
 
-              {/* Form Grid: Left = Inputs, Right = Live Preview */}
-              <form onSubmit={handleSaveCard} className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+              {/* Form Grid: Expanded horizontally on desktop (Left = Inputs, Right = Live Preview) */}
+              <form onSubmit={handleSaveCard} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                 
                 {/* Left Column: Form Fields */}
-                <div className="space-y-4">
+                <div className="lg:col-span-7 space-y-4">
                   {/* Area and Year */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
@@ -1087,19 +1193,34 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
 
                   {/* Image Selection */}
                   <div className="space-y-2">
-                    <label className="text-[11px] text-zinc-300 font-mono font-bold uppercase block">
-                      Imagem do Card *
-                    </label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] text-zinc-300 font-mono font-bold uppercase block">
+                        Imagem do Card *
+                      </label>
+                      <span className="text-[10px] font-mono text-purple-400/80">
+                        Cole (Ctrl+V) de sua área de transferência
+                      </span>
+                    </div>
                     
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap sm:flex-nowrap">
                       <input
                         type="text"
                         required
-                        placeholder="URL da Imagem (Ex: https://images.unsplash.com/...)"
+                        placeholder="URL da Imagem ou cole da área de transferência (Ctrl+V)..."
                         value={formImageUrl}
                         onChange={(e) => setFormImageUrl(e.target.value)}
-                        className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500 font-mono text-[11px]"
+                        onPaste={handlePaste}
+                        className="flex-1 min-w-[200px] bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500 font-mono text-[11px]"
                       />
+                      <button
+                        type="button"
+                        onClick={handlePasteFromClipboard}
+                        className="bg-zinc-800 hover:bg-zinc-700 text-amber-300 border border-zinc-700 font-bold text-xs px-3 py-2.5 rounded-xl transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer"
+                        title="Colar mídia/imagem da área de transferência"
+                      >
+                        <Clipboard className="h-3.5 w-3.5" />
+                        <span>Colar</span>
+                      </button>
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
@@ -1121,7 +1242,7 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
                 </div>
 
                 {/* Right Column: Live Interactive Card Preview */}
-                <div className="space-y-3 bg-zinc-900/40 p-5 rounded-2xl border border-zinc-800/80">
+                <div className="lg:col-span-5 space-y-3 bg-zinc-900/40 p-5 rounded-2xl border border-zinc-800/80">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-mono font-bold text-purple-400 uppercase tracking-wider flex items-center gap-1.5">
                       <Eye className="h-3.5 w-3.5" />
@@ -1193,25 +1314,26 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
                       </div>
                     );
                   })()}
+                </div>
 
-                  <div className="flex justify-end gap-3 pt-4 border-t border-zinc-800">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsAddingNew(false);
-                        setEditingCard(null);
-                      }}
-                      className="px-4 py-2.5 text-xs font-mono font-bold text-zinc-400 hover:text-white transition-colors"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      type="submit"
-                      className="bg-gradient-to-r from-purple-500 via-purple-600 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-mono font-bold text-xs px-6 py-2.5 rounded-xl transition-all shadow-[0_0_20px_rgba(168,85,247,0.3)] cursor-pointer"
-                    >
-                      {editingCard ? 'Salvar Alterações' : 'Criar Card'}
-                    </button>
-                  </div>
+                {/* Bottom Action Controls spanning full modal width */}
+                <div className="lg:col-span-12 flex justify-end gap-3 pt-4 border-t border-zinc-800">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAddingNew(false);
+                      setEditingCard(null);
+                    }}
+                    className="px-5 py-2.5 text-xs font-mono font-bold text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-gradient-to-r from-purple-500 via-purple-600 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-mono font-bold text-xs px-6 py-2.5 rounded-xl transition-all shadow-[0_0_20px_rgba(168,85,247,0.3)] cursor-pointer"
+                  >
+                    {editingCard ? 'Salvar Alterações' : 'Criar Card'}
+                  </button>
                 </div>
               </form>
             </motion.div>
