@@ -327,6 +327,182 @@ const areaBadges: Record<string, { label: string; color: string; border: string 
   'Carreira': { label: 'Carreira', color: 'bg-blue-500/10 text-blue-400', border: 'border-blue-500/30' },
 };
 
+export interface AreaColorScheme {
+  badgeBg: string;
+  badgeText: string;
+  badgeBorder: string;
+  cardBorder: string;
+  cardHoverBorder: string;
+  cardHoverShadow: string;
+  yearBg: string;
+  yearText: string;
+  yearBorder: string;
+  titleBoxBg: string;
+  titleBoxBorder: string;
+  titleBoxShadow: string;
+  btnHoverBg: string;
+  btnText: string;
+  btnBorder: string;
+  dividerBorder: string;
+}
+
+export function getAreaStyle(areaName: string): AreaColorScheme {
+  switch (areaName) {
+    case 'Saúde':
+      return {
+        badgeBg: 'bg-rose-500/10',
+        badgeText: 'text-rose-400',
+        badgeBorder: 'border-rose-500/30',
+        cardBorder: 'border-rose-500/30',
+        cardHoverBorder: 'hover:border-rose-500/80',
+        cardHoverShadow: 'hover:shadow-[0_0_30px_rgba(244,63,94,0.3)]',
+        yearBg: 'bg-rose-950/90',
+        yearText: 'text-rose-300',
+        yearBorder: 'border-rose-500/40',
+        titleBoxBg: 'bg-rose-950/90',
+        titleBoxBorder: 'border-rose-500/50',
+        titleBoxShadow: 'shadow-[0_0_15px_rgba(244,63,94,0.3)]',
+        btnHoverBg: 'hover:bg-rose-900/60',
+        btnText: 'text-rose-300',
+        btnBorder: 'border-rose-500/40',
+        dividerBorder: 'border-rose-500/20',
+      };
+    case 'Financeiro':
+      return {
+        badgeBg: 'bg-emerald-500/10',
+        badgeText: 'text-emerald-400',
+        badgeBorder: 'border-emerald-500/30',
+        cardBorder: 'border-emerald-500/30',
+        cardHoverBorder: 'hover:border-emerald-500/80',
+        cardHoverShadow: 'hover:shadow-[0_0_30px_rgba(16,185,129,0.3)]',
+        yearBg: 'bg-emerald-950/90',
+        yearText: 'text-emerald-300',
+        yearBorder: 'border-emerald-500/40',
+        titleBoxBg: 'bg-emerald-950/90',
+        titleBoxBorder: 'border-emerald-500/50',
+        titleBoxShadow: 'shadow-[0_0_15px_rgba(16,185,129,0.3)]',
+        btnHoverBg: 'hover:bg-emerald-900/60',
+        btnText: 'text-emerald-300',
+        btnBorder: 'border-emerald-500/40',
+        dividerBorder: 'border-emerald-500/20',
+      };
+    case 'Social':
+      return {
+        badgeBg: 'bg-sky-500/10',
+        badgeText: 'text-sky-400',
+        badgeBorder: 'border-sky-500/30',
+        cardBorder: 'border-sky-500/30',
+        cardHoverBorder: 'hover:border-sky-500/80',
+        cardHoverShadow: 'hover:shadow-[0_0_30px_rgba(56,189,248,0.3)]',
+        yearBg: 'bg-sky-950/90',
+        yearText: 'text-sky-300',
+        yearBorder: 'border-sky-500/40',
+        titleBoxBg: 'bg-sky-950/90',
+        titleBoxBorder: 'border-sky-500/50',
+        titleBoxShadow: 'shadow-[0_0_15px_rgba(56,189,248,0.3)]',
+        btnHoverBg: 'hover:bg-sky-900/60',
+        btnText: 'text-sky-300',
+        btnBorder: 'border-sky-500/40',
+        dividerBorder: 'border-sky-500/20',
+      };
+    case 'Hobbies':
+      return {
+        badgeBg: 'bg-amber-500/10',
+        badgeText: 'text-amber-400',
+        badgeBorder: 'border-amber-500/30',
+        cardBorder: 'border-amber-500/30',
+        cardHoverBorder: 'hover:border-amber-500/80',
+        cardHoverShadow: 'hover:shadow-[0_0_30px_rgba(245,158,11,0.3)]',
+        yearBg: 'bg-amber-950/90',
+        yearText: 'text-amber-300',
+        yearBorder: 'border-amber-500/40',
+        titleBoxBg: 'bg-amber-950/90',
+        titleBoxBorder: 'border-amber-500/50',
+        titleBoxShadow: 'shadow-[0_0_15px_rgba(245,158,11,0.3)]',
+        btnHoverBg: 'hover:bg-amber-900/60',
+        btnText: 'text-amber-300',
+        btnBorder: 'border-amber-500/40',
+        dividerBorder: 'border-amber-500/20',
+      };
+    case 'Espiritualidade':
+      return {
+        badgeBg: 'bg-purple-500/10',
+        badgeText: 'text-purple-400',
+        badgeBorder: 'border-purple-500/30',
+        cardBorder: 'border-purple-500/30',
+        cardHoverBorder: 'hover:border-purple-500/80',
+        cardHoverShadow: 'hover:shadow-[0_0_30px_rgba(168,85,247,0.3)]',
+        yearBg: 'bg-purple-950/90',
+        yearText: 'text-purple-300',
+        yearBorder: 'border-purple-500/40',
+        titleBoxBg: 'bg-purple-950/90',
+        titleBoxBorder: 'border-purple-500/50',
+        titleBoxShadow: 'shadow-[0_0_15px_rgba(168,85,247,0.3)]',
+        btnHoverBg: 'hover:bg-purple-900/60',
+        btnText: 'text-purple-300',
+        btnBorder: 'border-purple-500/40',
+        dividerBorder: 'border-purple-500/20',
+      };
+    case 'Físico':
+      return {
+        badgeBg: 'bg-orange-500/10',
+        badgeText: 'text-orange-400',
+        badgeBorder: 'border-orange-500/30',
+        cardBorder: 'border-orange-500/30',
+        cardHoverBorder: 'hover:border-orange-500/80',
+        cardHoverShadow: 'hover:shadow-[0_0_30px_rgba(249,115,22,0.3)]',
+        yearBg: 'bg-orange-950/90',
+        yearText: 'text-orange-300',
+        yearBorder: 'border-orange-500/40',
+        titleBoxBg: 'bg-orange-950/90',
+        titleBoxBorder: 'border-orange-500/50',
+        titleBoxShadow: 'shadow-[0_0_15px_rgba(249,115,22,0.3)]',
+        btnHoverBg: 'hover:bg-orange-900/60',
+        btnText: 'text-orange-300',
+        btnBorder: 'border-orange-500/40',
+        dividerBorder: 'border-orange-500/20',
+      };
+    case 'Carreira':
+      return {
+        badgeBg: 'bg-cyan-500/10',
+        badgeText: 'text-cyan-400',
+        badgeBorder: 'border-cyan-500/30',
+        cardBorder: 'border-cyan-500/30',
+        cardHoverBorder: 'hover:border-cyan-500/80',
+        cardHoverShadow: 'hover:shadow-[0_0_30px_rgba(6,182,212,0.3)]',
+        yearBg: 'bg-cyan-950/90',
+        yearText: 'text-cyan-300',
+        yearBorder: 'border-cyan-500/40',
+        titleBoxBg: 'bg-cyan-950/90',
+        titleBoxBorder: 'border-cyan-500/50',
+        titleBoxShadow: 'shadow-[0_0_15px_rgba(6,182,212,0.3)]',
+        btnHoverBg: 'hover:bg-cyan-900/60',
+        btnText: 'text-cyan-300',
+        btnBorder: 'border-cyan-500/40',
+        dividerBorder: 'border-cyan-500/20',
+      };
+    default:
+      return {
+        badgeBg: 'bg-orange-500/10',
+        badgeText: 'text-orange-400',
+        badgeBorder: 'border-orange-500/30',
+        cardBorder: 'border-orange-500/30',
+        cardHoverBorder: 'hover:border-orange-500/80',
+        cardHoverShadow: 'hover:shadow-[0_0_30px_rgba(249,115,22,0.3)]',
+        yearBg: 'bg-orange-950/90',
+        yearText: 'text-orange-300',
+        yearBorder: 'border-orange-500/40',
+        titleBoxBg: 'bg-orange-950/90',
+        titleBoxBorder: 'border-orange-500/50',
+        titleBoxShadow: 'shadow-[0_0_15px_rgba(249,115,22,0.3)]',
+        btnHoverBg: 'hover:bg-orange-900/60',
+        btnText: 'text-orange-300',
+        btnBorder: 'border-orange-500/40',
+        dividerBorder: 'border-orange-500/20',
+      };
+  }
+}
+
 interface VisionBoardProps {
   cards: VisionBoardCard[];
   setCards: React.Dispatch<React.SetStateAction<VisionBoardCard[]>>;
@@ -342,11 +518,13 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
   const [zoomedImage, setZoomedImage] = useState<VisionBoardCard | null>(null);
   const [activeTouchCardId, setActiveTouchCardId] = useState<string | null>(null);
 
-  // Cards per row setting (2 or 3 cards)
-  const [cardsPerRow, setCardsPerRow] = useState<2 | 3>(() => {
+  // Cards per row setting (2 to 6 cards)
+  const [cardsPerRow, setCardsPerRow] = useState<2 | 3 | 4 | 5 | 6>(() => {
     try {
       const saved = localStorage.getItem('mbc_vb_cards_per_row_v1');
-      if (saved === '2' || saved === '3') return Number(saved) as 2 | 3;
+      if (saved && ['2', '3', '4', '5', '6'].includes(saved)) {
+        return Number(saved) as 2 | 3 | 4 | 5 | 6;
+      }
     } catch (e) {
       console.error('Failed to read cards per row setting:', e);
     }
@@ -498,45 +676,35 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-center">
-          {/* Columns Selector: 2 vs 3 Cards / Linha */}
-          <div className="flex items-center bg-zinc-950/90 border border-purple-500/30 rounded-xl p-1 gap-1">
-            <button
-              type="button"
-              onClick={() => setCardsPerRow(2)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                cardsPerRow === 2
-                  ? 'bg-purple-600 text-white shadow-[0_0_12px_rgba(168,85,247,0.4)]'
-                  : 'text-zinc-400 hover:text-white'
-              }`}
-              title="Exibir 2 cards por linha"
-            >
-              <Columns2 className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">2 / linha</span>
-              <span className="sm:hidden">2</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setCardsPerRow(3)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                cardsPerRow === 3
-                  ? 'bg-purple-600 text-white shadow-[0_0_12px_rgba(168,85,247,0.4)]'
-                  : 'text-zinc-400 hover:text-white'
-              }`}
-              title="Exibir 3 cards por linha"
-            >
-              <Columns3 className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">3 / linha</span>
-              <span className="sm:hidden">3</span>
-            </button>
+        <div className="flex items-center flex-wrap sm:flex-nowrap gap-2 sm:gap-2.5 shrink-0">
+          {/* Columns Selector: 2 to 6 Cards / Linha */}
+          <div className="flex items-center bg-zinc-950/90 border border-purple-500/30 rounded-xl p-1 gap-1 shrink-0">
+            <span className="text-[10px] font-mono font-bold text-zinc-400 px-1.5 hidden sm:inline">
+              Linha:
+            </span>
+            {([2, 3, 4, 5, 6] as const).map(num => (
+              <button
+                key={num}
+                type="button"
+                onClick={() => setCardsPerRow(num)}
+                className={`px-2 py-1 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
+                  cardsPerRow === num
+                    ? 'bg-purple-600 text-white shadow-[0_0_12px_rgba(168,85,247,0.4)]'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
+                }`}
+                title={`Exibir ${num} cards por linha`}
+              >
+                {num}
+              </button>
+            ))}
           </div>
 
           <button
             type="button"
             onClick={() => handleOpenAddModal(currentArea || undefined)}
-            className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-[0_4px_16px_rgba(249,115,22,0.3)] transition-all cursor-pointer"
+            className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-[0_4px_16px_rgba(249,115,22,0.3)] transition-all cursor-pointer shrink-0 whitespace-nowrap"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-4 w-4 shrink-0" />
             <span>+ Novo Card</span>
           </button>
 
@@ -544,9 +712,9 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
             <button
               type="button"
               onClick={handleResetToDefaults}
-              className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold text-xs px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer border border-zinc-700"
+              className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold text-xs px-3 py-2 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer border border-zinc-700 shrink-0 whitespace-nowrap"
             >
-              <RotateCcw className="h-3.5 w-3.5" />
+              <RotateCcw className="h-3.5 w-3.5 shrink-0" />
               <span>Restaurar Padrão</span>
             </button>
           )}
@@ -602,13 +770,17 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
           </button>
         </div>
       ) : (
-        <div className={`grid gap-6 items-start ${
-          cardsPerRow === 2
-            ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2'
-            : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3'
+        <div className={`grid gap-3 sm:gap-4 lg:gap-5 items-start ${
+          {
+            2: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2',
+            3: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3',
+            4: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4',
+            5: 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5',
+            6: 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6',
+          }[cardsPerRow] || 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3'
         }`}>
           {displayCards.map(card => {
-            const badge = areaBadges[card.area] || { label: card.area, color: 'bg-orange-500/10 text-orange-400', border: 'border-orange-500/30' };
+            const areaStyle = getAreaStyle(card.area);
             const isHorizontal = (card.orientation || 'horizontal') === 'horizontal';
             const isTouched = activeTouchCardId === card.id;
 
@@ -623,7 +795,7 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
                   // Toggle active touch state on mobile / desktop tap
                   setActiveTouchCardId(prev => prev === card.id ? null : card.id);
                 }}
-                className={`group relative bg-zinc-950 border border-purple-500/30 hover:border-purple-500/80 rounded-2xl overflow-hidden hover:shadow-[0_0_30px_rgba(168,85,247,0.3)] transition-all duration-300 select-none cursor-pointer col-span-1 ${
+                className={`group relative bg-zinc-950 border ${areaStyle.cardBorder} ${areaStyle.cardHoverBorder} ${areaStyle.cardHoverShadow} rounded-xl overflow-hidden transition-all duration-300 select-none cursor-pointer col-span-1 ${
                   isHorizontal ? 'aspect-[16/9]' : 'aspect-[3/4]'
                 } ${card.completed ? 'ring-2 ring-emerald-500/80 shadow-[0_0_20px_rgba(16,185,129,0.25)]' : ''}`}
               >
@@ -644,97 +816,121 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
                     </div>
                   )}
                   {!card.completed && (
-                    <span className={`text-[9px] font-mono font-bold px-2.5 py-1 rounded-md border backdrop-blur-md ${badge.color} ${badge.border}`}>
+                    <span className={`text-[9px] font-mono font-bold px-2.5 py-1 rounded-md border ${areaStyle.badgeBg} ${areaStyle.badgeText} ${areaStyle.badgeBorder}`}>
                       {card.area}
                     </span>
                   )}
                 </div>
 
-                {/* HOVER / TOUCH OVERLAY WITH TITLE AND CAPTION */}
+                {/* HOVER / TOUCH OVERLAY WITH TITLE AND CAPTION - TRANSLUCENT BACKDROP BLUR */}
                 <div 
-                  className={`absolute inset-0 bg-black/85 backdrop-blur-md transition-all duration-300 flex flex-col items-center justify-between p-5 text-center z-20 ${
+                  className={`absolute inset-0 bg-black/85 backdrop-blur-md transition-all duration-300 flex flex-col items-center justify-between p-2.5 sm:p-3 text-center z-20 ${
                     isTouched ? 'opacity-100 pointer-events-auto' : 'opacity-0 group-hover:opacity-100 pointer-events-auto'
                   }`}
                 >
-                  {/* Top Area Tag */}
-                  <div className="w-full flex justify-between items-center">
-                    <span className={`text-[9px] font-mono font-bold px-2.5 py-1 rounded-md border backdrop-blur-md ${badge.color} ${badge.border}`}>
-                      {card.area}
-                    </span>
-                    {card.targetYear && (
-                      <span className="text-[10px] font-mono font-bold text-purple-300 bg-purple-950/80 px-2.5 py-1 rounded-md border border-purple-500/40">
-                        [{card.targetYear}]
-                      </span>
-                    )}
-                  </div>
+                  {cardsPerRow >= 5 ? (
+                    <>
+                      {/* Top Area Tag */}
+                      <div className="w-full flex justify-center items-center shrink-0">
+                        <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-md border ${areaStyle.badgeBg} ${areaStyle.badgeText} ${areaStyle.badgeBorder} truncate max-w-full`}>
+                          {card.area}
+                        </span>
+                      </div>
 
-                  {/* Center Title and Description */}
-                  <div className="space-y-2.5 my-auto px-2 max-w-md">
-                    {card.targetYear && !card.targetYear.includes('[') && (
-                      <span className="text-[10px] font-mono font-bold text-purple-400 tracking-widest uppercase block">
-                        [{card.targetYear}]
-                      </span>
-                    )}
-                    <div className="inline-block bg-purple-950/80 border border-purple-500/50 rounded-xl px-4 py-2 shadow-[0_0_15px_rgba(168,85,247,0.3)]">
-                      <h4 className="text-sm sm:text-base font-black text-white uppercase tracking-wider font-mono">
-                        {card.title}
-                      </h4>
-                    </div>
-                    {card.caption && (
-                      <p className="text-xs text-zinc-300 font-sans leading-relaxed line-clamp-3 max-w-sm mx-auto">
-                        {card.caption}
-                      </p>
-                    )}
-                  </div>
+                      {/* Center Expand Button */}
+                      <div className="my-auto flex flex-col items-center justify-center">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setZoomedImage(card);
+                          }}
+                          className={`px-2.5 py-1.5 bg-zinc-900/90 hover:bg-zinc-800 ${areaStyle.btnText} rounded-xl border ${areaStyle.btnBorder} shadow-lg transition-all cursor-pointer flex items-center gap-1.5 text-[10px] font-mono font-bold`}
+                          title="Expandir Card"
+                        >
+                          <Maximize2 className="h-3.5 w-3.5" />
+                          <span>Expandir</span>
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Top Area Tag & Target Year (No Brackets) */}
+                      <div className="w-full flex justify-between items-center shrink-0 mb-1">
+                        <span className={`text-[9px] font-mono font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md border ${areaStyle.badgeBg} ${areaStyle.badgeText} ${areaStyle.badgeBorder}`}>
+                          {card.area}
+                        </span>
+                        {card.targetYear && (
+                          <span className={`text-[9px] sm:text-[10px] font-mono font-bold ${areaStyle.yearText} ${areaStyle.yearBg} px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md border ${areaStyle.yearBorder}`}>
+                            {card.targetYear.replace(/[\[\]]/g, '')}
+                          </span>
+                        )}
+                      </div>
 
-                  {/* Bottom Action Controls */}
-                  <div className="w-full flex items-center justify-between pt-3 border-t border-purple-500/20 gap-2">
-                    <button
-                      type="button"
-                      onClick={(e) => handleToggleCompleted(card.id, e)}
-                      className={`text-[10px] font-mono font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-                        card.completed
-                          ? 'bg-emerald-500 text-zinc-950 border border-emerald-400'
-                          : 'bg-zinc-900 hover:bg-purple-900/60 text-purple-300 border border-purple-500/40'
-                      }`}
-                    >
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                      <span>{card.completed ? 'Conquistado' : 'Marcar Conquistado'}</span>
-                    </button>
+                      {/* Center Title and Description - Flexible, scrollable if necessary, tight spacing */}
+                      <div className="flex-1 min-h-0 w-full flex flex-col items-center justify-center space-y-1.5 my-auto px-1 py-1 overflow-y-auto no-scrollbar">
+                        <div className={`inline-block max-w-full ${areaStyle.titleBoxBg} border ${areaStyle.titleBoxBorder} rounded-xl px-2.5 py-1 sm:px-3.5 sm:py-1.5 ${areaStyle.titleBoxShadow} break-words`}>
+                          <h4 className="text-xs sm:text-sm font-black text-white uppercase tracking-wider font-mono line-clamp-2 leading-tight break-words">
+                            {card.title}
+                          </h4>
+                        </div>
+                        {card.caption && (
+                          <p className="text-[10px] sm:text-xs text-zinc-300 font-sans leading-tight line-clamp-2 sm:line-clamp-3 max-w-xs mx-auto break-words">
+                            {card.caption}
+                          </p>
+                        )}
+                      </div>
 
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setZoomedImage(card);
-                        }}
-                        className="p-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-lg border border-zinc-700 transition-all cursor-pointer"
-                        title="Ver Imagem Inteira"
-                      >
-                        <Maximize2 className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenEditModal(card);
-                        }}
-                        className="p-1.5 bg-zinc-900 hover:bg-zinc-800 text-amber-400 rounded-lg border border-zinc-700 transition-all cursor-pointer"
-                        title="Editar Card"
-                      >
-                        <Edit3 className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => handleDeleteCard(card.id, e)}
-                        className="p-1.5 bg-zinc-900 hover:bg-zinc-800 text-rose-400 rounded-lg border border-zinc-700 transition-all cursor-pointer"
-                        title="Excluir Card"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </div>
+                      {/* Bottom Action Controls - Pinned at bottom, shrink-0 */}
+                      <div className={`w-full flex items-center justify-between pt-2 border-t ${areaStyle.dividerBorder} gap-1 shrink-0`}>
+                        <button
+                          type="button"
+                          onClick={(e) => handleToggleCompleted(card.id, e)}
+                          className={`text-[9px] sm:text-[10px] font-mono font-bold px-2 py-1 sm:px-2.5 sm:py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer shrink-0 ${
+                            card.completed
+                              ? 'bg-emerald-500 text-zinc-950 border border-emerald-400'
+                              : `bg-zinc-900 ${areaStyle.btnHoverBg} ${areaStyle.btnText} border ${areaStyle.btnBorder}`
+                          }`}
+                        >
+                          <CheckCircle2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+                          <span className="truncate max-w-[90px] sm:max-w-none">{card.completed ? 'Conquistado' : 'Marcar Conquistado'}</span>
+                        </button>
+
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setZoomedImage(card);
+                            }}
+                            className="p-1 sm:p-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-lg border border-zinc-700 transition-all cursor-pointer"
+                            title="Ver Imagem Inteira"
+                          >
+                            <Maximize2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenEditModal(card);
+                            }}
+                            className="p-1 sm:p-1.5 bg-zinc-900 hover:bg-zinc-800 text-amber-400 rounded-lg border border-zinc-700 transition-all cursor-pointer"
+                            title="Editar Card"
+                          >
+                            <Edit3 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => handleDeleteCard(card.id, e)}
+                            className="p-1 sm:p-1.5 bg-zinc-900 hover:bg-zinc-800 text-rose-400 rounded-lg border border-zinc-700 transition-all cursor-pointer"
+                            title="Excluir Card"
+                          >
+                            <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </motion.div>
             );
@@ -935,68 +1131,68 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
                   </div>
 
                   {/* Mock Card */}
-                  <div 
-                    className={`group relative bg-zinc-950 border border-purple-500/50 rounded-2xl overflow-hidden shadow-xl transition-all duration-300 mx-auto ${
-                      formOrientation === 'horizontal' ? 'w-full aspect-[16/9]' : 'w-64 max-w-full aspect-[3/4]'
-                    }`}
-                  >
-                    {formImageUrl ? (
-                      <img
-                        src={formImageUrl}
-                        alt="Preview"
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        referrerPolicy="no-referrer"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-900 text-zinc-600 space-y-2">
-                        <ImageIcon className="h-8 w-8 stroke-1" />
-                        <span className="text-[10px] font-mono">Sem Imagem</span>
-                      </div>
-                    )}
-
-                    {/* Area Badge top left */}
-                    <div className="absolute top-3 left-3 z-10 pointer-events-none">
-                      <span className="text-[9px] font-mono font-bold px-2.5 py-1 rounded-md border backdrop-blur-md bg-purple-500/10 text-purple-400 border-purple-500/30">
-                        {formArea}
-                      </span>
-                    </div>
-
-                    {/* Hover Overlay */}
-                    <div className="absolute inset-0 bg-black/85 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col items-center justify-between p-4 text-center z-20">
-                      <div className="w-full flex justify-between items-center">
-                        <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded border bg-purple-500/10 text-purple-400 border-purple-500/30">
-                          {formArea}
-                        </span>
-                        {formYear && (
-                          <span className="text-[10px] font-mono font-bold text-purple-300 bg-purple-950/80 px-2 py-0.5 rounded border border-purple-500/40">
-                            [{formYear}]
-                          </span>
+                  {(() => {
+                    const formStyle = getAreaStyle(formArea);
+                    return (
+                      <div 
+                        className={`group relative bg-zinc-950 border ${formStyle.cardBorder} rounded-xl overflow-hidden shadow-xl transition-all duration-300 mx-auto ${
+                          formOrientation === 'horizontal' ? 'w-full aspect-[16/9]' : 'w-64 max-w-full aspect-[3/4]'
+                        }`}
+                      >
+                        {formImageUrl ? (
+                          <img
+                            src={formImageUrl}
+                            alt="Preview"
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            referrerPolicy="no-referrer"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-900 text-zinc-600 space-y-2">
+                            <ImageIcon className="h-8 w-8 stroke-1" />
+                            <span className="text-[10px] font-mono">Sem Imagem</span>
+                          </div>
                         )}
-                      </div>
 
-                      <div className="space-y-2 my-auto px-2">
-                        {formYear && (
-                          <span className="text-[10px] font-mono font-bold text-purple-400 tracking-widest uppercase block">
-                            [{formYear}]
+                        {/* Area Badge top left */}
+                        <div className="absolute top-3 left-3 z-10 pointer-events-none">
+                          <span className={`text-[9px] font-mono font-bold px-2.5 py-1 rounded-md border ${formStyle.badgeBg} ${formStyle.badgeText} ${formStyle.badgeBorder}`}>
+                            {formArea}
                           </span>
-                        )}
-                        <div className="inline-block bg-purple-950/80 border border-purple-500/50 rounded-xl px-3.5 py-1.5 shadow-[0_0_15px_rgba(168,85,247,0.3)]">
-                          <h4 className="text-xs sm:text-sm font-black text-white uppercase tracking-wider font-mono">
-                            {formTitle || 'TÍTULO DO CARD'}
-                          </h4>
                         </div>
-                        {formCaption && (
-                          <p className="text-[11px] text-zinc-300 font-sans line-clamp-2 max-w-xs mx-auto">
-                            {formCaption}
-                          </p>
-                        )}
-                      </div>
 
-                      <div className="w-full text-center text-[9px] font-mono text-purple-400 pt-2 border-t border-purple-500/20">
-                        Visualização em Hover
+                        {/* Hover Overlay - Translucent bg-black/85 backdrop-blur-md */}
+                        <div className="absolute inset-0 bg-black/85 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col items-center justify-between p-3 sm:p-4 text-center z-20">
+                          <div className="w-full flex justify-between items-center shrink-0 mb-1">
+                            <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded border ${formStyle.badgeBg} ${formStyle.badgeText} ${formStyle.badgeBorder}`}>
+                              {formArea}
+                            </span>
+                            {formYear && (
+                              <span className={`text-[9px] sm:text-[10px] font-mono font-bold ${formStyle.yearText} ${formStyle.yearBg} px-2 py-0.5 rounded border ${formStyle.yearBorder}`}>
+                                {formYear.replace(/[\[\]]/g, '')}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-h-0 w-full flex flex-col items-center justify-center space-y-1.5 my-auto px-1 py-1 overflow-y-auto no-scrollbar">
+                            <div className={`inline-block max-w-full ${formStyle.titleBoxBg} border ${formStyle.titleBoxBorder} rounded-xl px-2.5 py-1 sm:px-3.5 sm:py-1.5 ${formStyle.titleBoxShadow} break-words`}>
+                              <h4 className="text-xs sm:text-sm font-black text-white uppercase tracking-wider font-mono line-clamp-2 leading-tight break-words">
+                                {formTitle || 'TÍTULO DO CARD'}
+                              </h4>
+                            </div>
+                            {formCaption && (
+                              <p className="text-[10px] sm:text-[11px] text-zinc-300 font-sans leading-tight line-clamp-2 max-w-xs mx-auto break-words">
+                                {formCaption}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className={`w-full text-center text-[9px] font-mono ${formStyle.badgeText} pt-2 border-t ${formStyle.dividerBorder} shrink-0`}>
+                            Visualização em Hover
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
+                    );
+                  })()}
 
                   <div className="flex justify-end gap-3 pt-4 border-t border-zinc-800">
                     <button
@@ -1059,20 +1255,25 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
               </div>
 
               <div className="md:w-2/5 p-6 flex flex-col justify-between space-y-4 bg-zinc-950">
-                <div className="space-y-3">
-                  <span className="text-[10px] font-mono font-bold text-purple-400 bg-purple-500/10 px-2.5 py-1 rounded-full border border-purple-500/20 inline-block uppercase">
-                    {zoomedImage.area}
-                  </span>
-                  <h3 className="text-xl font-black text-white font-mono uppercase">{zoomedImage.title}</h3>
-                  {zoomedImage.caption && (
-                    <p className="text-xs text-zinc-300 leading-relaxed font-sans">{zoomedImage.caption}</p>
-                  )}
-                  {zoomedImage.targetYear && (
-                    <div className="text-xs font-mono text-zinc-400">
-                      Ano Alvo: <span className="text-white font-bold">[{zoomedImage.targetYear}]</span>
+                {(() => {
+                  const zoomedStyle = getAreaStyle(zoomedImage.area);
+                  return (
+                    <div className="space-y-3">
+                      <span className={`text-[10px] font-mono font-bold ${zoomedStyle.badgeText} ${zoomedStyle.badgeBg} px-2.5 py-1 rounded-full border ${zoomedStyle.badgeBorder} inline-block uppercase`}>
+                        {zoomedImage.area}
+                      </span>
+                      <h3 className="text-xl font-black text-white font-mono uppercase">{zoomedImage.title}</h3>
+                      {zoomedImage.caption && (
+                        <p className="text-xs text-zinc-300 leading-relaxed font-sans">{zoomedImage.caption}</p>
+                      )}
+                      {zoomedImage.targetYear && (
+                        <div className="text-xs font-mono text-zinc-400">
+                          Ano Alvo: <span className="text-white font-bold">{zoomedImage.targetYear.replace(/[\[\]]/g, '')}</span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+                  );
+                })()}
 
                 <div className="pt-4 border-t border-zinc-850 flex items-center justify-between">
                   <button
