@@ -29,6 +29,7 @@ import {
   Sparkles,
   Dumbbell,
   Briefcase,
+  Folder,
   Clipboard
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -61,7 +62,8 @@ const defaultAreaImages: Record<string, string> = {
   'Hobbies': 'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?q=80&w=1000', // Library bedroom with coffee
   'Espiritualidade': 'https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?q=80&w=1000', // Caspar David Friedrich mystic mountain style
   'Físico': 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=1000', // Classical athlete anatomy style
-  'Carreira': 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=1000' // Architecture blueprints study style
+  'Carreira': 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=1000', // Architecture blueprints study style
+  'Outros': 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?q=80&w=1000'
 };
 
 const LIFE_AREAS = [
@@ -71,7 +73,8 @@ const LIFE_AREAS = [
   'Hobbies',
   'Espiritualidade',
   'Físico',
-  'Carreira'
+  'Carreira',
+  'Outros'
 ];
 
 const areaMeta: Record<string, { icon: React.ComponentType<any>; color: string; dotColor: string; bgGlow: string }> = {
@@ -116,6 +119,12 @@ const areaMeta: Record<string, { icon: React.ComponentType<any>; color: string; 
     color: 'from-cyan-500/10 to-sky-500/10 border-cyan-500/20 text-cyan-400',
     dotColor: 'bg-cyan-500',
     bgGlow: 'hover:shadow-[0_0_30px_rgba(6,182,212,0.1)]'
+  },
+  'Outros': {
+    icon: Folder,
+    color: 'from-violet-500/10 to-purple-500/10 border-violet-500/20 text-violet-400',
+    dotColor: 'bg-violet-500',
+    bgGlow: 'hover:shadow-[0_0_30px_rgba(139,92,246,0.1)]'
   }
 };
 

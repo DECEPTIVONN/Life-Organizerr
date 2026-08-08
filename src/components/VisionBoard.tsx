@@ -327,6 +327,7 @@ const areaBadges: Record<string, { label: string; color: string; border: string 
   'Espiritualidade': { label: 'Espiritualidade', color: 'bg-purple-500/10 text-purple-400', border: 'border-purple-500/30' },
   'Físico': { label: 'Físico', color: 'bg-orange-500/10 text-orange-400', border: 'border-orange-500/30' },
   'Carreira': { label: 'Carreira', color: 'bg-blue-500/10 text-blue-400', border: 'border-blue-500/30' },
+  'Outros': { label: 'Outros', color: 'bg-violet-500/10 text-violet-400', border: 'border-violet-500/30' },
 };
 
 export interface AreaColorScheme {
@@ -482,6 +483,25 @@ export function getAreaStyle(areaName: string): AreaColorScheme {
         btnText: 'text-cyan-300',
         btnBorder: 'border-cyan-500/40',
         dividerBorder: 'border-cyan-500/20',
+      };
+    case 'Outros':
+      return {
+        badgeBg: 'bg-violet-500/10',
+        badgeText: 'text-violet-400',
+        badgeBorder: 'border-violet-500/30',
+        cardBorder: 'border-violet-500/30',
+        cardHoverBorder: 'hover:border-violet-500/80',
+        cardHoverShadow: 'hover:shadow-[0_0_30px_rgba(139,92,246,0.3)]',
+        yearBg: 'bg-violet-950/90',
+        yearText: 'text-violet-300',
+        yearBorder: 'border-violet-500/40',
+        titleBoxBg: 'bg-violet-950/90',
+        titleBoxBorder: 'border-violet-500/50',
+        titleBoxShadow: 'shadow-[0_0_15px_rgba(139,92,246,0.3)]',
+        btnHoverBg: 'hover:bg-violet-900/60',
+        btnText: 'text-violet-300',
+        btnBorder: 'border-violet-500/40',
+        dividerBorder: 'border-violet-500/20',
       };
     default:
       return {
@@ -802,11 +822,10 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
           <button
             type="button"
             onClick={() => handleOpenAddModal(currentArea || undefined)}
-            className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1 shadow-[0_4px_16px_rgba(249,115,22,0.3)] transition-all cursor-pointer shrink-0 whitespace-nowrap"
+            className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold p-2.5 rounded-xl flex items-center justify-center shadow-[0_4px_16px_rgba(249,115,22,0.3)] transition-all cursor-pointer shrink-0"
             title="Adicionar Novo Card"
           >
             <Plus className="h-4 w-4 shrink-0" />
-            <span className="font-bold text-sm">+</span>
           </button>
 
           {cards.length === 0 && (
