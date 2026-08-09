@@ -267,3 +267,69 @@ export interface InvestmentTransaction {
   notes?: string;
 }
 
+export interface ProjectCardChecklistItem {
+  id: string;
+  text: string;
+  completed: boolean;
+  subItems?: { id: string; text: string; completed: boolean }[];
+}
+
+export interface ProjectCardChecklist {
+  id: string;
+  title: string;
+  items: ProjectCardChecklistItem[];
+}
+
+export interface ProjectCardComment {
+  id: string;
+  authorName: string;
+  authorAvatar?: string;
+  text: string;
+  createdAt: string;
+}
+
+export interface ProjectCard {
+  id: string;
+  listId: string;
+  title: string;
+  description?: string;
+  coverColor?: string; // e.g. '#3b82f6', '#8b5cf6', '#ef4444', '#10b981', '#f59e0b'
+  coverImage?: string;
+  labels?: { id: string; name: string; color: string }[];
+  startDate?: string;
+  dueDate?: string; // YYYY-MM-DD
+  dueTime?: string;
+  completed?: boolean;
+  checklists?: ProjectCardChecklist[];
+  comments?: ProjectCardComment[];
+  assignees?: { id: string; name: string; avatar?: string }[];
+  attachments?: { id: string; name: string; url: string }[];
+  customFields?: { id: string; name: string; value: string }[];
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface ProjectList {
+  id: string;
+  title: string;
+  color?: string;
+  order: number;
+}
+
+export interface Project {
+  id: string;
+  title: string;
+  description?: string;
+  category?: string; // e.g., 'Software', 'Engenharia', 'Pessoal', 'Design', 'Marketing', 'Negócios'
+  coverImage?: string;
+  colorTheme?: string; // e.g. 'orange', 'purple', 'blue', 'emerald', 'rose'
+  status?: 'ativo' | 'concluido' | 'arquivado';
+  favorite?: boolean;
+  targetYear?: string; // e.g. '2026', '2026 Q4', 'Dezembro 2026'
+  quote?: string; // Frase ou lema do projeto
+  lists: ProjectList[];
+  cards: ProjectCard[];
+  createdAt: string;
+  updatedAt: string;
+}
+

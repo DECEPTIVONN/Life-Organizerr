@@ -34,6 +34,7 @@ import LifeSummaryView, { LifeSummaryState, defaultState, mergeWithDefaults } fr
 import HabitsTrackerView from './components/HabitsTrackerView';
 import AnuaisView from './components/AnuaisView';
 import RemindersView from './components/RemindersView';
+import ProjetosView from './components/ProjetosView';
 import StreakHubModal from './components/StreakHubModal';
 import { LeagueRankingModal } from './components/LeagueRankingModal';
 import { LeagueRankingView } from './components/LeagueRankingView';
@@ -58,7 +59,8 @@ import {
   FutureEvent,
   Habit,
   YearlyBook,
-  QuickReminder
+  QuickReminder,
+  Project
 } from './types';
 
 
@@ -259,13 +261,23 @@ export default function App() {
     ];
   });
 
+  const [projects, setProjects] = useState<Project[]>(() => {
+    try {
+      const saved = localStorage.getItem('mbc_projects');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error('Error loading projects:', e);
+    }
+    return [];
+  });
+
   useEffect(() => {
     try {
-      localStorage.setItem('mbc_reminders', JSON.stringify(reminders));
+      localStorage.setItem('mbc_projects', JSON.stringify(projects));
     } catch (e) {
-      console.error('Error saving reminders:', e);
+      console.error('Error saving projects:', e);
     }
-  }, [reminders]);
+  }, [projects]);
 
 
   // --- Lifted Navigation Sub-States ---
@@ -2523,6 +2535,16 @@ export default function App() {
             books={books}
             setBooks={setBooks}
             freeEditMode={freeEditMode}
+          />
+        );
+      case 'projetos':
+        return (
+          <ProjetosView 
+            projects={projects}
+            setProjects={setProjects}
+            addXp={addXp}
+            userName={userName}
+            userPhoto={userPhoto}
           />
         );
       case 'documentos':

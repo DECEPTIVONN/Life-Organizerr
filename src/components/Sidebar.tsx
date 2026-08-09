@@ -41,7 +41,8 @@ import {
   Lock,
   Bell,
   Timer,
-  LogOut
+  LogOut,
+  FolderKanban
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { QuickReminder } from '../types';
@@ -453,6 +454,7 @@ export default function Sidebar({
     { id: 'dashboard', label: 'Dashboard', desc: 'Portal principal', icon: LayoutDashboard },
     { id: 'classificacao', label: 'Ligas & Ranking', desc: 'Divisões e posição', icon: Trophy },
     { id: 'resumo', label: 'Vida em resumo', desc: 'Painel holístico', icon: Compass },
+    { id: 'projetos', label: 'Projetos', desc: 'Quadros Kanban & Hub', icon: FolderKanban },
     { id: 'checklist', label: 'Missões Diárias', desc: 'Metas e rotinas diárias', icon: CheckSquare },
     { id: 'rotina', label: 'Rotina Semanal', desc: 'Hábitos frequentes', icon: Clock },
     { id: 'habitos', label: 'Hábitos', desc: 'Bons & Ruins', icon: Zap },
@@ -496,6 +498,16 @@ export default function Sidebar({
       icon: Compass,
       action: () => {
         setActiveTab('resumo');
+        setMobileMenuOpen(false);
+      }
+    },
+    {
+      id: 'projetos',
+      label: 'Projetos',
+      desc: 'Quadros Kanban & Hub',
+      icon: FolderKanban,
+      action: () => {
+        setActiveTab('projetos');
         setMobileMenuOpen(false);
       }
     },
