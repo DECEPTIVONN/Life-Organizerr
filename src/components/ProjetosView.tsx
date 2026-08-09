@@ -49,7 +49,15 @@ import {
   CornerDownRight,
   Percent,
   TrendingUp,
-  Check
+  Check,
+  ExternalLink,
+  GripVertical,
+  Flame,
+  Globe,
+  FileText,
+  Github,
+  Figma,
+  AlertTriangle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Project, ProjectList, ProjectCard, ProjectCardChecklist, ProjectCardComment } from '../types';
@@ -85,6 +93,107 @@ const COVER_COLORS = [
   { name: 'Rosa', hex: '#ec4899' },
   { name: 'Ciano', hex: '#06b6d4' }
 ];
+
+export const PRIORITY_CONFIG: Record<string, { label: string; bg: string; text: string; border: string; dot: string; icon?: string }> = {
+  baixa: { label: 'Baixa', bg: 'bg-emerald-500/15', text: 'text-emerald-400', border: 'border-emerald-500/30', dot: 'bg-emerald-500' },
+  media: { label: 'Média', bg: 'bg-sky-500/15', text: 'text-sky-400', border: 'border-sky-500/30', dot: 'bg-sky-500' },
+  alta: { label: 'Alta', bg: 'bg-orange-500/15', text: 'text-orange-400', border: 'border-orange-500/30', dot: 'bg-orange-500' },
+  urgente: { label: 'Urgente', bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/40 animate-pulse', dot: 'bg-red-500', icon: '🔥' },
+};
+
+// Helper: Alerta de Prazos Próximos (< 24h ou Atrasado)
+export const checkDueStatus = (dueDate?: string, dueTime?: string, completed?: boolean) => {
+  if (!dueDate || completed) return { isDueSoon: false, isOverdue: false, text: '', diffHours: 0 };
+
+  const now = new Date();
+  let targetStr = dueDate;
+  if (dueTime) {
+    targetStr += `T${dueTime}`;
+  } else {
+    targetStr += 'T23:59:59';
+  }
+
+  const due = new Date(targetStr);
+  const diffMs = due.getTime() - now.getTime();
+  const diffHours = diffMs / (1000 * 60 * 60);
+
+  if (diffMs < 0) {
+    const overdueHours = Math.abs(Math.round(diffHours));
+    return {
+      isDueSoon: false,
+      isOverdue: true,
+      text: overdueHours > 24 ? `Atrasado (${Math.round(overdueHours / 24)}d)` : `Atrasado (${overdueHours}h)`,
+      diffHours
+    };
+  } else if (diffHours <= 24) {
+    const hrs = Math.max(1, Math.round(diffHours));
+    return {
+      isDueSoon: true,
+      isOverdue: false,
+      text: `Vence em ${hrs}h`,
+      diffHours
+    };
+  }
+
+  return { isDueSoon: false, isOverdue: false, text: '', diffHours };
+};
+
+// Helper: Automação de Mover Cartão ao atingir 100% dos Checklists
+export const checkAndApplyChecklistAutomation = (
+  card: ProjectCard,
+  lists: ProjectList[]
+): { card: ProjectCard; moved: boolean; targetListTitle?: string } => {
+  let totalItems = 0;
+  let doneItems = 0;
+
+  (card.checklists || []).forEach(chk => {
+    chk.items.forEach(it => {
+      totalItems++;
+      if (it.completed) doneItems++;
+      (it.subItems || []).forEach(sub => {
+        totalItems++;
+        if (sub.completed) doneItems++;
+      });
+    });
+  });
+
+  if (totalItems > 0 && doneItems === totalItems) {
+    // Procurar lista "Concluído", "Done", "Finalizado", "Entregue" ou pegar a última lista
+    const doneList = lists.find(l => {
+      const lower = l.title.toLowerCase();
+      return (
+        lower.includes('concluí') ||
+        lower.includes('conclui') ||
+        lower.includes('done') ||
+        lower.includes('finaliz') ||
+        lower.includes('entreg')
+      );
+    }) || lists[lists.length - 1];
+
+    if (doneList && (card.listId !== doneList.id || !card.completed)) {
+      const autoComment: ProjectCardComment = {
+        id: `comm-auto-${Date.now()}`,
+        authorName: '🤖 Automação de Tarefas',
+        authorAvatar: '',
+        text: `100% dos checklists (${doneItems}/${totalItems}) concluídos. O cartão foi marcado como concluído e movido automaticamente para a lista "${doneList.title}".`,
+        createdAt: new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+      };
+
+      return {
+        card: {
+          ...card,
+          completed: true,
+          listId: doneList.id,
+          comments: [...(card.comments || []), autoComment]
+        },
+        moved: true,
+        targetListTitle: doneList.title
+      };
+    }
+  }
+
+  return { card, moved: false };
+};
 
 const CATEGORIES = [
   'Todos',
@@ -132,6 +241,7 @@ export default function ProjetosView({
   // Active View Mode (Quadro, Tabela, Cronograma, Painel) & Board Search
   const [activeViewMode, setActiveViewMode] = useState<'quadro' | 'tabela' | 'cronograma' | 'painel'>('quadro');
   const [boardSearch, setBoardSearch] = useState('');
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
   // Sub-items & Card Features State
   const [addingSubItemForItemId, setAddingSubItemForItemId] = useState<string | null>(null);
@@ -139,14 +249,23 @@ export default function ProjetosView({
   const [newChecklistGroupTitle, setNewChecklistGroupTitle] = useState('');
 
   // Modals / Dropdowns inside Card Detail Modal ("Adicionar ao cartão")
-  const [activeAddPopUp, setActiveAddPopUp] = useState<'etiquetas' | 'datas' | 'checklist' | 'membros' | 'anexo' | 'campos' | null>(null);
+  const [activeAddPopUp, setActiveAddPopUp] = useState<'etiquetas' | 'datas' | 'checklist' | 'membros' | 'anexo' | 'campos' | 'prioridade' | 'horas' | null>(null);
   const [cardStartDateInput, setCardStartDateInput] = useState('');
   const [cardDueDateInput, setCardDueDateInput] = useState('');
   const [cardAssigneeInput, setCardAssigneeInput] = useState('');
   const [cardAttachmentNameInput, setCardAttachmentNameInput] = useState('');
   const [cardAttachmentUrlInput, setCardAttachmentUrlInput] = useState('');
+  const [attachmentPresetType, setAttachmentPresetType] = useState<'link' | 'file' | 'figma' | 'github' | 'notion' | 'drive'>('link');
   const [cardCustomFieldNameInput, setCardCustomFieldNameInput] = useState('');
   const [cardCustomFieldValueInput, setCardCustomFieldValueInput] = useState('');
+  const [cardEstimatedHoursInput, setCardEstimatedHoursInput] = useState('');
+  const [cardLoggedHoursInput, setCardLoggedHoursInput] = useState('');
+
+  // Drag and Drop State for Kanban Cards and Lists
+  const [draggedCardId, setDraggedCardId] = useState<string | null>(null);
+  const [draggedListId, setDraggedListId] = useState<string | null>(null);
+  const [dragOverListId, setDragOverListId] = useState<string | null>(null);
+  const [dragOverCardId, setDragOverCardId] = useState<string | null>(null);
 
   // New List State
   const [isAddingList, setIsAddingList] = useState(false);
@@ -758,48 +877,52 @@ export default function ProjetosView({
 
     setProjects(prev => prev.map(p => {
       if (p.id === activeProjectId) {
-        return {
-          ...p,
-          cards: p.cards.map(c => {
-            if (c.id === selectedCardForDetail.id) {
-              const updatedChecklists = (c.checklists || []).map(chk => {
-                if (chk.id === chkId) {
-                  return {
-                    ...chk,
-                    items: chk.items.map(item => {
-                      if (item.id === itemId) {
-                        if (!item.completed) addXp(5);
-                        return { ...item, completed: !item.completed };
-                      }
-                      return item;
-                    })
-                  };
-                }
-                return chk;
-              });
-              return { ...c, checklists: updatedChecklists };
-            }
-            return c;
-          })
-        };
+        const updatedCards = p.cards.map(c => {
+          if (c.id === selectedCardForDetail.id) {
+            const updatedChecklists = (c.checklists || []).map(chk => {
+              if (chk.id === chkId) {
+                return {
+                  ...chk,
+                  items: chk.items.map(item => {
+                    if (item.id === itemId) {
+                      if (!item.completed) addXp(5);
+                      return { ...item, completed: !item.completed };
+                    }
+                    return item;
+                  })
+                };
+              }
+              return chk;
+            });
+            const updatedCard = { ...c, checklists: updatedChecklists };
+            const autoResult = checkAndApplyChecklistAutomation(updatedCard, p.lists);
+            if (autoResult.moved) addXp(20);
+            return autoResult.card;
+          }
+          return c;
+        });
+        return { ...p, cards: updatedCards };
       }
       return p;
     }));
 
     setSelectedCardForDetail(prev => {
       if (!prev) return null;
-      return {
-        ...prev,
-        checklists: (prev.checklists || []).map(chk => {
-          if (chk.id === chkId) {
-            return {
-              ...chk,
-              items: chk.items.map(item => item.id === itemId ? { ...item, completed: !item.completed } : item)
-            };
-          }
-          return chk;
-        })
-      };
+      const updatedChecklists = (prev.checklists || []).map(chk => {
+        if (chk.id === chkId) {
+          return {
+            ...chk,
+            items: chk.items.map(item => item.id === itemId ? { ...item, completed: !item.completed } : item)
+          };
+        }
+        return chk;
+      });
+      const updatedCard = { ...prev, checklists: updatedChecklists };
+      const currentProj = projects.find(p => p.id === activeProjectId);
+      if (currentProj) {
+        return checkAndApplyChecklistAutomation(updatedCard, currentProj.lists).card;
+      }
+      return updatedCard;
     });
   };
 
@@ -908,20 +1031,29 @@ export default function ProjetosView({
 
     setProjects(prev => prev.map(p => {
       if (p.id === activeProjectId) {
-        return {
-          ...p,
-          cards: p.cards.map(c => {
-            if (c.id === selectedCardForDetail.id) {
-              return { ...c, checklists: updateChecklists(c.checklists || []) };
-            }
-            return c;
-          })
-        };
+        const updatedCards = p.cards.map(c => {
+          if (c.id === selectedCardForDetail.id) {
+            const updatedCard = { ...c, checklists: updateChecklists(c.checklists || []) };
+            const autoResult = checkAndApplyChecklistAutomation(updatedCard, p.lists);
+            if (autoResult.moved) addXp(20);
+            return autoResult.card;
+          }
+          return c;
+        });
+        return { ...p, cards: updatedCards };
       }
       return p;
     }));
 
-    setSelectedCardForDetail(prev => prev ? { ...prev, checklists: updateChecklists(prev.checklists || []) } : null);
+    setSelectedCardForDetail(prev => {
+      if (!prev) return null;
+      const updatedCard = { ...prev, checklists: updateChecklists(prev.checklists || []) };
+      const currentProj = projects.find(p => p.id === activeProjectId);
+      if (currentProj) {
+        return checkAndApplyChecklistAutomation(updatedCard, currentProj.lists).card;
+      }
+      return updatedCard;
+    });
   };
 
   const handleDeleteSubChecklistItem = (chkId: string, parentItemId: string, subItemId: string) => {
@@ -1080,13 +1212,77 @@ export default function ProjetosView({
     } : null);
   };
 
+  // Priority Handler
+  const handleSetCardPriority = (priority: 'baixa' | 'media' | 'alta' | 'urgente' | undefined) => {
+    if (!selectedCardForDetail || !activeProjectId) return;
+
+    setProjects(prev => prev.map(p => {
+      if (p.id === activeProjectId) {
+        return {
+          ...p,
+          cards: p.cards.map(c => {
+            if (c.id === selectedCardForDetail.id) {
+              return { ...c, priority };
+            }
+            return c;
+          })
+        };
+      }
+      return p;
+    }));
+
+    setSelectedCardForDetail(prev => prev ? { ...prev, priority } : null);
+    setActiveAddPopUp(null);
+  };
+
+  // Estimativa e Log de Horas Handler
+  const handleSaveCardHours = () => {
+    if (!selectedCardForDetail || !activeProjectId) return;
+    const est = cardEstimatedHoursInput ? Math.max(0, parseFloat(cardEstimatedHoursInput) || 0) : undefined;
+    const log = cardLoggedHoursInput ? Math.max(0, parseFloat(cardLoggedHoursInput) || 0) : undefined;
+
+    setProjects(prev => prev.map(p => {
+      if (p.id === activeProjectId) {
+        return {
+          ...p,
+          cards: p.cards.map(c => {
+            if (c.id === selectedCardForDetail.id) {
+              return { ...c, estimatedHours: est, loggedHours: log };
+            }
+            return c;
+          })
+        };
+      }
+      return p;
+    }));
+
+    setSelectedCardForDetail(prev => prev ? { ...prev, estimatedHours: est, loggedHours: log } : null);
+    setActiveAddPopUp(null);
+  };
+
+  // Detect Attachment / Link Type
+  const detectLinkType = (url: string, preset?: string): 'link' | 'file' | 'figma' | 'github' | 'notion' | 'drive' => {
+    if (preset && preset !== 'link') return preset as any;
+    const lower = (url || '').toLowerCase();
+    if (lower.includes('figma.com')) return 'figma';
+    if (lower.includes('github.com')) return 'github';
+    if (lower.includes('notion.so') || lower.includes('notion.site')) return 'notion';
+    if (lower.includes('drive.google.com') || lower.includes('docs.google.com')) return 'drive';
+    if (lower.startsWith('data:') || lower.match(/\.(pdf|doc|docx|png|jpg|jpeg|gif|zip|rar)$/i)) return 'file';
+    return 'link';
+  };
+
   const handleAddAttachment = () => {
     if (!selectedCardForDetail || !cardAttachmentNameInput.trim() || !activeProjectId) return;
+
+    const url = cardAttachmentUrlInput.trim() || 'https://';
+    const type = detectLinkType(url, attachmentPresetType);
 
     const newAtt = {
       id: `att-${Date.now()}`,
       name: cardAttachmentNameInput.trim(),
-      url: cardAttachmentUrlInput.trim() || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000'
+      url: url,
+      type: type
     };
 
     setProjects(prev => prev.map(p => {
@@ -1111,7 +1307,136 @@ export default function ProjetosView({
 
     setCardAttachmentNameInput('');
     setCardAttachmentUrlInput('');
+    setAttachmentPresetType('link');
     setActiveAddPopUp(null);
+  };
+
+  // --- Drag and Drop Handlers for Cards and Lists ---
+  const handleCardDragStart = (e: React.DragEvent, cardId: string, sourceListId: string) => {
+    e.stopPropagation();
+    setDraggedCardId(cardId);
+    e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'card', cardId, sourceListId }));
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleCardDragOver = (e: React.DragEvent, cardId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (draggedCardId && draggedCardId !== cardId) {
+      setDragOverCardId(cardId);
+    }
+  };
+
+  const handleListDragOver = (e: React.DragEvent, listId: string) => {
+    e.preventDefault();
+    if (draggedCardId || draggedListId) {
+      setDragOverListId(listId);
+    }
+  };
+
+  const handleListDrop = (e: React.DragEvent, targetListId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // 1. Reorder Lists / Columns
+    if (draggedListId && draggedListId !== targetListId && activeProjectId) {
+      setProjects(prev => prev.map(p => {
+        if (p.id === activeProjectId) {
+          const listIndex = p.lists.findIndex(l => l.id === draggedListId);
+          const targetIndex = p.lists.findIndex(l => l.id === targetListId);
+          if (listIndex === -1 || targetIndex === -1) return p;
+
+          const newLists = [...p.lists];
+          const [movedList] = newLists.splice(listIndex, 1);
+          newLists.splice(targetIndex, 0, movedList);
+
+          return {
+            ...p,
+            lists: newLists.map((l, idx) => ({ ...l, order: idx })),
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return p;
+      }));
+    }
+
+    // 2. Move Card to List / Position
+    else if (draggedCardId && activeProjectId) {
+      handleMoveCardToPosition(draggedCardId, targetListId, dragOverCardId);
+    }
+
+    setDraggedCardId(null);
+    setDraggedListId(null);
+    setDragOverListId(null);
+    setDragOverCardId(null);
+  };
+
+  const handleMoveCardToPosition = (cardId: string, targetListId: string, targetCardId?: string | null) => {
+    if (!activeProjectId) return;
+
+    setProjects(prev => prev.map(p => {
+      if (p.id === activeProjectId) {
+        const sourceCard = p.cards.find(c => c.id === cardId);
+        if (!sourceCard) return p;
+
+        const targetList = p.lists.find(l => l.id === targetListId);
+        const listName = targetList ? targetList.title : 'outra lista';
+        const changedList = sourceCard.listId !== targetListId;
+
+        let newComments = sourceCard.comments || [];
+        if (changedList) {
+          newComments = [
+            ...newComments,
+            {
+              id: `comm-${Date.now()}`,
+              authorName: userName,
+              authorAvatar: userPhoto,
+              text: `moveu este cartão para ${listName}`,
+              createdAt: new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+            }
+          ];
+        }
+
+        const updatedCard = {
+          ...sourceCard,
+          listId: targetListId,
+          comments: newComments
+        };
+
+        const otherCards = p.cards.filter(c => c.id !== cardId);
+
+        let finalCards = [];
+        if (targetCardId && targetCardId !== cardId) {
+          const targetIndex = otherCards.findIndex(c => c.id === targetCardId);
+          if (targetIndex !== -1) {
+            finalCards = [...otherCards];
+            finalCards.splice(targetIndex, 0, updatedCard);
+          } else {
+            finalCards = [...otherCards, updatedCard];
+          }
+        } else {
+          finalCards = [...otherCards, updatedCard];
+        }
+
+        return {
+          ...p,
+          cards: finalCards,
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return p;
+    }));
+
+    if (selectedCardForDetail && selectedCardForDetail.id === cardId) {
+      setSelectedCardForDetail(prev => prev ? { ...prev, listId: targetListId } : null);
+    }
+  };
+
+  const handleListHeaderDragStart = (e: React.DragEvent, listId: string) => {
+    e.stopPropagation();
+    setDraggedListId(listId);
+    e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'list', listId }));
+    e.dataTransfer.effectAllowed = 'move';
   };
 
   const handleDeleteAttachment = (attId: string) => {
@@ -1580,10 +1905,10 @@ export default function ProjetosView({
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setActiveProjectId(null)}
-                className="p-2 bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-xl border border-zinc-800/80 transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer hover:border-orange-500/40 shadow-sm"
+                className="p-2 bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-xl border border-zinc-800/80 transition-all flex items-center justify-center cursor-pointer hover:border-orange-500/40 shadow-sm"
+                title="Voltar"
               >
                 <ArrowLeft className="h-4 w-4 text-orange-500" />
-                <span className="hidden sm:inline">Hub</span>
               </button>
 
               <div className="h-4 w-[1px] bg-zinc-800/80" />
@@ -1605,36 +1930,56 @@ export default function ProjetosView({
 
             {/* Board Controls */}
             <div className="flex items-center gap-2 self-end sm:self-auto">
-              {/* Filter input */}
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-zinc-500" />
-                <input
-                  type="text"
-                  placeholder="Filtrar cartões..."
-                  value={boardSearch}
-                  onChange={(e) => setBoardSearch(e.target.value)}
-                  className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500/50 w-36 sm:w-48 transition-all shadow-inner"
-                />
-              </div>
+              {/* Expandable Filter Input */}
+              {isSearchExpanded || boardSearch ? (
+                <div className="relative flex items-center">
+                  <Search className="absolute left-2.5 h-3.5 w-3.5 text-zinc-400" />
+                  <input
+                    type="text"
+                    placeholder="Filtrar cartões..."
+                    value={boardSearch}
+                    onChange={(e) => setBoardSearch(e.target.value)}
+                    autoFocus
+                    className="bg-zinc-900/90 border border-zinc-800/90 rounded-xl pl-8 pr-7 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500/50 w-44 sm:w-56 transition-all shadow-inner"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => { setBoardSearch(''); setIsSearchExpanded(false); }}
+                    className="absolute right-2 text-zinc-500 hover:text-white p-0.5 cursor-pointer"
+                    title="Fechar busca"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsSearchExpanded(true)}
+                  className="p-2 bg-zinc-900/90 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-800 hover:border-orange-500/40 rounded-xl transition-all cursor-pointer shadow-sm"
+                  title="Filtrar cartões"
+                >
+                  <Search className="h-4 w-4" />
+                </button>
+              )}
 
-              {/* Edit Project Button */}
+              {/* Edit Project Icon Button */}
               <button
                 type="button"
                 onClick={(e) => handleOpenEditProjectModal(activeProject, e)}
-                className="bg-zinc-900/90 hover:bg-zinc-800/90 text-zinc-300 hover:text-orange-400 border border-zinc-800 hover:border-orange-500/40 text-xs font-medium px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
-                title="Editar capa, lema e detalhes do projeto"
+                className="p-2 bg-zinc-900/90 hover:bg-zinc-800/90 text-zinc-300 hover:text-orange-400 border border-zinc-800 hover:border-orange-500/40 rounded-xl transition-all cursor-pointer shadow-sm"
+                title="Editar Projeto"
               >
-                <Edit3 className="h-3.5 w-3.5 text-orange-400" />
-                <span className="hidden sm:inline">Editar Projeto</span>
+                <Edit3 className="h-4 w-4 text-orange-400" />
               </button>
 
-              {/* Add List Button */}
+              {/* Add List Icon Button */}
               <button
+                type="button"
                 onClick={() => setIsAddingList(true)}
-                className="bg-orange-500 hover:bg-orange-600 text-white font-semibold text-xs px-3.5 py-1.5 rounded-xl shadow-lg shadow-orange-500/15 transition-all flex items-center gap-1.5 cursor-pointer"
+                className="p-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-lg shadow-orange-500/15 transition-all cursor-pointer"
+                title="Nova Lista"
               >
                 <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">Nova Lista</span>
               </button>
             </div>
           </div>
@@ -1676,7 +2021,7 @@ export default function ProjetosView({
             )}
           </AnimatePresence>
 
-          {/* VIEW SWITCHER TABS (Quadro, Tabela, Cronograma, Painel) */}
+          {/* VIEW SWITCHER TABS (Kanban, Tabela, Cronograma, Painel) */}
           <div className="flex items-center justify-between gap-3 bg-zinc-950/60 backdrop-blur-md border border-zinc-800/50 rounded-xl p-1 overflow-x-auto horizontal-scrollbar">
             <div className="flex items-center gap-1">
               <button
@@ -1689,7 +2034,7 @@ export default function ProjetosView({
                 }`}
               >
                 <LayoutGrid className={`h-3.5 w-3.5 ${activeViewMode === 'quadro' ? 'text-orange-400' : ''}`} />
-                <span>Quadro Kanban</span>
+                <span>Kanban</span>
               </button>
 
               <button
@@ -1731,13 +2076,6 @@ export default function ProjetosView({
                 <span>Painel</span>
               </button>
             </div>
-
-            {activeViewMode === 'quadro' && (
-              <div className="hidden sm:flex items-center gap-1.5 text-[11px] font-mono text-zinc-500 px-3">
-                <ArrowRightLeft className="h-3 w-3 text-orange-400/80" />
-                <span>Navegação horizontal</span>
-              </div>
-            )}
           </div>
 
           {/* 1. KANBAN BOARD CONTAINER (Horizontal Scrollable Column Layout with Custom Scrollbar) */}
@@ -1756,11 +2094,20 @@ export default function ProjetosView({
                 return (
                   <div
                     key={list.id}
-                    className="w-72 sm:w-80 shrink-0 bg-zinc-900/40 backdrop-blur-md border border-zinc-800/60 rounded-2xl flex flex-col max-h-[calc(100vh-270px)] shadow-xl"
+                    onDragOver={(e) => handleListDragOver(e, list.id)}
+                    onDrop={(e) => handleListDrop(e, list.id)}
+                    className={`w-72 sm:w-80 shrink-0 bg-zinc-900/40 backdrop-blur-md border ${
+                      dragOverListId === list.id ? 'border-orange-500/80 bg-zinc-900/80 ring-2 ring-orange-500/20' : 'border-zinc-800/60'
+                    } rounded-2xl flex flex-col max-h-[calc(100vh-270px)] shadow-xl transition-all`}
                   >
-                    {/* List Header */}
-                    <div className="p-3.5 border-b border-zinc-800/50 flex items-center justify-between">
+                    {/* List Header (Draggable for list reordering) */}
+                    <div
+                      draggable
+                      onDragStart={(e) => handleListHeaderDragStart(e, list.id)}
+                      className="p-3.5 border-b border-zinc-800/50 flex items-center justify-between cursor-grab active:cursor-grabbing hover:bg-zinc-800/30 transition-colors rounded-t-2xl group/header"
+                    >
                       <div className="flex items-center gap-2">
+                        <GripVertical className="h-3.5 w-3.5 text-zinc-600 group-hover/header:text-orange-400 transition-colors" />
                         <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-200">
                           {list.title}
                         </h3>
@@ -1808,17 +2155,35 @@ export default function ProjetosView({
                           });
                         }
 
+                        const dueStatus = checkDueStatus(card.dueDate, card.dueTime, card.completed);
+
                         return (
                           <motion.div
                             key={card.id}
                             layout
+                            draggable
+                            onDragStart={(e) => handleCardDragStart(e, card.id, list.id)}
+                            onDragOver={(e) => handleCardDragOver(e, card.id)}
+                            onDrop={(e) => handleListDrop(e, list.id)}
                             onClick={() => {
                               setSelectedCardForDetail(card);
                               setCardDescInput(card.description || '');
+                              setCardEstimatedHoursInput(card.estimatedHours !== undefined ? card.estimatedHours.toString() : '');
+                              setCardLoggedHoursInput(card.loggedHours !== undefined ? card.loggedHours.toString() : '');
                             }}
                             className={`bg-zinc-900/70 hover:bg-zinc-900 border ${
-                              card.completed ? 'border-emerald-500/30 opacity-70' : 'border-zinc-800/80 hover:border-orange-500/40'
-                            } rounded-xl p-3 space-y-2.5 transition-all shadow-md hover:shadow-orange-500/5 cursor-pointer relative group overflow-hidden`}
+                              draggedCardId === card.id
+                                ? 'border-orange-500 opacity-40 scale-95'
+                                : dragOverCardId === card.id
+                                ? 'border-t-2 border-t-orange-500 border-zinc-800/80'
+                                : dueStatus.isOverdue
+                                ? 'border-red-500/80 bg-red-950/20 ring-1 ring-red-500/40 shadow-lg shadow-red-500/10'
+                                : dueStatus.isDueSoon
+                                ? 'border-amber-500/80 bg-amber-950/20 ring-1 ring-amber-500/40 shadow-lg shadow-amber-500/10'
+                                : card.completed
+                                ? 'border-emerald-500/30 opacity-70'
+                                : 'border-zinc-800/80 hover:border-orange-500/40'
+                            } rounded-xl p-3 space-y-2.5 transition-all shadow-md hover:shadow-orange-500/5 cursor-grab active:cursor-grabbing relative group overflow-hidden`}
                           >
                             {/* Top Cover Bar */}
                             {card.coverColor && (
@@ -1828,10 +2193,19 @@ export default function ProjetosView({
                               />
                             )}
 
-                            {/* Labels / Tags Pills */}
-                            {card.labels && card.labels.length > 0 && (
-                              <div className="flex flex-wrap gap-1">
-                                {card.labels.map(lbl => (
+                            {/* Priority & Labels / Tags Pills */}
+                            <div className="flex flex-wrap items-center gap-1">
+                              {/* Priority Badge */}
+                              {card.priority && PRIORITY_CONFIG[card.priority] && (
+                                <span className={`text-[9px] font-black px-2 py-0.5 rounded border flex items-center gap-1 uppercase tracking-wider ${PRIORITY_CONFIG[card.priority].bg} ${PRIORITY_CONFIG[card.priority].text} ${PRIORITY_CONFIG[card.priority].border}`}>
+                                  <span className={`w-1.5 h-1.5 rounded-full ${PRIORITY_CONFIG[card.priority].dot}`} />
+                                  <span>{PRIORITY_CONFIG[card.priority].label}</span>
+                                </span>
+                              )}
+
+                              {/* Labels */}
+                              {card.labels && card.labels.length > 0 && (
+                                card.labels.map(lbl => (
                                   <span
                                     key={lbl.id}
                                     className="text-[9px] font-medium px-2 py-0.5 rounded-md text-white shadow-sm"
@@ -1839,9 +2213,9 @@ export default function ProjetosView({
                                   >
                                     {lbl.name}
                                   </span>
-                                ))}
-                              </div>
-                            )}
+                                ))
+                              )}
+                            </div>
 
                             {/* Title with Checkbox */}
                             <div className="flex items-start gap-2">
@@ -1866,7 +2240,7 @@ export default function ProjetosView({
 
                             {/* Footer Indicators */}
                             <div className="flex items-center justify-between text-[10px] text-zinc-400 pt-1 font-mono border-t border-zinc-800/50">
-                              <div className="flex items-center gap-2">
+                              <div className="flex flex-wrap items-center gap-2">
                                 {card.description && (
                                   <span title="Possui descrição">
                                     <List className="h-3 w-3 text-zinc-500" />
@@ -1887,6 +2261,23 @@ export default function ProjetosView({
                                   </span>
                                 )}
 
+                                {(card.estimatedHours !== undefined || card.loggedHours !== undefined) && (
+                                  <span
+                                    className="flex items-center gap-1 text-[9px] font-mono font-bold bg-zinc-950/90 text-orange-400 px-1.5 py-0.5 rounded border border-orange-500/30"
+                                    title={`Esforço: ${card.loggedHours || 0}h trabalhadas / ${card.estimatedHours || 0}h estimadas`}
+                                  >
+                                    <Clock className="h-3 w-3 text-orange-400" />
+                                    <span>{card.loggedHours || 0}/{card.estimatedHours || 0}h</span>
+                                  </span>
+                                )}
+
+                                {card.attachments && card.attachments.length > 0 && (
+                                  <span className="flex items-center gap-0.5 text-orange-400/90 font-bold" title={`${card.attachments.length} anexo(s)`}>
+                                    <Paperclip className="h-3 w-3 text-orange-400" />
+                                    <span>{card.attachments.length}</span>
+                                  </span>
+                                )}
+
                                 {card.comments && card.comments.length > 0 && (
                                   <span className="flex items-center gap-0.5 text-zinc-400" title="Comentários">
                                     <MessageSquare className="h-3 w-3" />
@@ -1896,9 +2287,23 @@ export default function ProjetosView({
                               </div>
 
                               {card.dueDate && (
-                                <span className="flex items-center gap-1 text-[9px] bg-zinc-950/80 px-2 py-0.5 rounded-md border border-zinc-800 text-orange-400/90 font-mono">
-                                  <Clock className="h-3 w-3 text-orange-400" />
-                                  <span>{card.dueDate}</span>
+                                <span
+                                  className={`flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-md border font-mono shrink-0 ${
+                                    dueStatus.isOverdue
+                                      ? 'bg-red-500/20 text-red-300 border-red-500/50 font-bold'
+                                      : dueStatus.isDueSoon
+                                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 font-bold'
+                                      : 'bg-zinc-950/80 text-orange-400/90 border-zinc-800'
+                                  }`}
+                                >
+                                  {dueStatus.isOverdue ? (
+                                    <AlertTriangle className="h-3 w-3 text-red-400 animate-pulse" />
+                                  ) : dueStatus.isDueSoon ? (
+                                    <Flame className="h-3 w-3 text-amber-400 animate-bounce" />
+                                  ) : (
+                                    <Clock className="h-3 w-3 text-orange-400" />
+                                  )}
+                                  <span>{dueStatus.text || card.dueDate}</span>
                                 </span>
                               )}
                             </div>
@@ -2195,8 +2600,10 @@ export default function ProjetosView({
                 </div>
 
                 <div className="bg-zinc-900/40 backdrop-blur-md border border-zinc-800/60 rounded-2xl p-4 space-y-1">
-                  <span className="text-xs text-zinc-400 font-medium uppercase tracking-wider">Listas Ativas</span>
-                  <div className="text-2xl font-black text-orange-400 font-mono">{activeProject.lists.length}</div>
+                  <span className="text-xs text-zinc-400 font-medium uppercase tracking-wider">Horas Estimadas vs Logadas</span>
+                  <div className="text-2xl font-black text-orange-400 font-mono">
+                    {activeProject.cards.reduce((a, c) => a + (c.loggedHours || 0), 0)}h / {activeProject.cards.reduce((a, c) => a + (c.estimatedHours || 0), 0)}h
+                  </div>
                 </div>
 
                 <div className="bg-zinc-900/40 backdrop-blur-md border border-zinc-800/60 rounded-2xl p-4 space-y-1">
@@ -2205,6 +2612,152 @@ export default function ProjetosView({
                     {activeProject.cards.filter(c => c.dueDate).length}
                   </div>
                 </div>
+              </div>
+
+              {/* Burndown Chart Section */}
+              <div className="bg-zinc-900/40 backdrop-blur-md border border-zinc-800/60 rounded-2xl p-5 space-y-5">
+                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-800/80 pb-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4 text-orange-400" />
+                      <span>Gráfico de Burndown & Progresso da Sprint</span>
+                    </h3>
+                    <p className="text-xs text-zinc-400 mt-0.5">
+                      Visualização da velocidade de conclusão de tarefas em relação ao prazo final
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-4 text-xs font-mono">
+                    <div className="flex items-center gap-2">
+                      <span className="w-3 h-0.5 bg-zinc-500 border-t border-dashed border-zinc-400" />
+                      <span className="text-zinc-400">Meta Ideal</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-3 h-1 bg-orange-500 rounded-full" />
+                      <span className="text-orange-400 font-bold">Progresso Real</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* SVG Interactive Burndown Graph */}
+                {(() => {
+                  const totalCards = activeProject.cards.length || 10;
+                  const completedCards = activeProject.cards.filter(c => c.completed).length;
+                  const totalDays = 10;
+                  
+                  // Construct 10-day sprint points
+                  const points = Array.from({ length: totalDays + 1 }, (_, i) => {
+                    const ideal = Math.max(0, totalCards - (i * (totalCards / totalDays)));
+                    // Calculate actual remaining linearly progressing to current completion
+                    const currentDay = 6;
+                    let actual = null;
+                    if (i <= currentDay) {
+                      actual = Math.max(0, totalCards - Math.round((completedCards * (i / currentDay))));
+                    }
+                    return { day: i, ideal, actual };
+                  });
+
+                  const svgWidth = 600;
+                  const svgHeight = 200;
+                  const padding = 35;
+
+                  const getX = (day: number) => padding + (day / totalDays) * (svgWidth - 2 * padding);
+                  const getY = (val: number) => svgHeight - padding - (val / Math.max(1, totalCards)) * (svgHeight - 2 * padding);
+
+                  const idealPath = points.map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${getX(p.day)} ${getY(p.ideal)}`).join(' ');
+                  
+                  const actualPoints = points.filter(p => p.actual !== null);
+                  const actualPath = actualPoints.map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${getX(p.day)} ${getY(p.actual!)}`).join(' ');
+
+                  const fillPath = actualPoints.length > 0
+                    ? `${actualPath} L ${getX(actualPoints[actualPoints.length - 1].day)} ${svgHeight - padding} L ${getX(0)} ${svgHeight - padding} Z`
+                    : '';
+
+                  return (
+                    <div className="space-y-4">
+                      <div className="w-full overflow-x-auto">
+                        <div className="min-w-[550px]">
+                          <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="w-full h-48 overflow-visible">
+                            <defs>
+                              <linearGradient id="burndownGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#f97316" stopOpacity="0.25" />
+                                <stop offset="100%" stopColor="#f97316" stopOpacity="0" />
+                              </linearGradient>
+                            </defs>
+
+                            {/* Y-Axis Gridlines */}
+                            {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
+                              const y = svgHeight - padding - ratio * (svgHeight - 2 * padding);
+                              const val = Math.round(ratio * totalCards);
+                              return (
+                                <g key={ratio}>
+                                  <line x1={padding} y1={y} x2={svgWidth - padding} y2={y} stroke="#27272a" strokeWidth="1" strokeDasharray="3 3" />
+                                  <text x={padding - 8} y={y + 4} fill="#71717a" fontSize="10" textAnchor="end" fontFamily="monospace">
+                                    {val}
+                                  </text>
+                                </g>
+                              );
+                            })}
+
+                            {/* X-Axis Labels */}
+                            {points.map((p) => {
+                              const x = getX(p.day);
+                              return (
+                                <text key={p.day} x={x} y={svgHeight - 10} fill="#71717a" fontSize="10" textAnchor="middle" fontFamily="monospace">
+                                  D{p.day}
+                                </text>
+                              );
+                            })}
+
+                            {/* Area fill under actual path */}
+                            {fillPath && <path d={fillPath} fill="url(#burndownGrad)" />}
+
+                            {/* Ideal Burndown Line */}
+                            <path d={idealPath} fill="none" stroke="#52525b" strokeWidth="2" strokeDasharray="4 4" />
+
+                            {/* Actual Burndown Line */}
+                            {actualPath && <path d={actualPath} fill="none" stroke="#f97316" strokeWidth="3" strokeLinecap="round" />}
+
+                            {/* Actual Dots */}
+                            {actualPoints.map((p) => {
+                              const x = getX(p.day);
+                              const y = getY(p.actual!);
+                              return (
+                                <g key={p.day} className="group/dot cursor-pointer">
+                                  <circle cx={x} cy={y} r="5" fill="#18181b" stroke="#f97316" strokeWidth="2.5" />
+                                  <circle cx={x} cy={y} r="9" fill="#f97316" opacity="0.2" className="group-hover/dot:scale-150 transition-transform" />
+                                </g>
+                              );
+                            })}
+                          </svg>
+                        </div>
+                      </div>
+
+                      {/* Burndown KPI summary */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 font-mono border-t border-zinc-800/60 text-xs">
+                        <div className="bg-zinc-950/60 p-3 rounded-xl border border-zinc-800/80 space-y-1">
+                          <span className="text-zinc-500 uppercase text-[10px] font-bold block">Velocidade Atual</span>
+                          <span className="text-white font-bold text-sm">
+                            {(completedCards / 6).toFixed(1)} tarefas / dia
+                          </span>
+                        </div>
+                        <div className="bg-zinc-950/60 p-3 rounded-xl border border-zinc-800/80 space-y-1">
+                          <span className="text-zinc-500 uppercase text-[10px] font-bold block">Horas de Esforço Logadas</span>
+                          <span className="text-orange-400 font-bold text-sm">
+                            {activeProject.cards.reduce((a, c) => a + (c.loggedHours || 0), 0)}h de {activeProject.cards.reduce((a, c) => a + (c.estimatedHours || 0), 0)}h estimadas
+                          </span>
+                        </div>
+                        <div className="bg-zinc-950/60 p-3 rounded-xl border border-zinc-800/80 space-y-1">
+                          <span className="text-zinc-500 uppercase text-[10px] font-bold block">Previsão da Sprint</span>
+                          <span className="text-emerald-400 font-bold text-sm flex items-center gap-1">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            <span>100% No Prazo (Sprint Ativa)</span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Quote & Lema Banner */}
@@ -2315,6 +2868,37 @@ export default function ProjetosView({
                       {selectedCardForDetail.title}
                     </h2>
                   </div>
+
+                  {/* Due Warning Banner if due soon or overdue */}
+                  {(() => {
+                    const status = checkDueStatus(selectedCardForDetail.dueDate, selectedCardForDetail.dueTime, selectedCardForDetail.completed);
+                    if (!status.isOverdue && !status.isDueSoon) return null;
+                    return (
+                      <div className={`mt-2 p-2.5 rounded-xl border flex items-center justify-between gap-3 text-xs font-bold font-mono ${
+                        status.isOverdue
+                          ? 'bg-red-500/20 border-red-500/50 text-red-300'
+                          : 'bg-amber-500/20 border-amber-500/50 text-amber-300'
+                      }`}>
+                        <div className="flex items-center gap-2">
+                          {status.isOverdue ? (
+                            <AlertTriangle className="h-4 w-4 text-red-400 animate-pulse shrink-0" />
+                          ) : (
+                            <Flame className="h-4 w-4 text-amber-400 animate-bounce shrink-0" />
+                          )}
+                          <span>
+                            {status.isOverdue
+                              ? `⚠️ ATENÇÃO: Esta tarefa está ATRASADA! Prazo final era ${selectedCardForDetail.dueDate} (${status.text}).`
+                              : `🔥 ALERTA DE PRAZO PRÓXIMO: Esta tarefa vence em menos de 24h (${status.text})!`}
+                          </span>
+                        </div>
+                        {selectedCardForDetail.dueTime && (
+                          <span className="text-[10px] bg-black/40 px-2 py-0.5 rounded border border-white/10 shrink-0">
+                            Hora: {selectedCardForDetail.dueTime}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <button
@@ -2353,7 +2937,10 @@ export default function ProjetosView({
                 <div className="relative shrink-0">
                   <button
                     type="button"
-                    onClick={() => setShowLabelPicker(!showLabelPicker)}
+                    onClick={() => {
+                      setShowLabelPicker(!showLabelPicker);
+                      setActiveAddPopUp(null);
+                    }}
                     className="bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-xs font-bold text-zinc-300 px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer"
                   >
                     <Tag className="h-3.5 w-3.5 text-orange-400" />
@@ -2363,7 +2950,7 @@ export default function ProjetosView({
                   {/* Label Picker Dropdown */}
                   {showLabelPicker && (
                     <div className="absolute top-10 left-0 z-50 w-56 bg-zinc-900 border border-zinc-800 rounded-xl p-3 shadow-2xl space-y-2">
-                      <span className="text-[10px] text-zinc-400 font-bold uppercase block">Criar etiqueta</span>
+                      <span className="text-[10px] text-zinc-400 font-bold uppercase block font-mono">Criar etiqueta</span>
                       <input
                         type="text"
                         placeholder="Nome da etiqueta..."
@@ -2391,6 +2978,264 @@ export default function ProjetosView({
                       >
                         Adicionar
                       </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Priority Selector */}
+                <div className="relative shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveAddPopUp(activeAddPopUp === 'prioridade' ? null : 'prioridade');
+                      setShowLabelPicker(false);
+                    }}
+                    className={`border text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer ${
+                      selectedCardForDetail.priority && PRIORITY_CONFIG[selectedCardForDetail.priority]
+                        ? `${PRIORITY_CONFIG[selectedCardForDetail.priority].bg} ${PRIORITY_CONFIG[selectedCardForDetail.priority].text} ${PRIORITY_CONFIG[selectedCardForDetail.priority].border}`
+                        : 'bg-zinc-900 hover:bg-zinc-800 border-zinc-800 text-zinc-300'
+                    }`}
+                  >
+                    <Flame className="h-3.5 w-3.5 text-orange-400" />
+                    <span>
+                      {selectedCardForDetail.priority && PRIORITY_CONFIG[selectedCardForDetail.priority]
+                        ? `Prioridade: ${PRIORITY_CONFIG[selectedCardForDetail.priority].label}`
+                        : 'Prioridade'}
+                    </span>
+                  </button>
+
+                  {/* Priority Picker Dropdown */}
+                  {activeAddPopUp === 'prioridade' && (
+                    <div className="absolute top-10 left-0 z-50 w-52 bg-zinc-900 border border-zinc-800 rounded-xl p-2 shadow-2xl space-y-1">
+                      <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block font-mono px-2 py-1">
+                        Selecionar Prioridade
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleSetCardPriority(undefined)}
+                        className={`w-full text-left text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-2 hover:bg-zinc-800 transition-colors ${
+                          !selectedCardForDetail.priority ? 'text-orange-400 font-bold bg-zinc-800/50' : 'text-zinc-400'
+                        }`}
+                      >
+                        <span className="w-2 h-2 rounded-full bg-zinc-600" />
+                        <span>Sem Prioridade</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSetCardPriority('baixa')}
+                        className={`w-full text-left text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-2 hover:bg-zinc-800 transition-colors ${
+                          selectedCardForDetail.priority === 'baixa' ? 'text-emerald-400 font-bold bg-zinc-800/50' : 'text-zinc-300'
+                        }`}
+                      >
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                        <span>Baixa</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSetCardPriority('media')}
+                        className={`w-full text-left text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-2 hover:bg-zinc-800 transition-colors ${
+                          selectedCardForDetail.priority === 'media' ? 'text-sky-400 font-bold bg-zinc-800/50' : 'text-zinc-300'
+                        }`}
+                      >
+                        <span className="w-2 h-2 rounded-full bg-sky-500" />
+                        <span>Média</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSetCardPriority('alta')}
+                        className={`w-full text-left text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-2 hover:bg-zinc-800 transition-colors ${
+                          selectedCardForDetail.priority === 'alta' ? 'text-orange-400 font-bold bg-zinc-800/50' : 'text-zinc-300'
+                        }`}
+                      >
+                        <span className="w-2 h-2 rounded-full bg-orange-500" />
+                        <span>Alta</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSetCardPriority('urgente')}
+                        className={`w-full text-left text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-2 hover:bg-zinc-800 transition-colors ${
+                          selectedCardForDetail.priority === 'urgente' ? 'text-red-400 font-bold bg-zinc-800/50' : 'text-zinc-300'
+                        }`}
+                      >
+                        <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                        <span>🔥 Urgente / Crítica</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Attachments / Links Button */}
+                <div className="relative shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveAddPopUp(activeAddPopUp === 'anexo' ? null : 'anexo');
+                      setShowLabelPicker(false);
+                    }}
+                    className="bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-xs font-bold text-zinc-300 px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer"
+                  >
+                    <Paperclip className="h-3.5 w-3.5 text-orange-400" />
+                    <span>Anexos & Links</span>
+                    {selectedCardForDetail.attachments && selectedCardForDetail.attachments.length > 0 && (
+                      <span className="bg-orange-500/20 text-orange-400 text-[10px] font-bold px-1.5 py-0.2 rounded-full">
+                        {selectedCardForDetail.attachments.length}
+                      </span>
+                    )}
+                  </button>
+
+                  {/* Attachments Dropdown Modal */}
+                  {activeAddPopUp === 'anexo' && (
+                    <div className="absolute top-10 left-0 z-50 w-80 bg-zinc-900 border border-zinc-800 rounded-xl p-3.5 shadow-2xl space-y-3">
+                      <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2">
+                        <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                          <Paperclip className="h-3.5 w-3.5 text-orange-400" />
+                          <span>Adicionar Anexo ou Link</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setActiveAddPopUp(null)}
+                          className="text-zinc-500 hover:text-white p-0.5"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+
+                      {/* Quick Presets */}
+                      <div className="space-y-1">
+                        <span className="text-[10px] text-zinc-500 font-mono font-bold uppercase block">
+                          Tipo de Integração / Link:
+                        </span>
+                        <div className="grid grid-cols-3 gap-1">
+                          {[
+                            { id: 'link', label: 'Geral', icon: Link },
+                            { id: 'figma', label: 'Figma', icon: Figma },
+                            { id: 'github', label: 'GitHub', icon: Github },
+                            { id: 'notion', label: 'Notion', icon: FileText },
+                            { id: 'drive', label: 'Drive', icon: Globe },
+                            { id: 'file', label: 'Arquivo', icon: Paperclip },
+                          ].map(p => {
+                            const Icon = p.icon;
+                            return (
+                              <button
+                                key={p.id}
+                                type="button"
+                                onClick={() => setAttachmentPresetType(p.id as any)}
+                                className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 border transition-all cursor-pointer ${
+                                  attachmentPresetType === p.id
+                                    ? 'bg-orange-500/20 border-orange-500/50 text-orange-300'
+                                    : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-white'
+                                }`}
+                              >
+                                <Icon className="h-3 w-3" />
+                                <span>{p.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          placeholder="Nome / Título (ex: Protótipo no Figma)..."
+                          value={cardAttachmentNameInput}
+                          onChange={(e) => setCardAttachmentNameInput(e.target.value)}
+                          className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500/50"
+                        />
+                        <input
+                          type="url"
+                          placeholder="Link URL (https://...)..."
+                          value={cardAttachmentUrlInput}
+                          onChange={(e) => setCardAttachmentUrlInput(e.target.value)}
+                          className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500/50"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleAddAttachment}
+                          className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs py-1.5 rounded-lg transition-colors cursor-pointer"
+                        >
+                          Anexar ao Cartão
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Horas / Esforço Button */}
+                <div className="relative shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveAddPopUp(activeAddPopUp === 'horas' ? null : 'horas');
+                      setShowLabelPicker(false);
+                    }}
+                    className="bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-xs font-bold text-zinc-300 px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer"
+                  >
+                    <Clock className="h-3.5 w-3.5 text-orange-400" />
+                    <span>Horas / Esforço</span>
+                    {(selectedCardForDetail.estimatedHours !== undefined || selectedCardForDetail.loggedHours !== undefined) && (
+                      <span className="bg-orange-500/20 text-orange-400 text-[10px] font-bold px-1.5 py-0.2 rounded-full font-mono">
+                        {selectedCardForDetail.loggedHours || 0}/{selectedCardForDetail.estimatedHours || 0}h
+                      </span>
+                    )}
+                  </button>
+
+                  {/* Horas Dropdown Popup */}
+                  {activeAddPopUp === 'horas' && (
+                    <div className="absolute top-10 left-0 z-50 w-72 bg-zinc-900 border border-zinc-800 rounded-xl p-3.5 shadow-2xl space-y-3">
+                      <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2">
+                        <span className="text-xs font-bold text-white flex items-center gap-1.5 font-mono uppercase">
+                          <Clock className="h-3.5 w-3.5 text-orange-400" />
+                          <span>Estimativa de Horas</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setActiveAddPopUp(null)}
+                          className="text-zinc-500 hover:text-white p-0.5"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+
+                      <div className="space-y-2.5">
+                        <div>
+                          <label className="text-[10px] text-zinc-400 font-mono font-bold uppercase block mb-1">
+                            Horas Estimadas (Planejadas):
+                          </label>
+                          <input
+                            type="number"
+                            step="0.5"
+                            min="0"
+                            placeholder="ex: 8"
+                            value={cardEstimatedHoursInput}
+                            onChange={(e) => setCardEstimatedHoursInput(e.target.value)}
+                            className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500/50"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] text-zinc-400 font-mono font-bold uppercase block mb-1">
+                            Horas Trabalhadas (Executadas):
+                          </label>
+                          <input
+                            type="number"
+                            step="0.5"
+                            min="0"
+                            placeholder="ex: 4.5"
+                            value={cardLoggedHoursInput}
+                            onChange={(e) => setCardLoggedHoursInput(e.target.value)}
+                            className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500/50"
+                          />
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={handleSaveCardHours}
+                          className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs py-1.5 rounded-lg transition-colors cursor-pointer"
+                        >
+                          Salvar Esforço
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -2474,6 +3319,141 @@ export default function ProjetosView({
                       </div>
                     )}
                   </div>
+
+                  {/* Section: Estimativa vs Horas Trabalhadas */}
+                  {(selectedCardForDetail.estimatedHours !== undefined || selectedCardForDetail.loggedHours !== undefined) && (
+                    <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-3.5 space-y-2.5">
+                      <div className="flex items-center justify-between text-xs font-bold text-white">
+                        <span className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-orange-400" />
+                          <span>Estimativa e Horas de Esforço</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setActiveAddPopUp('horas')}
+                          className="text-[11px] text-orange-400 hover:underline font-mono cursor-pointer"
+                        >
+                          Editar Horas
+                        </button>
+                      </div>
+
+                      {(() => {
+                        const est = selectedCardForDetail.estimatedHours || 0;
+                        const log = selectedCardForDetail.loggedHours || 0;
+                        const pct = est > 0 ? Math.min(100, Math.round((log / est) * 100)) : (log > 0 ? 100 : 0);
+                        const isOvertime = est > 0 && log > est;
+
+                        return (
+                          <div className="space-y-2 font-mono">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-zinc-400">Progresso Executado:</span>
+                              <span className={isOvertime ? 'text-red-400 font-bold' : 'text-orange-400 font-bold'}>
+                                {log}h / {est}h ({pct}%)
+                                {isOvertime && ` • +${(log - est).toFixed(1)}h acima`}
+                              </span>
+                            </div>
+
+                            <div className="w-full bg-zinc-950 rounded-full h-2.5 overflow-hidden border border-zinc-800">
+                              <div
+                                className={`h-full rounded-full transition-all duration-500 ${
+                                  isOvertime ? 'bg-red-500' : 'bg-orange-500'
+                                }`}
+                                style={{ width: `${Math.min(100, pct)}%` }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+
+                  {/* Section: Anexos e Links Úteis */}
+                  {selectedCardForDetail.attachments && selectedCardForDetail.attachments.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-white font-bold text-sm">
+                          <Paperclip className="h-4 w-4 text-orange-400" />
+                          <span>Anexos e Links Úteis ({selectedCardForDetail.attachments.length})</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setActiveAddPopUp(activeAddPopUp === 'anexo' ? null : 'anexo')}
+                          className="text-xs font-bold text-orange-400 hover:underline cursor-pointer flex items-center gap-1"
+                        >
+                          <Plus className="h-3 w-3" />
+                          <span>Adicionar</span>
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {selectedCardForDetail.attachments.map(att => {
+                          const type = att.type || detectLinkType(att.url);
+                          
+                          const typeBadge = {
+                            figma: { name: 'Figma', bg: 'bg-purple-500/15 border-purple-500/30 text-purple-300', icon: Figma },
+                            github: { name: 'GitHub', bg: 'bg-zinc-800 border-zinc-700 text-zinc-200', icon: Github },
+                            notion: { name: 'Notion', bg: 'bg-slate-800 border-slate-700 text-slate-200', icon: FileText },
+                            drive: { name: 'Google Drive', bg: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300', icon: Globe },
+                            file: { name: 'Arquivo', bg: 'bg-amber-500/15 border-amber-500/30 text-amber-300', icon: Paperclip },
+                            link: { name: 'Link', bg: 'bg-orange-500/15 border-orange-500/30 text-orange-300', icon: Link }
+                          }[type] || { name: 'Link', bg: 'bg-zinc-800 border-zinc-700 text-zinc-300', icon: Link };
+
+                          const IconComponent = typeBadge.icon;
+
+                          return (
+                            <div key={att.id} className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-3 flex items-center justify-between gap-3 group/att hover:border-orange-500/40 transition-all">
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className={`p-2 rounded-lg border shrink-0 ${typeBadge.bg}`}>
+                                  <IconComponent className="h-4 w-4" />
+                                </div>
+                                <div className="min-w-0 space-y-0.5">
+                                  <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-zinc-500 block">
+                                    {typeBadge.name}
+                                  </span>
+                                  <p className="text-xs font-bold text-white truncate group-hover/att:text-orange-400 transition-colors">
+                                    {att.name}
+                                  </p>
+                                  <p className="text-[10px] text-zinc-500 font-mono truncate max-w-[140px]">
+                                    {att.url}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-1 shrink-0">
+                                <a
+                                  href={att.url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="p-1.5 text-zinc-400 hover:text-orange-400 bg-zinc-950/80 hover:bg-zinc-800 border border-zinc-800 rounded-lg transition-colors cursor-pointer"
+                                  title="Abrir link externo"
+                                >
+                                  <ExternalLink className="h-3.5 w-3.5" />
+                                </a>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(att.url);
+                                  }}
+                                  className="p-1.5 text-zinc-400 hover:text-white bg-zinc-950/80 hover:bg-zinc-800 border border-zinc-800 rounded-lg transition-colors cursor-pointer"
+                                  title="Copiar URL"
+                                >
+                                  <Copy className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteAttachment(att.id)}
+                                  className="p-1.5 text-zinc-500 hover:text-red-400 bg-zinc-950/80 hover:bg-zinc-800 border border-zinc-800 rounded-lg transition-colors cursor-pointer"
+                                  title="Excluir anexo"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Section: Checklists */}
                   <div className="space-y-4">

@@ -177,13 +177,33 @@ export default function InvestmentsPlanner({ finances, addXp }: InvestmentsPlann
   // Transaction Modal State
   const [showTxModal, setShowTxModal] = useState(false);
   const [editingTxId, setEditingTxId] = useState<string | null>(null);
-  const [txModalType, setTxModalType] = useState<'Aporte' | 'Resgate' | 'Provento' | 'Rendimento' | 'Taxa'>('Aporte');
-  const [txModalAssetName, setTxModalAssetName] = useState('');
-  const [txModalTicker, setTxModalTicker] = useState('');
-  const [txModalInstitution, setTxModalInstitution] = useState('');
-  const [txModalAmount, setTxModalAmount] = useState('');
-  const [txModalDate, setTxModalDate] = useState('');
-  const [txModalNotes, setTxModalNotes] = useState('');
+  const [txAssetId, setTxAssetId] = useState<string>('');
+  const [txAssetName, setTxAssetName] = useState<string>('');
+  const [txTicker, setTxTicker] = useState<string>('');
+  const [txType, setTxType] = useState<'Aporte' | 'Resgate' | 'Provento' | 'Rendimento' | 'Taxa'>('Aporte');
+  const [txAmount, setTxAmount] = useState<string>('');
+  const [txDate, setTxDate] = useState<string>('');
+  const [txInstitution, setTxInstitution] = useState<string>('');
+  const [txNotes, setTxNotes] = useState<string>('');
+
+  // Evolution Monthly State
+  const [selectedMonthIndex, setSelectedMonthIndex] = useState<number>(7); // Agosto
+
+  const monthsList = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+  const totalPortfolioValueCalculated = portfolioAssets.reduce((sum, a) => {
+    const qty = parseFloat(a.quantity || '0');
+    const price = parseFloat(a.currentPrice || a.purchasePrice || '0');
+    return sum + (qty * price);
+  }, 0);
+
+  const yearlyEquityData = monthsList.map((m, idx) => {
+    const baseVal = totalPortfolioValueCalculated > 0 ? totalPortfolioValueCalculated : 25000;
+    const factor = 0.75 + (idx * 0.035);
+    return {
+      month: m,
+      total: Math.round(baseVal * factor)
+    };
+  });
 
   // Pie Chart Vision & Expansion State
   const [pieVisionMode, setPieVisionMode] = useState<'category' | 'market' | 'institution'>('category');
@@ -370,53 +390,55 @@ export default function InvestmentsPlanner({ finances, addXp }: InvestmentsPlann
   // ==========================================
   const handleOpenAddTxModal = () => {
     setEditingTxId(null);
-    setTxModalType('Aporte');
-    setTxModalAssetName('');
-    setTxModalTicker('');
-    setTxModalInstitution('');
-    setTxModalAmount('');
-    setTxModalDate(new Date().toISOString().split('T')[0]);
-    setTxModalNotes('');
+    setTxAssetId('');
+    setTxType('Aporte');
+    setTxAssetName('');
+    setTxTicker('');
+    setTxInstitution('');
+    setTxAmount('');
+    setTxDate(new Date().toISOString().split('T')[0]);
+    setTxNotes('');
     setShowTxModal(true);
   };
 
   const handleOpenEditTxModal = (tx: InvestmentTransaction) => {
     setEditingTxId(tx.id);
-    setTxModalType(tx.type);
-    setTxModalAssetName(tx.assetName || '');
-    setTxModalTicker(tx.ticker || '');
-    setTxModalInstitution(tx.institution || '');
-    setTxModalAmount(String(tx.amount || ''));
-    setTxModalDate(tx.date || new Date().toISOString().split('T')[0]);
-    setTxModalNotes(tx.notes || '');
+    setTxAssetId((tx as any).assetId || '');
+    setTxType(tx.type);
+    setTxAssetName(tx.assetName || '');
+    setTxTicker(tx.ticker || '');
+    setTxInstitution(tx.institution || '');
+    setTxAmount(String(tx.amount || ''));
+    setTxDate(tx.date || new Date().toISOString().split('T')[0]);
+    setTxNotes(tx.notes || '');
     setShowTxModal(true);
   };
 
   const handleSaveTx = () => {
-    if (!txModalAssetName.trim() && !txModalTicker.trim()) return;
-    const parsedAmount = parseFloat(txModalAmount) || 0;
+    if (!txAssetName.trim() && !txTicker.trim()) return;
+    const parsedAmount = parseFloat(txAmount) || 0;
 
     if (editingTxId) {
       setInvestmentTransactions(prev => prev.map(t => t.id === editingTxId ? {
         ...t,
-        type: txModalType,
-        assetName: txModalAssetName.trim() || txModalTicker.trim().toUpperCase(),
-        ticker: txModalTicker.trim().toUpperCase(),
-        institution: txModalInstitution.trim(),
+        type: txType,
+        assetName: txAssetName.trim() || txTicker.trim().toUpperCase(),
+        ticker: txTicker.trim().toUpperCase(),
+        institution: txInstitution.trim(),
         amount: parsedAmount,
-        date: txModalDate,
-        notes: txModalNotes.trim()
+        date: txDate,
+        notes: txNotes.trim()
       } : t));
     } else {
       const newTx: InvestmentTransaction = {
         id: 'tx-' + Math.random().toString(36).substring(2, 9),
-        type: txModalType,
-        assetName: txModalAssetName.trim() || txModalTicker.trim().toUpperCase(),
-        ticker: txModalTicker.trim().toUpperCase(),
-        institution: txModalInstitution.trim(),
+        type: txType,
+        assetName: txAssetName.trim() || txTicker.trim().toUpperCase(),
+        ticker: txTicker.trim().toUpperCase(),
+        institution: txInstitution.trim(),
         amount: parsedAmount,
-        date: txModalDate || new Date().toISOString().split('T')[0],
-        notes: txModalNotes.trim()
+        date: txDate || new Date().toISOString().split('T')[0],
+        notes: txNotes.trim()
       };
       setInvestmentTransactions(prev => [newTx, ...prev]);
     }

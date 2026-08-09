@@ -300,10 +300,13 @@ export interface ProjectCard {
   dueDate?: string; // YYYY-MM-DD
   dueTime?: string;
   completed?: boolean;
+  priority?: 'baixa' | 'media' | 'alta' | 'urgente';
+  estimatedHours?: number;
+  loggedHours?: number;
   checklists?: ProjectCardChecklist[];
   comments?: ProjectCardComment[];
   assignees?: { id: string; name: string; avatar?: string }[];
-  attachments?: { id: string; name: string; url: string }[];
+  attachments?: { id: string; name: string; url: string; type?: 'link' | 'file' | 'figma' | 'github' | 'notion' | 'drive' | 'other' }[];
   customFields?: { id: string; name: string; value: string }[];
   createdAt: string;
   updatedAt?: string;
