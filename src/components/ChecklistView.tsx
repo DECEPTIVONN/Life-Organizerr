@@ -37,7 +37,9 @@ import {
   Edit3,
   Bell,
   AlertTriangle,
-  Tag
+  Tag,
+  History,
+  CheckCircle2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { DailyTask, SubTask, BookTracker, BibleTracker, RoutineItem, YearlyBook, WeeklyReview, CalendarNote } from '../types';
@@ -283,6 +285,7 @@ export default function ChecklistView({
   const [newTaskIsRecurring, setNewTaskIsRecurring] = useState(true);
   const [newTaskPeriod, setNewTaskPeriod] = useState<'manha' | 'noite' | 'geral'>('geral');
   const [newTaskReminderTime, setNewTaskReminderTime] = useState('');
+  const [newTaskIsRetroactive, setNewTaskIsRetroactive] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [newTaskSubtasks, setNewTaskSubtasks] = useState<string[]>([]);
   const [currentSubtaskText, setCurrentSubtaskText] = useState('');
@@ -325,6 +328,7 @@ export default function ChecklistView({
   const [editSubtasks, setEditSubtasks] = useState<SubTask[]>([]);
   const [editSubtaskInput, setEditSubtaskInput] = useState('');
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [showCompletedRoutinesModal, setShowCompletedRoutinesModal] = useState(false);
 
   // Notification scheduler for tasks with reminderTime
   useEffect(() => {
@@ -780,7 +784,9 @@ export default function ChecklistView({
       period: newTaskPeriod,
       reminderTime: newTaskReminderTime.trim() || undefined,
       subtasks: mappedSubtasks,
-      createdDate: selectedDate
+      createdDate: selectedDate,
+      isRetroactive: newTaskIsRetroactive,
+      completedRetroactively: newTaskIsRetroactive ? true : undefined
     };
 
     updateActiveTasks(prev => [...prev, newTask]);
@@ -788,6 +794,7 @@ export default function ChecklistView({
     setNewTaskSubtasks([]);
     setCurrentSubtaskText('');
     setNewTaskReminderTime('');
+    setNewTaskIsRetroactive(false);
     setIsAdding(false);
   };
 
@@ -1239,6 +1246,16 @@ export default function ChecklistView({
   const nightTasks = activeTasks.filter(t => t.period === 'noite');
   const generalTasks = activeTasks.filter(t => !t.period || t.period === 'geral');
 
+  // Routine completed tasks calculation
+  const completedMorningTasks = morningTasks.filter(t => t.completed);
+  const completedNightTasks = nightTasks.filter(t => t.completed);
+  const completedRoutineTasks = [...completedMorningTasks, ...completedNightTasks];
+
+  // In active today view (isToday), completed routine tasks automatically move to "Rotinas Concluídas" history.
+  // In historical records or planning mode (!isToday), display all tasks as currently done.
+  const displayMorningTasks = isToday ? morningTasks.filter(t => !t.completed) : morningTasks;
+  const displayNightTasks = isToday ? nightTasks.filter(t => !t.completed) : nightTasks;
+
   // Helper for category dynamic styling matching RoutineView
   const getTaskCategoryStyles = (category?: string) => {
     const cat = (category || '').toLowerCase();
@@ -1324,16 +1341,9 @@ export default function ChecklistView({
               <span className={`text-xs font-medium transition-all group-hover/tasktitle:text-orange-400 ${task.completed ? 'line-through text-gray-500' : 'text-white'}`}>
                 {task.text}
               </span>
-              <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono uppercase tracking-wide ${catStyles.badgeBg}`}>
-                {task.category || 'Geral'}
-              </span>
-              {task.isRecurring !== false ? (
-                <span className="text-[9px] bg-orange-500/10 text-orange-400 border border-orange-500/20 px-1.5 py-0.5 rounded font-mono uppercase tracking-wide inline-flex items-center gap-0.5">
-                  <Clock className="h-2.5 w-2.5" /> Diária
-                </span>
-              ) : (
-                <span className="text-[9px] bg-zinc-800/90 text-zinc-300 border border-zinc-700/60 px-1.5 py-0.5 rounded font-mono uppercase tracking-wide inline-flex items-center gap-0.5">
-                  <Calendar className="h-2.5 w-2.5" /> Apenas Hoje
+              {task.category && task.category !== 'O Básico' && task.category !== 'O BÁSICO' && task.category !== 'Geral' && (
+                <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono uppercase tracking-wide ${catStyles.badgeBg}`}>
+                  {task.category}
                 </span>
               )}
               {isRetroactive && (
@@ -1365,30 +1375,34 @@ export default function ChecklistView({
               </button>
             )}
 
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleOpenTaskEditModal(task);
-              }}
-              className="text-zinc-500 hover:text-orange-400 transition-colors p-1 opacity-80 sm:opacity-0 group-hover:opacity-100 focus:opacity-100"
-              title="Editar Tarefa"
-            >
-              <Edit3 className="h-3.5 w-3.5" />
-            </button>
+            {(!hasSubtasks || isExpanded) && (
+              <>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenTaskEditModal(task);
+                  }}
+                  className="text-zinc-500 hover:text-orange-400 transition-colors p-1 opacity-80 sm:opacity-0 group-hover:opacity-100 focus:opacity-100"
+                  title="Editar Tarefa"
+                >
+                  <Edit3 className="h-3.5 w-3.5" />
+                </button>
 
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setEditingTask(task);
-                setShowDeleteConfirmModal(true);
-              }}
-              className="text-zinc-600 hover:text-red-500 transition-colors p-1 opacity-80 sm:opacity-0 group-hover:opacity-100 focus:opacity-100"
-              title="Excluir Tarefa"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingTask(task);
+                    setShowDeleteConfirmModal(true);
+                  }}
+                  className="text-zinc-600 hover:text-red-500 transition-colors p-1 opacity-80 sm:opacity-0 group-hover:opacity-100 focus:opacity-100"
+                  title="Excluir Tarefa"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </>
+            )}
           </div>
         </div>
 
@@ -1410,10 +1424,38 @@ export default function ChecklistView({
 
         {/* Subtasks Expanded Section */}
         {hasSubtasks && isExpanded && (
-          <div className="px-4 pb-3.5 space-y-2 border-t border-zinc-900 bg-zinc-950/30 pt-3">
-            {/* Expanded Header Block Progress Bar */}
-            <div className="flex items-center justify-between gap-2 border-b border-zinc-900/60 pb-2 mb-2">
-              <span className="text-[9px] text-zinc-400 font-black uppercase tracking-wider font-mono">Etapas ({completedSubtasksCount}/{totalSubtasksCount})</span>
+          <div className="px-4 pb-3.5 space-y-2.5 border-t border-zinc-900 bg-zinc-950/30 pt-3">
+            {/* Subtasks Checkboxes Grid - Side by Side responsive layout */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {task.subtasks!.map(sub => (
+                <button
+                  key={sub.id}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleToggleSubtask(task.id, sub.id);
+                  }}
+                  className="flex items-center gap-2.5 w-full text-left py-1.5 hover:bg-zinc-900/40 px-2.5 rounded-lg transition-colors group/sub select-none border border-zinc-900/50 bg-zinc-950/50"
+                >
+                  <div className={`h-4 w-4 rounded flex items-center justify-center border transition-all flex-shrink-0 ${
+                    sub.completed
+                      ? 'bg-orange-500 border-orange-500 text-white shadow-[0_0_8px_rgba(249,115,22,0.3)]'
+                      : 'border-zinc-800 bg-zinc-950 group-hover/sub:border-orange-500/40'
+                  }`}>
+                    {sub.completed && <Check className="h-3 w-3 stroke-[3]" />}
+                  </div>
+                  <span className={`text-xs transition-all truncate ${
+                    sub.completed ? 'line-through text-gray-500' : 'text-gray-300 group-hover/sub:text-white font-medium'
+                  }`}>
+                    {sub.text}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* Subtasks Progress Bar - Placed Below the Subtasks */}
+            <div className="flex items-center justify-between gap-2 border-t border-zinc-900/80 pt-2 mt-2.5">
+              <span className="text-[9px] text-zinc-400 font-black uppercase tracking-wider font-mono">ETAPAS ({completedSubtasksCount}/{totalSubtasksCount})</span>
               <div className="flex gap-1 flex-1 max-w-[140px] justify-end">
                 {task.subtasks!.map((sub, idx) => (
                   <div 
@@ -1426,34 +1468,6 @@ export default function ChecklistView({
                   />
                 ))}
               </div>
-            </div>
-
-            {/* Subtasks Checkboxes */}
-            <div className="space-y-1.5">
-              {task.subtasks!.map(sub => (
-                <button
-                  key={sub.id}
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleToggleSubtask(task.id, sub.id);
-                  }}
-                  className="flex items-center gap-3 w-full text-left py-1.5 hover:bg-zinc-900/40 px-2.5 rounded-lg transition-colors group/sub select-none"
-                >
-                  <div className={`h-4.5 w-4.5 rounded flex items-center justify-center border transition-all flex-shrink-0 ${
-                    sub.completed
-                      ? 'bg-orange-500 border-orange-500 text-white shadow-[0_0_8px_rgba(249,115,22,0.3)]'
-                      : 'border-zinc-800 bg-zinc-950 group-hover/sub:border-orange-500/40'
-                  }`}>
-                    {sub.completed && <Check className="h-3 w-3 stroke-[3]" />}
-                  </div>
-                  <span className={`text-xs transition-all ${
-                    sub.completed ? 'line-through text-gray-500' : 'text-gray-300 group-hover/sub:text-white font-medium'
-                  }`}>
-                    {sub.text}
-                  </span>
-                </button>
-              ))}
             </div>
           </div>
         )}
@@ -1620,6 +1634,16 @@ export default function ChecklistView({
             Rotinas e Checklist Diário
           </h2>
           <div className="flex items-center gap-2">
+            {(isToday && completedRoutineTasks.length > 0) && (
+              <button
+                type="button"
+                onClick={() => setShowCompletedRoutinesModal(true)}
+                className="text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 p-2 rounded-lg transition-all cursor-pointer flex items-center justify-center"
+                title="Rotinas Concluídas"
+              >
+                <History className="h-4 w-4" />
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setIsAdding(true)}
@@ -1716,6 +1740,32 @@ export default function ChecklistView({
                             </button>
                           );
                         })}
+                      </div>
+
+                      {/* Tag Retroativo (Localizado na linha de Rotina/Lazer/Outro sob Geral, Manhã, Noite) */}
+                      <div className="mt-2">
+                        <button
+                          type="button"
+                          onClick={() => setNewTaskIsRetroactive(!newTaskIsRetroactive)}
+                          className={`w-full p-2.5 rounded-xl border text-left transition-all flex items-center justify-between cursor-pointer ${
+                            newTaskIsRetroactive
+                              ? 'bg-amber-500/15 border-amber-500 text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.15)]'
+                              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Clock className={`h-4 w-4 ${newTaskIsRetroactive ? 'text-amber-400' : 'text-zinc-500'}`} />
+                            <div>
+                              <span className="text-xs font-bold block">Tag Retroativo</span>
+                              <span className={`text-[9.5px] block ${newTaskIsRetroactive ? 'opacity-80' : 'text-zinc-500'}`}>
+                                Marcar com tag retroativo
+                              </span>
+                            </div>
+                          </div>
+                          <div className={`h-4 w-4 rounded-md border flex items-center justify-center transition-colors ${newTaskIsRetroactive ? 'border-amber-400 bg-amber-500 text-zinc-950' : 'border-zinc-700 bg-zinc-950'}`}>
+                            {newTaskIsRetroactive && <Check className="h-3 w-3 stroke-[3]" />}
+                          </div>
+                        </button>
                       </div>
                     </div>
 
@@ -1914,8 +1964,8 @@ export default function ChecklistView({
           )}
         </AnimatePresence>
 
-        {/* ACCORDION 1: ROTINA MATINAL (Manhã) - Exibido apenas quando houver tarefas */}
-        {morningTasks.length > 0 && (
+        {/* ACCORDION 1: ROTINA MATINAL (Manhã) - Exibido apenas quando houver tarefas ativas ou no histórico */}
+        {displayMorningTasks.length > 0 && (
           <div className="bg-[#0a0a0c]/40 border border-zinc-800/30 rounded-xl overflow-hidden">
             <button 
               onClick={() => setMorningOpen(!morningOpen)}
@@ -1939,7 +1989,7 @@ export default function ChecklistView({
                   exit={{ height: 0, opacity: 0 }}
                   className="overflow-hidden p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5"
                 >
-                  {morningTasks.map(task => renderTaskRow(task))}
+                  {displayMorningTasks.map(task => renderTaskRow(task))}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -1980,8 +2030,8 @@ export default function ChecklistView({
           </AnimatePresence>
         </div>
 
-        {/* ACCORDION 3: ROTINA NOTURNA (Noite) - Exibido apenas quando houver tarefas */}
-        {nightTasks.length > 0 && (
+        {/* ACCORDION 3: ROTINA NOTURNA (Noite) - Exibido apenas quando houver tarefas ativas ou no histórico */}
+        {displayNightTasks.length > 0 && (
           <div className="bg-[#0a0a0c]/40 border border-zinc-800/30 rounded-xl overflow-hidden">
             <button 
               onClick={() => setNightOpen(!nightOpen)}
@@ -2005,7 +2055,7 @@ export default function ChecklistView({
                   exit={{ height: 0, opacity: 0 }}
                   className="overflow-hidden p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5"
                 >
-                  {nightTasks.map(task => renderTaskRow(task))}
+                  {displayNightTasks.map(task => renderTaskRow(task))}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -3226,44 +3276,70 @@ export default function ChecklistView({
                           </button>
                         );
                       })}
-                    </div>
-                  </div>
+                      </div>
 
-                  {/* Categoria */}
-                  <div>
-                    <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1.5">
-                      Categoria
-                    </label>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      {[
-                        { id: 'Trabalho', label: 'Trabalho', sub: 'Foco & Projetos', selectedClass: 'bg-indigo-500/15 border-indigo-500 text-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.15)]' },
-                        { id: 'Exercício', label: 'Exercício', sub: 'Treino & Saúde', selectedClass: 'bg-emerald-500/15 border-emerald-500 text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.15)]' },
-                        { id: 'Estudo', label: 'Estudo', sub: 'Aprendizado & Leitura', selectedClass: 'bg-amber-500/15 border-amber-500 text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.15)]' },
-                        { id: 'Lazer', label: 'Lazer', sub: 'Descanso & Hobbies', selectedClass: 'bg-rose-500/15 border-rose-500 text-rose-400 shadow-[0_0_12px_rgba(244,63,94,0.15)]' },
-                        { id: 'Rotina', label: 'Rotina', sub: 'Hábitos & Cuidados', selectedClass: 'bg-violet-500/15 border-violet-500 text-violet-400 shadow-[0_0_12px_rgba(139,92,246,0.15)]' },
-                        { id: 'Outro', label: 'Outro', sub: 'Diversos & Geral', selectedClass: 'bg-zinc-500/15 border-zinc-500 text-zinc-300 shadow-[0_0_12px_rgba(113,113,122,0.15)]' }
-                      ].map((cat) => {
-                        const isSelected = editCategory === cat.id;
-                        return (
-                          <button
-                            key={cat.id}
-                            type="button"
-                            onClick={() => setEditCategory(cat.id)}
-                            className={`p-2.5 rounded-xl border text-left transition-all ${
-                              isSelected
-                                ? cat.selectedClass
-                                : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
-                            }`}
-                          >
-                            <div className="text-xs font-bold">
-                              <span>{cat.label}</span>
+                      {/* Tag Retroativo (Localizado na linha de Rotina/Lazer/Outro sob Geral, Manhã, Noite) */}
+                      <div className="mt-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditIsRetroactive(!editIsRetroactive)}
+                          className={`w-full p-2.5 rounded-xl border text-left transition-all flex items-center justify-between cursor-pointer ${
+                            editIsRetroactive
+                              ? 'bg-amber-500/15 border-amber-500 text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.15)]'
+                              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Clock className={`h-4 w-4 ${editIsRetroactive ? 'text-amber-400' : 'text-zinc-500'}`} />
+                            <div>
+                              <span className="text-xs font-bold block">Tag Retroativo</span>
+                              <span className={`text-[9.5px] block ${editIsRetroactive ? 'opacity-80' : 'text-zinc-500'}`}>
+                                Marcar com tag retroativo
+                              </span>
                             </div>
-                            <span className={`text-[9.5px] block mt-0.5 ${isSelected ? 'opacity-80' : 'text-zinc-500'}`}>{cat.sub}</span>
-                          </button>
-                        );
-                      })}
+                          </div>
+                          <div className={`h-4 w-4 rounded-md border flex items-center justify-center transition-colors ${editIsRetroactive ? 'border-amber-400 bg-amber-500 text-zinc-950' : 'border-zinc-700 bg-zinc-950'}`}>
+                            {editIsRetroactive && <Check className="h-3 w-3 stroke-[3]" />}
+                          </div>
+                        </button>
+                      </div>
                     </div>
-                  </div>
+
+                    {/* Categoria */}
+                    <div>
+                      <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1.5">
+                        Categoria
+                      </label>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {[
+                          { id: 'Trabalho', label: 'Trabalho', sub: 'Foco & Projetos', selectedClass: 'bg-indigo-500/15 border-indigo-500 text-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.15)]' },
+                          { id: 'Exercício', label: 'Exercício', sub: 'Treino & Saúde', selectedClass: 'bg-emerald-500/15 border-emerald-500 text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.15)]' },
+                          { id: 'Estudo', label: 'Estudo', sub: 'Aprendizado & Leitura', selectedClass: 'bg-amber-500/15 border-amber-500 text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.15)]' },
+                          { id: 'Lazer', label: 'Lazer', sub: 'Descanso & Hobbies', selectedClass: 'bg-rose-500/15 border-rose-500 text-rose-400 shadow-[0_0_12px_rgba(244,63,94,0.15)]' },
+                          { id: 'Rotina', label: 'Rotina', sub: 'Hábitos & Cuidados', selectedClass: 'bg-violet-500/15 border-violet-500 text-violet-400 shadow-[0_0_12px_rgba(139,92,246,0.15)]' },
+                          { id: 'Outro', label: 'Outro', sub: 'Diversos & Geral', selectedClass: 'bg-zinc-500/15 border-zinc-500 text-zinc-300 shadow-[0_0_12px_rgba(113,113,122,0.15)]' }
+                        ].map((cat) => {
+                          const isSelected = editCategory === cat.id;
+                          return (
+                            <button
+                              key={cat.id}
+                              type="button"
+                              onClick={() => setEditCategory(cat.id)}
+                              className={`p-2.5 rounded-xl border text-left transition-all ${
+                                isSelected
+                                  ? cat.selectedClass
+                                  : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                              }`}
+                            >
+                              <div className="text-xs font-bold">
+                                <span>{cat.label}</span>
+                              </div>
+                              <span className={`text-[9.5px] block mt-0.5 ${isSelected ? 'opacity-80' : 'text-zinc-500'}`}>{cat.sub}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
                 </div>
 
                 {/* Desktop 2-column grid for Recorrência e Notificação */}
@@ -3343,33 +3419,6 @@ export default function ChecklistView({
                         <span>Notificações</span>
                       </button>
                     </div>
-                  </div>
-
-                  {/* Marcação Retroativa */}
-                  <div>
-                    <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1.5">
-                      Registro Retroativo
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setEditIsRetroactive(!editIsRetroactive)}
-                      className={`w-full p-2.5 rounded-xl border text-left transition-all flex items-center justify-between cursor-pointer ${
-                        editIsRetroactive
-                          ? 'bg-amber-500/15 border-amber-500/60 text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.15)]'
-                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <Clock className={`h-4 w-4 ${editIsRetroactive ? 'text-amber-400' : 'text-zinc-500'}`} />
-                        <div>
-                          <span className="text-xs font-bold block">Marcar com Tag Retroativo</span>
-                          <span className="text-[10px] text-zinc-400 block">Identifica atividade registrada de datas anteriores</span>
-                        </div>
-                      </div>
-                      <div className={`h-4.5 w-4.5 rounded-md border flex items-center justify-center transition-colors ${editIsRetroactive ? 'border-amber-400 bg-amber-500 text-zinc-950' : 'border-zinc-700 bg-zinc-950'}`}>
-                        {editIsRetroactive && <Check className="h-3.5 w-3.5 stroke-[3]" />}
-                      </div>
-                    </button>
                   </div>
                 </div>
 
@@ -3515,6 +3564,69 @@ export default function ChecklistView({
                   className="px-4 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-500 rounded-xl transition-colors shadow-lg shadow-red-600/30"
                 >
                   Sim, Excluir
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal 3: Rotinas Concluídas */}
+      <AnimatePresence>
+        {showCompletedRoutinesModal && (
+          <div 
+            onClick={() => setShowCompletedRoutinesModal(false)}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm cursor-pointer"
+          >
+            <motion.div
+              onClick={(e) => e.stopPropagation()}
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="cursor-default bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-lg md:max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]"
+            >
+              {/* Header */}
+              <div className="p-4 sm:p-5 border-b border-zinc-800/80 flex items-center justify-between bg-zinc-900/40">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 bg-amber-500/10 rounded-xl border border-amber-500/20">
+                    <History className="h-4 sm:h-5 w-4 sm:w-5 text-amber-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-bold text-white tracking-tight">Rotinas Concluídas</h3>
+                    <p className="text-[10px] sm:text-xs text-zinc-400">Tarefas de rotina matinal e noturna finalizadas hoje ({completedRoutineTasks.length})</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowCompletedRoutinesModal(false)}
+                  className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-4 sm:p-5 space-y-3 overflow-y-auto flex-1 max-h-[60vh]">
+                {completedRoutineTasks.length === 0 ? (
+                  <div className="text-center py-8 text-zinc-500 text-xs italic">
+                    Nenhuma rotina concluída no momento.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                    {completedRoutineTasks.map(task => renderTaskRow(task))}
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="p-3.5 border-t border-zinc-900 bg-zinc-900/30 flex items-center justify-between text-xs text-zinc-400">
+                <span className="text-[11px] text-zinc-500">Desmarque para retornar a tarefa à lista ativa</span>
+                <button
+                  type="button"
+                  onClick={() => setShowCompletedRoutinesModal(false)}
+                  className="px-4 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-lg transition-colors text-xs"
+                >
+                  Fechar
                 </button>
               </div>
             </motion.div>
