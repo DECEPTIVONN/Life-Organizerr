@@ -216,6 +216,32 @@ export default function ChecklistView({
     }
   }, [isToday, todayStr, dailyTasks, setDailyTasks]);
 
+  // Automatic Day Reset Check (Triggers automatically at 0:00 / new calendar day)
+  useEffect(() => {
+    const lastResetDate = localStorage.getItem('last_daily_reset_date');
+    const currentToday = getTodayDateStr();
+
+    if (!lastResetDate) {
+      localStorage.setItem('last_daily_reset_date', currentToday);
+    } else if (lastResetDate !== currentToday) {
+      // Automatic day reset: uncheck recurring tasks and reset today's chapter trackers
+      setDailyTasks(prev =>
+        prev
+          .filter(t => t.isRecurring !== false || !t.createdDate || t.createdDate === currentToday)
+          .map(t => ({
+            ...t,
+            completed: false,
+            subtasks: t.subtasks?.map(s => ({ ...s, completed: false }))
+          }))
+      );
+      setBibleTracker(prev => ({
+        ...prev,
+        chaptersReadToday: 0
+      }));
+      localStorage.setItem('last_daily_reset_date', currentToday);
+    }
+  }, [todayStr, setDailyTasks, setBibleTracker]);
+
   const updateActiveTasks = (updater: (prev: DailyTask[]) => DailyTask[]) => {
     if (selectedDate === todayStr) {
       setDailyTasks(updater);
@@ -1500,184 +1526,257 @@ export default function ChecklistView({
             Rotinas e Checklist Diário
           </h2>
           <div className="flex items-center gap-2">
-            {activeTasks.length > 0 && (
-              <button
-                type="button"
-                onClick={handleResetForNewDay}
-                className="text-xs font-bold text-gray-400 hover:text-white flex items-center gap-1.5 transition-colors bg-zinc-900/60 hover:bg-zinc-900 px-3 py-1.5 rounded-lg border border-zinc-800"
-              >
-                <RefreshCw className="h-3.5 w-3.5 text-orange-500" /> Iniciar Novo Dia
-              </button>
-            )}
             <button
-              onClick={() => setIsAdding(!isAdding)}
-              className="text-xs font-bold text-orange-500 hover:text-orange-400 flex items-center gap-1.5 transition-colors bg-orange-500/10 px-3 py-1.5 rounded-lg border border-orange-500/20"
+              type="button"
+              onClick={() => setIsAdding(true)}
+              className="text-xs font-bold text-orange-500 hover:text-orange-400 flex items-center gap-1.5 transition-colors bg-orange-500/10 p-2 sm:px-3 sm:py-1.5 rounded-lg border border-orange-500/20 cursor-pointer"
+              title="Adicionar Tarefa"
             >
-              <Plus className="h-3.5 w-3.5" /> Adicionar Tarefa
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Adicionar Tarefa</span>
             </button>
           </div>
         </div>
 
-        {/* Task Adding Form Overlay */}
+        {/* Modal: Adicionar Nova Tarefa */}
         <AnimatePresence>
           {isAdding && (
-            <motion.form 
-              onSubmit={handleAddTask}
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="bg-zinc-900 p-4 rounded-xl border border-orange-500/30 overflow-hidden space-y-3 shadow-xl"
+            <div 
+              onClick={() => setIsAdding(false)}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm cursor-pointer"
             >
-              <div>
-                <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1">Nome da Tarefa</label>
-                <input
-                  type="text"
-                  value={newTaskText}
-                  onChange={(e) => setNewTaskText(e.target.value)}
-                  placeholder="Ex: Treinar na academia, Beber 3L de água..."
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50"
-                  maxLength={50}
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1">Pilar de Organização</label>
-                  <select
-                    value={newTaskCategory}
-                    onChange={(e) => setNewTaskCategory(e.target.value)}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-gray-350 focus:outline-none focus:border-orange-500/50"
-                  >
-                    <option value="O Básico">O Básico (Checklist/Hábitos)</option>
-                    <option value="Segundo Cérebro">Segundo Cérebro (Estudos/Notas)</option>
-                    <option value="Metas">Metas e Projetos</option>
-                    <option value="Canalização">Canalização e Ação</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1">Período do Dia</label>
-                  <select
-                    value={newTaskPeriod}
-                    onChange={(e) => setNewTaskPeriod(e.target.value as any)}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-gray-350 focus:outline-none focus:border-orange-500/50"
-                  >
-                    <option value="geral">Geral / Dia Todo</option>
-                    <option value="manha">Manhã (Rotina Matinal)</option>
-                    <option value="noite">Noite (Rotina Noturna)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div 
-                onClick={() => setNewTaskIsRecurring(!newTaskIsRecurring)}
-                className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between select-none my-1 ${
-                  newTaskIsRecurring
-                    ? 'bg-orange-500/10 border-orange-500/50 shadow-[0_0_15px_rgba(249,115,22,0.15)]'
-                    : 'bg-zinc-950/80 border-zinc-800/80 hover:border-zinc-700'
-                }`}
+              <motion.div
+                onClick={(e) => e.stopPropagation()}
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                className="cursor-default bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
               >
-                <div className="flex items-center gap-2.5">
-                  <div className={`p-2 rounded-lg transition-colors ${
-                    newTaskIsRecurring ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' : 'bg-zinc-900 text-zinc-500 border border-zinc-800'
-                  }`}>
-                    <RefreshCw className="h-3.5 w-3.5" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-bold text-white">Tarefa Recorrente</span>
-                      {newTaskIsRecurring && (
-                        <span className="text-[9px] font-mono font-bold bg-orange-500/20 text-orange-400 px-1.5 py-0.2 rounded border border-orange-500/30">
-                          Diária
-                        </span>
-                      )}
+                {/* Header */}
+                <div className="p-4 sm:p-5 border-b border-zinc-800/80 flex items-center justify-between bg-zinc-900/40">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 bg-orange-500/10 rounded-xl border border-orange-500/20">
+                      <Plus className="h-4 sm:h-5 w-4 sm:w-5 text-orange-500" />
                     </div>
-                    <p className="text-[10px] text-zinc-400">
-                      Disponível todos os dias para acompanhamento contínuo.
-                    </p>
+                    <div>
+                      <h3 className="text-sm sm:text-base font-bold text-white tracking-tight">Nova Tarefa Diária</h3>
+                      <p className="text-[10px] sm:text-xs text-zinc-400">Configure a tarefa, período do dia e pilar de organização</p>
+                    </div>
                   </div>
-                </div>
-
-                {/* Switch Toggle */}
-                <div className={`w-10 h-5 rounded-full transition-colors p-0.5 flex items-center ${
-                  newTaskIsRecurring ? 'bg-orange-500 justify-end' : 'bg-zinc-800 justify-start'
-                }`}>
-                  <motion.div 
-                    layout 
-                    className="w-4 h-4 bg-white rounded-full shadow-md" 
-                  />
-                </div>
-              </div>
-
-              {/* Etapas / Subtarefas section */}
-              <div className="border-t border-zinc-900 pt-3 space-y-2">
-                <label className="text-[10px] text-gray-400 uppercase font-bold block">Etapas / Subtarefas (Opcional)</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={currentSubtaskText}
-                    onChange={(e) => setCurrentSubtaskText(e.target.value)}
-                    placeholder="Adicione uma etapa para esta tarefa..."
-                    className="flex-1 bg-zinc-950 border border-zinc-900 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-orange-500/50"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        if (currentSubtaskText.trim()) {
-                          setNewTaskSubtasks([...newTaskSubtasks, currentSubtaskText.trim()]);
-                          setCurrentSubtaskText('');
-                        }
-                      }
-                    }}
-                  />
                   <button
                     type="button"
-                    onClick={() => {
-                      if (currentSubtaskText.trim()) {
-                        setNewTaskSubtasks([...newTaskSubtasks, currentSubtaskText.trim()]);
-                        setCurrentSubtaskText('');
-                      }
-                    }}
-                    className="bg-zinc-800 hover:bg-zinc-700 text-orange-500 font-bold text-xs px-3 py-1.5 rounded-lg border border-zinc-800/40 transition-colors"
+                    onClick={() => setIsAdding(false)}
+                    className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition-colors"
                   >
-                    + Etapa
+                    <X className="h-5 w-5" />
                   </button>
                 </div>
 
-                {newTaskSubtasks.length > 0 && (
-                  <div className="space-y-1.5 bg-zinc-950/40 p-2.5 rounded-xl border border-zinc-900 max-h-[120px] overflow-y-auto">
-                    {newTaskSubtasks.map((st, sidx) => (
-                      <div key={sidx} className="flex items-center justify-between bg-zinc-900/40 px-2 py-1.5 rounded border border-zinc-900">
-                        <span className="text-[11px] text-gray-300 font-medium">{st}</span>
-                        <button
-                          type="button"
-                          onClick={() => setNewTaskSubtasks(newTaskSubtasks.filter((_, i) => i !== sidx))}
-                          className="text-zinc-500 hover:text-red-500 transition-colors text-[10px] font-bold"
-                        >
-                          Remover
-                        </button>
-                      </div>
-                    ))}
+                {/* Form Body */}
+                <form onSubmit={handleAddTask} className="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1">
+                  {/* Nome da Tarefa */}
+                  <div>
+                    <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1">
+                      Nome da Tarefa <span className="text-orange-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={newTaskText}
+                      onChange={(e) => setNewTaskText(e.target.value)}
+                      placeholder="Ex: Treinar na academia, Beber 3L de água, Estudar React..."
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-orange-500/60 transition-colors"
+                      maxLength={60}
+                      required
+                    />
                   </div>
-                )}
-              </div>
 
-              <div className="flex justify-end gap-2 pt-1 border-t border-zinc-900 pt-3">
-                <button
-                  type="button"
-                  onClick={() => setIsAdding(false)}
-                  className="text-xs text-gray-400 hover:text-white px-3 py-1.5 transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="bg-orange-500 hover:bg-orange-600 text-white font-semibold text-xs px-4 py-1.5 rounded-lg transition-colors"
-                >
-                  Confirmar Tarefa
-                </button>
-              </div>
-            </motion.form>
+                  {/* Período do Dia */}
+                  <div>
+                    <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1">
+                      Período do Dia
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { id: 'geral', label: 'Geral', icon: Clock, desc: 'Dia todo' },
+                        { id: 'manha', label: 'Manhã', icon: Sun, desc: 'Matinal' },
+                        { id: 'noite', label: 'Noite', icon: Moon, desc: 'Noturno' }
+                      ].map((p) => {
+                        const IconComp = p.icon;
+                        const isSelected = newTaskPeriod === p.id;
+                        return (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => setNewTaskPeriod(p.id as any)}
+                            className={`p-2.5 rounded-xl border text-center transition-all flex flex-col items-center gap-1 ${
+                              isSelected
+                                ? 'bg-orange-500/10 border-orange-500/50 text-orange-400 shadow-[0_0_12px_rgba(249,115,22,0.15)]'
+                                : 'bg-zinc-900 border-zinc-800/80 text-zinc-400 hover:text-zinc-200'
+                            }`}
+                          >
+                            <IconComp className={`h-4 w-4 ${isSelected ? 'text-orange-400' : 'text-zinc-500'}`} />
+                            <span className="text-xs font-bold">{p.label}</span>
+                            <span className="text-[9px] text-zinc-500 leading-none">{p.desc}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Pilar de Organização */}
+                  <div>
+                    <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1">
+                      Pilar de Organização
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { id: 'O Básico', label: 'O Básico', sub: 'Checklist & Hábitos' },
+                        { id: 'Segundo Cérebro', label: 'Segundo Cérebro', sub: 'Estudos & Notas' },
+                        { id: 'Metas', label: 'Metas e Projetos', sub: 'Objetivos & Foco' },
+                        { id: 'Canalização', label: 'Canalização', sub: 'Ação & Execução' }
+                      ].map((cat) => {
+                        const isSelected = newTaskCategory === cat.id;
+                        return (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => setNewTaskCategory(cat.id)}
+                            className={`p-2.5 rounded-xl border text-left transition-all ${
+                              isSelected
+                                ? 'bg-orange-500/10 border-orange-500 text-orange-400 shadow-[0_0_12px_rgba(249,115,22,0.15)]'
+                                : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                            }`}
+                          >
+                            <div className="text-xs font-bold flex items-center justify-between">
+                              <span>{cat.label}</span>
+                              {isSelected && <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />}
+                            </div>
+                            <span className="text-[9.5px] text-zinc-500 block mt-0.5">{cat.sub}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Recorrência */}
+                  <div>
+                    <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1">
+                      Recorrência da Tarefa
+                    </label>
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => setNewTaskIsRecurring(true)}
+                        className={`p-3 rounded-xl border text-left transition-all flex flex-col gap-1 ${
+                          newTaskIsRecurring
+                            ? 'bg-orange-500/10 border-orange-500/50 text-orange-400'
+                            : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 font-bold text-xs">
+                          <Clock className="h-3.5 w-3.5 text-orange-500" />
+                          <span>Todos os dias</span>
+                        </div>
+                        <span className="text-[10px] text-zinc-400 leading-tight">
+                          Recorrente diariamente (reseta a cada novo dia)
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setNewTaskIsRecurring(false)}
+                        className={`p-3 rounded-xl border text-left transition-all flex flex-col gap-1 ${
+                          !newTaskIsRecurring
+                            ? 'bg-orange-500/10 border-orange-500/50 text-orange-400'
+                            : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 font-bold text-xs">
+                          <Calendar className="h-3.5 w-3.5 text-orange-500" />
+                          <span>Apenas no dia criada</span>
+                        </div>
+                        <span className="text-[10px] text-zinc-400 leading-tight">
+                          Disponível apenas no dia atual / selecionado
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Etapas / Subtarefas (Opcional) */}
+                  <div className="border-t border-zinc-900 pt-3 space-y-2">
+                    <label className="text-[10px] text-gray-400 uppercase font-bold block">
+                      Etapas / Subtarefas (Opcional)
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={currentSubtaskText}
+                        onChange={(e) => setCurrentSubtaskText(e.target.value)}
+                        placeholder="Ex: Comprar suplemento, Preparar mochila..."
+                        className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/60"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (currentSubtaskText.trim()) {
+                              setNewTaskSubtasks([...newTaskSubtasks, currentSubtaskText.trim()]);
+                              setCurrentSubtaskText('');
+                            }
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (currentSubtaskText.trim()) {
+                            setNewTaskSubtasks([...newTaskSubtasks, currentSubtaskText.trim()]);
+                            setCurrentSubtaskText('');
+                          }
+                        }}
+                        className="bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-orange-500 font-bold text-xs px-3.5 py-2 rounded-xl transition-colors shrink-0"
+                      >
+                        + Adicionar
+                      </button>
+                    </div>
+
+                    {newTaskSubtasks.length > 0 && (
+                      <div className="space-y-1.5 bg-zinc-900/40 p-2.5 rounded-xl border border-zinc-800/80 max-h-[120px] overflow-y-auto">
+                        {newTaskSubtasks.map((st, sidx) => (
+                          <div key={sidx} className="flex items-center justify-between bg-zinc-950 px-2.5 py-1.5 rounded-lg border border-zinc-800">
+                            <span className="text-[11px] text-gray-300 font-medium">{st}</span>
+                            <button
+                              type="button"
+                              onClick={() => setNewTaskSubtasks(newTaskSubtasks.filter((_, i) => i !== sidx))}
+                              className="text-zinc-500 hover:text-red-400 transition-colors text-[10px] font-bold"
+                            >
+                              Remover
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Footer Buttons */}
+                  <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-900">
+                    <button
+                      type="button"
+                      onClick={() => setIsAdding(false)}
+                      className="px-4 py-2 text-xs font-semibold text-zinc-400 hover:text-white transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={!newTaskText.trim()}
+                      className="bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition-all shadow-[0_4px_15px_rgba(249,115,22,0.25)] flex items-center gap-1.5"
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span>Criar Tarefa</span>
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
           )}
         </AnimatePresence>
 
