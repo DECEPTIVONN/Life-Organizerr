@@ -1281,6 +1281,7 @@ export default function App() {
         reminders,
         dailyTasks,
         routine,
+        gridRoutine,
         notes,
         calendarNotes,
         dailySpaceEnabled: dailySpaceNotifEnabled,
@@ -1294,7 +1295,7 @@ export default function App() {
     const handleStorageChange = () => doSync();
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, [reminders, dailyTasks, routine, notes, calendarNotes]);
+  }, [reminders, dailyTasks, routine, gridRoutine, notes, calendarNotes]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || typeof Notification === 'undefined') return;
@@ -1311,14 +1312,15 @@ export default function App() {
 
       // 1. Routine Items (blocos de tempo de rotina diária)
       routine.forEach(item => {
-        if (!item.reminderTime) return;
-        const matchesDay = item.isEveryDay || item.dayOfWeek === dayOfWeek;
-        if (matchesDay && item.reminderTime === currentHHMM) {
+        const timeToRemind = item.reminderTime || item.time;
+        if (!timeToRemind) return;
+        const matchesDay = item.isEveryDay || item.dayOfWeek === undefined || item.dayOfWeek === -1 || item.dayOfWeek === dayOfWeek;
+        if (matchesDay && timeToRemind === currentHHMM) {
           const key = `routine-${item.id}-${todayDateStr}-${currentHHMM}`;
           if (!notifiedKeysRef.current.has(key)) {
             notifiedKeysRef.current.add(key);
             sendSystemNotification(`Lembrete de Rotina: ${item.task}`, {
-              body: `Horário planejado: ${item.time} | Rotina Diária`,
+              body: `Horário planejado: ${timeToRemind} | Rotina Diária`,
               tag: `routine-${item.id}`
             });
           }

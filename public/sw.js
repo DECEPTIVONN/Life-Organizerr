@@ -93,6 +93,30 @@ async function markAsNotified(key) {
   }
 }
 
+function normalizeDateStr(dateStr) {
+  if (!dateStr || typeof dateStr !== 'string') return '';
+  const clean = dateStr.trim();
+  if (clean.includes('/')) {
+    const parts = clean.split('/');
+    if (parts.length === 3) {
+      return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+    }
+  }
+  if (clean.includes('T')) {
+    return clean.split('T')[0];
+  }
+  return clean;
+}
+
+function timeToMinutes(tStr) {
+  if (!tStr || typeof tStr !== 'string' || !tStr.includes(':')) return -1;
+  const parts = tStr.split(':');
+  const h = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10);
+  if (isNaN(h) || isNaN(m)) return -1;
+  return h * 60 + m;
+}
+
 // --- Background Alarm Checking Loop ---
 async function checkScheduledAlarms() {
   if (!self.registration || !self.registration.showNotification) return;
@@ -104,7 +128,7 @@ async function checkScheduledAlarms() {
   const dNow = new Date();
   const pad = (n) => String(n).padStart(2, '0');
   const todayStr = `${dNow.getFullYear()}-${pad(dNow.getMonth() + 1)}-${pad(dNow.getDate())}`;
-  const currentHHMM = `${pad(dNow.getHours())}:${pad(dNow.getMinutes())}`;
+  const currentMinutesTotal = dNow.getHours() * 60 + dNow.getMinutes();
   const dayOfWeek = dNow.getDay(); // 0 = Dom, 1 = Seg, ...
 
   for (const item of alarms) {
@@ -131,31 +155,41 @@ async function checkScheduledAlarms() {
     } 
     // Case 2: Scheduled Time triggers (HH:MM format)
     else if (item.scheduledTime) {
-      if (item.scheduledTime === currentHHMM) {
-        let shouldTrigger = true;
+      const itemMinutes = timeToMinutes(item.scheduledTime);
+      if (itemMinutes >= 0) {
+        const diffMinutes = currentMinutesTotal - itemMinutes;
+        // Trigger if current time is within 0 to 3 minutes after the scheduled time
+        if (diffMinutes >= 0 && diffMinutes <= 3) {
+          let shouldTrigger = true;
 
-        if (item.scheduledDate && item.scheduledDate !== todayStr) {
-          shouldTrigger = false;
-        }
+          if (item.scheduledDate) {
+            const normDate = normalizeDateStr(item.scheduledDate);
+            if (normDate && normDate !== todayStr) {
+              shouldTrigger = false;
+            }
+          }
 
-        if (item.dayOfWeek !== undefined && item.dayOfWeek !== dayOfWeek && !item.isEveryDay) {
-          shouldTrigger = false;
-        }
+          if (item.dayOfWeek !== undefined && item.dayOfWeek !== null && item.dayOfWeek >= 0 && !item.isEveryDay) {
+            if (item.dayOfWeek !== dayOfWeek) {
+              shouldTrigger = false;
+            }
+          }
 
-        if (shouldTrigger) {
-          const notifKey = `time-${item.id}-${todayStr}-${currentHHMM}`;
-          if (!(await isAlreadyNotified(notifKey))) {
-            await markAsNotified(notifKey);
-            await self.registration.showNotification(item.title || 'TRONUS Planner', {
-              body: item.body || `Lembrete agendado para as ${item.scheduledTime}`,
-              icon: '/icon-192.png',
-              badge: '/favicon-32x32.png',
-              vibrate: [300, 100, 300, 100, 300],
-              requireInteraction: true,
-              renotify: true,
-              tag: String(item.id),
-              data: { url: '/' }
-            });
+          if (shouldTrigger) {
+            const notifKey = `time-${item.id}-${todayStr}-${item.scheduledTime}`;
+            if (!(await isAlreadyNotified(notifKey))) {
+              await markAsNotified(notifKey);
+              await self.registration.showNotification(item.title || 'TRONUS Planner', {
+                body: item.body || `Lembrete agendado para as ${item.scheduledTime}`,
+                icon: '/icon-192.png',
+                badge: '/favicon-32x32.png',
+                vibrate: [300, 100, 300, 100, 300],
+                requireInteraction: true,
+                renotify: true,
+                tag: String(item.id),
+                data: { url: '/' }
+              });
+            }
           }
         }
       }

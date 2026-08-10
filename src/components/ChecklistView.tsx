@@ -1341,11 +1341,6 @@ export default function ChecklistView({
               <span className={`text-xs font-medium transition-all group-hover/tasktitle:text-orange-400 ${task.completed ? 'line-through text-gray-500' : 'text-white'}`}>
                 {task.text}
               </span>
-              {task.category && task.category !== 'O Básico' && task.category !== 'O BÁSICO' && task.category !== 'Geral' && (
-                <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono uppercase tracking-wide ${catStyles.badgeBg}`}>
-                  {task.category}
-                </span>
-              )}
               {isRetroactive && (
                 <span className="text-[9px] bg-amber-500/15 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded font-mono uppercase tracking-wide inline-flex items-center gap-0.5" title="Marcado retroativamente">
                   <Clock className="h-2.5 w-2.5 text-amber-400" /> RETROATIVO

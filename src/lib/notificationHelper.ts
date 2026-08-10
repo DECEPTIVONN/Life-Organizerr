@@ -71,6 +71,7 @@ export async function syncAlarmsToServiceWorker(payload: {
   reminders?: any[];
   dailyTasks?: any[];
   routine?: any[];
+  gridRoutine?: Record<string, any>;
   notes?: any[];
   calendarNotes?: any[];
   dailySpaceEnabled?: boolean;
@@ -126,24 +127,50 @@ export async function syncAlarmsToServiceWorker(payload: {
         title: `Lembrete de Tarefa: ${t.text}`,
         body: `Horário: ${t.reminderTime} | Pilar: ${t.category || 'Geral'}`,
         scheduledTime: t.reminderTime,
-        scheduledDate: t.createdDate
+        scheduledDate: t.isRecurring === false ? t.createdDate : undefined
       });
     });
   }
 
-  // 3. Routine Items
-  if (isBgEnabled && payload.routine) {
-    payload.routine.forEach((item) => {
-      if (!item.reminderTime) return;
-      alarms.push({
-        id: `routine-${item.id}`,
-        title: `Lembrete de Rotina: ${item.task}`,
-        body: `Horário planejado: ${item.time || item.reminderTime} | Rotina Diária`,
-        scheduledTime: item.reminderTime,
-        dayOfWeek: item.dayOfWeek,
-        isEveryDay: item.isEveryDay
+  // 3. Routine Items & Grid Routine (Blocos de Rotina Diária)
+  if (isBgEnabled) {
+    if (payload.routine && Array.isArray(payload.routine)) {
+      payload.routine.forEach((item) => {
+        const timeToRemind = item.reminderTime || item.time;
+        if (!timeToRemind) return;
+        alarms.push({
+          id: `routine-${item.id}`,
+          title: `Lembrete de Rotina: ${item.task || item.text}`,
+          body: `Horário planejado: ${item.time || timeToRemind} | Rotina Diária`,
+          scheduledTime: timeToRemind,
+          dayOfWeek: item.dayOfWeek,
+          isEveryDay: item.isEveryDay ?? (item.dayOfWeek === undefined || item.dayOfWeek === -1 || item.dayOfWeek < 0)
+        });
       });
-    });
+    }
+
+    if (payload.gridRoutine && typeof payload.gridRoutine === 'object') {
+      Object.entries(payload.gridRoutine).forEach(([key, val]: [string, any]) => {
+        if (!val || typeof val !== 'object' || !val.text) return;
+        const timeStr = val.startTime || val.reminderTime || val.time;
+        const parts = key.split('-');
+        let dayOfWeek: number | undefined = undefined;
+        if (parts.length >= 2) {
+          const parsedDay = parseInt(parts[0], 10);
+          if (!isNaN(parsedDay)) dayOfWeek = parsedDay;
+        }
+        if (timeStr) {
+          alarms.push({
+            id: `grid-routine-${key}`,
+            title: `Rotina Diária: ${val.text}`,
+            body: `Horário: ${timeStr} | Bloco de Rotina`,
+            scheduledTime: timeStr,
+            dayOfWeek: dayOfWeek,
+            isEveryDay: dayOfWeek === undefined || dayOfWeek < 0
+          });
+        }
+      });
+    }
   }
 
   // 4. Standalone Notes
