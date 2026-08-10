@@ -15,6 +15,8 @@ export interface DailyTask {
   subtasks?: SubTask[];
   reminderTime?: string;
   createdDate?: string;
+  isRetroactive?: boolean;
+  completedRetroactively?: boolean;
 }
 
 export interface BookTracker {

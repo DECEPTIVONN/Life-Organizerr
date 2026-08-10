@@ -565,6 +565,14 @@ export default function App() {
     ];
   });
 
+  useEffect(() => {
+    try {
+      localStorage.setItem('mbc_dailyTasks', JSON.stringify(dailyTasks));
+    } catch (e) {
+      console.error("Error saving dailyTasks to localStorage:", e);
+    }
+  }, [dailyTasks]);
+
   const [goals, setGoals] = useState<Goal[]>(() => {
     try {
       const saved = localStorage.getItem('mbc_goals');
