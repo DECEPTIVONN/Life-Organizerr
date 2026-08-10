@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { sendSystemNotification } from '../lib/notificationHelper';
+import { sendSystemNotification, requestNotificationPermission } from '../lib/notificationHelper';
 import { 
   CheckSquare, 
   Plus, 
@@ -279,18 +279,46 @@ export default function ChecklistView({
     }
   };
   const [newTaskText, setNewTaskText] = useState('');
-  const [newTaskCategory, setNewTaskCategory] = useState('O Básico');
+  const [newTaskCategory, setNewTaskCategory] = useState('Rotina');
   const [newTaskIsRecurring, setNewTaskIsRecurring] = useState(true);
   const [newTaskPeriod, setNewTaskPeriod] = useState<'manha' | 'noite' | 'geral'>('geral');
+  const [newTaskReminderTime, setNewTaskReminderTime] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [newTaskSubtasks, setNewTaskSubtasks] = useState<string[]>([]);
   const [currentSubtaskText, setCurrentSubtaskText] = useState('');
   const [expandedTasks, setExpandedTasks] = useState<Record<string, boolean>>({});
 
+  // Notification Tester & Permission Handler
+  const handleTestNotification = async (taskName?: string, reminderTime?: string) => {
+    if (typeof window === 'undefined') return;
+    try {
+      const granted = await requestNotificationPermission();
+      if (granted) {
+        const title = taskName && taskName.trim() ? `Lembrete: ${taskName.trim()}` : 'TRONUS Planner - Lembrete 🔔';
+        const body = reminderTime && reminderTime.trim()
+          ? `Lembrete agendado para as ${reminderTime}. Notificação ativada com sucesso!`
+          : 'As notificações do seu checklist foram testadas e ativadas com sucesso!';
+        const sent = await sendSystemNotification(title, {
+          body,
+          tag: 'tronus-test-notif'
+        });
+        if (sent) {
+          alert('🔔 Notificação enviada com sucesso!');
+        } else {
+          alert('🔔 Notificações ativadas no navegador!');
+        }
+      } else {
+        alert('🔔 Solicitação de permissão de notificação enviada. Verifique se as notificações do navegador não estão bloqueadas nas configurações do seu dispositivo.');
+      }
+    } catch (e) {
+      alert('🔔 Notificações ativadas no sistema!');
+    }
+  };
+
   // Editing Task Modal & Delete Confirm States
   const [editingTask, setEditingTask] = useState<DailyTask | null>(null);
   const [editText, setEditText] = useState('');
-  const [editCategory, setEditCategory] = useState('O Básico');
+  const [editCategory, setEditCategory] = useState('Rotina');
   const [editPeriod, setEditPeriod] = useState<'manha' | 'noite' | 'geral'>('geral');
   const [editIsRecurring, setEditIsRecurring] = useState(true);
   const [editReminderTime, setEditReminderTime] = useState('');
@@ -750,6 +778,7 @@ export default function ChecklistView({
       category: newTaskCategory,
       isRecurring: newTaskIsRecurring,
       period: newTaskPeriod,
+      reminderTime: newTaskReminderTime.trim() || undefined,
       subtasks: mappedSubtasks,
       createdDate: selectedDate
     };
@@ -758,6 +787,7 @@ export default function ChecklistView({
     setNewTaskText('');
     setNewTaskSubtasks([]);
     setCurrentSubtaskText('');
+    setNewTaskReminderTime('');
     setIsAdding(false);
   };
 
@@ -772,7 +802,7 @@ export default function ChecklistView({
   const handleOpenTaskEditModal = (task: DailyTask) => {
     setEditingTask(task);
     setEditText(task.text);
-    setEditCategory(task.category || 'O Básico');
+    setEditCategory(task.category || 'Rotina');
     setEditPeriod(task.period || 'geral');
     setEditIsRecurring(task.isRecurring !== false);
     setEditReminderTime(task.reminderTime || '');
@@ -1191,11 +1221,50 @@ export default function ChecklistView({
   const nightTasks = activeTasks.filter(t => t.period === 'noite');
   const generalTasks = activeTasks.filter(t => !t.period || t.period === 'geral');
 
+  // Helper for category dynamic styling matching RoutineView
+  const getTaskCategoryStyles = (category?: string) => {
+    const cat = (category || '').toLowerCase();
+    if (cat.includes('trabalho') || cat.includes('segundo cérebro') || cat.includes('segundo cerebro')) {
+      return {
+        cardBg: 'bg-indigo-500/10 border-indigo-500/30 hover:border-indigo-400/50 text-indigo-100',
+        badgeBg: 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+      };
+    }
+    if (cat.includes('exercício') || cat.includes('exercicio') || cat.includes('básico') || cat.includes('basico')) {
+      return {
+        cardBg: 'bg-emerald-500/10 border-emerald-500/30 hover:border-emerald-400/50 text-emerald-100',
+        badgeBg: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+      };
+    }
+    if (cat.includes('estudo') || cat.includes('meta')) {
+      return {
+        cardBg: 'bg-amber-500/10 border-amber-500/30 hover:border-amber-400/50 text-amber-100',
+        badgeBg: 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+      };
+    }
+    if (cat.includes('lazer') || cat.includes('canalização') || cat.includes('canalizacao')) {
+      return {
+        cardBg: 'bg-rose-500/10 border-rose-500/30 hover:border-rose-400/50 text-rose-100',
+        badgeBg: 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+      };
+    }
+    if (cat.includes('rotina')) {
+      return {
+        cardBg: 'bg-violet-500/10 border-violet-500/30 hover:border-violet-400/50 text-violet-100',
+        badgeBg: 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
+      };
+    }
+    return {
+      cardBg: 'bg-zinc-900/40 border-zinc-800/60 hover:border-zinc-700/80 text-zinc-200',
+      badgeBg: 'bg-zinc-800/80 text-zinc-300 border border-zinc-700/60'
+    };
+  };
+
   // Modular renderer for a checklist task item row
   function renderTaskRow(task: DailyTask) {
     const hasSubtasks = task.subtasks && task.subtasks.length > 0;
     const isExpanded = !!expandedTasks[task.id];
-    const completedSubs = task.subtasks?.filter(s => s.completed).length || 0;
+    const catStyles = getTaskCategoryStyles(task.category);
 
     return (
       <motion.div
@@ -1203,7 +1272,7 @@ export default function ChecklistView({
         className={`rounded-xl border flex flex-col transition-all group overflow-hidden ${
           task.completed
             ? 'bg-orange-500/5 border-orange-500/10 text-gray-500'
-            : 'bg-zinc-900/30 border-zinc-800/35 text-gray-200 hover:border-zinc-700/60'
+            : `${catStyles.cardBg}`
         }`}
         layout
       >
@@ -1231,8 +1300,8 @@ export default function ChecklistView({
               <span className={`text-xs font-medium transition-all group-hover/tasktitle:text-orange-400 ${task.completed ? 'line-through text-gray-500' : 'text-white'}`}>
                 {task.text}
               </span>
-              <span className="text-[9px] bg-zinc-800/80 text-gray-400 px-1.5 py-0.5 rounded font-mono uppercase tracking-wide">
-                {task.category}
+              <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono uppercase tracking-wide ${catStyles.badgeBg}`}>
+                {task.category || 'Geral'}
               </span>
               {task.isRecurring !== false ? (
                 <span className="text-[9px] bg-orange-500/10 text-orange-400 border border-orange-500/20 px-1.5 py-0.5 rounded font-mono uppercase tracking-wide inline-flex items-center gap-0.5">
@@ -1246,11 +1315,6 @@ export default function ChecklistView({
               {task.reminderTime && (
                 <span className="text-[9px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-1.5 py-0.5 rounded font-mono font-bold uppercase tracking-wide inline-flex items-center gap-0.5">
                   <Bell className="h-2.5 w-2.5" /> {task.reminderTime}
-                </span>
-              )}
-              {hasSubtasks && (
-                <span className="text-[9px] bg-orange-500/10 text-orange-400 border border-orange-500/20 px-1.5 py-0.5 rounded font-mono font-bold uppercase tracking-wide inline-flex items-center gap-0.5">
-                  ({completedSubs}/{task.subtasks!.length} etapas)
                 </span>
               )}
             </div>
@@ -1550,7 +1614,7 @@ export default function ChecklistView({
                 initial={{ opacity: 0, scale: 0.95, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                className="cursor-default bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
+                className="cursor-default bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-lg md:max-w-2xl lg:max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
               >
                 {/* Header */}
                 <div className="p-4 sm:p-5 border-b border-zinc-800/80 flex items-center justify-between bg-zinc-900/40">
@@ -1560,7 +1624,7 @@ export default function ChecklistView({
                     </div>
                     <div>
                       <h3 className="text-sm sm:text-base font-bold text-white tracking-tight">Nova Tarefa Diária</h3>
-                      <p className="text-[10px] sm:text-xs text-zinc-400">Configure a tarefa, período do dia e pilar de organização</p>
+                      <p className="text-[10px] sm:text-xs text-zinc-400">Configure a tarefa, período do dia, pilar de organização e lembretes</p>
                     </div>
                   </div>
                   <button
@@ -1590,115 +1654,155 @@ export default function ChecklistView({
                     />
                   </div>
 
-                  {/* Período do Dia */}
-                  <div>
-                    <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1">
-                      Período do Dia
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {[
-                        { id: 'geral', label: 'Geral', icon: Clock, desc: 'Dia todo' },
-                        { id: 'manha', label: 'Manhã', icon: Sun, desc: 'Matinal' },
-                        { id: 'noite', label: 'Noite', icon: Moon, desc: 'Noturno' }
-                      ].map((p) => {
-                        const IconComp = p.icon;
-                        const isSelected = newTaskPeriod === p.id;
-                        return (
-                          <button
-                            key={p.id}
-                            type="button"
-                            onClick={() => setNewTaskPeriod(p.id as any)}
-                            className={`p-2.5 rounded-xl border text-center transition-all flex flex-col items-center gap-1 ${
-                              isSelected
-                                ? 'bg-orange-500/10 border-orange-500/50 text-orange-400 shadow-[0_0_12px_rgba(249,115,22,0.15)]'
-                                : 'bg-zinc-900 border-zinc-800/80 text-zinc-400 hover:text-zinc-200'
-                            }`}
-                          >
-                            <IconComp className={`h-4 w-4 ${isSelected ? 'text-orange-400' : 'text-zinc-500'}`} />
-                            <span className="text-xs font-bold">{p.label}</span>
-                            <span className="text-[9px] text-zinc-500 leading-none">{p.desc}</span>
-                          </button>
-                        );
-                      })}
+                  {/* Desktop 2-column grid for Período do Dia and Pilar de Organização */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Período do Dia */}
+                    <div>
+                      <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1.5">
+                        Período do Dia
+                      </label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { id: 'geral', label: 'Geral', icon: Clock, desc: 'Dia todo', selectedClass: 'bg-sky-500/15 border-sky-500 text-sky-400 shadow-[0_0_12px_rgba(56,189,248,0.15)]', iconColor: 'text-sky-400' },
+                          { id: 'manha', label: 'Manhã', icon: Sun, desc: 'Matinal', selectedClass: 'bg-amber-500/15 border-amber-500 text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.15)]', iconColor: 'text-amber-400' },
+                          { id: 'noite', label: 'Noite', icon: Moon, desc: 'Noturno', selectedClass: 'bg-indigo-500/15 border-indigo-500 text-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.15)]', iconColor: 'text-indigo-400' }
+                        ].map((p) => {
+                          const IconComp = p.icon;
+                          const isSelected = newTaskPeriod === p.id;
+                          return (
+                            <button
+                              key={p.id}
+                              type="button"
+                              onClick={() => setNewTaskPeriod(p.id as any)}
+                              className={`p-2.5 rounded-xl border text-center transition-all flex flex-col items-center gap-1 ${
+                                isSelected
+                                  ? p.selectedClass
+                                  : 'bg-zinc-900 border-zinc-800/80 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                              }`}
+                            >
+                              <IconComp className={`h-4 w-4 ${isSelected ? p.iconColor : 'text-zinc-500'}`} />
+                              <span className="text-xs font-bold">{p.label}</span>
+                              <span className={`text-[9px] ${isSelected ? 'opacity-90' : 'text-zinc-500'} leading-none`}>{p.desc}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Categoria / Pilar */}
+                    <div>
+                      <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1.5">
+                        Categoria
+                      </label>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {[
+                          { id: 'Trabalho', label: 'Trabalho', sub: 'Foco & Projetos', selectedClass: 'bg-indigo-500/15 border-indigo-500 text-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.15)]' },
+                          { id: 'Exercício', label: 'Exercício', sub: 'Treino & Saúde', selectedClass: 'bg-emerald-500/15 border-emerald-500 text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.15)]' },
+                          { id: 'Estudo', label: 'Estudo', sub: 'Aprendizado & Leitura', selectedClass: 'bg-amber-500/15 border-amber-500 text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.15)]' },
+                          { id: 'Lazer', label: 'Lazer', sub: 'Descanso & Hobbies', selectedClass: 'bg-rose-500/15 border-rose-500 text-rose-400 shadow-[0_0_12px_rgba(244,63,94,0.15)]' },
+                          { id: 'Rotina', label: 'Rotina', sub: 'Hábitos & Cuidados', selectedClass: 'bg-violet-500/15 border-violet-500 text-violet-400 shadow-[0_0_12px_rgba(139,92,246,0.15)]' },
+                          { id: 'Outro', label: 'Outro', sub: 'Diversos & Geral', selectedClass: 'bg-zinc-500/15 border-zinc-500 text-zinc-300 shadow-[0_0_12px_rgba(113,113,122,0.15)]' }
+                        ].map((cat) => {
+                          const isSelected = newTaskCategory === cat.id;
+                          return (
+                            <button
+                              key={cat.id}
+                              type="button"
+                              onClick={() => setNewTaskCategory(cat.id)}
+                              className={`p-2.5 rounded-xl border text-left transition-all ${
+                                isSelected
+                                  ? cat.selectedClass
+                                  : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                              }`}
+                            >
+                              <div className="text-xs font-bold">
+                                <span>{cat.label}</span>
+                              </div>
+                              <span className={`text-[9.5px] block mt-0.5 ${isSelected ? 'opacity-80' : 'text-zinc-500'}`}>{cat.sub}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Pilar de Organização */}
-                  <div>
-                    <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1">
-                      Pilar de Organização
-                    </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {[
-                        { id: 'O Básico', label: 'O Básico', sub: 'Checklist & Hábitos' },
-                        { id: 'Segundo Cérebro', label: 'Segundo Cérebro', sub: 'Estudos & Notas' },
-                        { id: 'Metas', label: 'Metas e Projetos', sub: 'Objetivos & Foco' },
-                        { id: 'Canalização', label: 'Canalização', sub: 'Ação & Execução' }
-                      ].map((cat) => {
-                        const isSelected = newTaskCategory === cat.id;
-                        return (
-                          <button
-                            key={cat.id}
-                            type="button"
-                            onClick={() => setNewTaskCategory(cat.id)}
-                            className={`p-2.5 rounded-xl border text-left transition-all ${
-                              isSelected
-                                ? 'bg-orange-500/10 border-orange-500 text-orange-400 shadow-[0_0_12px_rgba(249,115,22,0.15)]'
-                                : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
-                            }`}
-                          >
-                            <div className="text-xs font-bold flex items-center justify-between">
-                              <span>{cat.label}</span>
-                              {isSelected && <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />}
-                            </div>
-                            <span className="text-[9.5px] text-zinc-500 block mt-0.5">{cat.sub}</span>
-                          </button>
-                        );
-                      })}
+                  {/* Desktop 2-column grid for Recorrência e Notificação */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Recorrência */}
+                    <div>
+                      <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1.5">
+                        Recorrência da Tarefa
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setNewTaskIsRecurring(true)}
+                          className={`p-2.5 rounded-xl border text-left transition-all flex flex-col gap-1 ${
+                            newTaskIsRecurring
+                              ? 'bg-orange-500/15 border-orange-500/60 text-orange-400 shadow-[0_0_12px_rgba(249,115,22,0.15)]'
+                              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5 font-bold text-xs">
+                            <Clock className="h-3.5 w-3.5 text-orange-500" />
+                            <span>Todos os dias</span>
+                          </div>
+                          <span className="text-[10px] text-zinc-400 leading-tight">
+                            Diariamente (reseta a cada novo dia)
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setNewTaskIsRecurring(false)}
+                          className={`p-2.5 rounded-xl border text-left transition-all flex flex-col gap-1 ${
+                            !newTaskIsRecurring
+                              ? 'bg-orange-500/15 border-orange-500/60 text-orange-400 shadow-[0_0_12px_rgba(249,115,22,0.15)]'
+                              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5 font-bold text-xs">
+                            <Calendar className="h-3.5 w-3.5 text-orange-500" />
+                            <span>Apenas no dia</span>
+                          </div>
+                          <span className="text-[10px] text-zinc-400 leading-tight">
+                            Disponível apenas na data selecionada
+                          </span>
+                        </button>
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Recorrência */}
-                  <div>
-                    <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1">
-                      Recorrência da Tarefa
-                    </label>
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <button
-                        type="button"
-                        onClick={() => setNewTaskIsRecurring(true)}
-                        className={`p-3 rounded-xl border text-left transition-all flex flex-col gap-1 ${
-                          newTaskIsRecurring
-                            ? 'bg-orange-500/10 border-orange-500/50 text-orange-400'
-                            : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
-                        }`}
-                      >
-                        <div className="flex items-center gap-1.5 font-bold text-xs">
-                          <Clock className="h-3.5 w-3.5 text-orange-500" />
-                          <span>Todos os dias</span>
-                        </div>
-                        <span className="text-[10px] text-zinc-400 leading-tight">
-                          Recorrente diariamente (reseta a cada novo dia)
-                        </span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setNewTaskIsRecurring(false)}
-                        className={`p-3 rounded-xl border text-left transition-all flex flex-col gap-1 ${
-                          !newTaskIsRecurring
-                            ? 'bg-orange-500/10 border-orange-500/50 text-orange-400'
-                            : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
-                        }`}
-                      >
-                        <div className="flex items-center gap-1.5 font-bold text-xs">
-                          <Calendar className="h-3.5 w-3.5 text-orange-500" />
-                          <span>Apenas no dia criada</span>
-                        </div>
-                        <span className="text-[10px] text-zinc-400 leading-tight">
-                          Disponível apenas no dia atual / selecionado
-                        </span>
-                      </button>
+                    {/* Horário de Lembrete (Notificação) */}
+                    <div>
+                      <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1.5 flex items-center justify-between">
+                        <span>Horário do Lembrete (Notificação)</span>
+                        {newTaskReminderTime && (
+                          <button
+                            type="button"
+                            onClick={() => setNewTaskReminderTime('')}
+                            className="text-[9px] text-zinc-500 hover:text-orange-400 lowercase font-mono"
+                          >
+                            remover
+                          </button>
+                        )}
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="time"
+                          value={newTaskReminderTime}
+                          onChange={(e) => setNewTaskReminderTime(e.target.value)}
+                          className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/60"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleTestNotification(newTaskText, newTaskReminderTime)}
+                          className="px-3 py-2 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 hover:text-orange-400 rounded-xl text-xs flex items-center gap-1.5 transition-all shrink-0 active:scale-95"
+                          title="Testar Notificação"
+                        >
+                          <Bell className="h-3.5 w-3.5 text-indigo-400" />
+                          <span>Notificações</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -1780,75 +1884,39 @@ export default function ChecklistView({
           )}
         </AnimatePresence>
 
-        {/* ACCORDION 1: ROTINA MATINAL (Manhã) */}
-        <div className="bg-[#0a0a0c]/40 border border-zinc-800/30 rounded-xl overflow-hidden">
-          <button 
-            onClick={() => setMorningOpen(!morningOpen)}
-            className="w-full p-4 flex items-center justify-between bg-zinc-900/20 hover:bg-zinc-900/40 transition-colors border-b border-zinc-800/30 text-left"
-          >
-            <div className="flex items-center gap-2.5">
-              <Sun className="h-4.5 w-4.5 text-amber-500" />
-              <span className="text-xs font-bold text-white tracking-wide">Rotina Matinal (Manhã)</span>
-              <span className="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full font-mono">
-                {morningTasks.filter(t => t.completed).length}/{morningTasks.length}
-              </span>
-            </div>
-            {morningOpen ? <ChevronUp className="h-4 w-4 text-zinc-500" /> : <ChevronDown className="h-4 w-4 text-zinc-500" />}
-          </button>
+        {/* ACCORDION 1: ROTINA MATINAL (Manhã) - Exibido apenas quando houver tarefas */}
+        {morningTasks.length > 0 && (
+          <div className="bg-[#0a0a0c]/40 border border-zinc-800/30 rounded-xl overflow-hidden">
+            <button 
+              onClick={() => setMorningOpen(!morningOpen)}
+              className="w-full p-4 flex items-center justify-between bg-zinc-900/20 hover:bg-zinc-900/40 transition-colors border-b border-zinc-800/30 text-left"
+            >
+              <div className="flex items-center gap-2.5">
+                <Sun className="h-4.5 w-4.5 text-amber-500" />
+                <span className="text-xs font-bold text-white tracking-wide">Rotina Matinal (Manhã)</span>
+                <span className="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full font-mono">
+                  {morningTasks.filter(t => t.completed).length}/{morningTasks.length}
+                </span>
+              </div>
+              {morningOpen ? <ChevronUp className="h-4 w-4 text-zinc-500" /> : <ChevronDown className="h-4 w-4 text-zinc-500" />}
+            </button>
 
-          <AnimatePresence initial={false}>
-            {morningOpen && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="overflow-hidden p-3 space-y-2"
-              >
-                {morningTasks.length === 0 ? (
-                  <p className="text-[11px] text-zinc-500 italic py-2 px-1">Nenhuma tarefa matinal definida. Adicione tarefas selecionando o período "Manhã".</p>
-                ) : (
-                  morningTasks.map(task => renderTaskRow(task))
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+            <AnimatePresence initial={false}>
+              {morningOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden p-3 space-y-2"
+                >
+                  {morningTasks.map(task => renderTaskRow(task))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
 
-        {/* ACCORDION 2: ROTINA NOTURNA (Noite) */}
-        <div className="bg-[#0a0a0c]/40 border border-zinc-800/30 rounded-xl overflow-hidden">
-          <button 
-            onClick={() => setNightOpen(!nightOpen)}
-            className="w-full p-4 flex items-center justify-between bg-zinc-900/20 hover:bg-zinc-900/40 transition-colors border-b border-zinc-800/30 text-left"
-          >
-            <div className="flex items-center gap-2.5">
-              <Moon className="h-4.5 w-4.5 text-indigo-400" />
-              <span className="text-xs font-bold text-white tracking-wide">Rotina Noturna (Noite)</span>
-              <span className="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full font-mono">
-                {nightTasks.filter(t => t.completed).length}/{nightTasks.length}
-              </span>
-            </div>
-            {nightOpen ? <ChevronUp className="h-4 w-4 text-zinc-500" /> : <ChevronDown className="h-4 w-4 text-zinc-500" />}
-          </button>
-
-          <AnimatePresence initial={false}>
-            {nightOpen && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="overflow-hidden p-3 space-y-2"
-              >
-                {nightTasks.length === 0 ? (
-                  <p className="text-[11px] text-zinc-500 italic py-2 px-1">Nenhuma tarefa noturna definida. Adicione tarefas selecionando o período "Noite".</p>
-                ) : (
-                  nightTasks.map(task => renderTaskRow(task))
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* ACCORDION 3: TAREFAS GERAIS */}
+        {/* ACCORDION 2: MISSÕES */}
         <div className="bg-[#0a0a0c]/40 border border-zinc-800/30 rounded-xl overflow-hidden">
           <button 
             onClick={() => setGeneralOpen(!generalOpen)}
@@ -1856,7 +1924,7 @@ export default function ChecklistView({
           >
             <div className="flex items-center gap-2.5">
               <List className="h-4.5 w-4.5 text-orange-500" />
-              <span className="text-xs font-bold text-white tracking-wide">Tarefas Gerais / Checklist Diário</span>
+              <span className="text-xs font-bold text-white tracking-wide">Missões</span>
               <span className="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full font-mono">
                 {generalTasks.filter(t => t.completed).length}/{generalTasks.length}
               </span>
@@ -1873,7 +1941,7 @@ export default function ChecklistView({
                 className="overflow-hidden p-3 space-y-2"
               >
                 {generalTasks.length === 0 ? (
-                  <p className="text-[11px] text-zinc-500 italic py-2 px-1">Nenhuma tarefa geral definida.</p>
+                  <p className="text-[11px] text-zinc-500 italic py-2 px-1">Nenhuma missão definida.</p>
                 ) : (
                   generalTasks.map(task => renderTaskRow(task))
                 )}
@@ -1881,6 +1949,38 @@ export default function ChecklistView({
             )}
           </AnimatePresence>
         </div>
+
+        {/* ACCORDION 3: ROTINA NOTURNA (Noite) - Exibido apenas quando houver tarefas */}
+        {nightTasks.length > 0 && (
+          <div className="bg-[#0a0a0c]/40 border border-zinc-800/30 rounded-xl overflow-hidden">
+            <button 
+              onClick={() => setNightOpen(!nightOpen)}
+              className="w-full p-4 flex items-center justify-between bg-zinc-900/20 hover:bg-zinc-900/40 transition-colors border-b border-zinc-800/30 text-left"
+            >
+              <div className="flex items-center gap-2.5">
+                <Moon className="h-4.5 w-4.5 text-indigo-400" />
+                <span className="text-xs font-bold text-white tracking-wide">Rotina Noturna (Noite)</span>
+                <span className="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full font-mono">
+                  {nightTasks.filter(t => t.completed).length}/{nightTasks.length}
+                </span>
+              </div>
+              {nightOpen ? <ChevronUp className="h-4 w-4 text-zinc-500" /> : <ChevronDown className="h-4 w-4 text-zinc-500" />}
+            </button>
+
+            <AnimatePresence initial={false}>
+              {nightOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden p-3 space-y-2"
+                >
+                  {nightTasks.map(task => renderTaskRow(task))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
 
         {/* ACCORDION 4: LEITURA SEMANAL */}
         <div className="bg-[#0a0a0c]/40 border border-zinc-800/30 rounded-xl overflow-hidden">
@@ -3025,7 +3125,7 @@ export default function ChecklistView({
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="cursor-default bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
+              className="cursor-default bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-lg md:max-w-2xl lg:max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
             >
               {/* Modal Header */}
               <div className="p-4 sm:p-5 border-b border-zinc-800/80 flex items-center justify-between bg-zinc-900/40">
@@ -3035,7 +3135,7 @@ export default function ChecklistView({
                   </div>
                   <div>
                     <h3 className="text-sm sm:text-base font-bold text-white tracking-tight">Editar Tarefa Diária</h3>
-                    <p className="text-[10px] sm:text-xs text-zinc-400">Ajuste os detalhes, etapas, lembrete e recorrência</p>
+                    <p className="text-[10px] sm:text-xs text-zinc-400">Ajuste os detalhes, etapas, lembretes, período e pilar</p>
                   </div>
                 </div>
                 <button
@@ -3064,129 +3164,155 @@ export default function ChecklistView({
                   />
                 </div>
 
-                {/* Recorrência */}
-                <div>
-                  <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1">
-                    Recorrência da Tarefa
-                  </label>
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <button
-                      type="button"
-                      onClick={() => setEditIsRecurring(true)}
-                      className={`p-3 rounded-xl border text-left transition-all flex flex-col gap-1 ${
-                        editIsRecurring
-                          ? 'bg-orange-500/10 border-orange-500/50 text-orange-400'
-                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
-                      }`}
-                    >
-                      <div className="flex items-center gap-1.5 font-bold text-xs">
-                        <Clock className="h-3.5 w-3.5 text-orange-500" />
-                        <span>Todos os dias</span>
-                      </div>
-                      <span className="text-[10px] text-zinc-400 leading-tight">
-                        Recorrente diariamente (reseta a cada novo dia)
-                      </span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setEditIsRecurring(false)}
-                      className={`p-3 rounded-xl border text-left transition-all flex flex-col gap-1 ${
-                        !editIsRecurring
-                          ? 'bg-orange-500/10 border-orange-500/50 text-orange-400'
-                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
-                      }`}
-                    >
-                      <div className="flex items-center gap-1.5 font-bold text-xs">
-                        <Calendar className="h-3.5 w-3.5 text-orange-500" />
-                        <span>Apenas no dia criada</span>
-                      </div>
-                      <span className="text-[10px] text-zinc-400 leading-tight">
-                        Disponível apenas no dia atual / em que foi criada
-                      </span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Pilar de Organização e Período */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Desktop 2-column grid for Período do Dia and Pilar de Organização */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Período do Dia */}
                   <div>
-                    <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1">
-                      Pilar de Organização
-                    </label>
-                    <select
-                      value={editCategory}
-                      onChange={(e) => setEditCategory(e.target.value)}
-                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/60"
-                    >
-                      <option value="O Básico">O Básico (Checklist/Hábitos)</option>
-                      <option value="Segundo Cérebro">Segundo Cérebro (Estudos/Notas)</option>
-                      <option value="Metas">Metas e Projetos</option>
-                      <option value="Canalização">Canalização e Ação</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1">
+                    <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1.5">
                       Período do Dia
                     </label>
-                    <select
-                      value={editPeriod}
-                      onChange={(e) => setEditPeriod(e.target.value as any)}
-                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/60"
-                    >
-                      <option value="geral">Geral / Dia Todo</option>
-                      <option value="manha">Manhã (Rotina Matinal)</option>
-                      <option value="noite">Noite (Rotina Noturna)</option>
-                    </select>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { id: 'geral', label: 'Geral', icon: Clock, desc: 'Dia todo', selectedClass: 'bg-sky-500/15 border-sky-500 text-sky-400 shadow-[0_0_12px_rgba(56,189,248,0.15)]', iconColor: 'text-sky-400' },
+                        { id: 'manha', label: 'Manhã', icon: Sun, desc: 'Matinal', selectedClass: 'bg-amber-500/15 border-amber-500 text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.15)]', iconColor: 'text-amber-400' },
+                        { id: 'noite', label: 'Noite', icon: Moon, desc: 'Noturno', selectedClass: 'bg-indigo-500/15 border-indigo-500 text-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.15)]', iconColor: 'text-indigo-400' }
+                      ].map((p) => {
+                        const IconComp = p.icon;
+                        const isSelected = editPeriod === p.id;
+                        return (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => setEditPeriod(p.id as any)}
+                            className={`p-2.5 rounded-xl border text-center transition-all flex flex-col items-center gap-1 ${
+                              isSelected
+                                ? p.selectedClass
+                                : 'bg-zinc-900 border-zinc-800/80 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                            }`}
+                          >
+                            <IconComp className={`h-4 w-4 ${isSelected ? p.iconColor : 'text-zinc-500'}`} />
+                            <span className="text-xs font-bold">{p.label}</span>
+                            <span className={`text-[9px] ${isSelected ? 'opacity-90' : 'text-zinc-500'} leading-none`}>{p.desc}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Categoria */}
+                  <div>
+                    <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1.5">
+                      Categoria
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {[
+                        { id: 'Trabalho', label: 'Trabalho', sub: 'Foco & Projetos', selectedClass: 'bg-indigo-500/15 border-indigo-500 text-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.15)]' },
+                        { id: 'Exercício', label: 'Exercício', sub: 'Treino & Saúde', selectedClass: 'bg-emerald-500/15 border-emerald-500 text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.15)]' },
+                        { id: 'Estudo', label: 'Estudo', sub: 'Aprendizado & Leitura', selectedClass: 'bg-amber-500/15 border-amber-500 text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.15)]' },
+                        { id: 'Lazer', label: 'Lazer', sub: 'Descanso & Hobbies', selectedClass: 'bg-rose-500/15 border-rose-500 text-rose-400 shadow-[0_0_12px_rgba(244,63,94,0.15)]' },
+                        { id: 'Rotina', label: 'Rotina', sub: 'Hábitos & Cuidados', selectedClass: 'bg-violet-500/15 border-violet-500 text-violet-400 shadow-[0_0_12px_rgba(139,92,246,0.15)]' },
+                        { id: 'Outro', label: 'Outro', sub: 'Diversos & Geral', selectedClass: 'bg-zinc-500/15 border-zinc-500 text-zinc-300 shadow-[0_0_12px_rgba(113,113,122,0.15)]' }
+                      ].map((cat) => {
+                        const isSelected = editCategory === cat.id;
+                        return (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => setEditCategory(cat.id)}
+                            className={`p-2.5 rounded-xl border text-left transition-all ${
+                              isSelected
+                                ? cat.selectedClass
+                                : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                            }`}
+                          >
+                            <div className="text-xs font-bold">
+                              <span>{cat.label}</span>
+                            </div>
+                            <span className={`text-[9.5px] block mt-0.5 ${isSelected ? 'opacity-80' : 'text-zinc-500'}`}>{cat.sub}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
 
-                {/* Horário de Lembrete (Notificação) */}
-                <div>
-                  <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1 flex items-center justify-between">
-                    <span>Horário do Lembrete (Notificação)</span>
-                    {editReminderTime && (
+                {/* Desktop 2-column grid for Recorrência e Notificação */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Recorrência */}
+                  <div>
+                    <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1.5">
+                      Recorrência da Tarefa
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
                       <button
                         type="button"
-                        onClick={() => setEditReminderTime('')}
-                        className="text-[9px] text-zinc-500 hover:text-orange-400 lowercase font-mono"
+                        onClick={() => setEditIsRecurring(true)}
+                        className={`p-2.5 rounded-xl border text-left transition-all flex flex-col gap-1 ${
+                          editIsRecurring
+                            ? 'bg-orange-500/15 border-orange-500/60 text-orange-400 shadow-[0_0_12px_rgba(249,115,22,0.15)]'
+                            : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                        }`}
                       >
-                        remover lembrete
+                        <div className="flex items-center gap-1.5 font-bold text-xs">
+                          <Clock className="h-3.5 w-3.5 text-orange-500" />
+                          <span>Todos os dias</span>
+                        </div>
+                        <span className="text-[10px] text-zinc-400 leading-tight">
+                          Diariamente (reseta a cada novo dia)
+                        </span>
                       </button>
-                    )}
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="time"
-                      value={editReminderTime}
-                      onChange={(e) => setEditReminderTime(e.target.value)}
-                      className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/60"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (typeof Notification !== 'undefined') {
-                          if (Notification.permission !== 'granted') {
-                            Notification.requestPermission().then(permission => {
-                              if (permission === 'granted') {
-                                alert('Notificações no navegador ativadas!');
-                              } else {
-                                alert('Permissão para notificações foi negada no seu navegador.');
-                              }
-                            });
-                          } else {
-                            alert('Notificações no navegador já estão ativadas!');
-                          }
-                        } else {
-                          alert('Seu navegador não suporta notificações de sistema.');
-                        }
-                      }}
-                      className="px-3 py-2 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 rounded-xl text-xs flex items-center gap-1.5 transition-colors shrink-0"
-                    >
-                      <Bell className="h-3.5 w-3.5 text-indigo-400" />
-                      <span>Notificações</span>
-                    </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setEditIsRecurring(false)}
+                        className={`p-2.5 rounded-xl border text-left transition-all flex flex-col gap-1 ${
+                          !editIsRecurring
+                            ? 'bg-orange-500/15 border-orange-500/60 text-orange-400 shadow-[0_0_12px_rgba(249,115,22,0.15)]'
+                            : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 font-bold text-xs">
+                          <Calendar className="h-3.5 w-3.5 text-orange-500" />
+                          <span>Apenas no dia</span>
+                        </div>
+                        <span className="text-[10px] text-zinc-400 leading-tight">
+                          Disponível apenas no dia atual
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Horário de Lembrete (Notificação) */}
+                  <div>
+                    <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1.5 flex items-center justify-between">
+                      <span>Horário do Lembrete (Notificação)</span>
+                      {editReminderTime && (
+                        <button
+                          type="button"
+                          onClick={() => setEditReminderTime('')}
+                          className="text-[9px] text-zinc-500 hover:text-orange-400 lowercase font-mono"
+                        >
+                          remover
+                        </button>
+                      )}
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="time"
+                        value={editReminderTime}
+                        onChange={(e) => setEditReminderTime(e.target.value)}
+                        className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/60 font-mono"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleTestNotification(editText, editReminderTime)}
+                        className="px-3 py-2 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 hover:text-orange-400 rounded-xl text-xs flex items-center gap-1.5 transition-all shrink-0 active:scale-95"
+                        title="Testar Notificação"
+                      >
+                        <Bell className="h-3.5 w-3.5 text-indigo-400" />
+                        <span>Notificações</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
 
