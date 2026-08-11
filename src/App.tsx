@@ -38,7 +38,7 @@ import ProjetosView from './components/ProjetosView';
 import StreakHubModal from './components/StreakHubModal';
 import { LeagueRankingModal } from './components/LeagueRankingModal';
 import { LeagueRankingView } from './components/LeagueRankingView';
-import { saveToSupabase, loadFromSupabase, loadMetadataFromSupabase, getSupabaseClient } from './lib/supabase';
+import { saveToSupabase, loadFromSupabase, loadMetadataFromSupabase, getSupabaseClient, subscribeToFirestoreSync } from './lib/supabase';
 import { OfflineNotificationBanner } from './components/OfflineNotificationBanner';
 import { sendSystemNotification, syncAlarmsToServiceWorker } from './lib/notificationHelper';
 
@@ -1594,7 +1594,18 @@ export default function App() {
     // 1. Initial hydration
     checkRemoteData(true);
 
-    // 2. Realtime WebSocket Subscription
+    // 2. Realtime Firestore Subscription
+    const unsubscribeFirestore = subscribeToFirestoreSync(syncKey, (incomingPayload, updatedAt) => {
+      if (isSubscribed && incomingPayload) {
+        if (updatedAt) {
+          lastRemoteUpdatedAtRef.current = updatedAt;
+        }
+        applyIncomingData(incomingPayload);
+        setSyncStatus('synced');
+      }
+    });
+
+    // 3. Realtime Supabase Subscription
     const client = getSupabaseClient();
     let channel: any = null;
     if (client) {
@@ -1625,14 +1636,14 @@ export default function App() {
       }
     }
 
-    // 3. Fallback Polling every 2 minutes when tab is active (using lightweight metadata check)
+    // 4. Fallback Polling every 2 minutes when tab is active (using lightweight metadata check)
     const pollingInterval = setInterval(() => {
       if (isSubscribed && document.visibilityState === 'visible') {
         checkRemoteData(false);
       }
     }, 120000);
 
-    // 4. Trigger lightweight metadata check when tab comes back into focus
+    // 5. Trigger lightweight metadata check when tab comes back into focus
     const handleFocus = () => {
       if (isSubscribed && document.visibilityState === 'visible') {
         checkRemoteData(false);
@@ -1643,6 +1654,7 @@ export default function App() {
 
     return () => {
       isSubscribed = false;
+      unsubscribeFirestore();
       clearInterval(pollingInterval);
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleFocus);
@@ -1652,7 +1664,7 @@ export default function App() {
     };
   }, [syncKey]);
 
-  // Debounced push to Supabase when local state changes
+  // Debounced push to Cloud (Firestore + Supabase) when local state changes
   useEffect(() => {
     if (!isInitialLoadComplete) return;
     if (!syncKey) return;
@@ -1700,25 +1712,19 @@ export default function App() {
         localStorage.setItem('mbc_last_local_write', nowIso);
         const cleanCurrentData = JSON.parse(currentSerialized);
 
-        const client = getSupabaseClient();
-        if (client) {
-          const supOk = await saveToSupabase(syncKey, cleanCurrentData);
-          if (supOk) {
-            lastSyncedStateRef.current = currentSerialized;
-            lastRemoteUpdatedAtRef.current = nowIso;
-            setSyncStatus('synced');
-          } else {
-            setSyncStatus('error');
-          }
-        } else {
+        const saveOk = await saveToSupabase(syncKey, cleanCurrentData);
+        if (saveOk) {
           lastSyncedStateRef.current = currentSerialized;
+          lastRemoteUpdatedAtRef.current = nowIso;
+          setSyncStatus('synced');
+        } else {
           setSyncStatus('error');
         }
       } catch (err) {
-        console.error('Error saving to Supabase:', err);
+        console.error('Error saving to cloud:', err);
         setSyncStatus('error');
       }
-    }, 2500);
+    }, 2000);
 
     return () => clearTimeout(timeoutId);
   }, [

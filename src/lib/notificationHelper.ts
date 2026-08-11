@@ -67,6 +67,41 @@ export interface ScheduledAlarmItem {
   isEveryDay?: boolean;
 }
 
+function computeTargetTimestamp(scheduledTime?: string, scheduledDate?: string, dayOfWeek?: number): number | undefined {
+  if (!scheduledTime || !scheduledTime.includes(':')) return undefined;
+  const [hStr, mStr] = scheduledTime.split(':');
+  const h = parseInt(hStr, 10);
+  const m = parseInt(mStr, 10);
+  if (isNaN(h) || isNaN(m)) return undefined;
+
+  const now = new Date();
+  let target: Date;
+
+  if (scheduledDate && scheduledDate.includes('-')) {
+    const [y, mon, d] = scheduledDate.split('-').map(Number);
+    if (y && mon && d) {
+      target = new Date(y, mon - 1, d, h, m, 0, 0);
+    } else {
+      target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
+    }
+  } else if (dayOfWeek !== undefined && dayOfWeek !== null && dayOfWeek >= 0) {
+    const currentDay = now.getDay();
+    const targetDay = dayOfWeek % 7;
+    let daysAhead = (targetDay - currentDay + 7) % 7;
+    target = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysAhead, h, m, 0, 0);
+    if (daysAhead === 0 && target.getTime() <= now.getTime()) {
+      target.setDate(target.getDate() + 7);
+    }
+  } else {
+    target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
+    if (target.getTime() <= now.getTime()) {
+      target.setDate(target.getDate() + 1);
+    }
+  }
+
+  return target.getTime();
+}
+
 export async function syncAlarmsToServiceWorker(payload: {
   reminders?: any[];
   dailyTasks?: any[];
@@ -112,7 +147,8 @@ export async function syncAlarmsToServiceWorker(payload: {
           title: `⏰ ${r.title}`,
           body: r.description || `Lembrete agendado para as ${r.scheduledTime}`,
           scheduledDate: r.scheduledDate,
-          scheduledTime: r.scheduledTime
+          scheduledTime: r.scheduledTime,
+          targetTimestamp: computeTargetTimestamp(r.scheduledTime, r.scheduledDate)
         });
       }
     });
@@ -122,12 +158,14 @@ export async function syncAlarmsToServiceWorker(payload: {
   if (isBgEnabled && payload.dailyTasks) {
     payload.dailyTasks.forEach((t) => {
       if (!t.reminderTime || t.completed) return;
+      const dateForTask = t.isRecurring === false ? t.createdDate : undefined;
       alarms.push({
         id: `task-${t.id}`,
         title: `Lembrete de Tarefa: ${t.text}`,
         body: `Horário: ${t.reminderTime} | Pilar: ${t.category || 'Geral'}`,
         scheduledTime: t.reminderTime,
-        scheduledDate: t.isRecurring === false ? t.createdDate : undefined
+        scheduledDate: dateForTask,
+        targetTimestamp: computeTargetTimestamp(t.reminderTime, dateForTask)
       });
     });
   }
@@ -138,13 +176,15 @@ export async function syncAlarmsToServiceWorker(payload: {
       payload.routine.forEach((item) => {
         const timeToRemind = item.reminderTime || item.time;
         if (!timeToRemind) return;
+        const isEvDay = item.isEveryDay ?? (item.dayOfWeek === undefined || item.dayOfWeek === -1 || item.dayOfWeek < 0);
         alarms.push({
           id: `routine-${item.id}`,
           title: `Lembrete de Rotina: ${item.task || item.text}`,
           body: `Horário planejado: ${item.time || timeToRemind} | Rotina Diária`,
           scheduledTime: timeToRemind,
           dayOfWeek: item.dayOfWeek,
-          isEveryDay: item.isEveryDay ?? (item.dayOfWeek === undefined || item.dayOfWeek === -1 || item.dayOfWeek < 0)
+          isEveryDay: isEvDay,
+          targetTimestamp: computeTargetTimestamp(timeToRemind, undefined, isEvDay ? undefined : item.dayOfWeek)
         });
       });
     }
@@ -160,13 +200,15 @@ export async function syncAlarmsToServiceWorker(payload: {
           if (!isNaN(parsedDay)) dayOfWeek = parsedDay;
         }
         if (timeStr) {
+          const isEvDay = dayOfWeek === undefined || dayOfWeek < 0;
           alarms.push({
             id: `grid-routine-${key}`,
             title: `Rotina Diária: ${val.text}`,
             body: `Horário: ${timeStr} | Bloco de Rotina`,
             scheduledTime: timeStr,
             dayOfWeek: dayOfWeek,
-            isEveryDay: dayOfWeek === undefined || dayOfWeek < 0
+            isEveryDay: isEvDay,
+            targetTimestamp: computeTargetTimestamp(timeStr, undefined, isEvDay ? undefined : dayOfWeek)
           });
         }
       });
@@ -182,7 +224,8 @@ export async function syncAlarmsToServiceWorker(payload: {
         title: `Lembrete de Nota: ${n.title}`,
         body: n.content ? n.content.substring(0, 100) : 'Lembrete de anotação',
         scheduledDate: n.reminderDate,
-        scheduledTime: n.reminderTime
+        scheduledTime: n.reminderTime,
+        targetTimestamp: computeTargetTimestamp(n.reminderTime, n.reminderDate)
       });
     });
   }
@@ -196,7 +239,8 @@ export async function syncAlarmsToServiceWorker(payload: {
         title: `Lembrete de Anotação: ${cn.title}`,
         body: cn.content ? cn.content.substring(0, 100) : 'Lembrete da Agenda',
         scheduledDate: cn.date,
-        scheduledTime: cn.reminderTime
+        scheduledTime: cn.reminderTime,
+        targetTimestamp: computeTargetTimestamp(cn.reminderTime, cn.date)
       });
     });
   }
@@ -207,7 +251,8 @@ export async function syncAlarmsToServiceWorker(payload: {
       id: 'daily-space-reminder',
       title: 'Espaço Diário & Fé',
       body: 'Hora de registrar suas reflexões do dia, checklist, orações e hábitos!',
-      scheduledTime: payload.dailySpaceTime
+      scheduledTime: payload.dailySpaceTime,
+      targetTimestamp: computeTargetTimestamp(payload.dailySpaceTime)
     });
   }
 

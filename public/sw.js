@@ -42,9 +42,28 @@ async function saveAlarmsToDB(alarms) {
     const tx = db.transaction(STORE_ALARMS, 'readwrite');
     const store = tx.objectStore(STORE_ALARMS);
     store.clear();
+    const nowMs = Date.now();
+
     for (const alarm of alarms) {
       if (alarm && alarm.id) {
         store.put(alarm);
+
+        // Schedule OS-native TimestampTrigger if supported by browser/device
+        if (alarm.targetTimestamp && alarm.targetTimestamp > nowMs && self.registration && self.Notification && 'showTrigger' in self.Notification.prototype && self.TimestampTrigger) {
+          try {
+            self.registration.showNotification(alarm.title || 'TRONUS Planner', {
+              body: alarm.body || 'Lembrete agendado',
+              icon: '/icon-192.png',
+              badge: '/favicon-32x32.png',
+              vibrate: [300, 100, 300, 100, 300],
+              requireInteraction: true,
+              renotify: true,
+              tag: String(alarm.id),
+              showTrigger: new self.TimestampTrigger(alarm.targetTimestamp),
+              data: { url: '/' }
+            }).catch(() => {});
+          } catch (e) {}
+        }
       }
     }
   } catch (e) {
@@ -134,14 +153,16 @@ async function checkScheduledAlarms() {
   for (const item of alarms) {
     if (!item) continue;
 
-    // Case 1: Exact timestamp triggers (Timer, Pomodoro, Cronometer targetTs)
+    // Case 1: Target Timestamp triggers (Exact targetTs or calculated time)
     if (item.targetTimestamp) {
-      if (nowMs >= item.targetTimestamp) {
+      const diffMs = nowMs - item.targetTimestamp;
+      // Trigger if current time reached targetTimestamp and within 10 minutes catchup window
+      if (diffMs >= 0 && diffMs <= 10 * 60 * 1000) {
         const notifKey = `ts-${item.id}-${item.targetTimestamp}`;
         if (!(await isAlreadyNotified(notifKey))) {
           await markAsNotified(notifKey);
           await self.registration.showNotification(item.title || 'TRONUS Planner', {
-            body: item.body || 'Seu alarme/timer atingiu o tempo planejado!',
+            body: item.body || 'Seu alarme/lembrete atingiu o horário agendado!',
             icon: '/icon-192.png',
             badge: '/favicon-32x32.png',
             vibrate: [300, 100, 300, 100, 300],
@@ -158,8 +179,8 @@ async function checkScheduledAlarms() {
       const itemMinutes = timeToMinutes(item.scheduledTime);
       if (itemMinutes >= 0) {
         const diffMinutes = currentMinutesTotal - itemMinutes;
-        // Trigger if current time is within 0 to 3 minutes after the scheduled time
-        if (diffMinutes >= 0 && diffMinutes <= 3) {
+        // Trigger if current time is within 0 to 10 minutes catchup window
+        if (diffMinutes >= 0 && diffMinutes <= 10) {
           let shouldTrigger = true;
 
           if (item.scheduledDate) {
