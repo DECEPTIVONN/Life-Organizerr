@@ -278,6 +278,41 @@ self.addEventListener('message', (event) => {
   }
 });
 
+// Web Push Event Handler (Server Push Notifications for Background Delivery)
+self.addEventListener('push', (event) => {
+  let data = {
+    title: 'TRONUS Planner',
+    body: 'Você tem um novo lembrete agendado!'
+  };
+
+  if (event.data) {
+    try {
+      data = event.data.json();
+    } catch (e) {
+      data = {
+        title: 'TRONUS Planner',
+        body: event.data.text()
+      };
+    }
+  }
+
+  const title = data.title || 'TRONUS Planner';
+  const options = {
+    body: data.body || 'Você possui um novo lembrete!',
+    icon: data.icon || '/icon-192.png',
+    badge: '/favicon-32x32.png',
+    vibrate: [300, 100, 300, 100, 300],
+    requireInteraction: true,
+    renotify: true,
+    tag: data.tag || 'web-push-reminder',
+    data: { url: data.url || '/' }
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(title, options)
+  );
+});
+
 // Handle Background Notification Clicks (Focus/Open App)
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();

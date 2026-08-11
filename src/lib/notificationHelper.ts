@@ -112,7 +112,7 @@ export async function syncAlarmsToServiceWorker(payload: {
   dailySpaceEnabled?: boolean;
   dailySpaceTime?: string;
   backgroundEnabled?: boolean;
-}) {
+}, syncKey?: string) {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
 
   const alarms: ScheduledAlarmItem[] = [];
@@ -277,5 +277,77 @@ export async function syncAlarmsToServiceWorker(payload: {
     }
   } catch (err) {
     console.error('[TRONUS] Failed to sync alarms to SW:', err);
+  }
+
+  // 2. Register Web Push subscription & Sync alarms with server backend
+  try {
+    const effectiveSyncKey = (typeof localStorage !== 'undefined' ? localStorage.getItem('mbc_sync_key') : undefined) || 'GUEST';
+    registerWebPushSubscription(effectiveSyncKey).then(async (subscription) => {
+      await fetch('/api/push/sync-alarms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          syncKey: effectiveSyncKey,
+          alarms,
+          subscription: subscription ? subscription.toJSON() : undefined
+        })
+      }).catch(() => {});
+    });
+  } catch (err) {
+    console.warn('[TRONUS] Server Web Push sync warning:', err);
+  }
+}
+
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+export async function registerWebPushSubscription(syncKey?: string): Promise<PushSubscription | null> {
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+    return null;
+  }
+
+  const permission = await requestNotificationPermission();
+  if (!permission) return null;
+
+  try {
+    const registration = await navigator.serviceWorker.ready;
+
+    const vapidRes = await fetch('/api/push/vapid-public-key');
+    if (!vapidRes.ok) return null;
+    const { publicKey } = await vapidRes.json();
+    if (!publicKey) return null;
+
+    let subscription = await registration.pushManager.getSubscription();
+    if (!subscription) {
+      const convertedKey = urlBase64ToUint8Array(publicKey);
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: convertedKey
+      });
+    }
+
+    if (subscription) {
+      await fetch('/api/push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          syncKey: syncKey || (typeof localStorage !== 'undefined' ? localStorage.getItem('mbc_sync_key') : undefined) || 'GUEST',
+          subscription: subscription.toJSON()
+        })
+      });
+    }
+
+    return subscription;
+  } catch (err) {
+    console.warn('Failed to subscribe to Web Push:', err);
+    return null;
   }
 }

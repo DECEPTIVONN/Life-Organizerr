@@ -1287,7 +1287,7 @@ export default function App() {
         dailySpaceEnabled: dailySpaceNotifEnabled,
         dailySpaceTime,
         backgroundEnabled: bgNotifEnabled
-      });
+      }, syncKey);
     };
 
     doSync();

@@ -13,8 +13,12 @@ import {
   escapeHtml,
   isSafeRedirectUrl
 } from "./security.js";
+import { pushRouter } from "./push.js";
 
 const app = express();
+
+// Web Push API routes
+app.use(["/api/push", "/push"], pushRouter);
 
 // 1. IP Blacklist Enforcer (Drops blacklisted scanner IPs)
 app.use(ipBlacklistCheckMiddleware);
