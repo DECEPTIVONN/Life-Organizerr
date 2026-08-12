@@ -62,7 +62,9 @@ interface CalendarViewProps {
   weeklyReviews: WeeklyReview[];
   setWeeklyReviews: React.Dispatch<React.SetStateAction<WeeklyReview[]>>;
   bookTracker?: BookTracker;
+  setBookTracker?: React.Dispatch<React.SetStateAction<BookTracker>>;
   bibleTracker?: BibleTracker;
+  setBibleTracker?: React.Dispatch<React.SetStateAction<BibleTracker>>;
   routine?: RoutineItem[];
   futureEvents: FutureEvent[];
   setFutureEvents: React.Dispatch<React.SetStateAction<FutureEvent[]>>;
@@ -73,6 +75,8 @@ interface CalendarViewProps {
   userEmail?: string;
   setUserEmail?: (email: string) => void;
   freeEditMode?: boolean;
+  masterTemplates?: { gratitude: string; decrees: string; prayer: string };
+  setMasterTemplates?: React.Dispatch<React.SetStateAction<{ gratitude: string; decrees: string; prayer: string }>>;
 }
 
 const DEFAULT_GRATITUDE_TEMPLATE = `Sou profundamente grato(a) hoje por:
@@ -94,7 +98,9 @@ export default function CalendarView({
   weeklyReviews,
   setWeeklyReviews,
   bookTracker,
+  setBookTracker,
   bibleTracker,
+  setBibleTracker,
   routine,
   futureEvents,
   setFutureEvents,
@@ -104,7 +110,9 @@ export default function CalendarView({
   setUserPhoto,
   userEmail,
   setUserEmail,
-  freeEditMode = false
+  freeEditMode = false,
+  masterTemplates,
+  setMasterTemplates
 }: CalendarViewProps) {
   const BIBLE_TOTAL_CHAPTERS = 1189;
 
@@ -437,15 +445,12 @@ export default function CalendarView({
   const [tempTemplatePrayer, setTempTemplatePrayer] = useState('');
 
   // Loaded Master Templates
-  const [templateGratitude, setTemplateGratitude] = useState(() => {
-    return localStorage.getItem('planner_template_gratitude') || DEFAULT_GRATITUDE_TEMPLATE;
-  });
-  const [templateDecrees, setTemplateDecrees] = useState(() => {
-    return localStorage.getItem('planner_template_decretos') || DEFAULT_DECREES_TEMPLATE;
-  });
-  const [templatePrayer, setTemplatePrayer] = useState(() => {
-    return localStorage.getItem('planner_template_oracao') || DEFAULT_PRAYER_TEMPLATE;
-  });
+  const templateGratitude = masterTemplates?.gratitude || localStorage.getItem('planner_template_gratitude') || DEFAULT_GRATITUDE_TEMPLATE;
+  const templateDecrees = masterTemplates?.decrees || localStorage.getItem('planner_template_decretos') || DEFAULT_DECREES_TEMPLATE;
+  const templatePrayer = masterTemplates?.prayer || localStorage.getItem('planner_template_oracao') || DEFAULT_PRAYER_TEMPLATE;
+  const setTemplateGratitude = (val: string) => {};
+  const setTemplateDecrees = (val: string) => {};
+  const setTemplatePrayer = (val: string) => {};
 
   // Local state for selected day's text inputs to avoid rendering lags
   const [journalText, setJournalText] = useState('');
@@ -1249,15 +1254,33 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
 
   // Find record for current selected day
   const activeRecord = notes.find(n => n.date === selectedDateStr);
+  const activeRecordSerialized = activeRecord ? JSON.stringify({
+    journalText: activeRecord.journalText,
+    gratitudeText: activeRecord.gratitudeText,
+    decreesText: activeRecord.decreesText,
+    prayerText: activeRecord.prayerText,
+    sleepBedTime: activeRecord.sleepBedTime,
+    sleepWakeTime: activeRecord.sleepWakeTime,
+    foodMorning: activeRecord.foodMorning,
+    foodAfternoon: activeRecord.foodAfternoon,
+    foodNight: activeRecord.foodNight,
+    waterLiters: activeRecord.waterLiters,
+    alterEgoWinner: activeRecord.alterEgoWinner,
+    alterEgoText: activeRecord.alterEgoText,
+    reminderTime: activeRecord.reminderTime,
+    checklist: activeRecord.checklist
+  }) : 'none';
 
-  // Sync inputs when selectedDateStr changes or when first loading
+  const lastHydratedKeyRef = useRef<string>('');
+
+  // Sync inputs when selectedDateStr changes or when new activeRecord data is received
   useEffect(() => {
-    // Avoid re-initialization if data for selectedDateStr is already loaded into local input states
-    if (loadedDateRef.current === selectedDateStr && activeRecord) {
+    const currentKey = `${selectedDateStr}_${activeRecordSerialized}`;
+    if (lastHydratedKeyRef.current === currentKey) {
       return;
     }
 
-    loadedDateRef.current = selectedDateStr;
+    lastHydratedKeyRef.current = currentKey;
 
     if (activeRecord && activeRecord.isDailyRecord) {
       setJournalText(activeRecord.journalText || '');
@@ -1341,7 +1364,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
       setAlterEgoText('');
       setSavingStatus('idle');
     }
-  }, [selectedDateStr, activeRecord?.id, templateGratitude, templateDecrees, templatePrayer]);
+  }, [selectedDateStr, activeRecordSerialized, templateGratitude, templateDecrees, templatePrayer]);
 
   // Handle Master Templates state editing initiation
   const handleOpenTemplateSettings = () => {
@@ -1360,6 +1383,13 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
     localStorage.setItem('planner_template_gratitude', tempTemplateGratitude);
     localStorage.setItem('planner_template_decretos', tempTemplateDecrees);
     localStorage.setItem('planner_template_oracao', tempTemplatePrayer);
+    if (setMasterTemplates) {
+      setMasterTemplates({
+        gratitude: tempTemplateGratitude,
+        decrees: tempTemplateDecrees,
+        prayer: tempTemplatePrayer
+      });
+    }
     
     // Proactively update active day's text states if they were blank or matched old templates
     let nextGratitude = gratitudeText;
@@ -1653,9 +1683,9 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
     }, 400);
   };
 
-  // Real-time auto-save for Espaço Diário & Fé in CalendarView when freeEditMode is active (debounced)
+  // Real-time auto-save for Espaço Diário & Fé in CalendarView (debounced)
   useEffect(() => {
-    if (!freeEditMode || !selectedDateStr) return;
+    if (!selectedDateStr) return;
 
     const timer = setTimeout(() => {
       const finalGratitude = gratitudeText.trim() ? gratitudeText : templateGratitude;

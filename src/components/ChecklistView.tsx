@@ -38,6 +38,7 @@ import {
   Bell,
   AlertTriangle,
   Tag,
+  ListTodo,
   History,
   CheckCircle2
 } from 'lucide-react';

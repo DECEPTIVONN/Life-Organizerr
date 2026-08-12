@@ -442,6 +442,41 @@ export default function App() {
     localStorage.setItem('mbc_bibleTracker', JSON.stringify(bibleTracker));
   }, [bibleTracker]);
 
+  // Master Templates state for Espaço Diário & Fé cloud synchronization
+  const [masterTemplates, setMasterTemplates] = useState<{ gratitude: string; decrees: string; prayer: string }>(() => {
+    try {
+      const g = localStorage.getItem('planner_template_gratitude') || `Sou profundamente grato(a) hoje por:\n1. \n2. \n3. `;
+      const d = localStorage.getItem('planner_template_decretos') || `Eu decreto que hoje serei forte, focado(a) e superarei todos os meus desafios com resiliência. Estou em paz e em sintonia com a abundância.`;
+      const p = localStorage.getItem('planner_template_oracao') || `Senhor, agradeço por mais um dia de vida. Peço sabedoria para guiar minhas ações, proteção para o meu caminho e paz para o meu coração e da minha família. Amém.`;
+      return { gratitude: g, decrees: d, prayer: p };
+    } catch {
+      return {
+        gratitude: `Sou profundamente grato(a) hoje por:\n1. \n2. \n3. `,
+        decrees: `Eu decreto que hoje serei forte, focado(a) e superarei todos os meus desafios com resiliência. Estou em paz e em sintonia com a abundância.`,
+        prayer: `Senhor, agradeço por mais um dia de vida. Peço sabedoria para guiar minhas ações, proteção para o meu caminho e paz para o meu coração e da minha família. Amém.`
+      };
+    }
+  });
+
+  useEffect(() => {
+    if (masterTemplates.gratitude) localStorage.setItem('planner_template_gratitude', masterTemplates.gratitude);
+    if (masterTemplates.decrees) localStorage.setItem('planner_template_decretos', masterTemplates.decrees);
+    if (masterTemplates.prayer) localStorage.setItem('planner_template_oracao', masterTemplates.prayer);
+  }, [masterTemplates]);
+
+  // Daily Workspace Settings for Espaço Diário & Fé cloud synchronization
+  const [dailyWorkspaceSettings, setDailyWorkspaceSettings] = useState<{ notifEnabled: boolean; reminderTime: string }>(() => {
+    return {
+      notifEnabled: localStorage.getItem('mbc_daily_workspace_notif_enabled') !== 'false',
+      reminderTime: localStorage.getItem('mbc_daily_workspace_reminder_time') || '21:00'
+    };
+  });
+
+  useEffect(() => {
+    localStorage.setItem('mbc_daily_workspace_notif_enabled', String(dailyWorkspaceSettings.notifEnabled));
+    localStorage.setItem('mbc_daily_workspace_reminder_time', dailyWorkspaceSettings.reminderTime || '21:00');
+  }, [dailyWorkspaceSettings]);
+
   // --- App Lock Synchronization and Inactivity Timeout ---
   useEffect(() => {
     localStorage.setItem('mbc_app_lock_enabled', String(appLockEnabled));
@@ -1493,7 +1528,9 @@ export default function App() {
         customCards: data.customCards !== undefined ? data.customCards : latestStateRef.current.customCards,
         activeThemePreset: data.activeThemePreset !== undefined ? data.activeThemePreset : latestStateRef.current.activeThemePreset,
         customThemeHex: data.customThemeHex !== undefined ? data.customThemeHex : latestStateRef.current.customThemeHex,
-        reminders: data.reminders !== undefined ? data.reminders : latestStateRef.current.reminders
+        reminders: data.reminders !== undefined ? data.reminders : latestStateRef.current.reminders,
+        masterTemplates: data.masterTemplates !== undefined ? data.masterTemplates : (latestStateRef.current as any).masterTemplates,
+        dailyWorkspaceSettings: data.dailyWorkspaceSettings !== undefined ? data.dailyWorkspaceSettings : (latestStateRef.current as any).dailyWorkspaceSettings
       };
 
       const incomingSerialized = safeStringify(incomingData);
@@ -1530,6 +1567,12 @@ export default function App() {
       if (incomingData.gridRoutine !== undefined) setGridRoutine(incomingData.gridRoutine);
       if (incomingData.activeThemePreset !== undefined) setActiveThemePreset(incomingData.activeThemePreset);
       if (incomingData.customThemeHex !== undefined) setCustomThemeHex(incomingData.customThemeHex);
+      if ((incomingData as any).masterTemplates) {
+        setMasterTemplates((incomingData as any).masterTemplates);
+      }
+      if ((incomingData as any).dailyWorkspaceSettings) {
+        setDailyWorkspaceSettings((incomingData as any).dailyWorkspaceSettings);
+      }
 
       // Batch save to local storage
       localStorage.setItem('mbc_userName', incomingData.userName);
@@ -1558,6 +1601,17 @@ export default function App() {
       if (incomingData.gridRoutine !== undefined) localStorage.setItem('mbc_grid_routine', JSON.stringify(incomingData.gridRoutine));
       if (incomingData.activeThemePreset !== undefined) localStorage.setItem('mbc_theme_preset', incomingData.activeThemePreset);
       if (incomingData.customThemeHex !== undefined) localStorage.setItem('mbc_custom_theme_hex', incomingData.customThemeHex);
+      if ((incomingData as any).masterTemplates) {
+        const mt = (incomingData as any).masterTemplates;
+        if (mt.gratitude) localStorage.setItem('planner_template_gratitude', mt.gratitude);
+        if (mt.decrees) localStorage.setItem('planner_template_decretos', mt.decrees);
+        if (mt.prayer) localStorage.setItem('planner_template_oracao', mt.prayer);
+      }
+      if ((incomingData as any).dailyWorkspaceSettings) {
+        const dws = (incomingData as any).dailyWorkspaceSettings;
+        localStorage.setItem('mbc_daily_workspace_notif_enabled', String(dws.notifEnabled));
+        localStorage.setItem('mbc_daily_workspace_reminder_time', dws.reminderTime || '21:00');
+      }
     };
 
     async function checkRemoteData(isInitial = false) {
@@ -1696,7 +1750,9 @@ export default function App() {
       customCards,
       activeThemePreset,
       customThemeHex,
-      reminders
+      reminders,
+      masterTemplates,
+      dailyWorkspaceSettings
     };
     const currentSerialized = safeStringify(currentData);
 
@@ -1755,6 +1811,8 @@ export default function App() {
     activeThemePreset,
     customThemeHex,
     reminders,
+    masterTemplates,
+    dailyWorkspaceSettings,
     isInitialLoadComplete
   ]);
 
@@ -2518,7 +2576,9 @@ export default function App() {
             weeklyReviews={weeklyReviews}
             setWeeklyReviews={setWeeklyReviews}
             bookTracker={bookTracker}
+            setBookTracker={setBookTracker}
             bibleTracker={bibleTracker}
+            setBibleTracker={setBibleTracker}
             routine={routine}
             futureEvents={futureEvents}
             setFutureEvents={setFutureEvents}
@@ -2529,6 +2589,8 @@ export default function App() {
             userEmail={userEmail}
             setUserEmail={setUserEmail}
             freeEditMode={freeEditMode}
+            masterTemplates={masterTemplates}
+            setMasterTemplates={setMasterTemplates}
           />
         );
       case 'anuais':
@@ -2545,12 +2607,15 @@ export default function App() {
             bookTracker={bookTracker}
             setBookTracker={setBookTracker}
             bibleTracker={bibleTracker}
+            setBibleTracker={setBibleTracker}
             routine={routine}
             goals={goals}
             finances={finances}
             books={books}
             setBooks={setBooks}
             freeEditMode={freeEditMode}
+            masterTemplates={masterTemplates}
+            setMasterTemplates={setMasterTemplates}
           />
         );
       case 'projetos':

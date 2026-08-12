@@ -57,7 +57,8 @@ import {
   FileText,
   Github,
   Figma,
-  AlertTriangle
+  AlertTriangle,
+  Lightbulb
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Project, ProjectList, ProjectCard, ProjectCardChecklist, ProjectCardComment } from '../types';
@@ -267,9 +268,15 @@ export default function ProjetosView({
   const [dragOverListId, setDragOverListId] = useState<string | null>(null);
   const [dragOverCardId, setDragOverCardId] = useState<string | null>(null);
 
-  // New List State
+  // New List State & Modals
   const [isAddingList, setIsAddingList] = useState(false);
   const [newListTitle, setNewListTitle] = useState('');
+  const [isAddListModalOpen, setIsAddListModalOpen] = useState(false);
+  const [newListModalTitle, setNewListModalTitle] = useState('');
+
+  // Edit List Modal State
+  const [editingListModal, setEditingListModal] = useState<ProjectList | null>(null);
+  const [editListTitleInput, setEditListTitleInput] = useState('');
 
   // New Card Inline State (per list ID)
   const [addingCardForListId, setAddingCardForListId] = useState<string | null>(null);
@@ -302,15 +309,42 @@ export default function ProjetosView({
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         lists: [
-          { id: 'l-backlog', title: 'Backlog', order: 0 },
-          { id: 'l-refinement', title: 'REFINAMENTO', order: 1 },
-          { id: 'l-sprint', title: 'SPRINT BACKLOG', order: 2 },
-          { id: 'l-dev', title: 'Em desenvolvimento', order: 3 },
-          { id: 'l-review', title: 'Revisão de código', order: 4 },
-          { id: 'l-tests', title: 'Em testes', order: 5 },
-          { id: 'l-done', title: 'Concluído 🎆', order: 6 },
+          { id: 'l-ideias', title: 'Ideias 💡', order: 0 },
+          { id: 'l-planning', title: 'Em planejamento 📐', order: 1 },
+          { id: 'l-backlog', title: 'Backlog 📋', order: 2 },
+          { id: 'l-refinement', title: 'REFINAMENTO ⚙️', order: 3 },
+          { id: 'l-sprint', title: 'SPRINT BACKLOG 🚀', order: 4 },
+          { id: 'l-dev', title: 'Em desenvolvimento ⚡', order: 5 },
+          { id: 'l-review', title: 'Revisão de código 🔍', order: 6 },
+          { id: 'l-tests', title: 'Em testes 🧪', order: 7 },
+          { id: 'l-done', title: 'Concluído 🎆', order: 8 },
         ],
         cards: [
+          {
+            id: 'c-idea-1',
+            listId: 'l-ideias',
+            title: '💡 Registrar Ideia: Notificações em Tempo Real com WebSocket',
+            description: 'Explorar o uso de WebSockets ou Firebase Cloud Messaging para enviar alertas instantâneos de alteração no Kanban aos membros do time.',
+            coverColor: '#8b5cf6',
+            priority: 'media',
+            labels: [
+              { id: 'lab-idea', name: 'Ideia', color: '#8b5cf6' },
+              { id: 'lab-inov', name: 'Inovação', color: '#ec4899' }
+            ],
+            dueDate: '2026-08-30'
+          },
+          {
+            id: 'c-plan-1',
+            listId: 'l-planning',
+            title: '📐 Planejamento da Arquitetura do Banco de Dados Sync',
+            description: 'Mapear coleções do Firestore para sincronizar estado de gratidão, decretos e workspace diário sem conflitos.',
+            coverColor: '#06b6d4',
+            priority: 'alta',
+            labels: [
+              { id: 'lab-plan', name: 'Planejamento', color: '#06b6d4' }
+            ],
+            dueDate: '2026-08-28'
+          },
           {
             id: 'c-1',
             listId: 'l-backlog',
@@ -547,22 +581,28 @@ export default function ProjetosView({
       let defaultLists: ProjectList[] = [];
       if (projectTemplate === 'scrum') {
         defaultLists = [
-          { id: `l-${Date.now()}-1`, title: 'Backlog', order: 0 },
-          { id: `l-${Date.now()}-2`, title: 'REFINAMENTO', order: 1 },
-          { id: `l-${Date.now()}-3`, title: 'SPRINT BACKLOG', order: 2 },
-          { id: `l-${Date.now()}-4`, title: 'Em desenvolvimento', order: 3 },
-          { id: `l-${Date.now()}-5`, title: 'Revisão de código', order: 4 },
-          { id: `l-${Date.now()}-6`, title: 'Concluído 🎆', order: 5 },
+          { id: `l-${Date.now()}-1`, title: 'Ideias 💡', order: 0 },
+          { id: `l-${Date.now()}-2`, title: 'Em planejamento 📐', order: 1 },
+          { id: `l-${Date.now()}-3`, title: 'Backlog 📋', order: 2 },
+          { id: `l-${Date.now()}-4`, title: 'REFINAMENTO ⚙️', order: 3 },
+          { id: `l-${Date.now()}-5`, title: 'SPRINT BACKLOG 🚀', order: 4 },
+          { id: `l-${Date.now()}-6`, title: 'Em desenvolvimento ⚡', order: 5 },
+          { id: `l-${Date.now()}-7`, title: 'Revisão de código 🔍', order: 6 },
+          { id: `l-${Date.now()}-8`, title: 'Concluído 🎆', order: 7 },
         ];
       } else if (projectTemplate === 'kanban') {
         defaultLists = [
-          { id: `l-${Date.now()}-1`, title: 'A Fazer 📋', order: 0 },
-          { id: `l-${Date.now()}-2`, title: 'Em Progresso ⏳', order: 1 },
-          { id: `l-${Date.now()}-3`, title: 'Concluído ✅', order: 2 },
+          { id: `l-${Date.now()}-1`, title: 'Ideias 💡', order: 0 },
+          { id: `l-${Date.now()}-2`, title: 'Em planejamento 📐', order: 1 },
+          { id: `l-${Date.now()}-3`, title: 'A Fazer 📋', order: 2 },
+          { id: `l-${Date.now()}-4`, title: 'Em Progresso ⏳', order: 3 },
+          { id: `l-${Date.now()}-5`, title: 'Concluído ✅', order: 4 },
         ];
       } else {
         defaultLists = [
-          { id: `l-${Date.now()}-1`, title: 'A Fazer', order: 0 }
+          { id: `l-${Date.now()}-1`, title: 'Ideias 💡', order: 0 },
+          { id: `l-${Date.now()}-2`, title: 'Em planejamento 📐', order: 1 },
+          { id: `l-${Date.now()}-3`, title: 'A Fazer 📋', order: 2 }
         ];
       }
 
@@ -612,9 +652,9 @@ export default function ProjetosView({
   };
 
   // --- Kanban Board Handlers ---
-  const handleAddList = () => {
-    if (!newListTitle.trim() || !activeProjectId) return;
-    const title = newListTitle.trim();
+  const handleSaveNewList = () => {
+    if (!newListModalTitle.trim() || !activeProjectId) return;
+    const title = newListModalTitle.trim();
 
     setProjects(prev => prev.map(p => {
       if (p.id === activeProjectId) {
@@ -632,41 +672,50 @@ export default function ProjetosView({
       return p;
     }));
 
-    setNewListTitle('');
-    setIsAddingList(false);
+    setNewListModalTitle('');
+    setIsAddListModalOpen(false);
     addXp(10);
   };
 
-  const handleDeleteList = (listId: string) => {
-    if (!activeProjectId) return;
-    if (window.confirm('Excluir esta lista e todos os seus cartões?')) {
-      setProjects(prev => prev.map(p => {
-        if (p.id === activeProjectId) {
-          return {
-            ...p,
-            lists: p.lists.filter(l => l.id !== listId),
-            cards: p.cards.filter(c => c.listId !== listId),
-            updatedAt: new Date().toISOString()
-          };
-        }
-        return p;
-      }));
-    }
+  const handleOpenEditListModal = (list: ProjectList) => {
+    setEditingListModal(list);
+    setEditListTitleInput(list.title);
   };
 
-  const handleRenameList = (listId: string, currentTitle: string) => {
-    const newName = window.prompt('Novo nome para esta lista:', currentTitle);
-    if (newName && newName.trim() && activeProjectId) {
+  const handleSaveEditedList = () => {
+    if (!editingListModal || !editListTitleInput.trim() || !activeProjectId) return;
+    const newName = editListTitleInput.trim();
+
+    setProjects(prev => prev.map(p => {
+      if (p.id === activeProjectId) {
+        return {
+          ...p,
+          lists: p.lists.map(l => l.id === editingListModal.id ? { ...l, title: newName } : l),
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return p;
+    }));
+
+    setEditingListModal(null);
+    setEditListTitleInput('');
+  };
+
+  const handleDeleteListFromModal = () => {
+    if (!editingListModal || !activeProjectId) return;
+    if (window.confirm(`Excluir a lista "${editingListModal.title}" e todos os seus cartões?`)) {
       setProjects(prev => prev.map(p => {
         if (p.id === activeProjectId) {
           return {
             ...p,
-            lists: p.lists.map(l => l.id === listId ? { ...l, title: newName.trim() } : l),
+            lists: p.lists.filter(l => l.id !== editingListModal.id),
+            cards: p.cards.filter(c => c.listId !== editingListModal.id),
             updatedAt: new Date().toISOString()
           };
         }
         return p;
       }));
+      setEditingListModal(null);
     }
   };
 
@@ -1975,110 +2024,74 @@ export default function ProjetosView({
               {/* Add List Icon Button */}
               <button
                 type="button"
-                onClick={() => setIsAddingList(true)}
-                className="p-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-lg shadow-orange-500/15 transition-all cursor-pointer"
+                onClick={() => setIsAddListModalOpen(true)}
+                className="px-3.5 py-2 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-xl shadow-lg shadow-orange-500/15 transition-all cursor-pointer flex items-center gap-1.5"
                 title="Nova Lista"
               >
                 <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Nova Lista</span>
               </button>
             </div>
           </div>
 
-          {/* New List Input Bar (if open) */}
-          <AnimatePresence>
-            {isAddingList && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="bg-zinc-900/90 border border-orange-500/40 rounded-2xl p-3 flex items-center gap-2 max-w-md shadow-xl backdrop-blur-md"
-              >
-                <input
-                  type="text"
-                  placeholder="Nome da lista (ex: Em Testes, Revisão...)"
-                  value={newListTitle}
-                  onChange={(e) => setNewListTitle(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleAddList();
-                    if (e.key === 'Escape') setIsAddingList(false);
-                  }}
-                  autoFocus
-                  className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-orange-500"
-                />
-                <button
-                  onClick={handleAddList}
-                  className="bg-orange-500 text-white font-bold text-xs px-3 py-1.5 rounded-xl hover:bg-orange-600 transition-colors cursor-pointer"
-                >
-                  Criar
-                </button>
-                <button
-                  onClick={() => setIsAddingList(false)}
-                  className="text-zinc-500 hover:text-white p-1 cursor-pointer"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* VIEW SWITCHER TABS (Kanban, Tabela, Cronograma, Painel) */}
-          <div className="flex items-center justify-between gap-3 bg-zinc-950/60 backdrop-blur-md border border-zinc-800/50 rounded-xl p-1 overflow-x-auto horizontal-scrollbar">
-            <div className="flex items-center gap-1">
+          {/* CENTERED COMPACT VIEW SWITCHER NAVBAR */}
+          <div className="flex items-center justify-center w-full py-1">
+            <div className="inline-flex items-center gap-1.5 bg-zinc-950/90 backdrop-blur-xl border border-zinc-800/80 rounded-2xl p-1.5 shadow-xl shadow-black/40 overflow-x-auto max-w-full">
               <button
                 type="button"
                 onClick={() => setActiveViewMode('quadro')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer ${
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
                   activeViewMode === 'quadro'
-                    ? 'bg-zinc-800/90 text-white shadow-sm border border-zinc-700/60'
-                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60'
+                    ? 'bg-orange-500 text-white shadow-md shadow-orange-500/25 ring-1 ring-orange-400/40'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-900/80'
                 }`}
               >
-                <LayoutGrid className={`h-3.5 w-3.5 ${activeViewMode === 'quadro' ? 'text-orange-400' : ''}`} />
+                <LayoutGrid className="h-4 w-4" />
                 <span>Kanban</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setActiveViewMode('tabela')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer ${
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
                   activeViewMode === 'tabela'
-                    ? 'bg-zinc-800/90 text-white shadow-sm border border-zinc-700/60'
-                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60'
+                    ? 'bg-orange-500 text-white shadow-md shadow-orange-500/25 ring-1 ring-orange-400/40'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-900/80'
                 }`}
               >
-                <Table className={`h-3.5 w-3.5 ${activeViewMode === 'tabela' ? 'text-orange-400' : ''}`} />
+                <Table className="h-4 w-4" />
                 <span>Tabela</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setActiveViewMode('cronograma')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer ${
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
                   activeViewMode === 'cronograma'
-                    ? 'bg-zinc-800/90 text-white shadow-sm border border-zinc-700/60'
-                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60'
+                    ? 'bg-orange-500 text-white shadow-md shadow-orange-500/25 ring-1 ring-orange-400/40'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-900/80'
                 }`}
               >
-                <CalendarDays className={`h-3.5 w-3.5 ${activeViewMode === 'cronograma' ? 'text-orange-400' : ''}`} />
+                <CalendarDays className="h-4 w-4" />
                 <span>Cronograma</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setActiveViewMode('painel')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer ${
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
                   activeViewMode === 'painel'
-                    ? 'bg-zinc-800/90 text-white shadow-sm border border-zinc-700/60'
-                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60'
+                    ? 'bg-orange-500 text-white shadow-md shadow-orange-500/25 ring-1 ring-orange-400/40'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-900/80'
                 }`}
               >
-                <BarChart3 className={`h-3.5 w-3.5 ${activeViewMode === 'painel' ? 'text-orange-400' : ''}`} />
+                <BarChart3 className="h-4 w-4" />
                 <span>Painel</span>
               </button>
             </div>
           </div>
 
-          {/* 1. KANBAN BOARD CONTAINER (Horizontal Scrollable Column Layout with Custom Scrollbar) */}
+          {/* 1. KANBAN BOARD CONTAINER (Horizontal Scrollable Column Layout with Expanded Widths) */}
           {activeViewMode === 'quadro' && (
             <div className="flex items-start gap-4 overflow-x-auto horizontal-scrollbar pb-6 pt-1 min-h-[calc(100vh-270px)]">
               {activeProject.lists.map(list => {
@@ -2096,7 +2109,7 @@ export default function ProjetosView({
                     key={list.id}
                     onDragOver={(e) => handleListDragOver(e, list.id)}
                     onDrop={(e) => handleListDrop(e, list.id)}
-                    className={`w-72 sm:w-80 shrink-0 bg-zinc-900/40 backdrop-blur-md border ${
+                    className={`w-80 sm:w-96 md:w-[380px] lg:w-[420px] shrink-0 bg-zinc-900/40 backdrop-blur-md border ${
                       dragOverListId === list.id ? 'border-orange-500/80 bg-zinc-900/80 ring-2 ring-orange-500/20' : 'border-zinc-800/60'
                     } rounded-2xl flex flex-col max-h-[calc(100vh-270px)] shadow-xl transition-all`}
                   >
@@ -2118,18 +2131,11 @@ export default function ProjetosView({
 
                       <div className="flex items-center gap-1">
                         <button
-                          onClick={() => handleRenameList(list.id, list.title)}
+                          onClick={() => handleOpenEditListModal(list)}
                           className="p-1 text-zinc-500 hover:text-zinc-300 transition-colors"
-                          title="Renomear Lista"
+                          title="Editar Lista"
                         >
                           <Edit3 className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteList(list.id)}
-                          className="p-1 text-zinc-500 hover:text-red-400 transition-colors"
-                          title="Excluir Lista"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     </div>
@@ -2366,14 +2372,17 @@ export default function ProjetosView({
               })}
 
               {/* "+ Adicionar outra lista" Column Button */}
-              <div className="w-72 shrink-0">
+              <div className="w-80 sm:w-96 md:w-[380px] lg:w-[420px] shrink-0">
                 <button
                   type="button"
-                  onClick={() => setIsAddingList(true)}
-                  className="w-full py-4 px-4 bg-zinc-900/30 hover:bg-zinc-900/60 border border-dashed border-zinc-800 hover:border-orange-500/50 rounded-2xl text-zinc-400 hover:text-orange-400 text-xs font-medium flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
+                  onClick={() => {
+                    setNewListModalTitle('');
+                    setIsAddListModalOpen(true);
+                  }}
+                  className="w-full py-4 px-4 bg-zinc-900/30 hover:bg-zinc-900/60 border border-dashed border-zinc-800 hover:border-orange-500/50 rounded-2xl text-zinc-400 hover:text-orange-400 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm hover:shadow-orange-500/5"
                 >
-                  <Plus className="h-4 w-4" />
-                  <span>Adicionar outra lista</span>
+                  <Plus className="h-4 w-4 text-orange-400" />
+                  <span>Adicionar Nova Lista</span>
                 </button>
               </div>
             </div>
@@ -2896,6 +2905,49 @@ export default function ProjetosView({
                             Hora: {selectedCardForDetail.dueTime}
                           </span>
                         )}
+                      </div>
+                    );
+                  })()}
+
+                  {/* Interactive Idea Banner if card is in Ideias list */}
+                  {(() => {
+                    const currentList = activeProject.lists.find(l => l.id === selectedCardForDetail.listId);
+                    const isIdeaCard = (currentList && currentList.title.toLowerCase().includes('ideia')) || selectedCardForDetail.title.toLowerCase().includes('ideia');
+                    if (!isIdeaCard) return null;
+
+                    return (
+                      <div className="mt-3 p-3.5 bg-gradient-to-r from-purple-950/40 via-zinc-900 to-zinc-900 border border-purple-500/40 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-inner">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-purple-500/20 text-purple-300 rounded-xl border border-purple-500/30">
+                            <Lightbulb className="h-5 w-5 text-purple-400" />
+                          </div>
+                          <div>
+                            <h4 className="text-xs font-bold text-purple-200 uppercase tracking-wider flex items-center gap-1.5">
+                              <span>Rascunho de Ideia Rápida</span>
+                              <span className="text-[9px] bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full font-mono border border-purple-500/30">Em Elaboração</span>
+                            </h4>
+                            <p className="text-[11px] text-zinc-400 mt-0.5">
+                              Desenvolva suas anotações e checklists abaixo para estruturar esta ideia.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const planList = activeProject.lists.find(l => 
+                                l.title.toLowerCase().includes('planejamento') || l.title.toLowerCase().includes('fazer') || l.title.toLowerCase().includes('backlog')
+                              );
+                              if (planList) {
+                                handleMoveCard(selectedCardForDetail.id, planList.id);
+                              }
+                            }}
+                            className="px-3.5 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl shadow-md shadow-purple-500/20 transition-all cursor-pointer flex items-center gap-1.5"
+                          >
+                            <span>Promover p/ Planejamento 📐</span>
+                          </button>
+                        </div>
                       </div>
                     );
                   })()}
@@ -4021,6 +4073,227 @@ export default function ProjetosView({
                     className="px-6 py-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-lg shadow-orange-500/20 transition-all cursor-pointer flex items-center gap-1.5"
                   >
                     <span>{editingProject ? 'Salvar Alterações' : 'Criar Projeto'}</span>
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ------------------------------------------------------------- */}
+      {/* 4. MODAL: CRIAR NOVA LISTA (Modal Interface)                  */}
+      {/* ------------------------------------------------------------- */}
+      <AnimatePresence>
+        {isAddListModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsAddListModalOpen(false)}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              className="bg-zinc-950 border border-zinc-800 rounded-2xl max-w-md w-full p-5 relative z-50 shadow-2xl space-y-4"
+            >
+              <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-orange-500/10 text-orange-400 rounded-xl border border-orange-500/20">
+                    <Plus className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white">Criar Nova Lista</h3>
+                    <p className="text-[11px] text-zinc-400">Adicione uma nova coluna ao seu fluxo de trabalho.</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsAddListModalOpen(false)}
+                  className="text-zinc-500 hover:text-white p-1 cursor-pointer rounded-lg hover:bg-zinc-900"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block font-mono">
+                    Nome da Lista
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ex: Ideias 💡, Em planejamento 📐..."
+                    value={newListModalTitle}
+                    onChange={(e) => setNewListModalTitle(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSaveNewList();
+                      if (e.key === 'Escape') setIsAddListModalOpen(false);
+                    }}
+                    autoFocus
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-orange-500 font-medium"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-mono text-zinc-500 uppercase font-bold block">
+                    Sugestões Rápidas:
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      'Ideias 💡',
+                      'Em planejamento 📐',
+                      'A Fazer 📋',
+                      'Em desenvolvimento ⚡',
+                      'Revisão de código 🔍',
+                      'Em testes 🧪',
+                      'Concluído 🎆'
+                    ].map(sug => (
+                      <button
+                        key={sug}
+                        type="button"
+                        onClick={() => setNewListModalTitle(sug)}
+                        className="px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 rounded-lg text-xs font-medium transition-colors cursor-pointer"
+                      >
+                        {sug}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-3 flex items-center justify-end gap-2 border-t border-zinc-900">
+                <button
+                  type="button"
+                  onClick={() => setIsAddListModalOpen(false)}
+                  className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold text-xs rounded-xl transition-colors cursor-pointer border border-zinc-800"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveNewList}
+                  disabled={!newListModalTitle.trim()}
+                  className="px-5 py-2 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-lg shadow-orange-500/20 transition-all cursor-pointer"
+                >
+                  Criar Lista
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ------------------------------------------------------------- */}
+      {/* 5. MODAL: EDITAR NOME DA LISTA (Modal Interface)              */}
+      {/* ------------------------------------------------------------- */}
+      <AnimatePresence>
+        {editingListModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setEditingListModal(null)}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              className="bg-zinc-950 border border-zinc-800 rounded-2xl max-w-md w-full p-5 relative z-50 shadow-2xl space-y-4"
+            >
+              <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-orange-500/10 text-orange-400 rounded-xl border border-orange-500/20">
+                    <Edit3 className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white">Editar Nome da Lista</h3>
+                    <p className="text-[11px] text-zinc-400">Renomeie ou exclua esta coluna do Kanban.</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditingListModal(null)}
+                  className="text-zinc-500 hover:text-white p-1 cursor-pointer rounded-lg hover:bg-zinc-900"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block font-mono">
+                    Título da Coluna
+                  </label>
+                  <input
+                    type="text"
+                    value={editListTitleInput}
+                    onChange={(e) => setEditListTitleInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSaveEditedList();
+                      if (e.key === 'Escape') setEditingListModal(null);
+                    }}
+                    autoFocus
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500 font-medium"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-mono text-zinc-500 uppercase font-bold block">
+                    Sugestões de Ícone / Nome:
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      'Ideias 💡',
+                      'Em planejamento 📐',
+                      'A Fazer 📋',
+                      'Em desenvolvimento ⚡',
+                      'Revisão de código 🔍',
+                      'Concluído 🎆'
+                    ].map(sug => (
+                      <button
+                        key={sug}
+                        type="button"
+                        onClick={() => setEditListTitleInput(sug)}
+                        className="px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 rounded-lg text-xs font-medium transition-colors cursor-pointer"
+                      >
+                        {sug}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-3 flex items-center justify-between border-t border-zinc-900">
+                <button
+                  type="button"
+                  onClick={handleDeleteListFromModal}
+                  className="px-3 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 font-bold text-xs rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  <span>Excluir Lista</span>
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingListModal(null)}
+                    className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold text-xs rounded-xl transition-colors cursor-pointer border border-zinc-800"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveEditedList}
+                    disabled={!editListTitleInput.trim()}
+                    className="px-5 py-2 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-lg shadow-orange-500/20 transition-all cursor-pointer"
+                  >
+                    Salvar Nome
                   </button>
                 </div>
               </div>

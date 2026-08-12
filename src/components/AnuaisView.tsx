@@ -56,12 +56,15 @@ interface AnuaisViewProps {
   bookTracker: any;
   setBookTracker?: React.Dispatch<React.SetStateAction<any>>;
   bibleTracker: any;
+  setBibleTracker?: React.Dispatch<React.SetStateAction<any>>;
   routine: any;
   goals?: Goal[];
   finances?: FinanceEntry[];
   books?: YearlyBook[];
   setBooks?: React.Dispatch<React.SetStateAction<YearlyBook[]>>;
   freeEditMode?: boolean;
+  masterTemplates?: { gratitude: string; decrees: string; prayer: string };
+  setMasterTemplates?: React.Dispatch<React.SetStateAction<{ gratitude: string; decrees: string; prayer: string }>>;
 }
 
 export default function AnuaisView({
@@ -788,9 +791,9 @@ export default function AnuaisView({
     }, 500);
   };
 
-  // Real-time auto-save for Espaço Diário & Fé in AnuaisView when freeEditMode is active (debounced)
+  // Real-time auto-save for Espaço Diário & Fé in AnuaisView (debounced)
   useEffect(() => {
-    if (!freeEditMode || !selectedDateStr) return;
+    if (!selectedDateStr) return;
 
     const timer = setTimeout(() => {
       const finalGratitude = gratitudeText.trim() ? gratitudeText : templateGratitude;
