@@ -138,6 +138,7 @@ export interface RoutineItem {
   completedDays?: number[]; // indices of days completed (0-6)
   category?: string; // e.g., "Trabalho", "Exercício", "Estudo", "Lazer", "Rotina", "Outro"
   reminderTime?: string; // e.g., "08:00"
+  subtasks?: SubTask[];
 }
 
 export interface UserStats {

@@ -128,7 +128,8 @@ export default function CalendarView({
             text: `[Rotina às ${item.time}] ${item.task}`,
             completed: false,
             xpReward: 10,
-            category: 'Rotina Semanal'
+            category: 'Rotina Semanal',
+            subtasks: item.subtasks ? item.subtasks.map(s => ({ ...s })) : undefined
           }));
           
         list.push(...routineTasksForDay);

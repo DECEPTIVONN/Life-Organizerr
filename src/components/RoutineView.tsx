@@ -20,10 +20,11 @@ import {
   Save,
   AlertCircle,
   Pencil,
-  Bell
+  Bell,
+  ListTodo
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { RoutineItem, MonthlyReview, CalendarNote, WeeklyReview } from '../types';
+import { RoutineItem, MonthlyReview, CalendarNote, WeeklyReview, SubTask } from '../types';
 import { handleAutoListKeyDown } from '../utils/listUtils';
 
 interface RoutineViewProps {
@@ -70,6 +71,8 @@ export default function RoutineView({
   const [isEveryDay, setIsEveryDay] = useState(false);
   const [isWeeklyRecurring, setIsWeeklyRecurring] = useState(true);
   const [enableReminder, setEnableReminder] = useState(true);
+  const [newSubtasks, setNewSubtasks] = useState<SubTask[]>([]);
+  const [subtaskInput, setSubtaskInput] = useState('');
   const [viewMode, setViewMode] = useState<'lista' | 'quadro'>('lista');
 
   // Edit / Clear states
@@ -81,6 +84,8 @@ export default function RoutineView({
   const [editIsWeeklyRecurring, setEditIsWeeklyRecurring] = useState(true);
   const [editEnableReminder, setEditEnableReminder] = useState(true);
   const [editSelectedDay, setEditSelectedDay] = useState<number>(1);
+  const [editSubtasks, setEditSubtasks] = useState<SubTask[]>([]);
+  const [editSubtaskInput, setEditSubtaskInput] = useState('');
   const [showClearModal, setShowClearModal] = useState(false);
 
   // Days of the week, starting with Sunday as the first day (0)
@@ -350,7 +355,8 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
       isEveryDay,
       isWeeklyRecurring,
       completedDays: [],
-      reminderTime: enableReminder ? (reminderTime.trim() || time) : undefined
+      reminderTime: enableReminder ? (reminderTime.trim() || time) : undefined,
+      subtasks: newSubtasks.length > 0 ? newSubtasks : undefined
     };
 
     setRoutine([...routine, newItem]);
@@ -358,10 +364,51 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
     setIsEveryDay(false);
     setIsWeeklyRecurring(true);
     setEnableReminder(true);
+    setNewSubtasks([]);
+    setSubtaskInput('');
     setIsAdding(false);
 
     // Reward XP
     addXp(15);
+  };
+
+  const handleToggleSubtask = (routineId: string, subtaskId: string) => {
+    setRoutine(prev => prev.map(item => {
+      if (item.id === routineId && item.subtasks) {
+        const updatedSubtasks = item.subtasks.map(sub => {
+          if (sub.id === subtaskId) {
+            return { ...sub, completed: !sub.completed };
+          }
+          return sub;
+        });
+        const allCompleted = updatedSubtasks.length > 0 && updatedSubtasks.every(s => s.completed);
+        
+        if (item.isEveryDay) {
+          const completedDays = item.completedDays || [];
+          const isCurrentlyCompleted = completedDays.includes(selectedDay);
+          let nextCompletedDays = completedDays;
+          if (allCompleted && !isCurrentlyCompleted) {
+            nextCompletedDays = [...completedDays, selectedDay];
+            addXp(10);
+          } else if (!allCompleted && isCurrentlyCompleted) {
+            nextCompletedDays = completedDays.filter(d => d !== selectedDay);
+            addXp(-10);
+          }
+          return { ...item, subtasks: updatedSubtasks, completedDays: nextCompletedDays };
+        } else {
+          let nextCompleted = item.completed;
+          if (allCompleted && !item.completed) {
+            nextCompleted = true;
+            addXp(10);
+          } else if (!allCompleted && item.completed) {
+            nextCompleted = false;
+            addXp(-10);
+          }
+          return { ...item, subtasks: updatedSubtasks, completed: nextCompleted };
+        }
+      }
+      return item;
+    }));
   };
 
   const handleToggleCompleted = (id: string) => {
@@ -370,16 +417,25 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
         if (item.isEveryDay) {
           const completedDays = item.completedDays || [];
           const isCurrentlyCompleted = completedDays.includes(selectedDay);
+          const nextState = !isCurrentlyCompleted;
           const nextCompletedDays = isCurrentlyCompleted
             ? completedDays.filter(d => d !== selectedDay)
             : [...completedDays, selectedDay];
           
-          addXp(!isCurrentlyCompleted ? 10 : -10);
-          return { ...item, completedDays: nextCompletedDays };
+          addXp(nextState ? 10 : -10);
+
+          // Update subtasks completion state accordingly
+          const updatedSubtasks = item.subtasks?.map(sub => ({ ...sub, completed: nextState }));
+
+          return { ...item, completedDays: nextCompletedDays, subtasks: updatedSubtasks };
         } else {
           const nextState = !item.completed;
           addXp(nextState ? 10 : -10);
-          return { ...item, completed: nextState };
+
+          // Update subtasks completion state accordingly
+          const updatedSubtasks = item.subtasks?.map(sub => ({ ...sub, completed: nextState }));
+
+          return { ...item, completed: nextState, subtasks: updatedSubtasks };
         }
       }
       return item;
@@ -395,6 +451,8 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
     setEditIsWeeklyRecurring(item.isWeeklyRecurring !== false);
     setEditEnableReminder(Boolean(item.reminderTime));
     setEditSelectedDay(item.dayOfWeek >= 0 ? item.dayOfWeek : selectedDay);
+    setEditSubtasks(item.subtasks ? item.subtasks.map(s => ({ ...s })) : []);
+    setEditSubtaskInput('');
   };
 
   const handleSaveEditTask = (e: React.FormEvent) => {
@@ -410,7 +468,8 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
           isEveryDay: editIsEveryDay,
           isWeeklyRecurring: editIsWeeklyRecurring,
           dayOfWeek: editIsEveryDay ? -1 : editSelectedDay,
-          reminderTime: editEnableReminder ? (editReminderTime.trim() || editTime) : undefined
+          reminderTime: editEnableReminder ? (editReminderTime.trim() || editTime) : undefined,
+          subtasks: editSubtasks.length > 0 ? editSubtasks : undefined
         };
       }
       return item;
@@ -570,6 +629,68 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                   />
                 </div>
               </div>
+
+              {/* Subtarefas (Opcional) */}
+              <div className="space-y-2 pt-2 border-t border-zinc-850">
+                <label className="text-[10px] text-gray-400 font-bold block uppercase tracking-wider flex items-center justify-between">
+                  <span>Subtarefas / Etapas (Opcional)</span>
+                  {newSubtasks.length > 0 && (
+                    <span className="text-[9px] text-orange-400 font-mono font-normal">
+                      {newSubtasks.length} etapa(s) adicionada(s)
+                    </span>
+                  )}
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={subtaskInput}
+                    onChange={(e) => setSubtaskInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (subtaskInput.trim()) {
+                          setNewSubtasks(prev => [...prev, { id: Math.random().toString(36).substring(2, 9), text: subtaskInput.trim(), completed: false }]);
+                          setSubtaskInput('');
+                        }
+                      }
+                    }}
+                    placeholder="Adicionar sub-etapa (ex: Aquecimento 5 min, Leitura cap 1...)"
+                    className="flex-1 bg-zinc-950 border border-zinc-800 focus:border-orange-500/50 rounded-lg px-3 py-1.5 text-xs text-white outline-none placeholder:text-zinc-600"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (subtaskInput.trim()) {
+                        setNewSubtasks(prev => [...prev, { id: Math.random().toString(36).substring(2, 9), text: subtaskInput.trim(), completed: false }]);
+                        setSubtaskInput('');
+                      }
+                    }}
+                    className="bg-zinc-850 hover:bg-zinc-800 text-orange-400 font-bold text-xs px-3 py-1.5 rounded-lg border border-zinc-750 transition-colors flex items-center gap-1 shrink-0"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Adicionar
+                  </button>
+                </div>
+                {newSubtasks.length > 0 && (
+                  <div className="space-y-1.5 pt-1 max-h-36 overflow-y-auto">
+                    {newSubtasks.map((st, idx) => (
+                      <div key={st.id} className="flex items-center justify-between bg-zinc-950/70 border border-zinc-850 px-2.5 py-1.5 rounded-lg text-xs text-zinc-300">
+                        <span className="flex items-center gap-2">
+                          <span className="text-orange-500 font-mono text-[10px]">•</span>
+                          {st.text}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setNewSubtasks(prev => prev.filter((_, i) => i !== idx))}
+                          className="text-zinc-500 hover:text-red-400 transition-colors p-0.5"
+                          title="Remover subtarefa"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Repetition Options Selector (IMPROVED DESIGN / CHECHBOX UPGRADE) */}
@@ -719,67 +840,100 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                 return (
                   <motion.div
                     key={item.id}
-                    className={`p-4 rounded-xl border flex items-center justify-between gap-4 transition-all group ${
+                    className={`p-4 rounded-xl border flex flex-col gap-3 transition-all group ${
                       isItemCompleted
                         ? 'bg-orange-500/5 border-orange-500/20 text-gray-500'
                         : 'bg-zinc-900/30 border-zinc-800 text-gray-200'
                     }`}
                     layout
                   >
-                    <div className="flex items-center gap-4 flex-1 min-w-0">
-                      <span className="font-mono text-xs text-orange-500 font-bold bg-orange-500/10 px-2 py-0.5 rounded flex-shrink-0">
-                        {item.time}
-                      </span>
-                      
-                      <span className={`text-xs font-medium truncate text-left ${isItemCompleted ? 'line-through text-gray-500' : 'text-white'}`}>
-                        {item.task}
-                      </span>
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3 flex-1 min-w-0 flex-wrap sm:flex-nowrap">
+                        <span className="font-mono text-xs text-orange-500 font-bold bg-orange-500/10 px-2 py-0.5 rounded flex-shrink-0">
+                          {item.time}
+                        </span>
+                        
+                        <span className={`text-xs font-semibold truncate text-left ${isItemCompleted ? 'line-through text-gray-500' : 'text-white'}`}>
+                          {item.task}
+                        </span>
 
-                      {item.isEveryDay ? (
-                        <span className="text-[9px] bg-orange-500/10 text-orange-400 border border-orange-500/20 px-1.5 py-0.5 rounded font-mono uppercase tracking-wide inline-flex items-center gap-0.5 flex-shrink-0">
-                          Todos os dias
-                        </span>
-                      ) : item.isWeeklyRecurring === false ? (
-                        <span className="text-[9px] bg-zinc-800 text-zinc-400 border border-zinc-700/60 px-1.5 py-0.5 rounded font-mono uppercase tracking-wide inline-flex items-center gap-0.5 flex-shrink-0">
-                          Não se repete
-                        </span>
-                      ) : null}
+                        {item.subtasks && item.subtasks.length > 0 && (
+                          <span className="text-[9px] bg-zinc-800/90 text-orange-400 border border-zinc-700/60 px-2 py-0.5 rounded-md font-mono font-bold inline-flex items-center gap-1 flex-shrink-0">
+                            <ListTodo className="h-3 w-3" />
+                            {item.subtasks.filter(s => s.completed).length}/{item.subtasks.length} etapas
+                          </span>
+                        )}
 
-                      {item.reminderTime && (
-                        <span className="text-[9px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-1.5 py-0.5 rounded font-mono font-bold uppercase tracking-wide inline-flex items-center gap-0.5 flex-shrink-0">
-                          <Bell className="h-2.5 w-2.5" /> Lembrete: {item.reminderTime}
-                        </span>
-                      )}
+                        {item.isEveryDay ? (
+                          <span className="text-[9px] bg-orange-500/10 text-orange-400 border border-orange-500/20 px-1.5 py-0.5 rounded font-mono uppercase tracking-wide inline-flex items-center gap-0.5 flex-shrink-0">
+                            Todos os dias
+                          </span>
+                        ) : item.isWeeklyRecurring === false ? (
+                          <span className="text-[9px] bg-zinc-800 text-zinc-400 border border-zinc-700/60 px-1.5 py-0.5 rounded font-mono uppercase tracking-wide inline-flex items-center gap-0.5 flex-shrink-0">
+                            Não se repete
+                          </span>
+                        ) : null}
+
+                        {item.reminderTime && (
+                          <span className="text-[9px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-1.5 py-0.5 rounded font-mono font-bold uppercase tracking-wide inline-flex items-center gap-0.5 flex-shrink-0">
+                            <Bell className="h-2.5 w-2.5" /> Lembrete: {item.reminderTime}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-3 shrink-0">
+                        <button
+                          onClick={() => handleToggleCompleted(item.id)}
+                          className={`text-xs font-bold font-mono px-3 py-1 rounded-lg border transition-all ${
+                            isItemCompleted
+                              ? 'bg-orange-500 text-white border-orange-500'
+                              : 'border-zinc-700 text-gray-400 hover:border-orange-500 hover:text-white'
+                          }`}
+                        >
+                          {isItemCompleted ? 'Feito!' : 'Completar'}
+                        </button>
+
+                        <button
+                          onClick={() => handleStartEditTask(item)}
+                          className="text-zinc-650 hover:text-orange-400 transition-colors p-1 opacity-0 group-hover:opacity-100 focus:opacity-100"
+                          title="Editar Atividade"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+
+                        <button
+                          onClick={() => handleDeleteItem(item.id, isItemCompleted)}
+                          className="text-zinc-650 hover:text-red-500 transition-colors p-1 opacity-0 group-hover:opacity-100 focus:opacity-100"
+                          title="Remover"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => handleToggleCompleted(item.id)}
-                        className={`text-xs font-bold font-mono px-3 py-1 rounded-lg border transition-all ${
-                          isItemCompleted
-                            ? 'bg-orange-500 text-white border-orange-500'
-                            : 'border-zinc-700 text-gray-400 hover:border-orange-500 hover:text-white'
-                        }`}
-                      >
-                        {isItemCompleted ? 'Feito!' : 'Completar'}
-                      </button>
-
-                      <button
-                        onClick={() => handleStartEditTask(item)}
-                        className="text-zinc-650 hover:text-orange-400 transition-colors p-1 opacity-0 group-hover:opacity-100 focus:opacity-100"
-                        title="Editar Atividade"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
-
-                      <button
-                        onClick={() => handleDeleteItem(item.id, isItemCompleted)}
-                        className="text-zinc-650 hover:text-red-500 transition-colors p-1 opacity-0 group-hover:opacity-100 focus:opacity-100"
-                        title="Remover"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
+                    {/* Subtasks interactive checklist */}
+                    {item.subtasks && item.subtasks.length > 0 && (
+                      <div className="pl-3.5 border-l-2 border-orange-500/30 space-y-1.5 pt-1">
+                        {item.subtasks.map((st) => (
+                          <div key={st.id} className="flex items-center gap-2 text-xs">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleSubtask(item.id, st.id)}
+                              className={`w-4 h-4 rounded border flex items-center justify-center transition-all shrink-0 ${
+                                st.completed 
+                                  ? 'bg-orange-500 border-orange-500 text-white shadow-sm' 
+                                  : 'border-zinc-700 bg-zinc-950/80 text-transparent hover:border-orange-500/70'
+                              }`}
+                            >
+                              <Check className="h-2.5 w-2.5 stroke-[3]" />
+                            </button>
+                            <span className={`text-xs transition-colors ${st.completed ? 'line-through text-zinc-500' : 'text-zinc-300 font-medium'}`}>
+                              {st.text}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </motion.div>
                 );
               })
@@ -845,6 +999,41 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                               <p className={`text-[10.5px] leading-snug font-medium break-words ${isItemCompleted ? 'line-through text-gray-500' : 'text-zinc-300'}`}>
                                 {item.task}
                               </p>
+
+                              {/* Subtasks in board card */}
+                              {item.subtasks && item.subtasks.length > 0 && (
+                                <div className="space-y-1.5 pt-1.5 border-t border-zinc-900/80">
+                                  <div className="flex items-center justify-between text-[9px] text-zinc-500 font-mono">
+                                    <span className="flex items-center gap-1 font-bold text-orange-400">
+                                      <ListTodo className="h-2.5 w-2.5" /> Subtarefas
+                                    </span>
+                                    <span>{item.subtasks.filter(s => s.completed).length}/{item.subtasks.length}</span>
+                                  </div>
+                                  <div className="space-y-1 max-h-24 overflow-y-auto scrollbar-none">
+                                    {item.subtasks.map((st) => (
+                                      <div key={st.id} className="flex items-center gap-1.5 text-[10px]">
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setSelectedDay(day.id);
+                                            handleToggleSubtask(item.id, st.id);
+                                          }}
+                                          className={`w-3 h-3 rounded border flex items-center justify-center transition-all shrink-0 ${
+                                            st.completed 
+                                              ? 'bg-orange-500 border-orange-500 text-white' 
+                                              : 'border-zinc-700 bg-zinc-950 text-transparent hover:border-orange-500'
+                                          }`}
+                                        >
+                                          <Check className="h-2 w-2 stroke-[3]" />
+                                        </button>
+                                        <span className={`truncate text-[10px] ${st.completed ? 'line-through text-zinc-500' : 'text-zinc-300'}`}>
+                                          {st.text}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
 
                               {/* Action Bar inside card */}
                               <div className="flex items-center justify-between border-t border-zinc-900/60 pt-2 mt-0.5">
@@ -1802,6 +1991,84 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                         </div>
                       </div>
                     )}
+
+                    {/* Subtarefas (Opcional) */}
+                    <div className="space-y-2 pt-2 border-t border-zinc-850">
+                      <label className="text-[10px] text-zinc-400 font-bold block uppercase tracking-wider flex items-center justify-between">
+                        <span>Subtarefas / Etapas (Opcional)</span>
+                        {editSubtasks.length > 0 && (
+                          <span className="text-[9px] text-orange-400 font-mono font-normal">
+                            {editSubtasks.filter(s => s.completed).length}/{editSubtasks.length} concluídas
+                          </span>
+                        )}
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={editSubtaskInput}
+                          onChange={(e) => setEditSubtaskInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              if (editSubtaskInput.trim()) {
+                                setEditSubtasks(prev => [...prev, { id: Math.random().toString(36).substring(2, 9), text: editSubtaskInput.trim(), completed: false }]);
+                                setEditSubtaskInput('');
+                              }
+                            }
+                          }}
+                          placeholder="Adicionar nova sub-etapa..."
+                          className="flex-1 bg-zinc-900 border border-zinc-800 focus:border-orange-500/50 rounded-xl px-3.5 py-1.5 text-xs text-white outline-none placeholder:text-zinc-600"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (editSubtaskInput.trim()) {
+                              setEditSubtasks(prev => [...prev, { id: Math.random().toString(36).substring(2, 9), text: editSubtaskInput.trim(), completed: false }]);
+                              setEditSubtaskInput('');
+                            }
+                          }}
+                          className="bg-zinc-850 hover:bg-zinc-800 text-orange-400 font-bold text-xs px-3 py-1.5 rounded-xl border border-zinc-750 transition-colors flex items-center gap-1 shrink-0"
+                        >
+                          <Plus className="h-3.5 w-3.5" /> Adicionar
+                        </button>
+                      </div>
+                      {editSubtasks.length > 0 && (
+                        <div className="space-y-1.5 pt-1 max-h-36 overflow-y-auto">
+                          {editSubtasks.map((st, idx) => (
+                            <div key={st.id} className="flex items-center justify-between bg-zinc-900/80 border border-zinc-800 px-3 py-1.5 rounded-xl text-xs text-zinc-200 gap-2">
+                              <div className="flex items-center gap-2 flex-1 min-w-0">
+                                <input
+                                  type="checkbox"
+                                  checked={st.completed}
+                                  onChange={(e) => {
+                                    const checked = e.target.checked;
+                                    setEditSubtasks(prev => prev.map((s, i) => i === idx ? { ...s, completed: checked } : s));
+                                  }}
+                                  className="w-3.5 h-3.5 rounded border-zinc-700 bg-zinc-950 text-orange-500 accent-orange-500 cursor-pointer"
+                                />
+                                <input
+                                  type="text"
+                                  value={st.text}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setEditSubtasks(prev => prev.map((s, i) => i === idx ? { ...s, text: val } : s));
+                                  }}
+                                  className={`bg-transparent text-xs text-white outline-none w-full ${st.completed ? 'line-through text-zinc-500' : ''}`}
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setEditSubtasks(prev => prev.filter((_, i) => i !== idx))}
+                                className="text-zinc-500 hover:text-red-400 transition-colors p-1 shrink-0"
+                                title="Remover subtarefa"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Right Column: Time, Checkboxes & Reminders */}

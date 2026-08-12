@@ -462,6 +462,8 @@ export default function ChecklistView({
   const [cellIsWeeklyRecurring, setCellIsWeeklyRecurring] = useState(true);
   const [cellEnableReminder, setCellEnableReminder] = useState(true);
   const [cellReminderTime, setCellReminderTime] = useState('08:00');
+  const [cellSubtasks, setCellSubtasks] = useState<SubTask[]>([]);
+  const [cellSubtaskInput, setCellSubtaskInput] = useState('');
   const [showClearModal, setShowClearModal] = useState(false);
 
   // ----------------------------------------------------
@@ -606,6 +608,8 @@ export default function ChecklistView({
 
     setOriginalGroupKeys(matchedKeys);
     setCellSelectedDays(matchedDays.length > 0 ? matchedDays : [dayId]);
+    setCellSubtasks(block.subtasks ? block.subtasks.map((s: SubTask) => ({ ...s })) : []);
+    setCellSubtaskInput('');
     setIsAddingBlock(false);
   };
 
@@ -620,6 +624,8 @@ export default function ChecklistView({
     setCellIsWeeklyRecurring(true);
     setCellEnableReminder(true);
     setCellReminderTime(hour);
+    setCellSubtasks([]);
+    setCellSubtaskInput('');
     setIsAddingBlock(true);
   };
 
@@ -2749,6 +2755,12 @@ export default function ChecklistView({
                                   <div className="font-bold text-xs leading-snug tracking-wide line-clamp-2">
                                     {block.text}
                                   </div>
+                                  {block.subtasks && block.subtasks.length > 0 && (
+                                    <div className="inline-flex items-center gap-1 text-[9px] font-mono font-bold bg-black/30 px-1.5 py-0.5 rounded text-orange-300">
+                                      <ListTodo className="h-2.5 w-2.5" />
+                                      {block.subtasks.filter((s: SubTask) => s.completed).length}/{block.subtasks.length}
+                                    </div>
+                                  )}
                                 </div>
                                 <div className="font-mono text-[9px] opacity-70 mt-1">
                                   {hour} - {displayEndTime}
@@ -2899,6 +2911,84 @@ export default function ChecklistView({
                               );
                             })}
                           </div>
+                        </div>
+
+                        {/* Subtarefas (Opcional) */}
+                        <div className="space-y-2 pt-2 border-t border-zinc-850">
+                          <label className="text-[10px] text-zinc-400 font-bold block uppercase tracking-wider flex items-center justify-between">
+                            <span>Subtarefas / Etapas (Opcional)</span>
+                            {cellSubtasks.length > 0 && (
+                              <span className="text-[9px] text-orange-400 font-mono font-normal">
+                                {cellSubtasks.filter(s => s.completed).length}/{cellSubtasks.length} concluídas
+                              </span>
+                            )}
+                          </label>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={cellSubtaskInput}
+                              onChange={(e) => setCellSubtaskInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  if (cellSubtaskInput.trim()) {
+                                    setCellSubtasks(prev => [...prev, { id: Math.random().toString(36).substring(2, 9), text: cellSubtaskInput.trim(), completed: false }]);
+                                    setCellSubtaskInput('');
+                                  }
+                                }
+                              }}
+                              placeholder="Adicionar sub-etapa..."
+                              className="flex-1 bg-zinc-900 border border-zinc-800 focus:border-orange-500/50 rounded-xl px-3.5 py-1.5 text-xs text-white outline-none placeholder:text-zinc-600"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (cellSubtaskInput.trim()) {
+                                  setCellSubtasks(prev => [...prev, { id: Math.random().toString(36).substring(2, 9), text: cellSubtaskInput.trim(), completed: false }]);
+                                  setCellSubtaskInput('');
+                                }
+                              }}
+                              className="bg-zinc-850 hover:bg-zinc-800 text-orange-400 font-bold text-xs px-3 py-1.5 rounded-xl border border-zinc-750 transition-colors flex items-center gap-1 shrink-0"
+                            >
+                              <Plus className="h-3.5 w-3.5" /> Adicionar
+                            </button>
+                          </div>
+                          {cellSubtasks.length > 0 && (
+                            <div className="space-y-1.5 pt-1 max-h-36 overflow-y-auto">
+                              {cellSubtasks.map((st, idx) => (
+                                <div key={st.id} className="flex items-center justify-between bg-zinc-900/80 border border-zinc-800 px-3 py-1.5 rounded-xl text-xs text-zinc-200 gap-2">
+                                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    <input
+                                      type="checkbox"
+                                      checked={st.completed}
+                                      onChange={(e) => {
+                                        const checked = e.target.checked;
+                                        setCellSubtasks(prev => prev.map((s, i) => i === idx ? { ...s, completed: checked } : s));
+                                      }}
+                                      className="w-3.5 h-3.5 rounded border-zinc-700 bg-zinc-950 text-orange-500 accent-orange-500 cursor-pointer"
+                                    />
+                                    <input
+                                      type="text"
+                                      value={st.text}
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        setCellSubtasks(prev => prev.map((s, i) => i === idx ? { ...s, text: val } : s));
+                                      }}
+                                      className={`bg-transparent text-xs text-white outline-none w-full ${st.completed ? 'line-through text-zinc-500' : ''}`}
+                                    />
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setCellSubtasks(prev => prev.filter((_, i) => i !== idx))}
+                                    className="text-zinc-500 hover:text-red-400 transition-colors p-1 shrink-0"
+                                    title="Remover subtarefa"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -3114,7 +3204,8 @@ export default function ChecklistView({
                               startTime: cellStartTime,
                               endTime: cellEndTime,
                               isWeeklyRecurring: cellIsWeeklyRecurring,
-                              reminderTime: cellEnableReminder ? (cellReminderTime.trim() || undefined) : undefined
+                              reminderTime: cellEnableReminder ? (cellReminderTime.trim() || undefined) : undefined,
+                              subtasks: cellSubtasks.length > 0 ? cellSubtasks : undefined
                             };
                           });
 
