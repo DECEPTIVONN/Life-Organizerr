@@ -1329,6 +1329,176 @@ export default function App() {
     localStorage.setItem('mbc_vision_board_cards_v1', JSON.stringify(visionBoardCards));
   }, [visionBoardCards]);
 
+  // Additional cloud-synchronized states
+  const [cardsPerRow, setCardsPerRow] = useState<number>(() => {
+    const saved = localStorage.getItem('mbc_vb_cards_per_row_v1');
+    return saved ? parseInt(saved, 10) : 3;
+  });
+  useEffect(() => {
+    localStorage.setItem('mbc_vb_cards_per_row_v1', cardsPerRow.toString());
+  }, [cardsPerRow]);
+
+  const [sheetOverrides, setSheetOverrides] = useState<Record<string, { planned: number; actual: number }>>(() => {
+    try {
+      const saved = localStorage.getItem('mbc_sheet_overrides');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error("Failed to parse mbc_sheet_overrides", e);
+    }
+    return {};
+  });
+  useEffect(() => {
+    localStorage.setItem('mbc_sheet_overrides', JSON.stringify(sheetOverrides));
+  }, [sheetOverrides]);
+
+  const [financesMainSubtab, setFinancesMainSubtab] = useState<'dashboard' | 'entries' | 'budget' | 'planning' | 'investments' | 'sheets'>(() => {
+    const saved = localStorage.getItem('finances_main_subtab');
+    if (saved === 'dashboard' || saved === 'entries' || saved === 'budget' || saved === 'planning' || saved === 'investments' || saved === 'sheets') return saved;
+    return 'dashboard';
+  });
+  useEffect(() => {
+    localStorage.setItem('finances_main_subtab', financesMainSubtab);
+  }, [financesMainSubtab]);
+
+  const [isFinancesBudgetOpen, setIsFinancesBudgetOpen] = useState<boolean>(() => {
+    return localStorage.getItem('finances_budget_open') === 'true';
+  });
+  useEffect(() => {
+    localStorage.setItem('finances_budget_open', String(isFinancesBudgetOpen));
+  }, [isFinancesBudgetOpen]);
+
+  const [isFinancesEntriesOpen, setIsFinancesEntriesOpen] = useState<boolean>(() => {
+    return localStorage.getItem('finances_entries_open') === 'true';
+  });
+  useEffect(() => {
+    localStorage.setItem('finances_entries_open', String(isFinancesEntriesOpen));
+  }, [isFinancesEntriesOpen]);
+
+  const [yearlyImages, setYearlyImages] = useState<Record<number, string>>(() => {
+    try {
+      const saved = localStorage.getItem('mbc_yearly_images');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error("Failed to parse mbc_yearly_images", e);
+    }
+    return {};
+  });
+  useEffect(() => {
+    localStorage.setItem('mbc_yearly_images', JSON.stringify(yearlyImages));
+  }, [yearlyImages]);
+
+  const [overviewYears, setOverviewYears] = useState<number[]>(() => {
+    try {
+      const saved = localStorage.getItem('mbc_overview_years');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error("Failed to parse mbc_overview_years", e);
+    }
+    return [2026, 2027, 2028, 2029, 2030];
+  });
+  useEffect(() => {
+    localStorage.setItem('mbc_overview_years', JSON.stringify(overviewYears));
+  }, [overviewYears]);
+
+  const [isMonthlyReviewOpen, setIsMonthlyReviewOpen] = useState<boolean>(() => {
+    return localStorage.getItem('mbc_is_monthly_review_open') === 'true';
+  });
+  useEffect(() => {
+    localStorage.setItem('mbc_is_monthly_review_open', String(isMonthlyReviewOpen));
+  }, [isMonthlyReviewOpen]);
+
+  const [isWeeklyReviewsOpen, setIsWeeklyReviewsOpen] = useState<boolean>(() => {
+    return localStorage.getItem('mbc_is_weekly_reviews_open') === 'true';
+  });
+  useEffect(() => {
+    localStorage.setItem('mbc_is_weekly_reviews_open', String(isWeeklyReviewsOpen));
+  }, [isWeeklyReviewsOpen]);
+
+  const [userBio, setUserBio] = useState<string>(() => {
+    return localStorage.getItem('mbc_userBio') || 'Construindo um império de disciplina diária. Foco na jornada e maestria contínua.';
+  });
+  useEffect(() => {
+    localStorage.setItem('mbc_userBio', userBio);
+  }, [userBio]);
+
+  const [userArchetype, setUserArchetype] = useState<string>(() => {
+    return localStorage.getItem('mbc_userArchetype') || 'Estrategista & Construtor';
+  });
+  useEffect(() => {
+    localStorage.setItem('mbc_userArchetype', userArchetype);
+  }, [userArchetype]);
+
+  const [focusTrainingDate, setFocusTrainingDate] = useState<string>(() => {
+    return localStorage.getItem('mbc_focus_training_date') || new Date().toISOString().split('T')[0];
+  });
+  useEffect(() => {
+    localStorage.setItem('mbc_focus_training_date', focusTrainingDate);
+  }, [focusTrainingDate]);
+
+  const [dashboardChecklistOpen, setDashboardChecklistOpen] = useState<boolean>(() => {
+    return localStorage.getItem('dashboard_checklist_open') !== 'false';
+  });
+  useEffect(() => {
+    localStorage.setItem('dashboard_checklist_open', String(dashboardChecklistOpen));
+  }, [dashboardChecklistOpen]);
+
+  const [dashboardHabitsOpen, setDashboardHabitsOpen] = useState<boolean>(() => {
+    return localStorage.getItem('dashboard_habits_open') !== 'false';
+  });
+  useEffect(() => {
+    localStorage.setItem('dashboard_habits_open', String(dashboardHabitsOpen));
+  }, [dashboardHabitsOpen]);
+
+  const [dashboardGoalsOpen, setDashboardGoalsOpen] = useState<boolean>(() => {
+    return localStorage.getItem('dashboard_goals_open') !== 'false';
+  });
+  useEffect(() => {
+    localStorage.setItem('dashboard_goals_open', String(dashboardGoalsOpen));
+  }, [dashboardGoalsOpen]);
+
+  const [dashboardFinancesOpen, setDashboardFinancesOpen] = useState<boolean>(() => {
+    return localStorage.getItem('dashboard_finances_open') !== 'false';
+  });
+  useEffect(() => {
+    localStorage.setItem('dashboard_finances_open', String(dashboardFinancesOpen));
+  }, [dashboardFinancesOpen]);
+
+  const [reminderInitialMode, setReminderInitialMode] = useState<'timer' | 'cronometer' | 'pomodoro'>(() => {
+    const saved = localStorage.getItem('mbc_reminder_initial_mode');
+    if (saved === 'cronometer' || saved === 'timer' || saved === 'pomodoro') return saved;
+    return 'timer';
+  });
+  useEffect(() => {
+    localStorage.setItem('mbc_reminder_initial_mode', reminderInitialMode);
+  }, [reminderInitialMode]);
+
+  const [language, setLanguage] = useState<string>(() => {
+    return localStorage.getItem('mbc_language') || 'pt';
+  });
+  useEffect(() => {
+    localStorage.setItem('mbc_language', language);
+  }, [language]);
+
+  const [backgroundNotificationsEnabled, setBackgroundNotificationsEnabled] = useState<boolean>(() => {
+    return localStorage.getItem('mbc_background_notifications_enabled') !== 'false';
+  });
+  useEffect(() => {
+    localStorage.setItem('mbc_background_notifications_enabled', String(backgroundNotificationsEnabled));
+  }, [backgroundNotificationsEnabled]);
+
+  const [isOnline, setIsOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   // --- Firebase / Supabase Synchronization Logic ---
   const [syncKey, setSyncKey] = useState<string>(() => {
     if (currentUser?.syncKey) return currentUser.syncKey;
@@ -1690,7 +1860,26 @@ export default function App() {
         budgetLimits: data.budgetLimits !== undefined ? data.budgetLimits : latestStateRef.current.budgetLimits,
         portfolioAssets: data.portfolioAssets !== undefined ? data.portfolioAssets : latestStateRef.current.portfolioAssets,
         investmentTransactions: data.investmentTransactions !== undefined ? data.investmentTransactions : latestStateRef.current.investmentTransactions,
-        visionBoardCards: data.visionBoardCards !== undefined ? data.visionBoardCards : latestStateRef.current.visionBoardCards
+        visionBoardCards: data.visionBoardCards !== undefined ? data.visionBoardCards : latestStateRef.current.visionBoardCards,
+        cardsPerRow: data.cardsPerRow !== undefined ? data.cardsPerRow : latestStateRef.current.cardsPerRow,
+        sheetOverrides: data.sheetOverrides !== undefined ? data.sheetOverrides : latestStateRef.current.sheetOverrides,
+        financesMainSubtab: data.financesMainSubtab !== undefined ? data.financesMainSubtab : latestStateRef.current.financesMainSubtab,
+        isFinancesBudgetOpen: data.isFinancesBudgetOpen !== undefined ? data.isFinancesBudgetOpen : latestStateRef.current.isFinancesBudgetOpen,
+        isFinancesEntriesOpen: data.isFinancesEntriesOpen !== undefined ? data.isFinancesEntriesOpen : latestStateRef.current.isFinancesEntriesOpen,
+        yearlyImages: data.yearlyImages !== undefined ? data.yearlyImages : latestStateRef.current.yearlyImages,
+        overviewYears: data.overviewYears !== undefined ? data.overviewYears : latestStateRef.current.overviewYears,
+        isMonthlyReviewOpen: data.isMonthlyReviewOpen !== undefined ? data.isMonthlyReviewOpen : latestStateRef.current.isMonthlyReviewOpen,
+        isWeeklyReviewsOpen: data.isWeeklyReviewsOpen !== undefined ? data.isWeeklyReviewsOpen : latestStateRef.current.isWeeklyReviewsOpen,
+        userBio: data.userBio !== undefined ? data.userBio : latestStateRef.current.userBio,
+        userArchetype: data.userArchetype !== undefined ? data.userArchetype : latestStateRef.current.userArchetype,
+        focusTrainingDate: data.focusTrainingDate !== undefined ? data.focusTrainingDate : latestStateRef.current.focusTrainingDate,
+        dashboardChecklistOpen: data.dashboardChecklistOpen !== undefined ? data.dashboardChecklistOpen : latestStateRef.current.dashboardChecklistOpen,
+        dashboardHabitsOpen: data.dashboardHabitsOpen !== undefined ? data.dashboardHabitsOpen : latestStateRef.current.dashboardHabitsOpen,
+        dashboardGoalsOpen: data.dashboardGoalsOpen !== undefined ? data.dashboardGoalsOpen : latestStateRef.current.dashboardGoalsOpen,
+        dashboardFinancesOpen: data.dashboardFinancesOpen !== undefined ? data.dashboardFinancesOpen : latestStateRef.current.dashboardFinancesOpen,
+        reminderInitialMode: data.reminderInitialMode !== undefined ? data.reminderInitialMode : latestStateRef.current.reminderInitialMode,
+        language: data.language !== undefined ? data.language : latestStateRef.current.language,
+        backgroundNotificationsEnabled: data.backgroundNotificationsEnabled !== undefined ? data.backgroundNotificationsEnabled : latestStateRef.current.backgroundNotificationsEnabled
       };
 
       const incomingSerialized = safeStringify(incomingData);
@@ -1736,6 +1925,25 @@ export default function App() {
       if (incomingData.portfolioAssets !== undefined) setPortfolioAssets(incomingData.portfolioAssets);
       if (incomingData.investmentTransactions !== undefined) setInvestmentTransactions(incomingData.investmentTransactions);
       if (incomingData.visionBoardCards !== undefined) setVisionBoardCards(incomingData.visionBoardCards);
+      if (incomingData.cardsPerRow !== undefined) setCardsPerRow(incomingData.cardsPerRow);
+      if (incomingData.sheetOverrides !== undefined) setSheetOverrides(incomingData.sheetOverrides);
+      if (incomingData.financesMainSubtab !== undefined) setFinancesMainSubtab(incomingData.financesMainSubtab);
+      if (incomingData.isFinancesBudgetOpen !== undefined) setIsFinancesBudgetOpen(incomingData.isFinancesBudgetOpen);
+      if (incomingData.isFinancesEntriesOpen !== undefined) setIsFinancesEntriesOpen(incomingData.isFinancesEntriesOpen);
+      if (incomingData.yearlyImages !== undefined) setYearlyImages(incomingData.yearlyImages);
+      if (incomingData.overviewYears !== undefined) setOverviewYears(incomingData.overviewYears);
+      if (incomingData.isMonthlyReviewOpen !== undefined) setIsMonthlyReviewOpen(incomingData.isMonthlyReviewOpen);
+      if (incomingData.isWeeklyReviewsOpen !== undefined) setIsWeeklyReviewsOpen(incomingData.isWeeklyReviewsOpen);
+      if (incomingData.userBio !== undefined) setUserBio(incomingData.userBio);
+      if (incomingData.userArchetype !== undefined) setUserArchetype(incomingData.userArchetype);
+      if (incomingData.focusTrainingDate !== undefined) setFocusTrainingDate(incomingData.focusTrainingDate);
+      if (incomingData.dashboardChecklistOpen !== undefined) setDashboardChecklistOpen(incomingData.dashboardChecklistOpen);
+      if (incomingData.dashboardHabitsOpen !== undefined) setDashboardHabitsOpen(incomingData.dashboardHabitsOpen);
+      if (incomingData.dashboardGoalsOpen !== undefined) setDashboardGoalsOpen(incomingData.dashboardGoalsOpen);
+      if (incomingData.dashboardFinancesOpen !== undefined) setDashboardFinancesOpen(incomingData.dashboardFinancesOpen);
+      if (incomingData.reminderInitialMode !== undefined) setReminderInitialMode(incomingData.reminderInitialMode);
+      if (incomingData.language !== undefined) setLanguage(incomingData.language);
+      if (incomingData.backgroundNotificationsEnabled !== undefined) setBackgroundNotificationsEnabled(incomingData.backgroundNotificationsEnabled);
       if ((incomingData as any).masterTemplates) {
         setMasterTemplates((incomingData as any).masterTemplates);
       }
@@ -1779,13 +1987,25 @@ export default function App() {
       if (incomingData.portfolioAssets !== undefined) localStorage.setItem('meu_foco_portfolio_assets', JSON.stringify(incomingData.portfolioAssets));
       if (incomingData.investmentTransactions !== undefined) localStorage.setItem('meu_foco_investment_transactions', JSON.stringify(incomingData.investmentTransactions));
       if (incomingData.visionBoardCards !== undefined) localStorage.setItem('mbc_vision_board_cards_v1', JSON.stringify(incomingData.visionBoardCards));
-      localStorage.setItem('mbc_habits', JSON.stringify(incomingData.habits));
-      localStorage.setItem('mbc_projects', JSON.stringify(incomingData.projects || []));
-      localStorage.setItem('mbc_reminders', JSON.stringify(incomingData.reminders || []));
-      if (incomingData.customCards) localStorage.setItem('dashboard_custom_cards', JSON.stringify(incomingData.customCards));
-      if (incomingData.gridRoutine !== undefined) localStorage.setItem('mbc_grid_routine', JSON.stringify(incomingData.gridRoutine));
-      if (incomingData.activeThemePreset !== undefined) localStorage.setItem('mbc_theme_preset', incomingData.activeThemePreset);
-      if (incomingData.customThemeHex !== undefined) localStorage.setItem('mbc_custom_theme_hex', incomingData.customThemeHex);
+      if (incomingData.cardsPerRow !== undefined) localStorage.setItem('mbc_vb_cards_per_row_v1', incomingData.cardsPerRow.toString());
+      if (incomingData.sheetOverrides !== undefined) localStorage.setItem('mbc_sheet_overrides', JSON.stringify(incomingData.sheetOverrides));
+      if (incomingData.financesMainSubtab !== undefined) localStorage.setItem('finances_main_subtab', incomingData.financesMainSubtab);
+      if (incomingData.isFinancesBudgetOpen !== undefined) localStorage.setItem('finances_budget_open', String(incomingData.isFinancesBudgetOpen));
+      if (incomingData.isFinancesEntriesOpen !== undefined) localStorage.setItem('finances_entries_open', String(incomingData.isFinancesEntriesOpen));
+      if (incomingData.yearlyImages !== undefined) localStorage.setItem('mbc_yearly_images', JSON.stringify(incomingData.yearlyImages));
+      if (incomingData.overviewYears !== undefined) localStorage.setItem('mbc_overview_years', JSON.stringify(incomingData.overviewYears));
+      if (incomingData.isMonthlyReviewOpen !== undefined) localStorage.setItem('mbc_is_monthly_review_open', String(incomingData.isMonthlyReviewOpen));
+      if (incomingData.isWeeklyReviewsOpen !== undefined) localStorage.setItem('mbc_is_weekly_reviews_open', String(incomingData.isWeeklyReviewsOpen));
+      if (incomingData.userBio !== undefined) localStorage.setItem('mbc_userBio', incomingData.userBio);
+      if (incomingData.userArchetype !== undefined) localStorage.setItem('mbc_userArchetype', incomingData.userArchetype);
+      if (incomingData.focusTrainingDate !== undefined) localStorage.setItem('mbc_focus_training_date', incomingData.focusTrainingDate);
+      if (incomingData.dashboardChecklistOpen !== undefined) localStorage.setItem('dashboard_checklist_open', String(incomingData.dashboardChecklistOpen));
+      if (incomingData.dashboardHabitsOpen !== undefined) localStorage.setItem('dashboard_habits_open', String(incomingData.dashboardHabitsOpen));
+      if (incomingData.dashboardGoalsOpen !== undefined) localStorage.setItem('dashboard_goals_open', String(incomingData.dashboardGoalsOpen));
+      if (incomingData.dashboardFinancesOpen !== undefined) localStorage.setItem('dashboard_finances_open', String(incomingData.dashboardFinancesOpen));
+      if (incomingData.reminderInitialMode !== undefined) localStorage.setItem('mbc_reminder_initial_mode', incomingData.reminderInitialMode);
+      if (incomingData.language !== undefined) localStorage.setItem('mbc_language', incomingData.language);
+      if (incomingData.backgroundNotificationsEnabled !== undefined) localStorage.setItem('mbc_background_notifications_enabled', String(incomingData.backgroundNotificationsEnabled));
       if ((incomingData as any).masterTemplates) {
         const mt = (incomingData as any).masterTemplates;
         if (mt.gratitude) localStorage.setItem('planner_template_gratitude', mt.gratitude);
@@ -1946,7 +2166,26 @@ export default function App() {
       budgetLimits,
       portfolioAssets,
       investmentTransactions,
-      visionBoardCards
+      visionBoardCards,
+      cardsPerRow,
+      sheetOverrides,
+      financesMainSubtab,
+      isFinancesBudgetOpen,
+      isFinancesEntriesOpen,
+      yearlyImages,
+      overviewYears,
+      isMonthlyReviewOpen,
+      isWeeklyReviewsOpen,
+      userBio,
+      userArchetype,
+      focusTrainingDate,
+      dashboardChecklistOpen,
+      dashboardHabitsOpen,
+      dashboardGoalsOpen,
+      dashboardFinancesOpen,
+      reminderInitialMode,
+      language,
+      backgroundNotificationsEnabled
     };
     const currentSerialized = safeStringify(currentData);
 
@@ -1956,7 +2195,8 @@ export default function App() {
     }
 
     setSyncStatus('syncing');
-    const timeoutId = setTimeout(async () => {
+
+    const performSync = async () => {
       try {
         const nowIso = new Date().toISOString();
         localStorage.setItem('mbc_last_local_write', nowIso);
@@ -1974,9 +2214,22 @@ export default function App() {
         console.error('Error saving to cloud:', err);
         setSyncStatus('error');
       }
-    }, 2000);
+    };
 
-    return () => clearTimeout(timeoutId);
+    const timeoutId = setTimeout(performSync, 600);
+
+    // Flush immediately if user switches tabs or navigates away
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        performSync();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [
     syncKey,
     userName,
@@ -2016,6 +2269,25 @@ export default function App() {
     portfolioAssets,
     investmentTransactions,
     visionBoardCards,
+    cardsPerRow,
+    sheetOverrides,
+    financesMainSubtab,
+    isFinancesBudgetOpen,
+    isFinancesEntriesOpen,
+    yearlyImages,
+    overviewYears,
+    isMonthlyReviewOpen,
+    isWeeklyReviewsOpen,
+    userBio,
+    userArchetype,
+    focusTrainingDate,
+    dashboardChecklistOpen,
+    dashboardHabitsOpen,
+    dashboardGoalsOpen,
+    dashboardFinancesOpen,
+    reminderInitialMode,
+    language,
+    backgroundNotificationsEnabled,
     isInitialLoadComplete
   ]);
 
@@ -2676,6 +2948,14 @@ export default function App() {
             setCustomCards={setCustomCards}
             onOpenStreakHub={() => setIsStreakHubOpen(true)}
             onOpenRankingModal={() => setActiveTab('classificacao')}
+            isChecklistOpen={dashboardChecklistOpen}
+            setIsChecklistOpen={setDashboardChecklistOpen}
+            isHabitsOpen={dashboardHabitsOpen}
+            setIsHabitsOpen={setDashboardHabitsOpen}
+            isGoalsOpen={dashboardGoalsOpen}
+            setIsGoalsOpen={setDashboardGoalsOpen}
+            isFinancesOpen={dashboardFinancesOpen}
+            setIsFinancesOpen={setDashboardFinancesOpen}
           />
         );
       case 'classificacao':
@@ -2761,6 +3041,8 @@ export default function App() {
             setSelectedArea={setGoalsSelectedArea}
             visionBoardCards={visionBoardCards}
             setVisionBoardCards={setVisionBoardCards}
+            cardsPerRow={cardsPerRow}
+            setCardsPerRow={setCardsPerRow}
           />
         );
       case 'financas':
@@ -2781,6 +3063,14 @@ export default function App() {
             setPortfolioAssets={setPortfolioAssets}
             investmentTransactions={investmentTransactions}
             setInvestmentTransactions={setInvestmentTransactions}
+            activeTab={financesMainSubtab}
+            setActiveTab={setFinancesMainSubtab}
+            isBudgetOpen={isFinancesBudgetOpen}
+            setIsBudgetOpen={setIsFinancesBudgetOpen}
+            isEntriesOpen={isFinancesEntriesOpen}
+            setIsEntriesOpen={setIsFinancesEntriesOpen}
+            sheetOverrides={sheetOverrides}
+            setSheetOverrides={setSheetOverrides}
           />
         );
       case 'calendario':
@@ -2839,6 +3129,14 @@ export default function App() {
             freeEditMode={freeEditMode}
             masterTemplates={masterTemplates}
             setMasterTemplates={setMasterTemplates}
+            isMonthlyReviewOpen={isMonthlyReviewOpen}
+            setIsMonthlyReviewOpen={setIsMonthlyReviewOpen}
+            isWeeklyReviewsOpen={isWeeklyReviewsOpen}
+            setIsWeeklyReviewsOpen={setIsWeeklyReviewsOpen}
+            yearlyImages={yearlyImages}
+            setYearlyImages={setYearlyImages}
+            overviewYears={overviewYears}
+            setOverviewYears={setOverviewYears}
           />
         );
       case 'projetos':
@@ -2874,6 +3172,8 @@ export default function App() {
             reminders={reminders}
             setReminders={setReminders}
             addXp={addXp}
+            initialMode={reminderInitialMode}
+            setInitialMode={setReminderInitialMode}
           />
         );
       case 'resumo':
@@ -2916,6 +3216,12 @@ export default function App() {
             finances={finances}
             habits={habits}
             routine={routine}
+            userBio={userBio}
+            setUserBio={setUserBio}
+            userArchetype={userArchetype}
+            setUserArchetype={setUserArchetype}
+            focusTrainingDate={focusTrainingDate}
+            setFocusTrainingDate={setFocusTrainingDate}
             onOpenStreakHub={() => setIsStreakHubOpen(true)}
             onOpenRankingModal={() => setActiveTab('classificacao')}
           />
@@ -2966,6 +3272,12 @@ export default function App() {
             setActiveThemePreset={setActiveThemePreset}
             customThemeHex={customThemeHex}
             setCustomThemeHex={setCustomThemeHex}
+            language={language}
+            setLanguage={setLanguage}
+            backgroundNotificationsEnabled={backgroundNotificationsEnabled}
+            setBackgroundNotificationsEnabled={setBackgroundNotificationsEnabled}
+            dailyWorkspaceSettings={dailyWorkspaceSettings}
+            setDailyWorkspaceSettings={setDailyWorkspaceSettings}
           />
         );
       default:

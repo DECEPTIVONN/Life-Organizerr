@@ -84,6 +84,14 @@ interface FinancesProps {
   setPortfolioAssets?: React.Dispatch<React.SetStateAction<any[]>>;
   investmentTransactions?: any[];
   setInvestmentTransactions?: React.Dispatch<React.SetStateAction<any[]>>;
+  sheetOverrides?: Record<string, number>;
+  setSheetOverrides?: React.Dispatch<React.SetStateAction<Record<string, number>>>;
+  activeTab?: 'dashboard' | 'extrato' | 'planejamento' | 'investimentos' | 'contas' | 'dividas';
+  setActiveTab?: (tab: 'dashboard' | 'extrato' | 'planejamento' | 'investimentos' | 'contas' | 'dividas') => void;
+  isBudgetOpen?: boolean;
+  setIsBudgetOpen?: (open: boolean) => void;
+  isEntriesOpen?: boolean;
+  setIsEntriesOpen?: (open: boolean) => void;
 }
 
 export interface BudgetLimit {
@@ -276,13 +284,26 @@ export default function FinancesView({
   portfolioAssets,
   setPortfolioAssets,
   investmentTransactions,
-  setInvestmentTransactions
+  setInvestmentTransactions,
+  sheetOverrides: propSheetOverrides,
+  setSheetOverrides: propSetSheetOverrides,
+  activeTab: propActiveTab,
+  setActiveTab: propSetActiveTab,
+  isBudgetOpen: propIsBudgetOpen,
+  setIsBudgetOpen: propSetIsBudgetOpen,
+  isEntriesOpen: propIsEntriesOpen,
+  setIsEntriesOpen: propSetIsEntriesOpen
 }: FinancesProps) {
   // Main Sub-Tab State (6 sub-tabs)
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'extrato' | 'planejamento' | 'investimentos' | 'contas' | 'dividas'>(() => {
+  const [localActiveTab, setLocalActiveTab] = useState<'dashboard' | 'extrato' | 'planejamento' | 'investimentos' | 'contas' | 'dividas'>(() => {
     const saved = localStorage.getItem('finances_main_subtab');
     return (saved as any) || 'dashboard';
   });
+  const activeTab = propActiveTab !== undefined ? propActiveTab : localActiveTab;
+  const setActiveTab = (tab: 'dashboard' | 'extrato' | 'planejamento' | 'investimentos' | 'contas' | 'dividas') => {
+    if (propSetActiveTab) propSetActiveTab(tab);
+    setLocalActiveTab(tab);
+  };
 
   // Extrato sub-view switch ('mensal' | 'anual')
   const [extratoSubView, setExtratoSubView] = useState<'mensal' | 'anual'>('mensal');
@@ -321,14 +342,27 @@ export default function FinancesView({
   const [newBudgetAmount, setNewBudgetAmount] = useState('');
   const [showAddBudget, setShowAddBudget] = useState(false);
 
-  const [isBudgetOpen, setIsBudgetOpen] = useState(() => {
+  const [localIsBudgetOpen, setLocalIsBudgetOpen] = useState(() => {
     const saved = localStorage.getItem('finances_budget_open');
     return saved !== null ? saved === 'true' : true;
   });
-  const [isEntriesOpen, setIsEntriesOpen] = useState(() => {
+  const isBudgetOpen = propIsBudgetOpen !== undefined ? propIsBudgetOpen : localIsBudgetOpen;
+  const setIsBudgetOpen = (val: boolean | ((prev: boolean) => boolean)) => {
+    const nextVal = typeof val === 'function' ? val(isBudgetOpen) : val;
+    if (propSetIsBudgetOpen) propSetIsBudgetOpen(nextVal);
+    setLocalIsBudgetOpen(nextVal);
+  };
+
+  const [localIsEntriesOpen, setLocalIsEntriesOpen] = useState(() => {
     const saved = localStorage.getItem('finances_entries_open');
     return saved !== null ? saved === 'true' : true;
   });
+  const isEntriesOpen = propIsEntriesOpen !== undefined ? propIsEntriesOpen : localIsEntriesOpen;
+  const setIsEntriesOpen = (val: boolean | ((prev: boolean) => boolean)) => {
+    const nextVal = typeof val === 'function' ? val(isEntriesOpen) : val;
+    if (propSetIsEntriesOpen) propSetIsEntriesOpen(nextVal);
+    setLocalIsEntriesOpen(nextVal);
+  };
 
   // Planning state (50/30/20 & Emergency Fund)
   const [planningIncomeInput, setPlanningIncomeInput] = useState('8500');
@@ -756,7 +790,7 @@ export default function FinancesView({
   }, [debts]);
 
   // Consolidated spreadsheet cell manual overrides
-  const [sheetOverrides, setSheetOverrides] = useState<Record<string, number>>(() => {
+  const [localSheetOverrides, setLocalSheetOverrides] = useState<Record<string, number>>(() => {
     try {
       const saved = localStorage.getItem('mbc_sheet_overrides');
       if (saved) return JSON.parse(saved);
@@ -765,6 +799,12 @@ export default function FinancesView({
     }
     return {};
   });
+
+  const sheetOverrides = propSheetOverrides !== undefined ? propSheetOverrides : localSheetOverrides;
+  const setSheetOverrides = (action: React.SetStateAction<Record<string, number>>) => {
+    if (propSetSheetOverrides) propSetSheetOverrides(action);
+    setLocalSheetOverrides(action);
+  };
 
   const saveSheetOverrides = (overrides: Record<string, number>) => {
     setSheetOverrides(overrides);

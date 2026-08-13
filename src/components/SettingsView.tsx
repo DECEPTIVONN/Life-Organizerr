@@ -122,6 +122,12 @@ interface SettingsViewProps {
   setIsAppLocked: (locked: boolean) => void;
   appLockBiometricEnabled?: boolean;
   setAppLockBiometricEnabled?: (enabled: boolean) => void;
+  language?: string;
+  setLanguage?: (lang: string) => void;
+  backgroundNotificationsEnabled?: boolean;
+  setBackgroundNotificationsEnabled?: (enabled: boolean) => void;
+  dailyWorkspaceSettings?: { enabled: boolean; time: string };
+  setDailyWorkspaceSettings?: (settings: { enabled: boolean; time: string }) => void;
 }
 
 type SettingsScreen = 
@@ -187,7 +193,13 @@ export default function SettingsView({
   activeThemePreset = 'default',
   setActiveThemePreset,
   customThemeHex = '#3396f3',
-  setCustomThemeHex
+  setCustomThemeHex,
+  language: propLanguage,
+  setLanguage: propSetLanguage,
+  backgroundNotificationsEnabled: propBackgroundNotificationsEnabled,
+  setBackgroundNotificationsEnabled: propSetBackgroundNotificationsEnabled,
+  dailyWorkspaceSettings: propDailyWorkspaceSettings,
+  setDailyWorkspaceSettings: propSetDailyWorkspaceSettings
 }: SettingsViewProps) {
   
   // Theme Color Scheme Modal State
@@ -249,24 +261,59 @@ export default function SettingsView({
   const [notifDaily, setNotifDaily] = useState(true);
   const [notifFinances, setNotifFinances] = useState(false);
   const [notifRoutine, setNotifRoutine] = useState(true);
-  const [notifBackground, setNotifBackground] = useState(() => {
+  const [localNotifBackground, setLocalNotifBackground] = useState(() => {
     return localStorage.getItem('mbc_background_notifications_enabled') !== 'false';
   });
-  const [dailyWorkspaceNotifEnabled, setDailyWorkspaceNotifEnabled] = useState(() => {
+  const notifBackground = propBackgroundNotificationsEnabled !== undefined ? propBackgroundNotificationsEnabled : localNotifBackground;
+  const setNotifBackground = (val: boolean | ((prev: boolean) => boolean)) => {
+    const nextVal = typeof val === 'function' ? val(notifBackground) : val;
+    if (propSetBackgroundNotificationsEnabled) propSetBackgroundNotificationsEnabled(nextVal);
+    setLocalNotifBackground(nextVal);
+  };
+
+  const [localDailyWorkspaceNotifEnabled, setLocalDailyWorkspaceNotifEnabled] = useState(() => {
     return localStorage.getItem('mbc_daily_workspace_notif_enabled') !== 'false';
   });
-  const [dailyWorkspaceReminderTime, setDailyWorkspaceReminderTime] = useState(() => {
+  const dailyWorkspaceNotifEnabled = propDailyWorkspaceSettings?.enabled !== undefined ? propDailyWorkspaceSettings.enabled : localDailyWorkspaceNotifEnabled;
+  const setDailyWorkspaceNotifEnabled = (val: boolean | ((prev: boolean) => boolean)) => {
+    const nextVal = typeof val === 'function' ? val(dailyWorkspaceNotifEnabled) : val;
+    if (propSetDailyWorkspaceSettings) {
+      propSetDailyWorkspaceSettings({
+        enabled: nextVal,
+        time: dailyWorkspaceReminderTime
+      });
+    }
+    setLocalDailyWorkspaceNotifEnabled(nextVal);
+  };
+
+  const [localDailyWorkspaceReminderTime, setLocalDailyWorkspaceReminderTime] = useState(() => {
     return localStorage.getItem('mbc_daily_workspace_reminder_time') || '21:00';
   });
+  const dailyWorkspaceReminderTime = propDailyWorkspaceSettings?.time !== undefined ? propDailyWorkspaceSettings.time : localDailyWorkspaceReminderTime;
+  const setDailyWorkspaceReminderTime = (val: string | ((prev: string) => string)) => {
+    const nextVal = typeof val === 'function' ? val(dailyWorkspaceReminderTime) : val;
+    if (propSetDailyWorkspaceSettings) {
+      propSetDailyWorkspaceSettings({
+        enabled: dailyWorkspaceNotifEnabled,
+        time: nextVal
+      });
+    }
+    setLocalDailyWorkspaceReminderTime(nextVal);
+  };
 
   // Install trigger (PWA)
   const [pwaPrompt, setPwaPrompt] = useState<any>(null);
   const [pwaInstalled, setPwaInstalled] = useState(false);
 
   // Language state
-  const [selectedLanguage, setSelectedLanguage] = useState(() => {
+  const [localSelectedLanguage, setLocalSelectedLanguage] = useState(() => {
     return localStorage.getItem('mbc_language') || 'pt';
   });
+  const selectedLanguage = propLanguage !== undefined ? propLanguage : localSelectedLanguage;
+  const setSelectedLanguage = (lang: string) => {
+    if (propSetLanguage) propSetLanguage(lang);
+    setLocalSelectedLanguage(lang);
+  };
 
   // Google Calendar Integration states
   const [googleUser, setGoogleUser] = useState<{ name: string; email: string; picture: string } | null>(() => {

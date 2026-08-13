@@ -92,6 +92,14 @@ interface DashboardViewProps {
   routine: RoutineItem[];
   customCards?: any[];
   setCustomCards?: React.Dispatch<React.SetStateAction<any[]>>;
+  isChecklistOpen?: boolean;
+  setIsChecklistOpen?: (open: boolean) => void;
+  isHabitsOpen?: boolean;
+  setIsHabitsOpen?: (open: boolean) => void;
+  isGoalsOpen?: boolean;
+  setIsGoalsOpen?: (open: boolean) => void;
+  isFinancesOpen?: boolean;
+  setIsFinancesOpen?: (open: boolean) => void;
   onOpenStreakHub?: () => void;
   onOpenRankingModal?: () => void;
 }
@@ -115,6 +123,14 @@ export default function DashboardView({
   routine = [],
   customCards: propCustomCards,
   setCustomCards: propSetCustomCards,
+  isChecklistOpen: propIsChecklistOpen,
+  setIsChecklistOpen: propSetIsChecklistOpen,
+  isHabitsOpen: propIsHabitsOpen,
+  setIsHabitsOpen: propSetIsHabitsOpen,
+  isGoalsOpen: propIsGoalsOpen,
+  setIsGoalsOpen: propSetIsGoalsOpen,
+  isFinancesOpen: propIsFinancesOpen,
+  setIsFinancesOpen: propSetIsFinancesOpen,
   onOpenStreakHub,
   onOpenRankingModal
 }: DashboardViewProps) {
@@ -229,22 +245,49 @@ export default function DashboardView({
   };
 
   // Dropdown / Collapsible sections states
-  const [isChecklistOpen, setIsChecklistOpen] = useState(() => {
+  const [localIsChecklistOpen, setLocalIsChecklistOpen] = useState(() => {
     const saved = localStorage.getItem('dashboard_checklist_open');
     return saved !== null ? saved === 'true' : true;
   });
-  const [isHabitsOpen, setIsHabitsOpen] = useState(() => {
+  const isChecklistOpen = propIsChecklistOpen !== undefined ? propIsChecklistOpen : localIsChecklistOpen;
+  const setIsChecklistOpen = (val: boolean | ((prev: boolean) => boolean)) => {
+    const nextVal = typeof val === 'function' ? val(isChecklistOpen) : val;
+    if (propSetIsChecklistOpen) propSetIsChecklistOpen(nextVal);
+    setLocalIsChecklistOpen(nextVal);
+  };
+
+  const [localIsHabitsOpen, setLocalIsHabitsOpen] = useState(() => {
     const saved = localStorage.getItem('dashboard_habits_open');
     return saved !== null ? saved === 'true' : true;
   });
-  const [isGoalsOpen, setIsGoalsOpen] = useState(() => {
+  const isHabitsOpen = propIsHabitsOpen !== undefined ? propIsHabitsOpen : localIsHabitsOpen;
+  const setIsHabitsOpen = (val: boolean | ((prev: boolean) => boolean)) => {
+    const nextVal = typeof val === 'function' ? val(isHabitsOpen) : val;
+    if (propSetIsHabitsOpen) propSetIsHabitsOpen(nextVal);
+    setLocalIsHabitsOpen(nextVal);
+  };
+
+  const [localIsGoalsOpen, setLocalIsGoalsOpen] = useState(() => {
     const saved = localStorage.getItem('dashboard_goals_open');
     return saved !== null ? saved === 'true' : true;
   });
-  const [isFinancesOpen, setIsFinancesOpen] = useState(() => {
+  const isGoalsOpen = propIsGoalsOpen !== undefined ? propIsGoalsOpen : localIsGoalsOpen;
+  const setIsGoalsOpen = (val: boolean | ((prev: boolean) => boolean)) => {
+    const nextVal = typeof val === 'function' ? val(isGoalsOpen) : val;
+    if (propSetIsGoalsOpen) propSetIsGoalsOpen(nextVal);
+    setLocalIsGoalsOpen(nextVal);
+  };
+
+  const [localIsFinancesOpen, setLocalIsFinancesOpen] = useState(() => {
     const saved = localStorage.getItem('dashboard_finances_open');
     return saved !== null ? saved === 'true' : true;
   });
+  const isFinancesOpen = propIsFinancesOpen !== undefined ? propIsFinancesOpen : localIsFinancesOpen;
+  const setIsFinancesOpen = (val: boolean | ((prev: boolean) => boolean)) => {
+    const nextVal = typeof val === 'function' ? val(isFinancesOpen) : val;
+    if (propSetIsFinancesOpen) propSetIsFinancesOpen(nextVal);
+    setLocalIsFinancesOpen(nextVal);
+  };
 
   useEffect(() => {
     localStorage.setItem('dashboard_checklist_open', String(isChecklistOpen));

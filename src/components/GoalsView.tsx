@@ -54,6 +54,8 @@ interface GoalsViewProps {
   setSelectedArea?: (area: string | null) => void;
   visionBoardCards?: VisionBoardCard[];
   setVisionBoardCards?: React.Dispatch<React.SetStateAction<VisionBoardCard[]>>;
+  cardsPerRow?: 2 | 3 | 4 | 5 | 6;
+  setCardsPerRow?: (val: 2 | 3 | 4 | 5 | 6) => void;
 }
 
 // Default Museum / Fine Art Painting images matching the screenshot mood
@@ -147,7 +149,9 @@ export default function GoalsView({
   selectedArea: propSelectedArea,
   setSelectedArea: propSetSelectedArea,
   visionBoardCards: propVisionBoardCards,
-  setVisionBoardCards: propSetVisionBoardCards
+  setVisionBoardCards: propSetVisionBoardCards,
+  cardsPerRow,
+  setCardsPerRow
 }: GoalsViewProps) {
   // Navigation & Tabs
   const [localViewMode, setLocalViewMode] = useState<'areas' | 'all' | 'leitura' | 'timeline'>('areas'); // areas initially
@@ -924,6 +928,8 @@ export default function GoalsView({
               currentArea={null}
               lifeAreas={LIFE_AREAS}
               addXp={addXp}
+              cardsPerRow={cardsPerRow}
+              setCardsPerRow={setCardsPerRow}
             />
           </motion.div>
         )}
@@ -1821,6 +1827,8 @@ export default function GoalsView({
               currentArea={selectedArea}
               lifeAreas={LIFE_AREAS}
               addXp={addXp}
+              cardsPerRow={cardsPerRow}
+              setCardsPerRow={setCardsPerRow}
             />
           </div>
           </motion.div>

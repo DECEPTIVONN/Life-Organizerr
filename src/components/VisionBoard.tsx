@@ -531,9 +531,19 @@ interface VisionBoardProps {
   currentArea?: string | null;
   lifeAreas: string[];
   addXp?: (amount: number) => void;
+  cardsPerRow?: 2 | 3 | 4 | 5 | 6;
+  setCardsPerRow?: (val: 2 | 3 | 4 | 5 | 6) => void;
 }
 
-export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: VisionBoardProps) {
+export function VisionBoard({ 
+  cards, 
+  setCards, 
+  currentArea, 
+  lifeAreas, 
+  addXp,
+  cardsPerRow: propCardsPerRow,
+  setCardsPerRow: propSetCardsPerRow
+}: VisionBoardProps) {
   const [filterArea, setFilterArea] = useState<string>('Todas');
   const [editingCard, setEditingCard] = useState<VisionBoardCard | null>(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
@@ -541,7 +551,7 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
   const [activeTouchCardId, setActiveTouchCardId] = useState<string | null>(null);
 
   // Cards per row setting (2 to 6 cards)
-  const [cardsPerRow, setCardsPerRow] = useState<2 | 3 | 4 | 5 | 6>(() => {
+  const [localCardsPerRow, setLocalCardsPerRow] = useState<2 | 3 | 4 | 5 | 6>(() => {
     try {
       const saved = localStorage.getItem('mbc_vb_cards_per_row_v1');
       if (saved && ['2', '3', '4', '5', '6'].includes(saved)) {
@@ -553,16 +563,19 @@ export function VisionBoard({ cards, setCards, currentArea, lifeAreas, addXp }: 
     return 3;
   });
 
+  const cardsPerRow = propCardsPerRow !== undefined ? propCardsPerRow : localCardsPerRow;
+  const setCardsPerRow = (val: 2 | 3 | 4 | 5 | 6) => {
+    if (propSetCardsPerRow) propSetCardsPerRow(val);
+    setLocalCardsPerRow(val);
+    try {
+      localStorage.setItem('mbc_vb_cards_per_row_v1', String(val));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   // Orientation Filter setting ('all' | 'horizontal' | 'vertical')
   const [orientationFilter, setOrientationFilter] = useState<'all' | 'horizontal' | 'vertical'>('all');
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('mbc_vb_cards_per_row_v1', String(cardsPerRow));
-    } catch (e) {
-      console.error('Failed to save cards per row setting:', e);
-    }
-  }, [cardsPerRow]);
 
   // Form State
   const [formArea, setFormArea] = useState<string>(currentArea || lifeAreas[0] || 'Saúde');

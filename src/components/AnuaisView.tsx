@@ -64,6 +64,14 @@ interface AnuaisViewProps {
   finances?: FinanceEntry[];
   books?: YearlyBook[];
   setBooks?: React.Dispatch<React.SetStateAction<YearlyBook[]>>;
+  yearlyImages?: Record<number, string>;
+  setYearlyImages?: React.Dispatch<React.SetStateAction<Record<number, string>>>;
+  overviewYears?: number[];
+  setOverviewYears?: React.Dispatch<React.SetStateAction<number[]>>;
+  isMonthlyReviewOpen?: boolean;
+  setIsMonthlyReviewOpen?: (open: boolean) => void;
+  isWeeklyReviewsOpen?: boolean;
+  setIsWeeklyReviewsOpen?: (open: boolean) => void;
   freeEditMode?: boolean;
   masterTemplates?: { gratitude: string; decrees: string; prayer: string };
   setMasterTemplates?: React.Dispatch<React.SetStateAction<{ gratitude: string; decrees: string; prayer: string }>>;
@@ -88,6 +96,14 @@ export default function AnuaisView({
   finances = [],
   books: propBooks,
   setBooks: propSetBooks,
+  yearlyImages: propYearlyImages,
+  setYearlyImages: propSetYearlyImages,
+  overviewYears: propOverviewYears,
+  setOverviewYears: propSetOverviewYears,
+  isMonthlyReviewOpen: propIsMonthlyReviewOpen,
+  setIsMonthlyReviewOpen: propSetIsMonthlyReviewOpen,
+  isWeeklyReviewsOpen: propIsWeeklyReviewsOpen,
+  setIsWeeklyReviewsOpen: propSetIsWeeklyReviewsOpen,
   freeEditMode = false
 }: AnuaisViewProps) {
   const [selectedYear, setSelectedYear] = useState(() => Math.max(2026, new Date().getFullYear()));
@@ -212,7 +228,7 @@ export default function AnuaisView({
   const [viewingDetail, setViewingDetail] = useState(false);
   const [editingImageYear, setEditingImageYear] = useState<number | null>(null);
   const [imageUrlInput, setImageUrlInput] = useState('');
-  const [yearlyImages, setYearlyImages] = useState<Record<number, string>>(() => {
+  const [localYearlyImages, setLocalYearlyImages] = useState<Record<number, string>>(() => {
     const saved = localStorage.getItem('mbc_yearly_images');
     if (saved) {
       try { return JSON.parse(saved); } catch (e) { console.error(e); }
@@ -228,12 +244,14 @@ export default function AnuaisView({
     };
   });
 
-  useEffect(() => {
-    localStorage.setItem('mbc_yearly_images', JSON.stringify(yearlyImages));
-  }, [yearlyImages]);
+  const yearlyImages = propYearlyImages !== undefined ? propYearlyImages : localYearlyImages;
+  const setYearlyImages = (action: React.SetStateAction<Record<number, string>>) => {
+    if (propSetYearlyImages) propSetYearlyImages(action);
+    setLocalYearlyImages(action);
+  };
 
   // Dynamic Year List State & New Year addition states
-  const [overviewYears, setOverviewYears] = useState<number[]>(() => {
+  const [localOverviewYears, setLocalOverviewYears] = useState<number[]>(() => {
     const saved = localStorage.getItem('mbc_overview_years');
     if (saved) {
       try {
@@ -248,9 +266,11 @@ export default function AnuaisView({
     return [2024, 2025, 2026, 2027, 2028, 2029, 2030];
   });
 
-  useEffect(() => {
-    localStorage.setItem('mbc_overview_years', JSON.stringify(overviewYears));
-  }, [overviewYears]);
+  const overviewYears = propOverviewYears !== undefined ? propOverviewYears : localOverviewYears;
+  const setOverviewYears = (action: React.SetStateAction<number[]>) => {
+    if (propSetOverviewYears) propSetOverviewYears(action);
+    setLocalOverviewYears(action);
+  };
 
   const [isEditingMonthlyReview, setIsEditingMonthlyReview] = useState(false);
 
@@ -276,12 +296,25 @@ export default function AnuaisView({
   }, [selectedYear, selectedMonthIndex, monthlyReviews]);
 
   // Collapsible sections in monthly view
-  const [isMonthlyReviewOpen, setIsMonthlyReviewOpen] = useState(() => {
+  const [localIsMonthlyReviewOpen, setLocalIsMonthlyReviewOpen] = useState(() => {
     return localStorage.getItem('mbc_is_monthly_review_open') !== 'false';
   });
-  const [isWeeklyReviewsOpen, setIsWeeklyReviewsOpen] = useState(() => {
+  const isMonthlyReviewOpen = propIsMonthlyReviewOpen !== undefined ? propIsMonthlyReviewOpen : localIsMonthlyReviewOpen;
+  const setIsMonthlyReviewOpen = (val: boolean | ((prev: boolean) => boolean)) => {
+    const nextVal = typeof val === 'function' ? val(isMonthlyReviewOpen) : val;
+    if (propSetIsMonthlyReviewOpen) propSetIsMonthlyReviewOpen(nextVal);
+    setLocalIsMonthlyReviewOpen(nextVal);
+  };
+
+  const [localIsWeeklyReviewsOpen, setLocalIsWeeklyReviewsOpen] = useState(() => {
     return localStorage.getItem('mbc_is_weekly_reviews_open') !== 'false';
   });
+  const isWeeklyReviewsOpen = propIsWeeklyReviewsOpen !== undefined ? propIsWeeklyReviewsOpen : localIsWeeklyReviewsOpen;
+  const setIsWeeklyReviewsOpen = (val: boolean | ((prev: boolean) => boolean)) => {
+    const nextVal = typeof val === 'function' ? val(isWeeklyReviewsOpen) : val;
+    if (propSetIsWeeklyReviewsOpen) propSetIsWeeklyReviewsOpen(nextVal);
+    setLocalIsWeeklyReviewsOpen(nextVal);
+  };
 
   useEffect(() => {
     localStorage.setItem('mbc_is_monthly_review_open', String(isMonthlyReviewOpen));

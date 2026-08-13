@@ -36,6 +36,12 @@ interface ProfileViewProps {
   setUserHandle: (handle: string) => void;
   userEmail: string;
   setUserEmail: (email: string) => void;
+  userBio?: string;
+  setUserBio?: (bio: string) => void;
+  userArchetype?: string;
+  setUserArchetype?: (archetype: string) => void;
+  focusTrainingDate?: string;
+  setFocusTrainingDate?: (date: string) => void;
   xpTotal: number;
   streak: number;
   level: number;
@@ -58,6 +64,12 @@ export default function ProfileView({
   setUserHandle,
   userEmail,
   setUserEmail,
+  userBio: propUserBio,
+  setUserBio: propSetUserBio,
+  userArchetype: propUserArchetype,
+  setUserArchetype: propSetUserArchetype,
+  focusTrainingDate: propFocusTrainingDate,
+  setFocusTrainingDate: propSetFocusTrainingDate,
   xpTotal,
   streak,
   level,
@@ -71,14 +83,24 @@ export default function ProfileView({
   onOpenRankingModal
 }: ProfileViewProps) {
   // Bio state
-  const [bio, setBio] = useState(() => {
+  const [localBio, setLocalBio] = useState(() => {
     return localStorage.getItem('mbc_userBio') || 'Consistência diária gera evolução constante.';
   });
+  const bio = propUserBio !== undefined ? propUserBio : localBio;
+  const setBio = (newBio: string) => {
+    if (propSetUserBio) propSetUserBio(newBio);
+    setLocalBio(newBio);
+  };
   
   // Custom archetype state
-  const [activeArchetype, setActiveArchetype] = useState(() => {
+  const [localArchetype, setLocalArchetype] = useState(() => {
     return localStorage.getItem('mbc_userArchetype') || 'estrategista';
   });
+  const activeArchetype = propUserArchetype !== undefined ? propUserArchetype : localArchetype;
+  const setActiveArchetype = (newArch: string) => {
+    if (propSetUserArchetype) propSetUserArchetype(newArch);
+    setLocalArchetype(newArch);
+  };
 
   // Edit states
   const [isEditing, setIsEditing] = useState(false);
@@ -88,6 +110,11 @@ export default function ProfileView({
   const [editBio, setEditBio] = useState(bio);
   const [editPhoto, setEditPhoto] = useState(userPhoto);
   const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
+
+  // Sync edit states when prop changes
+  useEffect(() => {
+    setEditBio(bio);
+  }, [bio]);
 
   // Predefined avatars
   const avatarPresets = [
@@ -226,10 +253,12 @@ export default function ProfileView({
 
   // Interactive Focus Training ground state
   const [focusClicks, setFocusClicks] = useState(0);
-  const [trainingCompletedToday, setTrainingCompletedToday] = useState(() => {
-    const todayStr = new Date().toDateString();
-    return localStorage.getItem('mbc_focus_training_date') === todayStr;
+  const [localTrainingCompletedDate, setLocalTrainingCompletedDate] = useState(() => {
+    return localStorage.getItem('mbc_focus_training_date') || '';
   });
+  const currentTrainingDate = propFocusTrainingDate !== undefined ? propFocusTrainingDate : localTrainingCompletedDate;
+  const todayDateStr = new Date().toDateString();
+  const trainingCompletedToday = currentTrainingDate === todayDateStr;
   const [pulseActive, setPulseActive] = useState(false);
 
   // Handle focus exercise click
@@ -243,9 +272,11 @@ export default function ProfileView({
     
     if (nextClicks >= 10) {
       addXp(20);
-      setTrainingCompletedToday(true);
-      const todayStr = new Date().toDateString();
-      localStorage.setItem('mbc_focus_training_date', todayStr);
+      if (propSetFocusTrainingDate) {
+        propSetFocusTrainingDate(todayDateStr);
+      }
+      setLocalTrainingCompletedDate(todayDateStr);
+      localStorage.setItem('mbc_focus_training_date', todayDateStr);
       setFocusClicks(0);
     }
   };

@@ -49,6 +49,8 @@ interface RemindersViewProps {
   addXp: (amount: number) => void;
   openNewModalDirectly?: boolean;
   onModalClosed?: () => void;
+  initialMode?: 'timer' | 'cronometer' | 'pomodoro';
+  setInitialMode?: (mode: 'timer' | 'cronometer' | 'pomodoro') => void;
 }
 
 // Audio synth chime generator for browser alert
@@ -87,7 +89,9 @@ export default function RemindersView({
   setReminders,
   addXp,
   openNewModalDirectly = false,
-  onModalClosed
+  onModalClosed,
+  initialMode: propInitialMode,
+  setInitialMode: propSetInitialMode
 }: RemindersViewProps) {
   // Navigation & Filter states
   const [filterMode, setFilterMode] = useState<'all' | 'active' | 'completed'>('active');
@@ -96,23 +100,33 @@ export default function RemindersView({
   // Form states
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [mode, setMode] = useState<'timer' | 'cronometer' | 'pomodoro'>(() => {
+  const [localMode, setLocalMode] = useState<'timer' | 'cronometer' | 'pomodoro'>(() => {
     const saved = localStorage.getItem('mbc_reminder_initial_mode');
     if (saved === 'cronometer' || saved === 'timer' || saved === 'pomodoro') return saved;
     return 'timer';
   });
+  const mode = propInitialMode !== undefined ? propInitialMode : localMode;
+  const setMode = (action: React.SetStateAction<'timer' | 'cronometer' | 'pomodoro'>) => {
+    const nextVal = typeof action === 'function' ? action(mode) : action;
+    if (propSetInitialMode) propSetInitialMode(nextVal);
+    setLocalMode(nextVal);
+  };
+
+  useEffect(() => {
+    localStorage.setItem('mbc_reminder_initial_mode', mode);
+  }, [mode]);
 
   useEffect(() => {
     const syncInitialMode = () => {
       const saved = localStorage.getItem('mbc_reminder_initial_mode');
       if (saved === 'cronometer' || saved === 'timer' || saved === 'pomodoro') {
-        setMode(saved);
+        setLocalMode(saved);
+        if (propSetInitialMode) propSetInitialMode(saved);
       }
     };
-    syncInitialMode();
     window.addEventListener('storage', syncInitialMode);
     return () => window.removeEventListener('storage', syncInitialMode);
-  }, []);
+  }, [propSetInitialMode]);
   
   // Timer mode inputs
   const [timerMinutes, setTimerMinutes] = useState<number>(5);
