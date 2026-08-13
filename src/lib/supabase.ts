@@ -164,13 +164,16 @@ export async function saveToSupabase(syncKey: string, payload: any, originDevice
   const client = getSupabaseClient();
   if (client && cleanKey) {
     try {
+      const payloadWithMeta = typeof payload === 'object' && payload !== null
+        ? { ...payload, _originDeviceId: devId }
+        : payload;
+
       const { error } = await client
         .from('user_sync')
         .upsert({
           sync_key: cleanKey,
-          data: payload,
-          updated_at: nowIso,
-          origin_device_id: devId
+          data: payloadWithMeta,
+          updated_at: nowIso
         }, { onConflict: 'sync_key' });
 
       if (error) {
@@ -222,14 +225,14 @@ export async function loadFromSupabase(syncKey: string): Promise<any | null> {
     try {
       const { data, error } = await client
         .from('user_sync')
-        .select('data, updated_at, origin_device_id')
+        .select('data, updated_at')
         .eq('sync_key', cleanKey)
         .maybeSingle();
 
       if (!error && data) {
         supabaseData = data.data;
         supabaseUpdatedAt = data.updated_at || '';
-        supabaseOriginDeviceId = (data as any).origin_device_id || '';
+        supabaseOriginDeviceId = data.data?._originDeviceId || '';
       }
     } catch (err) {
       console.warn('Supabase load warning:', err);
@@ -284,14 +287,13 @@ export async function loadMetadataFromSupabase(syncKey: string): Promise<{ updat
     try {
       const { data } = await client
         .from('user_sync')
-        .select('updated_at, origin_device_id')
+        .select('updated_at')
         .eq('sync_key', cleanKey)
         .maybeSingle();
 
       if (data?.updated_at) {
         sbIso = data.updated_at;
         sbTime = new Date(sbIso).getTime() || 0;
-        sbDevId = (data as any).origin_device_id || '';
       }
     } catch (e) {}
   }

@@ -2251,7 +2251,7 @@ export default function App() {
             },
             (payload: any) => {
               if (payload?.new?.data && isSubscribed) {
-                const originDevId = (payload.new as any).origin_device_id || '';
+                const originDevId = payload.new.data?._originDeviceId || (payload.new as any).origin_device_id || '';
                 applyIncomingData(payload.new.data, payload.new.updated_at, originDevId);
                 saveOfflineSnapshot(`latest_${syncKey}`, payload.new.data);
                 setSyncStatus('synced');
