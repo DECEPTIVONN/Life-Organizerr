@@ -70,6 +70,8 @@ interface ChecklistViewProps {
   setCalendarNotes?: React.Dispatch<React.SetStateAction<CalendarNote[]>>;
   showDateSelector?: boolean;
   onOpenStreakHub?: () => void;
+  lastDailyResetDate?: string;
+  setLastDailyResetDate?: React.Dispatch<React.SetStateAction<string>>;
 }
 
 // Bible total chapters standard (1189 is standard for Protestant bible)
@@ -177,7 +179,9 @@ export default function ChecklistView({
   calendarNotes,
   setCalendarNotes,
   showDateSelector = false,
-  onOpenStreakHub
+  onOpenStreakHub,
+  lastDailyResetDate,
+  setLastDailyResetDate
 }: ChecklistViewProps) {
   const [localBooks, setLocalBooks] = useState<YearlyBook[]>([]);
   const actualBooks = propBooks || localBooks;
@@ -221,10 +225,11 @@ export default function ChecklistView({
 
   // Automatic Day Reset Check (Triggers automatically at 0:00 / new calendar day)
   useEffect(() => {
-    const lastResetDate = localStorage.getItem('last_daily_reset_date');
+    const lastResetDate = lastDailyResetDate !== undefined && lastDailyResetDate !== '' ? lastDailyResetDate : localStorage.getItem('last_daily_reset_date');
     const currentToday = getTodayDateStr();
 
     if (!lastResetDate) {
+      if (setLastDailyResetDate) setLastDailyResetDate(currentToday);
       localStorage.setItem('last_daily_reset_date', currentToday);
     } else if (lastResetDate !== currentToday) {
       // Automatic day reset: uncheck recurring tasks and reset today's chapter trackers
@@ -241,9 +246,10 @@ export default function ChecklistView({
         ...prev,
         chaptersReadToday: 0
       }));
+      if (setLastDailyResetDate) setLastDailyResetDate(currentToday);
       localStorage.setItem('last_daily_reset_date', currentToday);
     }
-  }, [todayStr, setDailyTasks, setBibleTracker]);
+  }, [todayStr, setDailyTasks, setBibleTracker, lastDailyResetDate, setLastDailyResetDate]);
 
   const updateActiveTasks = (updater: (prev: DailyTask[]) => DailyTask[]) => {
     if (selectedDate === todayStr) {

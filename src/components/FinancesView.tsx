@@ -45,10 +45,45 @@ import { motion, AnimatePresence } from 'motion/react';
 import { FinanceEntry } from '../types';
 import InvestmentsPlanner from './InvestmentsPlanner';
 
+export interface BankAccount {
+  id: string;
+  name: string;
+  bank: string;
+  type: string;
+  balance: number;
+  color: string;
+  iconBg: string;
+}
+
+export interface CreditCardItem {
+  id: string;
+  name: string;
+  bank: string;
+  last4?: string;
+  brand?: string;
+  usedLimit: number;
+  totalLimit: number;
+  closingDay: number;
+  dueDay: number;
+  color: string;
+}
+
 interface FinancesProps {
   finances: FinanceEntry[];
   setFinances: React.Dispatch<React.SetStateAction<FinanceEntry[]>>;
   addXp: (amount: number) => void;
+  bankAccounts?: BankAccount[];
+  setBankAccounts?: React.Dispatch<React.SetStateAction<BankAccount[]>>;
+  creditCards?: CreditCardItem[];
+  setCreditCards?: React.Dispatch<React.SetStateAction<CreditCardItem[]>>;
+  debtItems?: DebtItem[];
+  setDebtItems?: React.Dispatch<React.SetStateAction<DebtItem[]>>;
+  budgetLimits?: BudgetLimit[];
+  setBudgetLimits?: React.Dispatch<React.SetStateAction<BudgetLimit[]>>;
+  portfolioAssets?: any[];
+  setPortfolioAssets?: React.Dispatch<React.SetStateAction<any[]>>;
+  investmentTransactions?: any[];
+  setInvestmentTransactions?: React.Dispatch<React.SetStateAction<any[]>>;
 }
 
 export interface BudgetLimit {
@@ -196,29 +231,7 @@ export function CategoryPieChart({ data }: { data: { name: string; value: number
 }
 
 // Initial Mock Accounts
-interface BankAccount {
-  id: string;
-  name: string;
-  bank: string;
-  type: string;
-  balance: number;
-  color: string;
-  iconBg: string;
-}
-
-// Initial Mock Cards
-interface CreditCardItem {
-  id: string;
-  name: string;
-  bank: string;
-  last4?: string;
-  brand?: string;
-  usedLimit: number;
-  totalLimit: number;
-  closingDay: number;
-  dueDay: number;
-  color: string;
-}
+// BankAccount and CreditCardItem interfaces exported above
 
 export interface DebtPaymentLog {
   id: string;
@@ -248,7 +261,23 @@ export interface DebtItem {
   payments?: DebtPaymentLog[];
 }
 
-export default function FinancesView({ finances, setFinances, addXp }: FinancesProps) {
+export default function FinancesView({ 
+  finances, 
+  setFinances, 
+  addXp,
+  bankAccounts: propBankAccounts,
+  setBankAccounts: propSetBankAccounts,
+  creditCards: propCreditCards,
+  setCreditCards: propSetCreditCards,
+  debtItems: propDebtItems,
+  setDebtItems: propSetDebtItems,
+  budgetLimits: propBudgetLimits,
+  setBudgetLimits: propSetBudgetLimits,
+  portfolioAssets,
+  setPortfolioAssets,
+  investmentTransactions,
+  setInvestmentTransactions
+}: FinancesProps) {
   // Main Sub-Tab State (6 sub-tabs)
   const [activeTab, setActiveTab] = useState<'dashboard' | 'extrato' | 'planejamento' | 'investimentos' | 'contas' | 'dividas'>(() => {
     const saved = localStorage.getItem('finances_main_subtab');
@@ -306,7 +335,7 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
   const [emergencyFundMonthsTarget, setEmergencyFundMonthsTarget] = useState(6);
 
   // Accounts state
-  const [accounts, setAccounts] = useState<BankAccount[]>(() => {
+  const [localAccounts, setLocalAccounts] = useState<BankAccount[]>(() => {
     try {
       const saved = localStorage.getItem('mbc_bank_accounts');
       if (saved) return JSON.parse(saved);
@@ -320,6 +349,12 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
       { id: 'acc-4', name: 'Carteira Mercado Pago', bank: 'Mercado Pago', type: 'Carteira Digital', balance: 1850.30, color: '#06b6d4', iconBg: 'bg-cyan-500/10' }
     ];
   });
+  const accounts = propBankAccounts !== undefined ? propBankAccounts : localAccounts;
+  const setAccounts = (action: React.SetStateAction<BankAccount[]>) => {
+    if (propSetBankAccounts) propSetBankAccounts(action);
+    setLocalAccounts(action);
+  };
+
   const [showAddAccountModal, setShowAddAccountModal] = useState(false);
   const [newAccName, setNewAccName] = useState('');
   const [newAccBank, setNewAccBank] = useState('');
@@ -327,7 +362,7 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
   const [newAccBalance, setNewAccBalance] = useState('');
 
   // Credit cards state
-  const [creditCards, setCreditCards] = useState<CreditCardItem[]>(() => {
+  const [localCreditCards, setLocalCreditCards] = useState<CreditCardItem[]>(() => {
     try {
       const saved = localStorage.getItem('mbc_credit_cards');
       if (saved) return JSON.parse(saved);
@@ -340,6 +375,11 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
       { id: 'card-3', name: 'Inter Black Mastercard', bank: 'Banco Inter', last4: '1234', brand: 'Mastercard', usedLimit: 1200.00, totalLimit: 15000.00, closingDay: 5, dueDay: 12, color: '#d97706' }
     ];
   });
+  const creditCards = propCreditCards !== undefined ? propCreditCards : localCreditCards;
+  const setCreditCards = (action: React.SetStateAction<CreditCardItem[]>) => {
+    if (propSetCreditCards) propSetCreditCards(action);
+    setLocalCreditCards(action);
+  };
 
   const [showAddCardModal, setShowAddCardModal] = useState(false);
   const [editingCardId, setEditingCardId] = useState<string | null>(null);
@@ -444,7 +484,7 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
   };
 
   // Debts state
-  const [debts, setDebts] = useState<DebtItem[]>(() => {
+  const [localDebts, setLocalDebts] = useState<DebtItem[]>(() => {
     try {
       const saved = localStorage.getItem('mbc_debt_items');
       if (saved) {
@@ -501,6 +541,11 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
       }
     ];
   });
+  const debts = propDebtItems !== undefined ? propDebtItems : localDebts;
+  const setDebts = (action: React.SetStateAction<DebtItem[]>) => {
+    if (propSetDebtItems) propSetDebtItems(action);
+    setLocalDebts(action);
+  };
 
   const [debtStrategy, setDebtStrategy] = useState<'snowball' | 'avalanche'>('avalanche');
   const [showAddDebtModal, setShowAddDebtModal] = useState(false);
@@ -727,7 +772,7 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
   };
 
   // Upgraded Budget Limits list with full recurrence model
-  const [budgetLimits, setBudgetLimits] = useState<BudgetLimit[]>(() => {
+  const [localBudgetLimits, setLocalBudgetLimits] = useState<BudgetLimit[]>(() => {
     try {
       const savedNew = localStorage.getItem('mbc_budget_limits_v2');
       if (savedNew) return JSON.parse(savedNew);
@@ -743,6 +788,11 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
       { id: 'b-6', category: 'Outros', amount: 500, startYear: 2026, startMonth: 0, isRecurring: true, recurringType: 'always' },
     ];
   });
+  const budgetLimits = propBudgetLimits !== undefined ? propBudgetLimits : localBudgetLimits;
+  const setBudgetLimits = (action: React.SetStateAction<BudgetLimit[]>) => {
+    if (propSetBudgetLimits) propSetBudgetLimits(action);
+    setLocalBudgetLimits(action);
+  };
 
   const saveBudgetLimits = (limits: BudgetLimit[]) => {
     setBudgetLimits(limits);
@@ -2129,7 +2179,14 @@ export default function FinancesView({ finances, setFinances, addXp }: FinancesP
             <div className="section-title-subtitle">Gestão de Ativos, Aportes & Renda Passiva</div>
           </div>
 
-          <InvestmentsPlanner finances={finances} addXp={addXp} />
+          <InvestmentsPlanner 
+            finances={finances} 
+            addXp={addXp} 
+            portfolioAssets={portfolioAssets}
+            setPortfolioAssets={setPortfolioAssets}
+            investmentTransactions={investmentTransactions}
+            setInvestmentTransactions={setInvestmentTransactions}
+          />
         </motion.div>
       )}
 

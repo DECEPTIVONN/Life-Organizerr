@@ -52,6 +52,8 @@ interface GoalsViewProps {
   setViewMode?: (mode: 'areas' | 'all' | 'leitura' | 'timeline') => void;
   selectedArea?: string | null;
   setSelectedArea?: (area: string | null) => void;
+  visionBoardCards?: VisionBoardCard[];
+  setVisionBoardCards?: React.Dispatch<React.SetStateAction<VisionBoardCard[]>>;
 }
 
 // Default Museum / Fine Art Painting images matching the screenshot mood
@@ -143,7 +145,9 @@ export default function GoalsView({
   viewMode: propViewMode,
   setViewMode: propSetViewMode,
   selectedArea: propSelectedArea,
-  setSelectedArea: propSetSelectedArea
+  setSelectedArea: propSetSelectedArea,
+  visionBoardCards: propVisionBoardCards,
+  setVisionBoardCards: propSetVisionBoardCards
 }: GoalsViewProps) {
   // Navigation & Tabs
   const [localViewMode, setLocalViewMode] = useState<'areas' | 'all' | 'leitura' | 'timeline'>('areas'); // areas initially
@@ -174,7 +178,7 @@ export default function GoalsView({
   const [noteInputs, setNoteInputs] = useState<Record<string, string>>({});
 
   // Vision Board cards state with localStorage persistence
-  const [visionBoardCards, setVisionBoardCards] = useState<VisionBoardCard[]>(() => {
+  const [localVisionBoardCards, setLocalVisionBoardCards] = useState<VisionBoardCard[]>(() => {
     try {
       const saved = localStorage.getItem('mbc_vision_board_cards_v1');
       if (saved) {
@@ -186,6 +190,12 @@ export default function GoalsView({
     }
     return DEFAULT_VISION_BOARD_CARDS;
   });
+
+  const visionBoardCards = propVisionBoardCards !== undefined ? propVisionBoardCards : localVisionBoardCards;
+  const setVisionBoardCards = (action: React.SetStateAction<VisionBoardCard[]>) => {
+    if (propSetVisionBoardCards) propSetVisionBoardCards(action);
+    setLocalVisionBoardCards(action);
+  };
 
   useEffect(() => {
     try {

@@ -53,6 +53,10 @@ import NumberInput from './NumberInput';
 interface InvestmentsPlannerProps {
   finances: FinanceEntry[];
   addXp: (amount: number) => void;
+  portfolioAssets?: PortfolioAsset[];
+  setPortfolioAssets?: React.Dispatch<React.SetStateAction<PortfolioAsset[]>>;
+  investmentTransactions?: InvestmentTransaction[];
+  setInvestmentTransactions?: React.Dispatch<React.SetStateAction<InvestmentTransaction[]>>;
 }
 
 // Investment options based on image 1
@@ -66,13 +70,20 @@ interface InvestmentOption {
   description: string;
 }
 
-export default function InvestmentsPlanner({ finances, addXp }: InvestmentsPlannerProps) {
+export default function InvestmentsPlanner({ 
+  finances, 
+  addXp,
+  portfolioAssets: propPortfolioAssets,
+  setPortfolioAssets: propSetPortfolioAssets,
+  investmentTransactions: propInvestmentTransactions,
+  setInvestmentTransactions: propSetInvestmentTransactions
+}: InvestmentsPlannerProps) {
   const [activeSubSection, setActiveSubSection] = useState<'portfolio' | 'evolucao' | 'reserva' | 'aposentadoria'>('portfolio');
 
   // ==========================================
   // --- STATE FOR PORTFOLIO / INVESTMENTS ---
   // ==========================================
-  const [portfolioAssets, setPortfolioAssets] = useState<PortfolioAsset[]>(() => {
+  const [localPortfolioAssets, setLocalPortfolioAssets] = useState<PortfolioAsset[]>(() => {
     const saved = localStorage.getItem('meu_foco_portfolio_assets');
     if (saved) {
       try {
@@ -83,6 +94,12 @@ export default function InvestmentsPlanner({ finances, addXp }: InvestmentsPlann
     }
     return [];
   });
+
+  const portfolioAssets = propPortfolioAssets !== undefined ? propPortfolioAssets : localPortfolioAssets;
+  const setPortfolioAssets = (action: React.SetStateAction<PortfolioAsset[]>) => {
+    if (propSetPortfolioAssets) propSetPortfolioAssets(action);
+    setLocalPortfolioAssets(action);
+  };
 
   useEffect(() => {
     localStorage.setItem('meu_foco_portfolio_assets', JSON.stringify(portfolioAssets));
@@ -111,7 +128,7 @@ export default function InvestmentsPlanner({ finances, addXp }: InvestmentsPlann
   // ==========================================
   // --- STATE FOR INVESTMENT TRANSACTIONS & BALANCE ---
   // ==========================================
-  const [investmentTransactions, setInvestmentTransactions] = useState<InvestmentTransaction[]>(() => {
+  const [localInvestmentTransactions, setLocalInvestmentTransactions] = useState<InvestmentTransaction[]>(() => {
     const saved = localStorage.getItem('meu_foco_investment_transactions');
     if (saved) {
       try {
@@ -163,6 +180,12 @@ export default function InvestmentsPlanner({ finances, addXp }: InvestmentsPlann
       }
     ];
   });
+
+  const investmentTransactions = propInvestmentTransactions !== undefined ? propInvestmentTransactions : localInvestmentTransactions;
+  const setInvestmentTransactions = (action: React.SetStateAction<InvestmentTransaction[]>) => {
+    if (propSetInvestmentTransactions) propSetInvestmentTransactions(action);
+    setLocalInvestmentTransactions(action);
+  };
 
   useEffect(() => {
     localStorage.setItem('meu_foco_investment_transactions', JSON.stringify(investmentTransactions));

@@ -42,6 +42,9 @@ import { saveToSupabase, loadFromSupabase, loadMetadataFromSupabase, getSupabase
 import { OfflineNotificationBanner } from './components/OfflineNotificationBanner';
 import { sendSystemNotification, syncAlarmsToServiceWorker } from './lib/notificationHelper';
 
+import { DEFAULT_VISION_BOARD_CARDS } from './components/VisionBoard';
+import { BankAccount, CreditCardItem, DebtItem, BudgetLimit } from './components/FinancesView';
+
 // Types
 import { 
   DailyTask, 
@@ -60,7 +63,10 @@ import {
   Habit,
   YearlyBook,
   QuickReminder,
-  Project
+  Project,
+  VisionBoardCard,
+  PortfolioAsset,
+  InvestmentTransaction
 } from './types';
 
 
@@ -1197,6 +1203,132 @@ export default function App() {
     localStorage.setItem('mbc_grid_routine', JSON.stringify(gridRoutine));
   }, [gridRoutine]);
 
+  // --- Synchronized Cloud States ---
+  const [lastDailyResetDate, setLastDailyResetDate] = useState<string>(() => {
+    return localStorage.getItem('last_daily_reset_date') || '';
+  });
+  useEffect(() => {
+    localStorage.setItem('last_daily_reset_date', lastDailyResetDate);
+  }, [lastDailyResetDate]);
+
+  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>(() => {
+    try {
+      const saved = localStorage.getItem('mbc_bank_accounts');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error("Failed to parse mbc_bank_accounts", e);
+    }
+    return [
+      { id: 'acc-1', name: 'Conta Corrente Itaú', bank: 'Itaú Unibanco', type: 'Conta Corrente', balance: 14250.80, color: '#ec4899', iconBg: 'bg-pink-500/10' },
+      { id: 'acc-2', name: 'Reserva Nubank', bank: 'Nu Pagamentos', type: 'Conta de Rendimento', balance: 32400.00, color: '#8b5cf6', iconBg: 'bg-purple-500/10' },
+      { id: 'acc-3', name: 'Conta Internacional Nomad', bank: 'Nomad Global', type: 'Dólar / Investimentos', balance: 5120.50, color: '#3b82f6', iconBg: 'bg-blue-500/10' },
+      { id: 'acc-4', name: 'Carteira Mercado Pago', bank: 'Mercado Pago', type: 'Carteira Digital', balance: 1850.30, color: '#06b6d4', iconBg: 'bg-cyan-500/10' }
+    ];
+  });
+  useEffect(() => {
+    localStorage.setItem('mbc_bank_accounts', JSON.stringify(bankAccounts));
+  }, [bankAccounts]);
+
+  const [creditCards, setCreditCards] = useState<CreditCardItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('mbc_credit_cards');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error("Failed to parse mbc_credit_cards", e);
+    }
+    return [
+      { id: 'card-1', name: 'Itaú Personnalité Visa Infinite', bank: 'Itaú Unibanco', last4: '8842', brand: 'Visa', usedLimit: 4850.20, totalLimit: 35000.00, closingDay: 28, dueDay: 5, color: '#ec4899' },
+      { id: 'card-2', name: 'Nubank Ultravioleta', bank: 'Nubank', last4: '4192', brand: 'Mastercard', usedLimit: 2150.90, totalLimit: 20000.00, closingDay: 15, dueDay: 22, color: '#8b5cf6' },
+      { id: 'card-3', name: 'Inter Black Mastercard', bank: 'Banco Inter', last4: '1234', brand: 'Mastercard', usedLimit: 1200.00, totalLimit: 15000.00, closingDay: 5, dueDay: 12, color: '#d97706' }
+    ];
+  });
+  useEffect(() => {
+    localStorage.setItem('mbc_credit_cards', JSON.stringify(creditCards));
+  }, [creditCards]);
+
+  const [debtItems, setDebtItems] = useState<DebtItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('mbc_debt_items');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error("Failed to parse mbc_debt_items", e);
+    }
+    return [
+      { id: 'debt-1', name: 'Financiamento Imobiliário', creditor: 'Caixa Econômica Federal', totalAmount: 185000, remainingAmount: 142000, monthlyPayment: 1850, interestRate: 0.75, dueDate: '2026-08-10', category: 'Imóvel', notes: 'Taxa TR + 8.5% a.a. Amortização SAC.' },
+      { id: 'debt-2', name: 'Consórcio Automotivo', creditor: 'Porto Seguro', totalAmount: 45000, remainingAmount: 18200, monthlyPayment: 920, interestRate: 0.15, dueDate: '2026-08-15', category: 'Veículo', notes: 'Faltam 20 parcelas de 80.' },
+      { id: 'debt-3', name: 'Empréstimo Pessoal', creditor: 'Banco Itaú', totalAmount: 15000, remainingAmount: 4800, monthlyPayment: 680, interestRate: 1.85, dueDate: '2026-08-20', category: 'Empréstimo', notes: 'Taxa pré-fixada. Quitar com amortização antecipada.' }
+    ];
+  });
+  useEffect(() => {
+    localStorage.setItem('mbc_debt_items', JSON.stringify(debtItems));
+  }, [debtItems]);
+
+  const [budgetLimits, setBudgetLimits] = useState<BudgetLimit[]>(() => {
+    try {
+      const savedNew = localStorage.getItem('mbc_budget_limits_v2');
+      if (savedNew) return JSON.parse(savedNew);
+    } catch (e) {
+      console.error("Failed to parse mbc_budget_limits_v2", e);
+    }
+    return [
+      { id: 'b-1', category: 'Moradia', amount: 3500, startYear: 2026, startMonth: 0, isRecurring: true, recurringType: 'always' },
+      { id: 'b-2', category: 'Alimentação', amount: 2200, startYear: 2026, startMonth: 0, isRecurring: true, recurringType: 'always' },
+      { id: 'b-3', category: 'Transporte', amount: 1200, startYear: 2026, startMonth: 0, isRecurring: true, recurringType: 'always' },
+      { id: 'b-4', category: 'Lazer & Estilo de Vida', amount: 1500, startYear: 2026, startMonth: 0, isRecurring: true, recurringType: 'always' },
+      { id: 'b-5', category: 'Saúde & Bem-estar', amount: 800, startYear: 2026, startMonth: 0, isRecurring: true, recurringType: 'always' },
+      { id: 'b-6', category: 'Outros', amount: 500, startYear: 2026, startMonth: 0, isRecurring: true, recurringType: 'always' }
+    ];
+  });
+  useEffect(() => {
+    localStorage.setItem('mbc_budget_limits_v2', JSON.stringify(budgetLimits));
+  }, [budgetLimits]);
+
+  const [portfolioAssets, setPortfolioAssets] = useState<PortfolioAsset[]>(() => {
+    try {
+      const saved = localStorage.getItem('meu_foco_portfolio_assets');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error("Failed to parse meu_foco_portfolio_assets", e);
+    }
+    return [];
+  });
+  useEffect(() => {
+    localStorage.setItem('meu_foco_portfolio_assets', JSON.stringify(portfolioAssets));
+  }, [portfolioAssets]);
+
+  const [investmentTransactions, setInvestmentTransactions] = useState<InvestmentTransaction[]>(() => {
+    try {
+      const saved = localStorage.getItem('meu_foco_investment_transactions');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error("Failed to parse meu_foco_investment_transactions", e);
+    }
+    return [
+      { id: 'it-1', date: '2026-01-10', type: 'deposit', assetTicker: 'CDB', amount: 5000, totalValue: 5000, notes: 'Aporte inicial Tesouro/CDB' },
+      { id: 'it-2', date: '2026-02-05', type: 'deposit', assetTicker: 'IVVB11', amount: 3000, totalValue: 3000, notes: 'Aporte mensal S&P 500' },
+      { id: 'it-3', date: '2026-03-12', type: 'yield', assetTicker: 'HGLG11', amount: 180, totalValue: 180, notes: 'Dividendos recebidos FIIs' }
+    ];
+  });
+  useEffect(() => {
+    localStorage.setItem('meu_foco_investment_transactions', JSON.stringify(investmentTransactions));
+  }, [investmentTransactions]);
+
+  const [visionBoardCards, setVisionBoardCards] = useState<VisionBoardCard[]>(() => {
+    try {
+      const saved = localStorage.getItem('mbc_vision_board_cards_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.error("Failed to parse mbc_vision_board_cards_v1", e);
+    }
+    return DEFAULT_VISION_BOARD_CARDS;
+  });
+  useEffect(() => {
+    localStorage.setItem('mbc_vision_board_cards_v1', JSON.stringify(visionBoardCards));
+  }, [visionBoardCards]);
+
   // --- Firebase / Supabase Synchronization Logic ---
   const [syncKey, setSyncKey] = useState<string>(() => {
     if (currentUser?.syncKey) return currentUser.syncKey;
@@ -1249,7 +1381,15 @@ export default function App() {
     activeThemePreset,
     customThemeHex,
     reminders,
-    projects
+    projects,
+    lastDailyResetDate,
+    bankAccounts,
+    creditCards,
+    debtItems,
+    budgetLimits,
+    portfolioAssets,
+    investmentTransactions,
+    visionBoardCards
   });
 
   // Automatically keep latestStateRef in sync with latest React state on every single render
@@ -1281,7 +1421,15 @@ export default function App() {
       activeThemePreset,
       customThemeHex,
       reminders,
-      projects
+      projects,
+      lastDailyResetDate,
+      bankAccounts,
+      creditCards,
+      debtItems,
+      budgetLimits,
+      portfolioAssets,
+      investmentTransactions,
+      visionBoardCards
     };
   });
 
@@ -1534,7 +1682,15 @@ export default function App() {
         reminders: data.reminders !== undefined ? data.reminders : latestStateRef.current.reminders,
         masterTemplates: data.masterTemplates !== undefined ? data.masterTemplates : (latestStateRef.current as any).masterTemplates,
         dailyWorkspaceSettings: data.dailyWorkspaceSettings !== undefined ? data.dailyWorkspaceSettings : (latestStateRef.current as any).dailyWorkspaceSettings,
-        projects: data.projects !== undefined ? data.projects : latestStateRef.current.projects
+        projects: data.projects !== undefined ? data.projects : latestStateRef.current.projects,
+        lastDailyResetDate: data.lastDailyResetDate !== undefined ? data.lastDailyResetDate : latestStateRef.current.lastDailyResetDate,
+        bankAccounts: data.bankAccounts !== undefined ? data.bankAccounts : latestStateRef.current.bankAccounts,
+        creditCards: data.creditCards !== undefined ? data.creditCards : latestStateRef.current.creditCards,
+        debtItems: data.debtItems !== undefined ? data.debtItems : latestStateRef.current.debtItems,
+        budgetLimits: data.budgetLimits !== undefined ? data.budgetLimits : latestStateRef.current.budgetLimits,
+        portfolioAssets: data.portfolioAssets !== undefined ? data.portfolioAssets : latestStateRef.current.portfolioAssets,
+        investmentTransactions: data.investmentTransactions !== undefined ? data.investmentTransactions : latestStateRef.current.investmentTransactions,
+        visionBoardCards: data.visionBoardCards !== undefined ? data.visionBoardCards : latestStateRef.current.visionBoardCards
       };
 
       const incomingSerialized = safeStringify(incomingData);
@@ -1572,6 +1728,14 @@ export default function App() {
       if (incomingData.gridRoutine !== undefined) setGridRoutine(incomingData.gridRoutine);
       if (incomingData.activeThemePreset !== undefined) setActiveThemePreset(incomingData.activeThemePreset);
       if (incomingData.customThemeHex !== undefined) setCustomThemeHex(incomingData.customThemeHex);
+      if (incomingData.lastDailyResetDate !== undefined) setLastDailyResetDate(incomingData.lastDailyResetDate);
+      if (incomingData.bankAccounts !== undefined) setBankAccounts(incomingData.bankAccounts);
+      if (incomingData.creditCards !== undefined) setCreditCards(incomingData.creditCards);
+      if (incomingData.debtItems !== undefined) setDebtItems(incomingData.debtItems);
+      if (incomingData.budgetLimits !== undefined) setBudgetLimits(incomingData.budgetLimits);
+      if (incomingData.portfolioAssets !== undefined) setPortfolioAssets(incomingData.portfolioAssets);
+      if (incomingData.investmentTransactions !== undefined) setInvestmentTransactions(incomingData.investmentTransactions);
+      if (incomingData.visionBoardCards !== undefined) setVisionBoardCards(incomingData.visionBoardCards);
       if ((incomingData as any).masterTemplates) {
         setMasterTemplates((incomingData as any).masterTemplates);
       }
@@ -1600,6 +1764,21 @@ export default function App() {
       localStorage.setItem('mbc_area_images_v2', JSON.stringify(incomingData.areaImages));
       localStorage.setItem('mbc_life_summary_v1', JSON.stringify(incomingData.lifeSummary));
       localStorage.setItem('mbc_futureEvents', JSON.stringify(incomingData.futureEvents));
+      localStorage.setItem('mbc_habits', JSON.stringify(incomingData.habits));
+      localStorage.setItem('mbc_projects', JSON.stringify(incomingData.projects || []));
+      localStorage.setItem('mbc_reminders', JSON.stringify(incomingData.reminders || []));
+      if (incomingData.customCards) localStorage.setItem('dashboard_custom_cards', JSON.stringify(incomingData.customCards));
+      if (incomingData.gridRoutine !== undefined) localStorage.setItem('mbc_grid_routine', JSON.stringify(incomingData.gridRoutine));
+      if (incomingData.activeThemePreset !== undefined) localStorage.setItem('mbc_theme_preset', incomingData.activeThemePreset);
+      if (incomingData.customThemeHex !== undefined) localStorage.setItem('mbc_custom_theme_hex', incomingData.customThemeHex);
+      if (incomingData.lastDailyResetDate !== undefined) localStorage.setItem('last_daily_reset_date', incomingData.lastDailyResetDate);
+      if (incomingData.bankAccounts !== undefined) localStorage.setItem('mbc_bank_accounts', JSON.stringify(incomingData.bankAccounts));
+      if (incomingData.creditCards !== undefined) localStorage.setItem('mbc_credit_cards', JSON.stringify(incomingData.creditCards));
+      if (incomingData.debtItems !== undefined) localStorage.setItem('mbc_debt_items', JSON.stringify(incomingData.debtItems));
+      if (incomingData.budgetLimits !== undefined) localStorage.setItem('mbc_budget_limits_v2', JSON.stringify(incomingData.budgetLimits));
+      if (incomingData.portfolioAssets !== undefined) localStorage.setItem('meu_foco_portfolio_assets', JSON.stringify(incomingData.portfolioAssets));
+      if (incomingData.investmentTransactions !== undefined) localStorage.setItem('meu_foco_investment_transactions', JSON.stringify(incomingData.investmentTransactions));
+      if (incomingData.visionBoardCards !== undefined) localStorage.setItem('mbc_vision_board_cards_v1', JSON.stringify(incomingData.visionBoardCards));
       localStorage.setItem('mbc_habits', JSON.stringify(incomingData.habits));
       localStorage.setItem('mbc_projects', JSON.stringify(incomingData.projects || []));
       localStorage.setItem('mbc_reminders', JSON.stringify(incomingData.reminders || []));
@@ -1759,7 +1938,15 @@ export default function App() {
       reminders,
       masterTemplates,
       dailyWorkspaceSettings,
-      projects
+      projects,
+      lastDailyResetDate,
+      bankAccounts,
+      creditCards,
+      debtItems,
+      budgetLimits,
+      portfolioAssets,
+      investmentTransactions,
+      visionBoardCards
     };
     const currentSerialized = safeStringify(currentData);
 
@@ -1821,6 +2008,14 @@ export default function App() {
     masterTemplates,
     dailyWorkspaceSettings,
     projects,
+    lastDailyResetDate,
+    bankAccounts,
+    creditCards,
+    debtItems,
+    budgetLimits,
+    portfolioAssets,
+    investmentTransactions,
+    visionBoardCards,
     isInitialLoadComplete
   ]);
 
@@ -2518,6 +2713,8 @@ export default function App() {
             calendarNotes={calendarNotes}
             setCalendarNotes={setCalendarNotes}
             showDateSelector={showChecklistDateSelector}
+            lastDailyResetDate={lastDailyResetDate}
+            setLastDailyResetDate={setLastDailyResetDate}
           />
         );
       case 'rotina':
@@ -2562,6 +2759,8 @@ export default function App() {
             setViewMode={setGoalsViewMode}
             selectedArea={goalsSelectedArea}
             setSelectedArea={setGoalsSelectedArea}
+            visionBoardCards={visionBoardCards}
+            setVisionBoardCards={setVisionBoardCards}
           />
         );
       case 'financas':
@@ -2570,6 +2769,18 @@ export default function App() {
             finances={finances}
             setFinances={setFinances}
             addXp={addXp}
+            bankAccounts={bankAccounts}
+            setBankAccounts={setBankAccounts}
+            creditCards={creditCards}
+            setCreditCards={setCreditCards}
+            debtItems={debtItems}
+            setDebtItems={setDebtItems}
+            budgetLimits={budgetLimits}
+            setBudgetLimits={setBudgetLimits}
+            portfolioAssets={portfolioAssets}
+            setPortfolioAssets={setPortfolioAssets}
+            investmentTransactions={investmentTransactions}
+            setInvestmentTransactions={setInvestmentTransactions}
           />
         );
       case 'calendario':
