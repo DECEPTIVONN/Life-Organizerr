@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Wifi, WifiOff, X, CheckCircle2 } from 'lucide-react';
+import { Wifi, WifiOff, X, CheckCircle2, Database, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { subscribeToMutationQueue, QueueStatus, processMutationQueue } from '../lib/indexedDbQueue';
 
 export const OfflineNotificationBanner: React.FC = () => {
   const [isOnline, setIsOnline] = useState<boolean>(() => {
@@ -9,6 +10,18 @@ export const OfflineNotificationBanner: React.FC = () => {
   const [wasOffline, setWasOffline] = useState<boolean>(false);
   const [showReconnected, setShowReconnected] = useState<boolean>(false);
   const [userDismissedOffline, setUserDismissedOffline] = useState<boolean>(false);
+  const [queueStatus, setQueueStatus] = useState<QueueStatus>({
+    pendingCount: 0,
+    isProcessing: false,
+    isOnline: true
+  });
+
+  useEffect(() => {
+    const unsubscribe = subscribeToMutationQueue((status) => {
+      setQueueStatus(status);
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const handleOffline = () => {
@@ -20,6 +33,7 @@ export const OfflineNotificationBanner: React.FC = () => {
 
     const handleOnline = () => {
       setIsOnline(true);
+      processMutationQueue();
       if (wasOffline) {
         setShowReconnected(true);
         const timer = setTimeout(() => {
@@ -41,7 +55,7 @@ export const OfflineNotificationBanner: React.FC = () => {
 
   return (
     <AnimatePresence>
-      {/* 1. Offline Banner */}
+      {/* 1. Offline Banner with IndexedDB Mutation Queue Info */}
       {!isOnline && !userDismissedOffline && (
         <motion.div
           key="offline-banner"
@@ -58,12 +72,15 @@ export const OfflineNotificationBanner: React.FC = () => {
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-white tracking-wide">Você está offline</span>
-                <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono">
-                  Modo PWA Offline
+                <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono flex items-center gap-1">
+                  <Database className="h-2.5 w-2.5" />
+                  IndexedDB Ativo
                 </span>
               </div>
               <p className="text-[11px] text-zinc-300 leading-tight mt-0.5">
-                O app continua funcionando normalmente. Seus dados estão salvos localmente.
+                {queueStatus.pendingCount > 0
+                  ? `${queueStatus.pendingCount} ${queueStatus.pendingCount === 1 ? 'alteração retida' : 'alterações retidas'} na fila local. Sincronização automática quando a rede voltar.`
+                  : 'O app continua funcionando normalmente. Suas edições são salvas com segurança no IndexedDB.'}
               </p>
             </div>
           </div>
@@ -78,7 +95,7 @@ export const OfflineNotificationBanner: React.FC = () => {
         </motion.div>
       )}
 
-      {/* 2. Reconnected Message Toast */}
+      {/* 2. Reconnected Message Toast with Auto-sync Confirmation */}
       {isOnline && showReconnected && (
         <motion.div
           key="reconnected-banner"
@@ -90,7 +107,11 @@ export const OfflineNotificationBanner: React.FC = () => {
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0">
-              <Wifi className="h-5 w-5 text-emerald-400 stroke-[2.5]" />
+              {queueStatus.isProcessing ? (
+                <RefreshCw className="h-5 w-5 text-emerald-400 stroke-[2.5] animate-spin" />
+              ) : (
+                <Wifi className="h-5 w-5 text-emerald-400 stroke-[2.5]" />
+              )}
             </div>
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
@@ -99,11 +120,13 @@ export const OfflineNotificationBanner: React.FC = () => {
                   Conexão Reestabelecida!
                 </span>
                 <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono">
-                  Online
+                  {queueStatus.isProcessing ? 'Sincronizando' : 'Online'}
                 </span>
               </div>
               <p className="text-[11px] text-zinc-300 leading-tight mt-0.5">
-                Você está conectado à internet novamente.
+                {queueStatus.isProcessing
+                  ? 'Processando fila de mutações do IndexedDB...'
+                  : 'Fila do IndexedDB sincronizada com a nuvem com sucesso!'}
               </p>
             </div>
           </div>

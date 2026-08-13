@@ -1,10 +1,70 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { db } from '../firebase';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { getOrCreateDeviceId } from './devices';
 
 let cachedClient: SupabaseClient | null = null;
 let cachedUrl = '';
 let cachedKey = '';
+
+// Cross-tab broadcast channel for instant (<5ms) sync across multiple tabs/windows on the same device
+let broadcastChannel: BroadcastChannel | null = null;
+try {
+  if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+    broadcastChannel = new BroadcastChannel('meu_foco_multi_device_channel');
+  }
+} catch (e) {
+  console.warn('BroadcastChannel initialization error:', e);
+}
+
+export function broadcastLocalStateChange(syncKey: string, payload: any, updatedAt: string): void {
+  try {
+    if (broadcastChannel && syncKey) {
+      const devId = getOrCreateDeviceId();
+      broadcastChannel.postMessage({
+        type: 'LOCAL_STATE_CHANGE',
+        syncKey: syncKey.trim().toUpperCase(),
+        data: payload,
+        updated_at: updatedAt,
+        originDeviceId: devId,
+        timestamp: Date.now()
+      });
+    }
+  } catch (e) {}
+}
+
+export function subscribeToCrossTabSync(
+  syncKey: string,
+  onUpdate: (data: any, updatedAt: string, originDeviceId?: string) => void
+): () => void {
+  if (!broadcastChannel || !syncKey) return () => {};
+
+  const cleanKey = syncKey.trim().toUpperCase();
+  const currentDevId = getOrCreateDeviceId();
+
+  const handleMessage = (event: MessageEvent) => {
+    try {
+      const msg = event.data;
+      if (
+        msg &&
+        msg.type === 'LOCAL_STATE_CHANGE' &&
+        msg.syncKey === cleanKey &&
+        msg.data
+      ) {
+        onUpdate(msg.data, msg.updated_at || new Date().toISOString(), msg.originDeviceId || currentDevId);
+      }
+    } catch (err) {
+      console.warn('Error handling cross-tab sync message:', err);
+    }
+  };
+
+  broadcastChannel.addEventListener('message', handleMessage);
+  return () => {
+    if (broadcastChannel) {
+      broadcastChannel.removeEventListener('message', handleMessage);
+    }
+  };
+}
 
 export function getSupabaseConfig(): { url: string; key: string } {
   const metaEnv = (import.meta as any).env || {};
@@ -77,19 +137,22 @@ export async function testSupabaseConnection(): Promise<{ ok: boolean; message: 
   }
 }
 
-export async function saveToSupabase(syncKey: string, payload: any): Promise<boolean> {
+export async function saveToSupabase(syncKey: string, payload: any, originDeviceId?: string): Promise<boolean> {
   let firestoreSuccess = false;
   let supabaseSuccess = false;
+  const nowIso = new Date().toISOString();
+  const cleanKey = syncKey.trim().toUpperCase();
+  const devId = originDeviceId || getOrCreateDeviceId();
 
-  // 1. Dual Cloud Sync Target 1: Firebase Firestore
+  // 1. Dual Cloud Sync Target 1: Firebase Firestore (Primary zero-config realtime cloud)
   try {
-    if (db && syncKey) {
-      const cleanKey = syncKey.trim().toUpperCase();
+    if (db && cleanKey) {
       const docRef = doc(db, "sync_profiles", cleanKey);
       await setDoc(docRef, {
         syncKey: cleanKey,
         data: payload,
-        updated_at: new Date().toISOString()
+        updated_at: nowIso,
+        originDeviceId: devId
       }, { merge: true });
       firestoreSuccess = true;
     }
@@ -97,16 +160,17 @@ export async function saveToSupabase(syncKey: string, payload: any): Promise<boo
     console.warn('Firestore sync save warning:', err);
   }
 
-  // 2. Dual Cloud Sync Target 2: Supabase
+  // 2. Dual Cloud Sync Target 2: Supabase (Custom SQL cloud if configured)
   const client = getSupabaseClient();
-  if (client && syncKey) {
+  if (client && cleanKey) {
     try {
       const { error } = await client
         .from('user_sync')
         .upsert({
-          sync_key: syncKey.trim(),
+          sync_key: cleanKey,
           data: payload,
-          updated_at: new Date().toISOString()
+          updated_at: nowIso,
+          origin_device_id: devId
         }, { onConflict: 'sync_key' });
 
       if (error) {
@@ -119,24 +183,29 @@ export async function saveToSupabase(syncKey: string, payload: any): Promise<boo
     }
   }
 
+  // 3. Broadcast instant update to all other open tabs/windows on this client
+  broadcastLocalStateChange(cleanKey, payload, nowIso);
+
   return firestoreSuccess || supabaseSuccess;
 }
 
 export async function loadFromSupabase(syncKey: string): Promise<any | null> {
   if (!syncKey) return null;
-  const cleanKey = syncKey.trim();
+  const cleanKey = syncKey.trim().toUpperCase();
 
   let firestoreData: any = null;
   let firestoreUpdatedAt = '';
+  let firestoreOriginDeviceId = '';
 
   // 1. Try loading from Firebase Firestore
   try {
     if (db) {
-      const docRef = doc(db, "sync_profiles", cleanKey.toUpperCase());
+      const docRef = doc(db, "sync_profiles", cleanKey);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists() && docSnap.data()?.data) {
         firestoreData = docSnap.data().data;
         firestoreUpdatedAt = docSnap.data().updated_at || '';
+        firestoreOriginDeviceId = docSnap.data().originDeviceId || '';
       }
     }
   } catch (err) {
@@ -146,19 +215,21 @@ export async function loadFromSupabase(syncKey: string): Promise<any | null> {
   // 2. Try loading from Supabase
   let supabaseData: any = null;
   let supabaseUpdatedAt = '';
+  let supabaseOriginDeviceId = '';
 
   const client = getSupabaseClient();
   if (client) {
     try {
       const { data, error } = await client
         .from('user_sync')
-        .select('data, updated_at')
+        .select('data, updated_at, origin_device_id')
         .eq('sync_key', cleanKey)
         .maybeSingle();
 
       if (!error && data) {
         supabaseData = data.data;
         supabaseUpdatedAt = data.updated_at || '';
+        supabaseOriginDeviceId = (data as any).origin_device_id || '';
       }
     } catch (err) {
       console.warn('Supabase load warning:', err);
@@ -169,78 +240,90 @@ export async function loadFromSupabase(syncKey: string): Promise<any | null> {
     const fsTime = new Date(firestoreUpdatedAt).getTime() || 0;
     const sbTime = new Date(supabaseUpdatedAt).getTime() || 0;
     if (fsTime >= sbTime) {
-      return { data: firestoreData, updated_at: firestoreUpdatedAt };
+      return { data: firestoreData, updated_at: firestoreUpdatedAt, originDeviceId: firestoreOriginDeviceId };
     } else {
-      return { data: supabaseData, updated_at: supabaseUpdatedAt };
+      return { data: supabaseData, updated_at: supabaseUpdatedAt, originDeviceId: supabaseOriginDeviceId };
     }
   }
 
   if (firestoreData) {
-    return { data: firestoreData, updated_at: firestoreUpdatedAt };
+    return { data: firestoreData, updated_at: firestoreUpdatedAt, originDeviceId: firestoreOriginDeviceId };
   }
 
   if (supabaseData) {
-    return { data: supabaseData, updated_at: supabaseUpdatedAt };
+    return { data: supabaseData, updated_at: supabaseUpdatedAt, originDeviceId: supabaseOriginDeviceId };
   }
 
   return null;
 }
 
-export async function loadMetadataFromSupabase(syncKey: string): Promise<{ updated_at?: string } | null> {
+export async function loadMetadataFromSupabase(syncKey: string): Promise<{ updated_at?: string; originDeviceId?: string } | null> {
   if (!syncKey) return null;
-  const cleanKey = syncKey.trim();
+  const cleanKey = syncKey.trim().toUpperCase();
 
   let fsTime = 0;
   let fsIso = '';
+  let fsDevId = '';
   try {
     if (db) {
-      const docRef = doc(db, "sync_profiles", cleanKey.toUpperCase());
+      const docRef = doc(db, "sync_profiles", cleanKey);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists() && docSnap.data()?.updated_at) {
         fsIso = docSnap.data().updated_at;
         fsTime = new Date(fsIso).getTime() || 0;
+        fsDevId = docSnap.data().originDeviceId || '';
       }
     }
   } catch (e) {}
 
   let sbTime = 0;
   let sbIso = '';
+  let sbDevId = '';
   const client = getSupabaseClient();
   if (client) {
     try {
       const { data } = await client
         .from('user_sync')
-        .select('updated_at')
+        .select('updated_at, origin_device_id')
         .eq('sync_key', cleanKey)
         .maybeSingle();
 
       if (data?.updated_at) {
         sbIso = data.updated_at;
         sbTime = new Date(sbIso).getTime() || 0;
+        sbDevId = (data as any).origin_device_id || '';
       }
     } catch (e) {}
   }
 
   if (fsTime >= sbTime && fsIso) {
-    return { updated_at: fsIso };
+    return { updated_at: fsIso, originDeviceId: fsDevId };
   } else if (sbIso) {
-    return { updated_at: sbIso };
+    return { updated_at: sbIso, originDeviceId: sbDevId };
   }
 
   return null;
 }
 
-export function subscribeToFirestoreSync(syncKey: string, onUpdate: (data: any, updatedAt: string) => void): () => void {
+export function subscribeToFirestoreSync(
+  syncKey: string,
+  onUpdate: (data: any, updatedAt: string, originDeviceId?: string) => void
+): () => void {
   if (!db || !syncKey) return () => {};
 
   try {
     const cleanKey = syncKey.trim().toUpperCase();
     const docRef = doc(db, "sync_profiles", cleanKey);
-    return onSnapshot(docRef, (docSnap) => {
+    return onSnapshot(docRef, { includeMetadataChanges: true }, (docSnap) => {
+      // Ignore local writes that have not yet committed to Firestore to avoid echo bounce
+      if (docSnap.metadata.hasPendingWrites) {
+        return;
+      }
       if (docSnap.exists() && docSnap.data()?.data) {
         const payload = docSnap.data().data;
         const updatedAt = docSnap.data().updated_at || '';
-        onUpdate(payload, updatedAt);
+        const originDeviceId = docSnap.data().originDeviceId || '';
+        onUpdate(payload, updatedAt, originDeviceId);
       }
     }, (err) => {
       console.warn('Firestore onSnapshot error:', err);

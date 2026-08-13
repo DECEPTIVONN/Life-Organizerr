@@ -14,8 +14,22 @@ service cloud.firestore {
 
     match /sync_profiles/{syncKey} {
       allow read: if isValidSyncKey(syncKey);
-      allow create, update: if isValidSyncKey(syncKey) && isReasonablePayload();
+      allow create, update: if isValidSyncKey(syncKey);
       allow delete: if isValidSyncKey(syncKey);
+    }
+
+    match /connected_devices/{accountKey} {
+      allow read: if isValidSyncKey(accountKey);
+      allow create, update: if isValidSyncKey(accountKey);
+      allow delete: if isValidSyncKey(accountKey);
+    }
+
+    match /user_alarms/{syncKey} {
+      allow read, write: if isValidSyncKey(syncKey);
+    }
+
+    match /web_push_subscriptions/{subId} {
+      allow read, write: if subId is string && subId.size() >= 3;
     }
 
     match /{document=**} {

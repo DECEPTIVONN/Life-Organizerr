@@ -38,7 +38,15 @@ import ProjetosView from './components/ProjetosView';
 import StreakHubModal from './components/StreakHubModal';
 import { LeagueRankingModal } from './components/LeagueRankingModal';
 import { LeagueRankingView } from './components/LeagueRankingView';
-import { saveToSupabase, loadFromSupabase, loadMetadataFromSupabase, getSupabaseClient, subscribeToFirestoreSync } from './lib/supabase';
+import { saveToSupabase, loadFromSupabase, loadMetadataFromSupabase, getSupabaseClient, subscribeToFirestoreSync, subscribeToCrossTabSync } from './lib/supabase';
+import { getOrCreateDeviceId } from './lib/devices';
+import { 
+  enqueueMutation, 
+  processMutationQueue, 
+  loadOfflineSnapshot, 
+  saveOfflineSnapshot,
+  subscribeToMutationQueue 
+} from './lib/indexedDbQueue';
 import { OfflineNotificationBanner } from './components/OfflineNotificationBanner';
 import { sendSystemNotification, syncAlarmsToServiceWorker } from './lib/notificationHelper';
 
@@ -1522,6 +1530,7 @@ export default function App() {
   // Keep track of the last serialized state pushed to or pulled from Firestore to prevent infinite loops
   const lastSyncedStateRef = useRef<string>('');
   const lastRemoteUpdatedAtRef = useRef<string | null>(null);
+  const isApplyingRemoteUpdateRef = useRef<boolean>(false);
 
   // Keep a reference to the latest local state to solve stale closure issues in the onSnapshot listener
   const latestStateRef = useRef({
@@ -1551,6 +1560,8 @@ export default function App() {
     activeThemePreset,
     customThemeHex,
     reminders,
+    masterTemplates,
+    dailyWorkspaceSettings,
     projects,
     lastDailyResetDate,
     bankAccounts,
@@ -1559,7 +1570,26 @@ export default function App() {
     budgetLimits,
     portfolioAssets,
     investmentTransactions,
-    visionBoardCards
+    visionBoardCards,
+    cardsPerRow,
+    sheetOverrides,
+    financesMainSubtab,
+    isFinancesBudgetOpen,
+    isFinancesEntriesOpen,
+    yearlyImages,
+    overviewYears,
+    isMonthlyReviewOpen,
+    isWeeklyReviewsOpen,
+    userBio,
+    userArchetype,
+    focusTrainingDate,
+    dashboardChecklistOpen,
+    dashboardHabitsOpen,
+    dashboardGoalsOpen,
+    dashboardFinancesOpen,
+    reminderInitialMode,
+    language,
+    backgroundNotificationsEnabled
   });
 
   // Automatically keep latestStateRef in sync with latest React state on every single render
@@ -1591,6 +1621,8 @@ export default function App() {
       activeThemePreset,
       customThemeHex,
       reminders,
+      masterTemplates,
+      dailyWorkspaceSettings,
       projects,
       lastDailyResetDate,
       bankAccounts,
@@ -1599,7 +1631,26 @@ export default function App() {
       budgetLimits,
       portfolioAssets,
       investmentTransactions,
-      visionBoardCards
+      visionBoardCards,
+      cardsPerRow,
+      sheetOverrides,
+      financesMainSubtab,
+      isFinancesBudgetOpen,
+      isFinancesEntriesOpen,
+      yearlyImages,
+      overviewYears,
+      isMonthlyReviewOpen,
+      isWeeklyReviewsOpen,
+      userBio,
+      userArchetype,
+      focusTrainingDate,
+      dashboardChecklistOpen,
+      dashboardHabitsOpen,
+      dashboardGoalsOpen,
+      dashboardFinancesOpen,
+      reminderInitialMode,
+      language,
+      backgroundNotificationsEnabled
     };
   });
 
@@ -1815,81 +1866,190 @@ export default function App() {
     return () => clearInterval(interval);
   }, [routine, notes, calendarNotes, dailyTasks]);
 
-  // Initial load & Realtime / Periodic Sync from Supabase
+  // Initial load & Realtime / Periodic Sync from Cloud (Firestore + Supabase + CrossTab)
   useEffect(() => {
     if (!syncKey) return;
 
     let isSubscribed = true;
 
-    const applyIncomingData = (data: any) => {
-      if (!data) return;
+    const applyIncomingData = (data: any, remoteUpdatedAt?: string, originDeviceId?: string) => {
+      if (!data || typeof data !== 'object') return;
+
+      const currentDevId = getOrCreateDeviceId();
+      if (originDeviceId && originDeviceId === currentDevId) {
+        // Echo of our own write from server, only update timestamp ref
+        if (remoteUpdatedAt) {
+          lastRemoteUpdatedAtRef.current = remoteUpdatedAt;
+        }
+        return;
+      }
+
+      // Mark that we are applying remote updates to prevent auto-save from echoing back
+      isApplyingRemoteUpdateRef.current = true;
+
+      const current = latestStateRef.current;
+
+      // Intelligent merging for collections
+      let mergedTasks = current.dailyTasks;
+      if (Array.isArray(data.dailyTasks)) {
+        const localTaskMap = new Map<string, any>((current.dailyTasks || []).map((t: any) => [String(t.id), t]));
+        const mergedTMap = new Map<string, any>();
+        
+        for (const t of data.dailyTasks) {
+          if (t && typeof t === 'object' && t.id) {
+            const localT = localTaskMap.get(String(t.id));
+            if (localT) {
+              mergedTMap.set(String(t.id), {
+                ...localT,
+                ...t,
+                completed: Boolean(localT.completed || t.completed)
+              });
+            } else {
+              mergedTMap.set(String(t.id), t);
+            }
+          }
+        }
+        localTaskMap.forEach((localT, id) => {
+          if (!mergedTMap.has(id)) {
+            mergedTMap.set(id, localT);
+          }
+        });
+        mergedTasks = Array.from(mergedTMap.values());
+      }
+
+      let mergedHabits = current.habits;
+      if (Array.isArray(data.habits)) {
+        const localHabitMap = new Map<string, any>((current.habits || []).map((h: any) => [String(h.id), h]));
+        const mergedHMap = new Map<string, any>();
+        for (const h of data.habits) {
+          if (h && typeof h === 'object' && h.id) {
+            const localH = localHabitMap.get(String(h.id));
+            if (localH) {
+              mergedHMap.set(String(h.id), {
+                ...localH,
+                ...h,
+                completedToday: Boolean(localH.completedToday || h.completedToday),
+                streak: Math.max(Number(localH.streak || 0), Number(h.streak || 0))
+              });
+            } else {
+              mergedHMap.set(String(h.id), h);
+            }
+          }
+        }
+        localHabitMap.forEach((localH, id) => {
+          if (!mergedHMap.has(id)) {
+            mergedHMap.set(id, localH);
+          }
+        });
+        mergedHabits = Array.from(mergedHMap.values());
+      }
+
+      let mergedProjects = current.projects;
+      if (Array.isArray(data.projects)) {
+        const localProjMap = new Map<string, any>((current.projects || []).map((p: any) => [String(p.id), p]));
+        const mergedPMap = new Map<string, any>();
+        for (const p of data.projects) {
+          if (p && typeof p === 'object' && p.id) {
+            const localP = localProjMap.get(String(p.id)) || {};
+            mergedPMap.set(String(p.id), { ...localP, ...p });
+          }
+        }
+        localProjMap.forEach((localP, id) => {
+          if (!mergedPMap.has(id)) {
+            mergedPMap.set(id, localP);
+          }
+        });
+        mergedProjects = Array.from(mergedPMap.values());
+      }
+
+      let mergedGoals = current.goals;
+      if (Array.isArray(data.goals)) {
+        const localGoalMap = new Map<string, any>((current.goals || []).map((g: any) => [String(g.id), g]));
+        const mergedGMap = new Map<string, any>();
+        for (const g of data.goals) {
+          if (g && typeof g === 'object' && g.id) {
+            const localG = localGoalMap.get(String(g.id)) || {};
+            mergedGMap.set(String(g.id), { ...localG, ...g });
+          }
+        }
+        localGoalMap.forEach((localG, id) => {
+          if (!mergedGMap.has(id)) {
+            mergedGMap.set(id, localG);
+          }
+        });
+        mergedGoals = Array.from(mergedGMap.values());
+      }
+
+      const mergedXp = Math.max(Number(data.xpTotal ?? 0), Number(current.xpTotal ?? 0));
+      const mergedStreak = Math.max(Number(data.streak ?? 0), Number(current.streak ?? 0));
+
       const incomingData = {
-        userName: data.userName !== undefined ? data.userName : latestStateRef.current.userName,
-        userPhoto: data.userPhoto !== undefined ? data.userPhoto : latestStateRef.current.userPhoto,
-        userHandle: data.userHandle !== undefined ? data.userHandle : latestStateRef.current.userHandle,
-        xpTotal: data.xpTotal !== undefined ? data.xpTotal : latestStateRef.current.xpTotal,
-        streak: data.streak !== undefined ? data.streak : latestStateRef.current.streak,
-        dailyTasks: data.dailyTasks !== undefined ? data.dailyTasks : latestStateRef.current.dailyTasks,
-        goals: data.goals !== undefined ? data.goals : latestStateRef.current.goals,
-        timelines: data.timelines !== undefined ? data.timelines : latestStateRef.current.timelines,
-        finances: data.finances !== undefined ? data.finances : latestStateRef.current.finances,
-        routine: data.routine !== undefined ? data.routine : latestStateRef.current.routine,
-        calendarNotes: data.calendarNotes !== undefined ? data.calendarNotes : latestStateRef.current.calendarNotes,
-        monthlyReviews: data.monthlyReviews !== undefined ? data.monthlyReviews : latestStateRef.current.monthlyReviews,
-        weeklyReviews: data.weeklyReviews !== undefined ? data.weeklyReviews : latestStateRef.current.weeklyReviews,
-        documents: data.documents !== undefined ? data.documents : latestStateRef.current.documents,
-        notes: data.notes !== undefined ? data.notes : latestStateRef.current.notes,
-        bookTracker: data.bookTracker || latestStateRef.current.bookTracker,
-        bibleTracker: data.bibleTracker || latestStateRef.current.bibleTracker,
-        areaImages: data.areaImages !== undefined ? data.areaImages : latestStateRef.current.areaImages,
-        lifeSummary: data.lifeSummary ? mergeWithDefaults(data.lifeSummary) : latestStateRef.current.lifeSummary,
-        futureEvents: data.futureEvents !== undefined ? data.futureEvents : latestStateRef.current.futureEvents,
-        habits: data.habits !== undefined ? data.habits : latestStateRef.current.habits,
-        gridRoutine: data.gridRoutine !== undefined ? data.gridRoutine : latestStateRef.current.gridRoutine,
-        customCards: data.customCards !== undefined ? data.customCards : latestStateRef.current.customCards,
-        activeThemePreset: data.activeThemePreset !== undefined ? data.activeThemePreset : latestStateRef.current.activeThemePreset,
-        customThemeHex: data.customThemeHex !== undefined ? data.customThemeHex : latestStateRef.current.customThemeHex,
-        reminders: data.reminders !== undefined ? data.reminders : latestStateRef.current.reminders,
-        masterTemplates: data.masterTemplates !== undefined ? data.masterTemplates : (latestStateRef.current as any).masterTemplates,
-        dailyWorkspaceSettings: data.dailyWorkspaceSettings !== undefined ? data.dailyWorkspaceSettings : (latestStateRef.current as any).dailyWorkspaceSettings,
-        projects: data.projects !== undefined ? data.projects : latestStateRef.current.projects,
-        lastDailyResetDate: data.lastDailyResetDate !== undefined ? data.lastDailyResetDate : latestStateRef.current.lastDailyResetDate,
-        bankAccounts: data.bankAccounts !== undefined ? data.bankAccounts : latestStateRef.current.bankAccounts,
-        creditCards: data.creditCards !== undefined ? data.creditCards : latestStateRef.current.creditCards,
-        debtItems: data.debtItems !== undefined ? data.debtItems : latestStateRef.current.debtItems,
-        budgetLimits: data.budgetLimits !== undefined ? data.budgetLimits : latestStateRef.current.budgetLimits,
-        portfolioAssets: data.portfolioAssets !== undefined ? data.portfolioAssets : latestStateRef.current.portfolioAssets,
-        investmentTransactions: data.investmentTransactions !== undefined ? data.investmentTransactions : latestStateRef.current.investmentTransactions,
-        visionBoardCards: data.visionBoardCards !== undefined ? data.visionBoardCards : latestStateRef.current.visionBoardCards,
-        cardsPerRow: data.cardsPerRow !== undefined ? data.cardsPerRow : latestStateRef.current.cardsPerRow,
-        sheetOverrides: data.sheetOverrides !== undefined ? data.sheetOverrides : latestStateRef.current.sheetOverrides,
-        financesMainSubtab: data.financesMainSubtab !== undefined ? data.financesMainSubtab : latestStateRef.current.financesMainSubtab,
-        isFinancesBudgetOpen: data.isFinancesBudgetOpen !== undefined ? data.isFinancesBudgetOpen : latestStateRef.current.isFinancesBudgetOpen,
-        isFinancesEntriesOpen: data.isFinancesEntriesOpen !== undefined ? data.isFinancesEntriesOpen : latestStateRef.current.isFinancesEntriesOpen,
-        yearlyImages: data.yearlyImages !== undefined ? data.yearlyImages : latestStateRef.current.yearlyImages,
-        overviewYears: data.overviewYears !== undefined ? data.overviewYears : latestStateRef.current.overviewYears,
-        isMonthlyReviewOpen: data.isMonthlyReviewOpen !== undefined ? data.isMonthlyReviewOpen : latestStateRef.current.isMonthlyReviewOpen,
-        isWeeklyReviewsOpen: data.isWeeklyReviewsOpen !== undefined ? data.isWeeklyReviewsOpen : latestStateRef.current.isWeeklyReviewsOpen,
-        userBio: data.userBio !== undefined ? data.userBio : latestStateRef.current.userBio,
-        userArchetype: data.userArchetype !== undefined ? data.userArchetype : latestStateRef.current.userArchetype,
-        focusTrainingDate: data.focusTrainingDate !== undefined ? data.focusTrainingDate : latestStateRef.current.focusTrainingDate,
-        dashboardChecklistOpen: data.dashboardChecklistOpen !== undefined ? data.dashboardChecklistOpen : latestStateRef.current.dashboardChecklistOpen,
-        dashboardHabitsOpen: data.dashboardHabitsOpen !== undefined ? data.dashboardHabitsOpen : latestStateRef.current.dashboardHabitsOpen,
-        dashboardGoalsOpen: data.dashboardGoalsOpen !== undefined ? data.dashboardGoalsOpen : latestStateRef.current.dashboardGoalsOpen,
-        dashboardFinancesOpen: data.dashboardFinancesOpen !== undefined ? data.dashboardFinancesOpen : latestStateRef.current.dashboardFinancesOpen,
-        reminderInitialMode: data.reminderInitialMode !== undefined ? data.reminderInitialMode : latestStateRef.current.reminderInitialMode,
-        language: data.language !== undefined ? data.language : latestStateRef.current.language,
-        backgroundNotificationsEnabled: data.backgroundNotificationsEnabled !== undefined ? data.backgroundNotificationsEnabled : latestStateRef.current.backgroundNotificationsEnabled
+        userName: data.userName !== undefined ? data.userName : current.userName,
+        userPhoto: data.userPhoto !== undefined ? data.userPhoto : current.userPhoto,
+        userHandle: data.userHandle !== undefined ? data.userHandle : current.userHandle,
+        xpTotal: mergedXp,
+        streak: mergedStreak,
+        dailyTasks: mergedTasks,
+        goals: mergedGoals,
+        timelines: data.timelines !== undefined ? data.timelines : current.timelines,
+        finances: data.finances !== undefined ? data.finances : current.finances,
+        routine: data.routine !== undefined ? data.routine : current.routine,
+        calendarNotes: data.calendarNotes !== undefined ? data.calendarNotes : current.calendarNotes,
+        monthlyReviews: data.monthlyReviews !== undefined ? data.monthlyReviews : current.monthlyReviews,
+        weeklyReviews: data.weeklyReviews !== undefined ? data.weeklyReviews : current.weeklyReviews,
+        documents: data.documents !== undefined ? data.documents : current.documents,
+        notes: data.notes !== undefined ? data.notes : current.notes,
+        bookTracker: data.bookTracker || current.bookTracker,
+        bibleTracker: data.bibleTracker || current.bibleTracker,
+        areaImages: data.areaImages !== undefined ? data.areaImages : current.areaImages,
+        lifeSummary: data.lifeSummary ? mergeWithDefaults(data.lifeSummary) : current.lifeSummary,
+        futureEvents: data.futureEvents !== undefined ? data.futureEvents : current.futureEvents,
+        habits: mergedHabits,
+        gridRoutine: data.gridRoutine !== undefined ? data.gridRoutine : current.gridRoutine,
+        customCards: data.customCards !== undefined ? data.customCards : current.customCards,
+        activeThemePreset: data.activeThemePreset !== undefined ? data.activeThemePreset : current.activeThemePreset,
+        customThemeHex: data.customThemeHex !== undefined ? data.customThemeHex : current.customThemeHex,
+        reminders: data.reminders !== undefined ? data.reminders : current.reminders,
+        masterTemplates: data.masterTemplates !== undefined ? data.masterTemplates : (current as any).masterTemplates,
+        dailyWorkspaceSettings: data.dailyWorkspaceSettings !== undefined ? data.dailyWorkspaceSettings : (current as any).dailyWorkspaceSettings,
+        projects: mergedProjects,
+        lastDailyResetDate: data.lastDailyResetDate !== undefined ? data.lastDailyResetDate : current.lastDailyResetDate,
+        bankAccounts: data.bankAccounts !== undefined ? data.bankAccounts : current.bankAccounts,
+        creditCards: data.creditCards !== undefined ? data.creditCards : current.creditCards,
+        debtItems: data.debtItems !== undefined ? data.debtItems : current.debtItems,
+        budgetLimits: data.budgetLimits !== undefined ? data.budgetLimits : current.budgetLimits,
+        portfolioAssets: data.portfolioAssets !== undefined ? data.portfolioAssets : current.portfolioAssets,
+        investmentTransactions: data.investmentTransactions !== undefined ? data.investmentTransactions : current.investmentTransactions,
+        visionBoardCards: data.visionBoardCards !== undefined ? data.visionBoardCards : current.visionBoardCards,
+        cardsPerRow: data.cardsPerRow !== undefined ? data.cardsPerRow : current.cardsPerRow,
+        sheetOverrides: data.sheetOverrides !== undefined ? data.sheetOverrides : current.sheetOverrides,
+        financesMainSubtab: data.financesMainSubtab !== undefined ? data.financesMainSubtab : current.financesMainSubtab,
+        isFinancesBudgetOpen: data.isFinancesBudgetOpen !== undefined ? data.isFinancesBudgetOpen : current.isFinancesBudgetOpen,
+        isFinancesEntriesOpen: data.isFinancesEntriesOpen !== undefined ? data.isFinancesEntriesOpen : current.isFinancesEntriesOpen,
+        yearlyImages: data.yearlyImages !== undefined ? data.yearlyImages : current.yearlyImages,
+        overviewYears: data.overviewYears !== undefined ? data.overviewYears : current.overviewYears,
+        isMonthlyReviewOpen: data.isMonthlyReviewOpen !== undefined ? data.isMonthlyReviewOpen : current.isMonthlyReviewOpen,
+        isWeeklyReviewsOpen: data.isWeeklyReviewsOpen !== undefined ? data.isWeeklyReviewsOpen : current.isWeeklyReviewsOpen,
+        userBio: data.userBio !== undefined ? data.userBio : current.userBio,
+        userArchetype: data.userArchetype !== undefined ? data.userArchetype : current.userArchetype,
+        focusTrainingDate: data.focusTrainingDate !== undefined ? data.focusTrainingDate : current.focusTrainingDate,
+        dashboardChecklistOpen: data.dashboardChecklistOpen !== undefined ? data.dashboardChecklistOpen : current.dashboardChecklistOpen,
+        dashboardHabitsOpen: data.dashboardHabitsOpen !== undefined ? data.dashboardHabitsOpen : current.dashboardHabitsOpen,
+        dashboardGoalsOpen: data.dashboardGoalsOpen !== undefined ? data.dashboardGoalsOpen : current.dashboardGoalsOpen,
+        dashboardFinancesOpen: data.dashboardFinancesOpen !== undefined ? data.dashboardFinancesOpen : current.dashboardFinancesOpen,
+        reminderInitialMode: data.reminderInitialMode !== undefined ? data.reminderInitialMode : current.reminderInitialMode,
+        language: data.language !== undefined ? data.language : current.language,
+        backgroundNotificationsEnabled: data.backgroundNotificationsEnabled !== undefined ? data.backgroundNotificationsEnabled : current.backgroundNotificationsEnabled
       };
 
       const incomingSerialized = safeStringify(incomingData);
-      if (incomingSerialized === lastSyncedStateRef.current) {
-        return; // No external changes
+      lastSyncedStateRef.current = incomingSerialized;
+      latestStateRef.current = incomingData;
+      if (remoteUpdatedAt) {
+        lastRemoteUpdatedAtRef.current = remoteUpdatedAt;
       }
 
-      lastSyncedStateRef.current = incomingSerialized;
-
-      // Hydrate local states
+      // Hydrate React state
       setUserName(incomingData.userName);
       setUserPhoto(incomingData.userPhoto);
       setUserHandle(incomingData.userHandle);
@@ -1911,7 +2071,7 @@ export default function App() {
       setLifeSummary(incomingData.lifeSummary);
       setFutureEvents(incomingData.futureEvents);
       setHabits(incomingData.habits);
-      if (incomingData.projects) setProjects(incomingData.projects);
+      setProjects(incomingData.projects || []);
       if (incomingData.reminders) setReminders(incomingData.reminders);
       if (incomingData.customCards) setCustomCards(incomingData.customCards);
       if (incomingData.gridRoutine !== undefined) setGridRoutine(incomingData.gridRoutine);
@@ -1944,12 +2104,8 @@ export default function App() {
       if (incomingData.reminderInitialMode !== undefined) setReminderInitialMode(incomingData.reminderInitialMode);
       if (incomingData.language !== undefined) setLanguage(incomingData.language);
       if (incomingData.backgroundNotificationsEnabled !== undefined) setBackgroundNotificationsEnabled(incomingData.backgroundNotificationsEnabled);
-      if ((incomingData as any).masterTemplates) {
-        setMasterTemplates((incomingData as any).masterTemplates);
-      }
-      if ((incomingData as any).dailyWorkspaceSettings) {
-        setDailyWorkspaceSettings((incomingData as any).dailyWorkspaceSettings);
-      }
+      if ((incomingData as any).masterTemplates) setMasterTemplates((incomingData as any).masterTemplates);
+      if ((incomingData as any).dailyWorkspaceSettings) setDailyWorkspaceSettings((incomingData as any).dailyWorkspaceSettings);
 
       // Batch save to local storage
       localStorage.setItem('mbc_userName', incomingData.userName);
@@ -2006,28 +2162,20 @@ export default function App() {
       if (incomingData.reminderInitialMode !== undefined) localStorage.setItem('mbc_reminder_initial_mode', incomingData.reminderInitialMode);
       if (incomingData.language !== undefined) localStorage.setItem('mbc_language', incomingData.language);
       if (incomingData.backgroundNotificationsEnabled !== undefined) localStorage.setItem('mbc_background_notifications_enabled', String(incomingData.backgroundNotificationsEnabled));
-      if ((incomingData as any).masterTemplates) {
-        const mt = (incomingData as any).masterTemplates;
-        if (mt.gratitude) localStorage.setItem('planner_template_gratitude', mt.gratitude);
-        if (mt.decrees) localStorage.setItem('planner_template_decretos', mt.decrees);
-        if (mt.prayer) localStorage.setItem('planner_template_oracao', mt.prayer);
-      }
-      if ((incomingData as any).dailyWorkspaceSettings) {
-        const dws = (incomingData as any).dailyWorkspaceSettings;
-        localStorage.setItem('mbc_daily_workspace_notif_enabled', String(dws.notifEnabled));
-        localStorage.setItem('mbc_daily_workspace_reminder_time', dws.reminderTime || '21:00');
-      }
+
+      setTimeout(() => {
+        isApplyingRemoteUpdateRef.current = false;
+      }, 500);
     };
 
     async function checkRemoteData(isInitial = false) {
       if (isInitial) setSyncStatus('syncing');
       try {
-        // Bandwidth Optimization: If not initial load, perform a lightweight check of updated_at metadata first (~50 bytes)
         if (!isInitial) {
           const meta = await loadMetadataFromSupabase(syncKey);
           if (meta && meta.updated_at && lastRemoteUpdatedAtRef.current === meta.updated_at) {
             if (isSubscribed) setSyncStatus('synced');
-            return; // No data change on server! Saved full payload bandwidth.
+            return;
           }
         }
 
@@ -2036,16 +2184,31 @@ export default function App() {
           if (remoteRecord.updated_at) {
             lastRemoteUpdatedAtRef.current = remoteRecord.updated_at;
           }
-          applyIncomingData(remoteRecord.data);
+          applyIncomingData(remoteRecord.data, remoteRecord.updated_at, remoteRecord.originDeviceId);
+          saveOfflineSnapshot(`latest_${syncKey}`, remoteRecord.data);
+        } else if (isInitial) {
+          const offlineSnapshot = await loadOfflineSnapshot(`latest_${syncKey}`);
+          if (offlineSnapshot && isSubscribed) {
+            applyIncomingData(offlineSnapshot);
+          }
         }
         if (isSubscribed) setSyncStatus('synced');
       } catch (err) {
-        console.warn('Supabase load warning:', err);
-        if (isSubscribed && isInitial) setSyncStatus('error');
+        console.warn('Remote sync load warning:', err);
+        if (isSubscribed && isInitial) {
+          try {
+            const offlineSnapshot = await loadOfflineSnapshot(`latest_${syncKey}`);
+            if (offlineSnapshot && isSubscribed) {
+              applyIncomingData(offlineSnapshot);
+            }
+          } catch (e) {}
+          setSyncStatus('error');
+        }
       } finally {
         if (isSubscribed && isInitial) {
           setIsInitialLoadComplete(true);
           isInitialLoadCompleteRef.current = true;
+          processMutationQueue(saveToSupabase);
         }
       }
     }
@@ -2053,18 +2216,25 @@ export default function App() {
     // 1. Initial hydration
     checkRemoteData(true);
 
-    // 2. Realtime Firestore Subscription
-    const unsubscribeFirestore = subscribeToFirestoreSync(syncKey, (incomingPayload, updatedAt) => {
+    // 2. Realtime Firebase Firestore Subscription (Instant Multi-Device Sync)
+    const unsubscribeFirestore = subscribeToFirestoreSync(syncKey, (incomingPayload, updatedAt, originDeviceId) => {
       if (isSubscribed && incomingPayload) {
-        if (updatedAt) {
-          lastRemoteUpdatedAtRef.current = updatedAt;
-        }
-        applyIncomingData(incomingPayload);
+        applyIncomingData(incomingPayload, updatedAt, originDeviceId);
+        saveOfflineSnapshot(`latest_${syncKey}`, incomingPayload);
         setSyncStatus('synced');
       }
     });
 
-    // 3. Realtime Supabase Subscription
+    // 3. Realtime Cross-tab Sync Subscription (Instant <5ms sync between multiple open tabs on same device)
+    const unsubscribeCrossTab = subscribeToCrossTabSync(syncKey, (incomingPayload, updatedAt, originDeviceId) => {
+      if (isSubscribed && incomingPayload) {
+        applyIncomingData(incomingPayload, updatedAt, originDeviceId);
+        saveOfflineSnapshot(`latest_${syncKey}`, incomingPayload);
+        setSyncStatus('synced');
+      }
+    });
+
+    // 4. Realtime Supabase Subscription
     const client = getSupabaseClient();
     let channel: any = null;
     if (client) {
@@ -2081,10 +2251,9 @@ export default function App() {
             },
             (payload: any) => {
               if (payload?.new?.data && isSubscribed) {
-                if (payload.new.updated_at) {
-                  lastRemoteUpdatedAtRef.current = payload.new.updated_at;
-                }
-                applyIncomingData(payload.new.data);
+                const originDevId = (payload.new as any).origin_device_id || '';
+                applyIncomingData(payload.new.data, payload.new.updated_at, originDevId);
+                saveOfflineSnapshot(`latest_${syncKey}`, payload.new.data);
                 setSyncStatus('synced');
               }
             }
@@ -2095,38 +2264,46 @@ export default function App() {
       }
     }
 
-    // 4. Fallback Polling every 2 minutes when tab is active (using lightweight metadata check)
+    // 5. Fallback periodic sync when tab is visible
     const pollingInterval = setInterval(() => {
       if (isSubscribed && document.visibilityState === 'visible') {
         checkRemoteData(false);
       }
-    }, 120000);
+    }, 60000);
 
-    // 5. Trigger lightweight metadata check when tab comes back into focus
-    const handleFocus = () => {
+    // 6. Fast sync when window gains focus or online event fires
+    const handleFocusOrOnline = () => {
       if (isSubscribed && document.visibilityState === 'visible') {
         checkRemoteData(false);
       }
     };
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', handleFocus);
+    window.addEventListener('focus', handleFocusOrOnline);
+    window.addEventListener('online', handleFocusOrOnline);
+    document.addEventListener('visibilitychange', handleFocusOrOnline);
 
     return () => {
       isSubscribed = false;
       unsubscribeFirestore();
+      unsubscribeCrossTab();
       clearInterval(pollingInterval);
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleFocus);
+      window.removeEventListener('focus', handleFocusOrOnline);
+      window.removeEventListener('online', handleFocusOrOnline);
+      document.removeEventListener('visibilitychange', handleFocusOrOnline);
       if (client && channel) {
         client.removeChannel(channel);
       }
     };
   }, [syncKey]);
 
-  // Debounced push to Cloud (Firestore + Supabase) when local state changes
+  // Debounced push to Cloud (Firestore + Supabase) via IndexedDB Mutation Queue
   useEffect(() => {
     if (!isInitialLoadComplete) return;
     if (!syncKey) return;
+
+    // If this render was triggered by applying an incoming remote update, do not push back to avoid infinite loops
+    if (isApplyingRemoteUpdateRef.current) {
+      return;
+    }
 
     // Serialize current local state with all synchronized values
     const currentData = {
@@ -2202,16 +2379,32 @@ export default function App() {
         localStorage.setItem('mbc_last_local_write', nowIso);
         const cleanCurrentData = JSON.parse(currentSerialized);
 
-        const saveOk = await saveToSupabase(syncKey, cleanCurrentData);
-        if (saveOk) {
-          lastSyncedStateRef.current = currentSerialized;
-          lastRemoteUpdatedAtRef.current = nowIso;
-          setSyncStatus('synced');
+        // 1. Instantly register in IndexedDB Mutation Queue and save offline snapshot
+        await enqueueMutation({
+          syncKey,
+          payload: cleanCurrentData,
+          type: 'full_state_sync',
+          description: 'Sincronização de alterações de estado da aplicação'
+        });
+        await saveOfflineSnapshot(`latest_${syncKey}`, cleanCurrentData);
+
+        // 2. Process queue if online
+        if (typeof navigator !== 'undefined' && navigator.onLine) {
+          const devId = getOrCreateDeviceId();
+          const queueResult = await processMutationQueue(saveToSupabase);
+          if (queueResult.failed === 0) {
+            lastSyncedStateRef.current = currentSerialized;
+            lastRemoteUpdatedAtRef.current = nowIso;
+            setSyncStatus('synced');
+          } else {
+            setSyncStatus('error');
+          }
         } else {
-          setSyncStatus('error');
+          // Offline: Mutation is safely retained in IndexedDB
+          setSyncStatus('idle');
         }
       } catch (err) {
-        console.error('Error saving to cloud:', err);
+        console.error('Error saving to IndexedDB / cloud:', err);
         setSyncStatus('error');
       }
     };

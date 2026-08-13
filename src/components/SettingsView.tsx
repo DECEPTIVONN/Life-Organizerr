@@ -37,8 +37,10 @@ import {
   CheckCircle2,
   Palette,
   Fingerprint,
-  Clipboard
+  Clipboard,
+  Database
 } from 'lucide-react';
+import { subscribeToMutationQueue, processMutationQueue, clearAllMutations, QueueStatus } from '../lib/indexedDbQueue';
 import { isPlatformAuthenticatorAvailable, verifyBiometric } from '../utils/biometricAuth';
 import ColorSchemeModal from './ColorSchemeModal';
 import { THEME_PRESETS, applyThemeColor } from '../utils/themeColors';
@@ -250,6 +252,41 @@ export default function SettingsView({
   const [customSyncInput, setCustomSyncInput] = useState('');
   const [syncConnecting, setSyncConnecting] = useState(false);
   const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
+
+  // IndexedDB Mutation Queue states
+  const [queueStatus, setQueueStatus] = useState<QueueStatus>({
+    pendingCount: 0,
+    isProcessing: false,
+    isOnline: true
+  });
+  const [queueFlushing, setQueueFlushing] = useState(false);
+  const [queueFeedback, setQueueFeedback] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToMutationQueue((status) => {
+      setQueueStatus(status);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleFlushQueue = async () => {
+    setQueueFlushing(true);
+    setQueueFeedback(null);
+    try {
+      const res = await processMutationQueue();
+      if (res.processed > 0) {
+        setQueueFeedback(`${res.processed} ${res.processed === 1 ? 'alteração sincronizada' : 'alterações sincronizadas'} com a nuvem!`);
+      } else if (res.failed > 0) {
+        setQueueFeedback(`Erro ao sincronizar ${res.failed} itens. Verifique a conexão com a internet.`);
+      } else {
+        setQueueFeedback('Nenhuma alteração pendente na fila.');
+      }
+    } catch (err: any) {
+      setQueueFeedback('Falha ao processar fila: ' + (err?.message || String(err)));
+    } finally {
+      setQueueFlushing(false);
+    }
+  };
 
   // Supabase states
   const [supabaseUrl, setSupabaseUrl] = useState(() => localStorage.getItem('mbc_supabase_url') || '');
@@ -1493,6 +1530,50 @@ export default function SettingsView({
                   className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-emerald-400 font-bold text-[10px] uppercase rounded-xl transition-all"
                 >
                   Gerenciar
+                </button>
+              </div>
+            </div>
+
+            {/* IndexedDB Mutation Queue Card */}
+            <div className="p-4 bg-[#111115] border border-zinc-900 rounded-2xl space-y-3.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                    <Database className="h-4 w-4 text-blue-400" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h5 className="text-xs font-bold text-zinc-200">Fila de Mutação Offline (IndexedDB)</h5>
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase border ${
+                        queueStatus.pendingCount === 0
+                          ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                          : 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                      }`}>
+                        {queueStatus.pendingCount === 0 ? 'Fila Vazia' : `${queueStatus.pendingCount} pendente(s)`}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-zinc-500 mt-0.5">
+                      Garante persistência total contra quedas de rede ao editar checklists, tarefas, metas e finanças.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {queueFeedback && (
+                <div className="p-2.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-mono rounded-xl">
+                  {queueFeedback}
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleFlushQueue}
+                  disabled={queueFlushing || queueStatus.isProcessing}
+                  className="flex-1 py-2 bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-blue-400 font-bold text-[10px] font-mono uppercase rounded-xl transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                >
+                  <RefreshCw className={`h-3 w-3 ${queueFlushing || queueStatus.isProcessing ? 'animate-spin' : ''}`} />
+                  <span>{queueFlushing || queueStatus.isProcessing ? 'Processando Fila...' : 'Sincronizar Fila Agora'}</span>
                 </button>
               </div>
             </div>
