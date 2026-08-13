@@ -49,6 +49,8 @@ interface AnuaisViewProps {
   setNotes: React.Dispatch<React.SetStateAction<CalendarNote[]>>;
   addXp: (amount: number) => void;
   dailyTasks: DailyTask[];
+  setDailyTasks?: React.Dispatch<React.SetStateAction<DailyTask[]>>;
+  gridRoutine?: Record<string, any>;
   monthlyReviews: MonthlyReview[];
   setMonthlyReviews: React.Dispatch<React.SetStateAction<MonthlyReview[]>>;
   weeklyReviews: WeeklyReview[];
@@ -72,6 +74,8 @@ export default function AnuaisView({
   setNotes,
   addXp,
   dailyTasks,
+  setDailyTasks,
+  gridRoutine,
   monthlyReviews,
   setMonthlyReviews,
   weeklyReviews,
@@ -661,6 +665,34 @@ export default function AnuaisView({
       }
     }
 
+    // Merge gridRoutine time blocks
+    if (gridRoutine) {
+      try {
+        const parts = dateStr.split('-');
+        const dateObj = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        const dayOfWeek = dateObj.getDay();
+        const gridDayId = dayOfWeek === 0 ? 7 : dayOfWeek;
+
+        Object.entries(gridRoutine).forEach(([key, block]: [string, any]) => {
+          if (key.endsWith(`-${gridDayId}`) && block && block.text) {
+            const blockId = `grid-${key}`;
+            if (!list.some(t => t.id === blockId)) {
+              list.push({
+                id: blockId,
+                text: `[Bloco às ${block.startTime || '08:00'}] ${block.text}`,
+                completed: false,
+                xpReward: 10,
+                category: block.color || 'Rotina Semanal',
+                subtasks: block.subtasks ? block.subtasks.map((s: any) => ({ ...s })) : undefined
+              });
+            }
+          }
+        });
+      } catch (err) {
+        console.error("Error mapping gridRoutine to daily tasks in AnuaisView", err);
+      }
+    }
+
     // Add Leitura task if bookTracker is configured
     if (bookTracker && bookTracker.bookName) {
       const total = bookTracker.totalPages || 250;
@@ -751,6 +783,12 @@ export default function AnuaisView({
     const finalGratitude = gratitudeText.trim() ? gratitudeText : templateGratitude;
     const finalDecrees = decreesText.trim() ? decreesText : templateDecrees;
     const finalPrayer = prayerText.trim() ? prayerText : templatePrayer;
+
+    const d = new Date();
+    const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    if (selectedDateStr === todayStr && setDailyTasks) {
+      setDailyTasks(dayChecklist);
+    }
 
     setNotes(prev => {
       const idx = prev.findIndex(n => n.date === selectedDateStr);

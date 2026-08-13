@@ -1247,7 +1247,9 @@ export default function App() {
     gridRoutine,
     customCards,
     activeThemePreset,
-    customThemeHex
+    customThemeHex,
+    reminders,
+    projects
   });
 
   // Automatically keep latestStateRef in sync with latest React state on every single render
@@ -1278,7 +1280,8 @@ export default function App() {
       customCards,
       activeThemePreset,
       customThemeHex,
-      reminders
+      reminders,
+      projects
     };
   });
 
@@ -1530,7 +1533,8 @@ export default function App() {
         customThemeHex: data.customThemeHex !== undefined ? data.customThemeHex : latestStateRef.current.customThemeHex,
         reminders: data.reminders !== undefined ? data.reminders : latestStateRef.current.reminders,
         masterTemplates: data.masterTemplates !== undefined ? data.masterTemplates : (latestStateRef.current as any).masterTemplates,
-        dailyWorkspaceSettings: data.dailyWorkspaceSettings !== undefined ? data.dailyWorkspaceSettings : (latestStateRef.current as any).dailyWorkspaceSettings
+        dailyWorkspaceSettings: data.dailyWorkspaceSettings !== undefined ? data.dailyWorkspaceSettings : (latestStateRef.current as any).dailyWorkspaceSettings,
+        projects: data.projects !== undefined ? data.projects : latestStateRef.current.projects
       };
 
       const incomingSerialized = safeStringify(incomingData);
@@ -1562,6 +1566,7 @@ export default function App() {
       setLifeSummary(incomingData.lifeSummary);
       setFutureEvents(incomingData.futureEvents);
       setHabits(incomingData.habits);
+      if (incomingData.projects) setProjects(incomingData.projects);
       if (incomingData.reminders) setReminders(incomingData.reminders);
       if (incomingData.customCards) setCustomCards(incomingData.customCards);
       if (incomingData.gridRoutine !== undefined) setGridRoutine(incomingData.gridRoutine);
@@ -1596,6 +1601,7 @@ export default function App() {
       localStorage.setItem('mbc_life_summary_v1', JSON.stringify(incomingData.lifeSummary));
       localStorage.setItem('mbc_futureEvents', JSON.stringify(incomingData.futureEvents));
       localStorage.setItem('mbc_habits', JSON.stringify(incomingData.habits));
+      localStorage.setItem('mbc_projects', JSON.stringify(incomingData.projects || []));
       localStorage.setItem('mbc_reminders', JSON.stringify(incomingData.reminders || []));
       if (incomingData.customCards) localStorage.setItem('dashboard_custom_cards', JSON.stringify(incomingData.customCards));
       if (incomingData.gridRoutine !== undefined) localStorage.setItem('mbc_grid_routine', JSON.stringify(incomingData.gridRoutine));
@@ -1752,7 +1758,8 @@ export default function App() {
       customThemeHex,
       reminders,
       masterTemplates,
-      dailyWorkspaceSettings
+      dailyWorkspaceSettings,
+      projects
     };
     const currentSerialized = safeStringify(currentData);
 
@@ -1813,6 +1820,7 @@ export default function App() {
     reminders,
     masterTemplates,
     dailyWorkspaceSettings,
+    projects,
     isInitialLoadComplete
   ]);
 
@@ -2571,6 +2579,8 @@ export default function App() {
             setNotes={setCalendarNotes}
             addXp={addXp}
             dailyTasks={dailyTasks}
+            setDailyTasks={setDailyTasks}
+            gridRoutine={gridRoutine}
             monthlyReviews={monthlyReviews}
             setMonthlyReviews={setMonthlyReviews}
             weeklyReviews={weeklyReviews}
@@ -2600,6 +2610,8 @@ export default function App() {
             setNotes={setCalendarNotes}
             addXp={addXp}
             dailyTasks={dailyTasks}
+            setDailyTasks={setDailyTasks}
+            gridRoutine={gridRoutine}
             monthlyReviews={monthlyReviews}
             setMonthlyReviews={setMonthlyReviews}
             weeklyReviews={weeklyReviews}

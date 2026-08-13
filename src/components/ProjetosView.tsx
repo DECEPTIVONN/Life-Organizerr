@@ -331,7 +331,8 @@ export default function ProjetosView({
               { id: 'lab-idea', name: 'Ideia', color: '#8b5cf6' },
               { id: 'lab-inov', name: 'Inovação', color: '#ec4899' }
             ],
-            dueDate: '2026-08-30'
+            dueDate: '2026-08-30',
+            createdAt: '2026-08-13T00:00:00.000Z'
           },
           {
             id: 'c-plan-1',
@@ -343,7 +344,8 @@ export default function ProjetosView({
             labels: [
               { id: 'lab-plan', name: 'Planejamento', color: '#06b6d4' }
             ],
-            dueDate: '2026-08-28'
+            dueDate: '2026-08-28',
+            createdAt: '2026-08-13T00:00:00.000Z'
           },
           {
             id: 'c-1',

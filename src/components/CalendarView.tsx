@@ -57,6 +57,8 @@ interface CalendarViewProps {
   setNotes: React.Dispatch<React.SetStateAction<CalendarNote[]>>;
   addXp: (amount: number) => void;
   dailyTasks: DailyTask[];
+  setDailyTasks?: React.Dispatch<React.SetStateAction<DailyTask[]>>;
+  gridRoutine?: Record<string, any>;
   monthlyReviews: MonthlyReview[];
   setMonthlyReviews: React.Dispatch<React.SetStateAction<MonthlyReview[]>>;
   weeklyReviews: WeeklyReview[];
@@ -93,6 +95,8 @@ export default function CalendarView({
   setNotes, 
   addXp, 
   dailyTasks,
+  setDailyTasks,
+  gridRoutine,
   monthlyReviews,
   setMonthlyReviews,
   weeklyReviews,
@@ -143,6 +147,34 @@ export default function CalendarView({
         list.push(...routineTasksForDay);
       } catch (err) {
         console.error("Error mapping routine to daily tasks", err);
+      }
+    }
+
+    // Add time blocks from gridRoutine for the selected day of the week
+    if (selectedDateStr && gridRoutine) {
+      try {
+        const parts = selectedDateStr.split('-');
+        const dateObj = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        const dayOfWeek = dateObj.getDay(); // 0 = Sunday, 1 = Monday, etc.
+        const gridDayId = dayOfWeek === 0 ? 7 : dayOfWeek;
+
+        Object.entries(gridRoutine).forEach(([key, block]: [string, any]) => {
+          if (key.endsWith(`-${gridDayId}`) && block && block.text) {
+            const blockId = `grid-${key}`;
+            if (!list.some(t => t.id === blockId)) {
+              list.push({
+                id: blockId,
+                text: `[Bloco às ${block.startTime || '08:00'}] ${block.text}`,
+                completed: false,
+                xpReward: 10,
+                category: block.color || 'Rotina Semanal',
+                subtasks: block.subtasks ? block.subtasks.map((s: any) => ({ ...s })) : undefined
+              });
+            }
+          }
+        });
+      } catch (err) {
+        console.error("Error mapping gridRoutine to daily tasks", err);
       }
     }
     
@@ -1273,9 +1305,9 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
 
   const lastHydratedKeyRef = useRef<string>('');
 
-  // Sync inputs when selectedDateStr changes or when new activeRecord data is received
+  // Sync inputs when selectedDateStr changes or when switching activeRecord
   useEffect(() => {
-    const currentKey = `${selectedDateStr}_${activeRecordSerialized}`;
+    const currentKey = `${selectedDateStr}_${activeRecord ? activeRecord.id : 'empty'}`;
     if (lastHydratedKeyRef.current === currentKey) {
       return;
     }
@@ -1749,6 +1781,9 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
 
   const saveChecklistToNotes = (updatedChecklist: DailyTask[]) => {
     if (!selectedDateStr) return;
+    if (selectedDateStr === getTodayDateStr() && setDailyTasks) {
+      setDailyTasks(updatedChecklist);
+    }
     setNotes(prev => {
       const idx = prev.findIndex(n => n.date === selectedDateStr);
       if (idx !== -1) {
