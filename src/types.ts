@@ -17,6 +17,7 @@ export interface DailyTask {
   createdDate?: string;
   isRetroactive?: boolean;
   completedRetroactively?: boolean;
+  showInDailyMissions?: boolean;
 }
 
 export interface BookTracker {
@@ -139,6 +140,8 @@ export interface RoutineItem {
   category?: string; // e.g., "Trabalho", "Exercício", "Estudo", "Lazer", "Rotina", "Outro"
   reminderTime?: string; // e.g., "08:00"
   subtasks?: SubTask[];
+  showInDailyMissions?: boolean;
+  createdDate?: string;
 }
 
 export interface UserStats {

@@ -1884,37 +1884,41 @@ export default function App() {
         return;
       }
 
+      // Check if local state has newer pending changes
+      const lastLocalWrite = localStorage.getItem('mbc_last_local_write');
+      if (lastLocalWrite && remoteUpdatedAt) {
+        const localTime = new Date(lastLocalWrite).getTime();
+        const remoteTime = new Date(remoteUpdatedAt).getTime();
+        if (localTime > remoteTime + 1000) {
+          // Local changes are strictly newer than incoming remote snapshot; keep local edits
+          return;
+        }
+      }
+
       // Mark that we are applying remote updates to prevent auto-save from echoing back
       isApplyingRemoteUpdateRef.current = true;
 
       const current = latestStateRef.current;
 
-      // Intelligent merging for collections
+      // Intelligent merging for collections - local edits take precedence over stale remote
       let mergedTasks = current.dailyTasks;
       if (Array.isArray(data.dailyTasks)) {
-        const localTaskMap = new Map<string, any>((current.dailyTasks || []).map((t: any) => [String(t.id), t]));
-        const mergedTMap = new Map<string, any>();
-        
-        for (const t of data.dailyTasks) {
-          if (t && typeof t === 'object' && t.id) {
+        if (!current.dailyTasks || current.dailyTasks.length === 0) {
+          mergedTasks = data.dailyTasks;
+        } else {
+          const localTaskMap = new Map<string, any>((current.dailyTasks || []).map((t: any) => [String(t.id), t]));
+          mergedTasks = data.dailyTasks.map((t: any) => {
             const localT = localTaskMap.get(String(t.id));
             if (localT) {
-              mergedTMap.set(String(t.id), {
-                ...localT,
+              return {
                 ...t,
+                ...localT,
                 completed: Boolean(localT.completed || t.completed)
-              });
-            } else {
-              mergedTMap.set(String(t.id), t);
+              };
             }
-          }
+            return t;
+          });
         }
-        localTaskMap.forEach((localT, id) => {
-          if (!mergedTMap.has(id)) {
-            mergedTMap.set(id, localT);
-          }
-        });
-        mergedTasks = Array.from(mergedTMap.values());
       }
 
       let mergedHabits = current.habits;
@@ -3157,6 +3161,8 @@ export default function App() {
           <ChecklistView 
             dailyTasks={dailyTasks}
             setDailyTasks={setDailyTasks}
+            routine={routine}
+            setRoutine={setRoutine}
             streak={streak}
             onOpenStreakHub={() => setIsStreakHubOpen(true)}
             addXp={addXp}

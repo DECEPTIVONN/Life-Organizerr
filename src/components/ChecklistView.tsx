@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { sendSystemNotification, requestNotificationPermission } from '../lib/notificationHelper';
 import { 
   CheckSquare, 
@@ -193,21 +193,243 @@ export default function ChecklistView({
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
   const isToday = selectedDate === todayStr;
 
-  // Active tasks for selectedDate
-  const activeTasks = (() => {
+  const [localActiveTab, setLocalActiveTab] = useState<'checklist' | 'rotina'>('checklist');
+  const activeTab = propActiveTab !== undefined ? propActiveTab : localActiveTab;
+  const setActiveTab = propSetActiveTab !== undefined ? propSetActiveTab : setLocalActiveTab;
+
+  const HOURS = [
+    '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00',
+    '13:00', '14:00', '15:00', '16:00', '17:00', '18:00',
+    '19:00', '20:00', '21:00', '22:00', '23:00', '24:00'
+  ];
+
+  const DAYS = [
+    { id: 1, name: 'Segunda' },
+    { id: 2, name: 'Terça' },
+    { id: 3, name: 'Quarta' },
+    { id: 4, name: 'Quinta' },
+    { id: 5, name: 'Sexta' },
+    { id: 6, name: 'Sábado' },
+    { id: 7, name: 'Domingo' }
+  ];
+
+  const [localGridRoutine, setLocalGridRoutine] = useState<Record<string, { text: string; color?: string; startTime?: string; endTime?: string; isWeeklyRecurring?: boolean; showInDailyMissions?: boolean; createdDate?: string; reminderTime?: string; subtasks?: SubTask[] }>>(() => {
+    try {
+      const saved = localStorage.getItem('mbc_grid_routine');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error("Failed to parse mbc_grid_routine", e);
+    }
+
+    const defaultGridRoutine: Record<string, { text: string; color?: string; startTime?: string; endTime?: string; isWeeklyRecurring?: boolean; showInDailyMissions?: boolean; createdDate?: string; reminderTime?: string; subtasks?: SubTask[] }> = {};
+    for (let d = 1; d <= 5; d++) {
+      defaultGridRoutine[`07:00-${d}`] = { text: 'Acordar+Café', color: 'teal', startTime: '07:00', endTime: '08:00', isWeeklyRecurring: true, showInDailyMissions: true };
+      defaultGridRoutine[`08:00-${d}`] = { text: 'Deslocamento+Ler', color: 'red', startTime: '08:00', endTime: '09:00', isWeeklyRecurring: true, showInDailyMissions: true };
+      defaultGridRoutine[`09:00-${d}`] = { text: 'Trabalho', color: 'plum', startTime: '09:00', endTime: '12:00', isWeeklyRecurring: true, showInDailyMissions: true };
+      defaultGridRoutine[`10:00-${d}`] = { text: 'Trabalho', color: 'plum', startTime: '09:00', endTime: '12:00', isWeeklyRecurring: true, showInDailyMissions: true };
+      defaultGridRoutine[`11:00-${d}`] = { text: 'Trabalho', color: 'plum', startTime: '09:00', endTime: '12:00', isWeeklyRecurring: true, showInDailyMissions: true };
+      defaultGridRoutine[`12:00-${d}`] = { text: 'Almoço', color: 'brown', startTime: '12:00', endTime: '13:00', isWeeklyRecurring: true, showInDailyMissions: true };
+      defaultGridRoutine[`13:00-${d}`] = { text: 'Trabalho', color: 'plum', startTime: '13:00', endTime: '18:00', isWeeklyRecurring: true, showInDailyMissions: true };
+      defaultGridRoutine[`14:00-${d}`] = { text: 'Trabalho', color: 'plum', startTime: '13:00', endTime: '18:00', isWeeklyRecurring: true, showInDailyMissions: true };
+      defaultGridRoutine[`15:00-${d}`] = { text: 'Trabalho', color: 'plum', startTime: '13:00', endTime: '18:00', isWeeklyRecurring: true, showInDailyMissions: true };
+      defaultGridRoutine[`16:00-${d}`] = { text: 'Trabalho', color: 'plum', startTime: '13:00', endTime: '18:00', isWeeklyRecurring: true, showInDailyMissions: true };
+      defaultGridRoutine[`17:00-${d}`] = { text: 'Trabalho', color: 'plum', startTime: '13:00', endTime: '18:00', isWeeklyRecurring: true, showInDailyMissions: true };
+      defaultGridRoutine[`18:00-${d}`] = { text: 'Exercício', color: 'orange', startTime: '18:00', endTime: '19:00', isWeeklyRecurring: true, showInDailyMissions: true };
+      defaultGridRoutine[`19:00-${d}`] = { text: 'Deslocamento+Ler', color: 'red', startTime: '19:00', endTime: '20:00', isWeeklyRecurring: true, showInDailyMissions: true };
+      defaultGridRoutine[`20:00-${d}`] = { text: 'Freelance', color: 'gray', startTime: '20:00', endTime: '21:00', isWeeklyRecurring: true, showInDailyMissions: true };
+      defaultGridRoutine[`21:00-${d}`] = { text: 'Diário', color: 'blue', startTime: '21:00', endTime: '22:00', isWeeklyRecurring: true, showInDailyMissions: true };
+      defaultGridRoutine[`22:00-${d}`] = { text: 'Desligar telas', color: 'gray', startTime: '22:00', endTime: '23:00', isWeeklyRecurring: true, showInDailyMissions: true };
+      defaultGridRoutine[`23:00-${d}`] = { text: 'Dormir', color: 'gray', startTime: '23:00', endTime: '24:00', isWeeklyRecurring: true, showInDailyMissions: true };
+    }
+
+    return defaultGridRoutine;
+  });
+
+  const gridRoutine = propGridRoutine !== undefined ? propGridRoutine : localGridRoutine;
+
+  const saveGridRoutine = (newGrid: any) => {
+    if (propSetGridRoutine) {
+      propSetGridRoutine(newGrid);
+    } else {
+      setLocalGridRoutine(newGrid);
+    }
+    localStorage.setItem('mbc_grid_routine', JSON.stringify(newGrid));
+  };
+
+  const [cellShowInDailyMissions, setCellShowInDailyMissions] = useState(true);
+
+  // Helper to determine time slot period:
+  // 06:00 - 12:00 (no final) -> Rotina Matinal ('manha')
+  // 12:00 (no início) - 18:00 (no final) -> Missões Diárias ('geral')
+  // 18:00 (no início) - 00:00 -> Rotina Noturna ('noite')
+  const getTimePeriodFromHour = (timeStr?: string): 'manha' | 'noite' | 'geral' => {
+    if (!timeStr) return 'geral';
+    const match = timeStr.match(/(\d{1,2}):(\d{2})/);
+    if (!match) return 'geral';
+    const h = parseInt(match[1], 10);
+    if (h >= 6 && h < 12) return 'manha';
+    if (h >= 12 && h < 18) return 'geral';
+    return 'noite';
+  };
+
+  // Active tasks for selectedDate: Merges dailyTasks with GridRoutine and Routine items
+  const activeTasks = useMemo(() => {
+    let baseList: DailyTask[] = [];
     if (selectedDate === todayStr) {
-      return dailyTasks.filter(t => t.isRecurring !== false || !t.createdDate || t.createdDate === todayStr);
+      baseList = dailyTasks.filter(t => t.isRecurring !== false || !t.createdDate || t.createdDate === todayStr);
+    } else {
+      const note = calendarNotes?.find(n => n.date === selectedDate);
+      if (note && note.checklist && note.checklist.length > 0) {
+        baseList = note.checklist.filter(t => t.isRecurring !== false || !t.createdDate || t.createdDate === selectedDate);
+      } else {
+        baseList = dailyTasks.filter(t => t.isRecurring !== false || !t.createdDate || t.createdDate === selectedDate).map(t => ({
+          ...t,
+          completed: false,
+          subtasks: t.subtasks?.map(s => ({ ...s, completed: false }))
+        }));
+      }
     }
-    const note = calendarNotes?.find(n => n.date === selectedDate);
-    if (note && note.checklist && note.checklist.length > 0) {
-      return note.checklist.filter(t => t.isRecurring !== false || !t.createdDate || t.createdDate === selectedDate);
+
+    // Fast lookup map of base tasks
+    const existingById = new Map<string, DailyTask>();
+    baseList.forEach(t => existingById.set(t.id, t));
+
+    // Calculate weekday for selectedDate (1=Segunda ... 7=Domingo) and (0=Dom ... 6=Sab)
+    const [sY, sM, sD] = selectedDate.split('-').map(Number);
+    const dateObj = new Date(sY, sM - 1, sD);
+    const dayOfWeekSun0 = dateObj.getDay(); // 0=Dom, 1=Seg, 2=Ter, 3=Qua, 4=Qui, 5=Sex, 6=Sab
+    const dayOfWeekMon1 = dayOfWeekSun0 === 0 ? 7 : dayOfWeekSun0; // 1=Seg, 2=Ter, 3=Qua, 4=Qui, 5=Sex, 6=Sab, 7=Dom
+
+    const dynamicRoutineTasks: DailyTask[] = [];
+
+    // 1. Process Grid Routine Blocks
+    if (gridRoutine) {
+      Object.entries(gridRoutine).forEach(([key, block]: [string, any]) => {
+        if (!block || !block.text || !block.text.trim()) return;
+        if (block.showInDailyMissions === false) return; // User disabled display in daily tasks
+
+        const [blockHour, blockDayStr] = key.split('-');
+        const blockDay = parseInt(blockDayStr, 10);
+        if (isNaN(blockDay)) return;
+
+        // Check if this block applies to the day of week of selectedDate
+        if (blockDay !== dayOfWeekMon1) return;
+
+        // If not weekly recurring, only display on the specific next occurrence
+        if (block.isWeeklyRecurring === false) {
+          const createdDateStr = block.createdDate || todayStr;
+          const [cY, cM, cD] = createdDateStr.split('-').map(Number);
+          const cDate = new Date(cY, cM - 1, cD);
+          const cDaySun0 = cDate.getDay();
+          const cDayMon1 = cDaySun0 === 0 ? 7 : cDaySun0;
+          let diffDays = (blockDay - cDayMon1 + 7) % 7;
+          const targetDateObj = new Date(cDate);
+          targetDateObj.setDate(targetDateObj.getDate() + diffDays);
+          const targetDateStr = `${targetDateObj.getFullYear()}-${String(targetDateObj.getMonth() + 1).padStart(2, '0')}-${String(targetDateObj.getDate()).padStart(2, '0')}`;
+          if (selectedDate !== targetDateStr) return;
+        }
+
+        const taskId = `grid-${key}`;
+        const existing = existingById.get(taskId);
+        const startTime = block.startTime || blockHour;
+        const period = getTimePeriodFromHour(startTime);
+
+        const subtasks: SubTask[] = block.subtasks ? block.subtasks.map((st: SubTask) => {
+          const existingSub = existing?.subtasks?.find(s => s.id === st.id || s.text === st.text);
+          return {
+            id: st.id,
+            text: st.text,
+            completed: existingSub ? existingSub.completed : (existing?.completed || false)
+          };
+        }) : [];
+
+        dynamicRoutineTasks.push({
+          id: taskId,
+          text: block.text,
+          category: block.color || 'Rotina',
+          period,
+          completed: existing ? existing.completed : false,
+          xpReward: 15,
+          reminderTime: block.reminderTime || startTime,
+          isRecurring: block.isWeeklyRecurring !== false,
+          createdDate: block.createdDate || todayStr,
+          subtasks: subtasks.length > 0 ? subtasks : undefined,
+          isRetroactive: existing?.isRetroactive,
+          completedRetroactively: existing?.completedRetroactively
+        });
+      });
     }
-    return dailyTasks.filter(t => t.isRecurring !== false || !t.createdDate || t.createdDate === selectedDate).map(t => ({
-      ...t,
-      completed: false,
-      subtasks: t.subtasks?.map(s => ({ ...s, completed: false }))
-    }));
-  })();
+
+    // 2. Process Routine items
+    if (propRoutine) {
+      propRoutine.forEach((item: RoutineItem) => {
+        if (!item || !item.task || !item.task.trim()) return;
+        if (item.showInDailyMissions === false) return; // User disabled display in daily tasks
+
+        const matchesDay = item.isEveryDay || item.dayOfWeek === -1 || item.dayOfWeek === dayOfWeekSun0;
+        if (!matchesDay) return;
+
+        // If not weekly recurring, only display on the specific next occurrence
+        if (item.isWeeklyRecurring === false && !item.isEveryDay && item.dayOfWeek !== -1) {
+          const createdDateStr = item.createdDate || todayStr;
+          const [cY, cM, cD] = createdDateStr.split('-').map(Number);
+          const cDate = new Date(cY, cM - 1, cD);
+          const cDaySun0 = cDate.getDay();
+          let diffDays = (item.dayOfWeek - cDaySun0 + 7) % 7;
+          const targetDateObj = new Date(cDate);
+          targetDateObj.setDate(targetDateObj.getDate() + diffDays);
+          const targetDateStr = `${targetDateObj.getFullYear()}-${String(targetDateObj.getMonth() + 1).padStart(2, '0')}-${String(targetDateObj.getDate()).padStart(2, '0')}`;
+          if (selectedDate !== targetDateStr) return;
+        }
+
+        const taskId = `routine-${item.id}`;
+        const existing = existingById.get(taskId);
+        const period = getTimePeriodFromHour(item.time);
+
+        const subtasks: SubTask[] = item.subtasks ? item.subtasks.map((st: SubTask) => {
+          const existingSub = existing?.subtasks?.find(s => s.id === st.id || s.text === st.text);
+          return {
+            id: st.id,
+            text: st.text,
+            completed: existingSub ? existingSub.completed : (existing?.completed || (item.completedDays && item.completedDays.includes(dayOfWeekSun0)) || false)
+          };
+        }) : [];
+
+        const isCompleted = existing
+          ? existing.completed
+          : (item.completedDays ? item.completedDays.includes(dayOfWeekSun0) : item.completed);
+
+        dynamicRoutineTasks.push({
+          id: taskId,
+          text: item.task,
+          category: item.category || 'Rotina',
+          period,
+          completed: isCompleted,
+          xpReward: 15,
+          reminderTime: item.reminderTime || item.time,
+          isRecurring: item.isWeeklyRecurring !== false,
+          createdDate: item.createdDate || todayStr,
+          subtasks: subtasks.length > 0 ? subtasks : undefined,
+          isRetroactive: existing?.isRetroactive,
+          completedRetroactively: existing?.completedRetroactively
+        });
+      });
+    }
+
+    // Merge baseList (excluding any dynamic tasks that will be replaced) with dynamicRoutineTasks
+    const finalTasks: DailyTask[] = [];
+    baseList.forEach(t => {
+      if (!t.id.startsWith('grid-') && !t.id.startsWith('routine-')) {
+        finalTasks.push(t);
+      }
+    });
+
+    dynamicRoutineTasks.forEach(dt => {
+      finalTasks.push(dt);
+    });
+
+    return finalTasks;
+  }, [selectedDate, todayStr, dailyTasks, calendarNotes, gridRoutine, propRoutine]);
 
   // Automatically remove stale non-recurring tasks from dailyTasks when on today
   useEffect(() => {
@@ -253,13 +475,22 @@ export default function ChecklistView({
 
   const updateActiveTasks = (updater: (prev: DailyTask[]) => DailyTask[]) => {
     if (selectedDate === todayStr) {
-      setDailyTasks(updater);
+      setDailyTasks(prev => {
+        const currentMap = new Map<string, DailyTask>(prev.map(t => [t.id, t]));
+        activeTasks.forEach(at => {
+          if (!currentMap.has(at.id)) {
+            currentMap.set(at.id, at);
+          }
+        });
+        const combined = Array.from(currentMap.values());
+        return updater(combined);
+      });
     } else if (setCalendarNotes) {
       setCalendarNotes(prevNotes => {
         const existingIdx = prevNotes.findIndex(n => n.date === selectedDate);
         const currentList = existingIdx !== -1 && prevNotes[existingIdx].checklist && prevNotes[existingIdx].checklist.length > 0
           ? prevNotes[existingIdx].checklist!
-          : dailyTasks.map(t => ({ ...t, completed: false, subtasks: t.subtasks?.map(s => ({ ...s, completed: false })) }));
+          : activeTasks;
         
         const newTasks = updater(currentList);
         
@@ -278,7 +509,8 @@ export default function ChecklistView({
               id: 'cn-' + Math.random().toString(36).substring(2, 9),
               date: selectedDate,
               title: `Registro Diário (${selectedDate})`,
-              content: '',
+              note: '',
+              tags: ['Checklist'],
               isDailyRecord: true,
               checklist: newTasks
             }
@@ -392,72 +624,7 @@ export default function ChecklistView({
   const [pagesLoggedToday, setPagesLoggedToday] = useState('');
   const [chaptersLoggedToday, setChaptersLoggedToday] = useState('');
 
-  // ----------------------------------------------------
-  // GRID ROUTINE STATE & CONFIG (First Image)
-  // ----------------------------------------------------
-  const [localActiveTab, setLocalActiveTab] = useState<'checklist' | 'rotina'>('checklist');
-  const activeTab = propActiveTab !== undefined ? propActiveTab : localActiveTab;
-  const setActiveTab = propSetActiveTab !== undefined ? propSetActiveTab : setLocalActiveTab;
-
-  const HOURS = [
-    '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00',
-    '13:00', '14:00', '15:00', '16:00', '17:00', '18:00',
-    '19:00', '20:00', '21:00', '22:00', '23:00', '24:00'
-  ];
-
-  const DAYS = [
-    { id: 1, name: 'Segunda' },
-    { id: 2, name: 'Terça' },
-    { id: 3, name: 'Quarta' },
-    { id: 4, name: 'Quinta' },
-    { id: 5, name: 'Sexta' },
-    { id: 6, name: 'Sábado' },
-    { id: 7, name: 'Domingo' }
-  ];
-
-  const [localGridRoutine, setLocalGridRoutine] = useState<Record<string, { text: string; color?: string; startTime?: string; endTime?: string }>>(() => {
-    try {
-      const saved = localStorage.getItem('mbc_grid_routine');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.error("Failed to parse mbc_grid_routine", e);
-    }
-
-    const defaultGridRoutine: Record<string, { text: string; color?: string; startTime?: string; endTime?: string }> = {};
-    for (let d = 1; d <= 5; d++) {
-      defaultGridRoutine[`07:00-${d}`] = { text: 'Acordar+Café', color: 'teal', startTime: '07:00', endTime: '08:00' };
-      defaultGridRoutine[`08:00-${d}`] = { text: 'Deslocamento+Ler', color: 'red', startTime: '08:00', endTime: '09:00' };
-      defaultGridRoutine[`09:00-${d}`] = { text: 'Trabalho', color: 'plum', startTime: '09:00', endTime: '12:00' };
-      defaultGridRoutine[`10:00-${d}`] = { text: 'Trabalho', color: 'plum', startTime: '09:00', endTime: '12:00' };
-      defaultGridRoutine[`11:00-${d}`] = { text: 'Trabalho', color: 'plum', startTime: '09:00', endTime: '12:00' };
-      defaultGridRoutine[`12:00-${d}`] = { text: 'Almoço', color: 'brown', startTime: '12:00', endTime: '13:00' };
-      defaultGridRoutine[`13:00-${d}`] = { text: 'Trabalho', color: 'plum', startTime: '13:00', endTime: '18:00' };
-      defaultGridRoutine[`14:00-${d}`] = { text: 'Trabalho', color: 'plum', startTime: '13:00', endTime: '18:00' };
-      defaultGridRoutine[`15:00-${d}`] = { text: 'Trabalho', color: 'plum', startTime: '13:00', endTime: '18:00' };
-      defaultGridRoutine[`16:00-${d}`] = { text: 'Trabalho', color: 'plum', startTime: '13:00', endTime: '18:00' };
-      defaultGridRoutine[`17:00-${d}`] = { text: 'Trabalho', color: 'plum', startTime: '13:00', endTime: '18:00' };
-      defaultGridRoutine[`18:00-${d}`] = { text: 'Exercício', color: 'orange', startTime: '18:00', endTime: '19:00' };
-      defaultGridRoutine[`19:00-${d}`] = { text: 'Deslocamento+Ler', color: 'red', startTime: '19:00', endTime: '20:00' };
-      defaultGridRoutine[`20:00-${d}`] = { text: 'Freelance', color: 'gray', startTime: '20:00', endTime: '21:00' };
-      defaultGridRoutine[`21:00-${d}`] = { text: 'Diário', color: 'blue', startTime: '21:00', endTime: '22:00' };
-      defaultGridRoutine[`22:00-${d}`] = { text: 'Desligar telas', color: 'gray', startTime: '22:00', endTime: '23:00' };
-      defaultGridRoutine[`23:00-${d}`] = { text: 'Dormir', color: 'gray', startTime: '23:00', endTime: '24:00' };
-    }
-
-    return defaultGridRoutine;
-  });
-
-  const gridRoutine = propGridRoutine !== undefined ? propGridRoutine : localGridRoutine;
-
-  const saveGridRoutine = (newGrid: any) => {
-    if (propSetGridRoutine) {
-      propSetGridRoutine(newGrid);
-    } else {
-      setLocalGridRoutine(newGrid);
-    }
-    localStorage.setItem('mbc_grid_routine', JSON.stringify(newGrid));
-  };
-
+  // Cell editing & block configuration states
   const [editingCell, setEditingCell] = useState<{ hour: string; day: number } | null>(null);
   const [originalGroupKeys, setOriginalGroupKeys] = useState<string[]>([]);
   const [cellText, setCellText] = useState('');
@@ -594,6 +761,7 @@ export default function ChecklistView({
     setCellStartTime(effStartTime);
     setCellEndTime(block.endTime || getNextHour(hour));
     setCellIsWeeklyRecurring(block.isWeeklyRecurring !== false);
+    setCellShowInDailyMissions(block.showInDailyMissions !== false);
     setCellEnableReminder(Boolean(block.reminderTime));
     setCellReminderTime(block.reminderTime || effStartTime);
 
@@ -629,6 +797,7 @@ export default function ChecklistView({
     setCellEndTime(getNextHour(hour));
     setCellSelectedDays([dayId]);
     setCellIsWeeklyRecurring(true);
+    setCellShowInDailyMissions(true);
     setCellEnableReminder(true);
     setCellReminderTime(hour);
     setCellSubtasks([]);
@@ -815,6 +984,15 @@ export default function ChecklistView({
     if (completed) {
       addXp(-xpReward);
     }
+    if (id.startsWith('grid-')) {
+      const gridKey = id.replace('grid-', '');
+      const updated = { ...gridRoutine };
+      delete updated[gridKey];
+      saveGridRoutine(updated);
+    } else if (id.startsWith('routine-') && propSetRoutine) {
+      const routineId = id.replace('routine-', '');
+      propSetRoutine(prev => prev.filter(r => r.id !== routineId));
+    }
     updateActiveTasks(prev => prev.filter(t => t.id !== id));
   };
 
@@ -867,6 +1045,32 @@ export default function ChecklistView({
 
     if (editReminderTime && typeof Notification !== 'undefined' && Notification.permission === 'default') {
       Notification.requestPermission().catch(() => {});
+    }
+
+    if (editingTask.id.startsWith('grid-')) {
+      const gridKey = editingTask.id.replace('grid-', '');
+      if (gridRoutine[gridKey]) {
+        const updated = {
+          ...gridRoutine,
+          [gridKey]: {
+            ...gridRoutine[gridKey],
+            text: editText.trim(),
+            reminderTime: editReminderTime.trim() || undefined,
+            subtasks: editSubtasks.length > 0 ? editSubtasks : undefined,
+            isWeeklyRecurring: editIsRecurring
+          }
+        };
+        saveGridRoutine(updated);
+      }
+    } else if (editingTask.id.startsWith('routine-') && propSetRoutine) {
+      const routineId = editingTask.id.replace('routine-', '');
+      propSetRoutine(prev => prev.map(r => r.id === routineId ? {
+        ...r,
+        task: editText.trim(),
+        reminderTime: editReminderTime.trim() || undefined,
+        subtasks: editSubtasks.length > 0 ? editSubtasks : undefined,
+        isWeeklyRecurring: editIsRecurring
+      } : r));
     }
 
     updateActiveTasks(prevTasks =>
@@ -3073,7 +3277,40 @@ export default function ChecklistView({
                             />
                           </label>
 
-                          {/* Checkbox 2: Receber Lembrete (Notificação) */}
+                          {/* Checkbox 2: Exibir em Missões Diárias */}
+                          <label 
+                            className={`group flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer select-none ${
+                              cellShowInDailyMissions
+                                ? 'bg-orange-500/10 border-orange-500/40 text-white shadow-sm'
+                                : 'bg-zinc-900/80 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${
+                                cellShowInDailyMissions
+                                  ? 'bg-orange-500 text-white shadow-md shadow-orange-500/30 ring-2 ring-orange-500/20'
+                                  : 'bg-zinc-950 border border-zinc-700 text-transparent group-hover:border-zinc-500'
+                              }`}>
+                                <Check className="h-3.5 w-3.5 stroke-[3]" />
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-xs font-bold flex items-center gap-1.5">
+                                  <CheckSquare className="h-3.5 w-3.5 text-orange-400" /> Exibir em Missões Diárias
+                                </span>
+                                <span className="text-[10px] text-zinc-400">
+                                  {cellShowInDailyMissions ? 'Aparece no checklist diário conforme horário e dias' : 'Oculto das missões diárias'}
+                                </span>
+                              </div>
+                            </div>
+                            <input
+                              type="checkbox"
+                              checked={cellShowInDailyMissions}
+                              onChange={(e) => setCellShowInDailyMissions(e.target.checked)}
+                              className="sr-only"
+                            />
+                          </label>
+
+                          {/* Checkbox 3: Receber Lembrete (Notificação) */}
                           <label 
                             className={`group flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer select-none ${
                               cellEnableReminder
@@ -3211,6 +3448,8 @@ export default function ChecklistView({
                               startTime: cellStartTime,
                               endTime: cellEndTime,
                               isWeeklyRecurring: cellIsWeeklyRecurring,
+                              showInDailyMissions: cellShowInDailyMissions,
+                              createdDate: editingCell ? (gridRoutine[`${editingCell.hour}-${editingCell.day}`]?.createdDate || todayStr) : todayStr,
                               reminderTime: cellEnableReminder ? (cellReminderTime.trim() || undefined) : undefined,
                               subtasks: cellSubtasks.length > 0 ? cellSubtasks : undefined
                             };

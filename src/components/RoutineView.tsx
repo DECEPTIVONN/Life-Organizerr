@@ -70,6 +70,7 @@ export default function RoutineView({
   const [taskText, setTaskText] = useState('');
   const [isEveryDay, setIsEveryDay] = useState(false);
   const [isWeeklyRecurring, setIsWeeklyRecurring] = useState(true);
+  const [showInDailyMissions, setShowInDailyMissions] = useState(true);
   const [enableReminder, setEnableReminder] = useState(true);
   const [newSubtasks, setNewSubtasks] = useState<SubTask[]>([]);
   const [subtaskInput, setSubtaskInput] = useState('');
@@ -82,6 +83,7 @@ export default function RoutineView({
   const [editTaskText, setEditTaskText] = useState('');
   const [editIsEveryDay, setEditIsEveryDay] = useState(false);
   const [editIsWeeklyRecurring, setEditIsWeeklyRecurring] = useState(true);
+  const [editShowInDailyMissions, setEditShowInDailyMissions] = useState(true);
   const [editEnableReminder, setEditEnableReminder] = useState(true);
   const [editSelectedDay, setEditSelectedDay] = useState<number>(1);
   const [editSubtasks, setEditSubtasks] = useState<SubTask[]>([]);
@@ -354,15 +356,18 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
       completed: false,
       isEveryDay,
       isWeeklyRecurring,
+      showInDailyMissions,
+      createdDate: new Date().toISOString().split('T')[0],
       completedDays: [],
       reminderTime: enableReminder ? (reminderTime.trim() || time) : undefined,
       subtasks: newSubtasks.length > 0 ? newSubtasks : undefined
     };
 
-    setRoutine([...routine, newItem]);
+    setRoutine(prev => [...prev, newItem]);
     setTaskText('');
     setIsEveryDay(false);
     setIsWeeklyRecurring(true);
+    setShowInDailyMissions(true);
     setEnableReminder(true);
     setNewSubtasks([]);
     setSubtaskInput('');
@@ -449,6 +454,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
     setEditTaskText(item.task || '');
     setEditIsEveryDay(!!item.isEveryDay);
     setEditIsWeeklyRecurring(item.isWeeklyRecurring !== false);
+    setEditShowInDailyMissions(item.showInDailyMissions !== false);
     setEditEnableReminder(Boolean(item.reminderTime));
     setEditSelectedDay(item.dayOfWeek >= 0 ? item.dayOfWeek : selectedDay);
     setEditSubtasks(item.subtasks ? item.subtasks.map(s => ({ ...s })) : []);
@@ -467,9 +473,11 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
           task: editTaskText.trim(),
           isEveryDay: editIsEveryDay,
           isWeeklyRecurring: editIsWeeklyRecurring,
+          showInDailyMissions: editShowInDailyMissions,
           dayOfWeek: editIsEveryDay ? -1 : editSelectedDay,
           reminderTime: editEnableReminder ? (editReminderTime.trim() || editTime) : undefined,
-          subtasks: editSubtasks.length > 0 ? editSubtasks : undefined
+          subtasks: editSubtasks.length > 0 ? editSubtasks : undefined,
+          createdDate: item.createdDate || new Date().toISOString().split('T')[0]
         };
       }
       return item;
@@ -763,6 +771,25 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
               </label>
               <span className="text-[10px] font-mono text-zinc-500">
                 {isWeeklyRecurring ? 'Atividade Recorrente' : 'Atividade Pontual (Única)'}
+              </span>
+            </div>
+
+            {/* Checkbox: Exibir em Missões Diárias */}
+            <div className="pt-2 border-t border-zinc-850 flex items-center justify-between">
+              <label htmlFor="add-show-daily-missions" className="flex items-center gap-2.5 cursor-pointer text-xs font-bold text-zinc-300 hover:text-white select-none">
+                <input
+                  id="add-show-daily-missions"
+                  type="checkbox"
+                  checked={showInDailyMissions}
+                  onChange={(e) => setShowInDailyMissions(e.target.checked)}
+                  className="w-4 h-4 rounded border-zinc-700 bg-zinc-950 text-orange-500 focus:ring-orange-500/20 focus:ring-offset-0 cursor-pointer accent-orange-500"
+                />
+                <span className="flex items-center gap-1.5">
+                  <ListTodo className="h-3.5 w-3.5 text-orange-400" /> Exibir em missões diárias
+                </span>
+              </label>
+              <span className="text-[10px] font-mono text-zinc-500">
+                {showInDailyMissions ? 'Sincronizado com Missões' : 'Apenas em Rotina'}
               </span>
             </div>
 
@@ -2161,6 +2188,39 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                           type="checkbox"
                           checked={editEnableReminder}
                           onChange={(e) => setEditEnableReminder(e.target.checked)}
+                          className="sr-only"
+                        />
+                      </label>
+
+                      {/* Checkbox 3: Exibir em Missões Diárias */}
+                      <label 
+                        className={`group flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer select-none ${
+                          editShowInDailyMissions
+                            ? 'bg-orange-500/10 border-orange-500/40 text-white shadow-sm'
+                            : 'bg-zinc-900/80 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${
+                            editShowInDailyMissions
+                              ? 'bg-orange-500 text-white shadow-md shadow-orange-500/30 ring-2 ring-orange-500/20'
+                              : 'bg-zinc-950 border border-zinc-700 text-transparent group-hover:border-zinc-500'
+                          }`}>
+                            <Check className="h-3.5 w-3.5 stroke-[3]" />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-xs font-bold flex items-center gap-1.5">
+                              <ListTodo className="h-3.5 w-3.5 text-orange-400" /> Exibir em Missões Diárias
+                            </span>
+                            <span className="text-[10px] text-zinc-400">
+                              {editShowInDailyMissions ? 'Sincronizado no checklist diário com etapas e horários' : 'Oculto das missões diárias'}
+                            </span>
+                          </div>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={editShowInDailyMissions}
+                          onChange={(e) => setEditShowInDailyMissions(e.target.checked)}
                           className="sr-only"
                         />
                       </label>
