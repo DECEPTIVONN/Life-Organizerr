@@ -38,7 +38,8 @@ import {
   Palette,
   Fingerprint,
   Clipboard,
-  Database
+  Database,
+  Play
 } from 'lucide-react';
 import { subscribeToMutationQueue, processMutationQueue, clearAllMutations, QueueStatus } from '../lib/indexedDbQueue';
 import { isPlatformAuthenticatorAvailable, verifyBiometric } from '../utils/biometricAuth';
@@ -130,6 +131,13 @@ interface SettingsViewProps {
   setBackgroundNotificationsEnabled?: (enabled: boolean) => void;
   dailyWorkspaceSettings?: { enabled: boolean; time: string };
   setDailyWorkspaceSettings?: (settings: { enabled: boolean; time: string }) => void;
+
+  // Custom Loading / Splash Screen Customization
+  loadingScreenVerticalImage?: string;
+  setLoadingScreenVerticalImage?: (img: string) => void;
+  loadingScreenHorizontalImage?: string;
+  setLoadingScreenHorizontalImage?: (img: string) => void;
+  onPreviewLoadingScreen?: () => void;
 }
 
 type SettingsScreen = 
@@ -201,7 +209,12 @@ export default function SettingsView({
   backgroundNotificationsEnabled: propBackgroundNotificationsEnabled,
   setBackgroundNotificationsEnabled: propSetBackgroundNotificationsEnabled,
   dailyWorkspaceSettings: propDailyWorkspaceSettings,
-  setDailyWorkspaceSettings: propSetDailyWorkspaceSettings
+  setDailyWorkspaceSettings: propSetDailyWorkspaceSettings,
+  loadingScreenVerticalImage = '',
+  setLoadingScreenVerticalImage,
+  loadingScreenHorizontalImage = '',
+  setLoadingScreenHorizontalImage,
+  onPreviewLoadingScreen
 }: SettingsViewProps) {
   
   // Theme Color Scheme Modal State
@@ -2266,6 +2279,357 @@ export default function SettingsView({
                 <Palette className="w-3.5 h-3.5" />
                 Personalizar
               </button>
+            </div>
+
+            {/* Personalização da Tela de Carregamento & Splash (Sincronizada na Nuvem) */}
+            <div className="p-5 bg-zinc-950 border border-zinc-900 rounded-2xl space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-900/80 pb-3">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-orange-400" />
+                    <h4 className="text-xs font-bold text-zinc-100">Tela de Carregamento & Splash</h4>
+                    <span className="text-[8px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-mono uppercase">
+                      Nuvem Ativa
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-zinc-400 font-mono leading-relaxed max-w-xl">
+                    Defina imagens personalizadas para o splash de carregamento do app (vertical para celular e horizontal para computador). A tela exibe apenas a sua imagem em tela cheia com a barra de sincronização na parte inferior.
+                  </p>
+                </div>
+                {onPreviewLoadingScreen && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      addXp(10);
+                      onPreviewLoadingScreen();
+                    }}
+                    className="self-start sm:self-auto px-3.5 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-orange-400 font-mono font-bold text-[10px] rounded-xl tracking-wider uppercase transition-all flex items-center gap-1.5 shrink-0"
+                  >
+                    <Play className="w-3.5 h-3.5 fill-current" />
+                    Testar Tela
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* 1. Imagem Vertical (Mobile / 9:16) */}
+                <div className="p-4 bg-zinc-900/40 border border-zinc-800/80 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Smartphone className="w-4 h-4 text-orange-400" />
+                      <span className="text-xs font-bold text-zinc-200">Formato Vertical (Mobile)</span>
+                    </div>
+                    <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider">9:16 / Celular</span>
+                  </div>
+
+                  {/* Thumbnail Preview */}
+                  <div className="relative aspect-[9/14] max-h-48 w-full bg-zinc-950 rounded-lg overflow-hidden border border-zinc-800 flex items-center justify-center group">
+                    {loadingScreenVerticalImage ? (
+                      <img 
+                        src={loadingScreenVerticalImage} 
+                        alt="Splash Vertical" 
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center p-3 text-center text-zinc-600 gap-1.5">
+                        <ImageIcon className="w-6 h-6 stroke-[1.5]" />
+                        <span className="text-[10px] font-mono">Imagem Padrão do Sistema</span>
+                      </div>
+                    )}
+                    <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/80 to-transparent flex items-center justify-between text-[9px] font-mono text-zinc-300">
+                      <span className="truncate">{loadingScreenVerticalImage ? 'Personalizada' : 'Padrão'}</span>
+                      {loadingScreenVerticalImage && setLoadingScreenVerticalImage && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setLoadingScreenVerticalImage('');
+                            addXp(5);
+                          }}
+                          className="text-red-400 hover:text-red-300 font-bold flex items-center gap-1"
+                          title="Restaurar padrão"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>Remover</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Actions: Upload & Paste */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <label className="flex-1 cursor-pointer">
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          className="hidden" 
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file && setLoadingScreenVerticalImage) {
+                              const reader = new FileReader();
+                              reader.onload = (ev) => {
+                                const result = ev.target?.result as string;
+                                if (result) {
+                                  const img = new Image();
+                                  img.onload = () => {
+                                    const canvas = document.createElement('canvas');
+                                    const maxDim = 1920;
+                                    let w = img.width;
+                                    let h = img.height;
+                                    if (w > maxDim || h > maxDim) {
+                                      if (w > h) {
+                                        h = Math.round((h * maxDim) / w);
+                                        w = maxDim;
+                                      } else {
+                                        w = Math.round((w * maxDim) / h);
+                                        h = maxDim;
+                                      }
+                                    }
+                                    canvas.width = w;
+                                    canvas.height = h;
+                                    const ctx = canvas.getContext('2d');
+                                    if (ctx) {
+                                      ctx.drawImage(img, 0, 0, w, h);
+                                      const optimized = canvas.toDataURL('image/jpeg', 0.85);
+                                      setLoadingScreenVerticalImage(optimized);
+                                    } else {
+                                      setLoadingScreenVerticalImage(result);
+                                    }
+                                    addXp(25);
+                                    setSaveFeedback('Imagem vertical de carregamento atualizada e sincronizada!');
+                                    setTimeout(() => setSaveFeedback(null), 3000);
+                                  };
+                                  img.src = result;
+                                }
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                        <div className="w-full py-2 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 font-mono font-bold text-[10px] rounded-lg flex items-center justify-center gap-1.5 transition-all text-center">
+                          <Upload className="w-3.5 h-3.5" />
+                          <span>Fazer Upload</span>
+                        </div>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            if (navigator.clipboard && navigator.clipboard.read) {
+                              const items = await navigator.clipboard.read();
+                              for (const item of items) {
+                                const imageType = item.types.find(t => t.startsWith('image/'));
+                                if (imageType) {
+                                  const blob = await item.getType(imageType);
+                                  const reader = new FileReader();
+                                  reader.onload = (ev) => {
+                                    const res = ev.target?.result as string;
+                                    if (res && setLoadingScreenVerticalImage) {
+                                      setLoadingScreenVerticalImage(res);
+                                      addXp(25);
+                                      setSaveFeedback('Imagem vertical colada da área de transferência!');
+                                      setTimeout(() => setSaveFeedback(null), 3000);
+                                    }
+                                  };
+                                  reader.readAsDataURL(blob);
+                                  return;
+                                }
+                              }
+                            }
+                            if (navigator.clipboard && navigator.clipboard.readText) {
+                              const text = await navigator.clipboard.readText();
+                              if (text && (text.startsWith('http') || text.startsWith('data:image/')) && setLoadingScreenVerticalImage) {
+                                setLoadingScreenVerticalImage(text.trim());
+                                addXp(25);
+                                setSaveFeedback('Link de imagem vertical colado com sucesso!');
+                                setTimeout(() => setSaveFeedback(null), 3000);
+                              }
+                            }
+                          } catch (err) {
+                            console.error('Clipboard error:', err);
+                          }
+                        }}
+                        className="px-3 py-2 bg-zinc-800/80 hover:bg-zinc-700/80 border border-zinc-700/60 text-zinc-300 font-mono font-bold text-[10px] rounded-lg flex items-center gap-1 transition-all"
+                        title="Colar da área de transferência"
+                      >
+                        <Clipboard className="w-3.5 h-3.5" />
+                        <span>Colar</span>
+                      </button>
+                    </div>
+
+                    {/* URL Input */}
+                    <div className="relative">
+                      <input 
+                        type="text" 
+                        value={loadingScreenVerticalImage} 
+                        onChange={(e) => setLoadingScreenVerticalImage && setLoadingScreenVerticalImage(e.target.value)}
+                        placeholder="Ou insira a URL da imagem (https://...)" 
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-[10px] text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-orange-500/40 font-mono"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Imagem Horizontal (Desktop / 16:9) */}
+                <div className="p-4 bg-zinc-900/40 border border-zinc-800/80 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Monitor className="w-4 h-4 text-orange-400" />
+                      <span className="text-xs font-bold text-zinc-200">Formato Horizontal (Desktop)</span>
+                    </div>
+                    <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider">16:9 / Monitor</span>
+                  </div>
+
+                  {/* Thumbnail Preview */}
+                  <div className="relative aspect-[16/10] max-h-48 w-full bg-zinc-950 rounded-lg overflow-hidden border border-zinc-800 flex items-center justify-center group">
+                    {loadingScreenHorizontalImage ? (
+                      <img 
+                        src={loadingScreenHorizontalImage} 
+                        alt="Splash Horizontal" 
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center p-3 text-center text-zinc-600 gap-1.5">
+                        <ImageIcon className="w-6 h-6 stroke-[1.5]" />
+                        <span className="text-[10px] font-mono">Imagem Padrão do Sistema</span>
+                      </div>
+                    )}
+                    <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/80 to-transparent flex items-center justify-between text-[9px] font-mono text-zinc-300">
+                      <span className="truncate">{loadingScreenHorizontalImage ? 'Personalizada' : 'Padrão'}</span>
+                      {loadingScreenHorizontalImage && setLoadingScreenHorizontalImage && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setLoadingScreenHorizontalImage('');
+                            addXp(5);
+                          }}
+                          className="text-red-400 hover:text-red-300 font-bold flex items-center gap-1"
+                          title="Restaurar padrão"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>Remover</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Actions: Upload & Paste */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <label className="flex-1 cursor-pointer">
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          className="hidden" 
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file && setLoadingScreenHorizontalImage) {
+                              const reader = new FileReader();
+                              reader.onload = (ev) => {
+                                const result = ev.target?.result as string;
+                                if (result) {
+                                  const img = new Image();
+                                  img.onload = () => {
+                                    const canvas = document.createElement('canvas');
+                                    const maxDim = 1920;
+                                    let w = img.width;
+                                    let h = img.height;
+                                    if (w > maxDim || h > maxDim) {
+                                      if (w > h) {
+                                        h = Math.round((h * maxDim) / w);
+                                        w = maxDim;
+                                      } else {
+                                        w = Math.round((w * maxDim) / h);
+                                        h = maxDim;
+                                      }
+                                    }
+                                    canvas.width = w;
+                                    canvas.height = h;
+                                    const ctx = canvas.getContext('2d');
+                                    if (ctx) {
+                                      ctx.drawImage(img, 0, 0, w, h);
+                                      const optimized = canvas.toDataURL('image/jpeg', 0.85);
+                                      setLoadingScreenHorizontalImage(optimized);
+                                    } else {
+                                      setLoadingScreenHorizontalImage(result);
+                                    }
+                                    addXp(25);
+                                    setSaveFeedback('Imagem horizontal de carregamento atualizada e sincronizada!');
+                                    setTimeout(() => setSaveFeedback(null), 3000);
+                                  };
+                                  img.src = result;
+                                }
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                        <div className="w-full py-2 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 font-mono font-bold text-[10px] rounded-lg flex items-center justify-center gap-1.5 transition-all text-center">
+                          <Upload className="w-3.5 h-3.5" />
+                          <span>Fazer Upload</span>
+                        </div>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            if (navigator.clipboard && navigator.clipboard.read) {
+                              const items = await navigator.clipboard.read();
+                              for (const item of items) {
+                                const imageType = item.types.find(t => t.startsWith('image/'));
+                                if (imageType) {
+                                  const blob = await item.getType(imageType);
+                                  const reader = new FileReader();
+                                  reader.onload = (ev) => {
+                                    const res = ev.target?.result as string;
+                                    if (res && setLoadingScreenHorizontalImage) {
+                                      setLoadingScreenHorizontalImage(res);
+                                      addXp(25);
+                                      setSaveFeedback('Imagem horizontal colada da área de transferência!');
+                                      setTimeout(() => setSaveFeedback(null), 3000);
+                                    }
+                                  };
+                                  reader.readAsDataURL(blob);
+                                  return;
+                                }
+                              }
+                            }
+                            if (navigator.clipboard && navigator.clipboard.readText) {
+                              const text = await navigator.clipboard.readText();
+                              if (text && (text.startsWith('http') || text.startsWith('data:image/')) && setLoadingScreenHorizontalImage) {
+                                setLoadingScreenHorizontalImage(text.trim());
+                                addXp(25);
+                                setSaveFeedback('Link de imagem horizontal colado com sucesso!');
+                                setTimeout(() => setSaveFeedback(null), 3000);
+                              }
+                            }
+                          } catch (err) {
+                            console.error('Clipboard error:', err);
+                          }
+                        }}
+                        className="px-3 py-2 bg-zinc-800/80 hover:bg-zinc-700/80 border border-zinc-700/60 text-zinc-300 font-mono font-bold text-[10px] rounded-lg flex items-center gap-1 transition-all"
+                        title="Colar da área de transferência"
+                      >
+                        <Clipboard className="w-3.5 h-3.5" />
+                        <span>Colar</span>
+                      </button>
+                    </div>
+
+                    {/* URL Input */}
+                    <div className="relative">
+                      <input 
+                        type="text" 
+                        value={loadingScreenHorizontalImage} 
+                        onChange={(e) => setLoadingScreenHorizontalImage && setLoadingScreenHorizontalImage(e.target.value)}
+                        placeholder="Ou insira a URL da imagem (https://...)" 
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-[10px] text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-orange-500/40 font-mono"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Install native app */}

@@ -15,6 +15,7 @@ import { motion, AnimatePresence } from 'motion/react';
 // Subcomponents
 import Sidebar from './components/Sidebar';
 import LockScreen from './components/LockScreen';
+import AppLoadingScreen from './components/AppLoadingScreen';
 import { AuthModal } from './components/AuthModal';
 import { AuthUser } from './lib/auth';
 import { syncAndRegisterCurrentDevice } from './lib/devices';
@@ -152,6 +153,16 @@ export default function App() {
     return enabled && pass !== '';
   });
 
+  // Brief elegant loading screen state (shown on initial load if unlocked, or right after unlocking)
+  const [isSyncLoading, setIsSyncLoading] = useState<boolean>(() => {
+    const enabled = localStorage.getItem('mbc_app_lock_enabled') === 'true';
+    const pass = localStorage.getItem('mbc_app_lock_password') || '';
+    const isLockedInitially = enabled && pass !== '';
+    // If not locked initially, show initial loading/sync splash
+    return !isLockedInitially;
+  });
+  const [isUnlockLoading, setIsUnlockLoading] = useState<boolean>(false);
+
   // --- Core Auth & User Session States ---
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
     const savedLocal = localStorage.getItem('mbc_auth_user');
@@ -212,6 +223,15 @@ export default function App() {
 
   const [customThemeHex, setCustomThemeHex] = useState<string>(() => {
     return localStorage.getItem('mbc_custom_theme_hex') || '#3396f3';
+  });
+
+  // Custom Loading / Splash Screen Images (Vertical for mobile/portrait, Horizontal for desktop/landscape)
+  const [loadingScreenVerticalImage, setLoadingScreenVerticalImage] = useState<string>(() => {
+    return localStorage.getItem('mbc_loading_screen_vertical_image') || '';
+  });
+
+  const [loadingScreenHorizontalImage, setLoadingScreenHorizontalImage] = useState<string>(() => {
+    return localStorage.getItem('mbc_loading_screen_horizontal_image') || '';
   });
 
   useEffect(() => {
@@ -2043,7 +2063,9 @@ export default function App() {
         dashboardFinancesOpen: data.dashboardFinancesOpen !== undefined ? data.dashboardFinancesOpen : current.dashboardFinancesOpen,
         reminderInitialMode: data.reminderInitialMode !== undefined ? data.reminderInitialMode : current.reminderInitialMode,
         language: data.language !== undefined ? data.language : current.language,
-        backgroundNotificationsEnabled: data.backgroundNotificationsEnabled !== undefined ? data.backgroundNotificationsEnabled : current.backgroundNotificationsEnabled
+        backgroundNotificationsEnabled: data.backgroundNotificationsEnabled !== undefined ? data.backgroundNotificationsEnabled : current.backgroundNotificationsEnabled,
+        loadingScreenVerticalImage: data.loadingScreenVerticalImage !== undefined ? data.loadingScreenVerticalImage : current.loadingScreenVerticalImage,
+        loadingScreenHorizontalImage: data.loadingScreenHorizontalImage !== undefined ? data.loadingScreenHorizontalImage : current.loadingScreenHorizontalImage
       };
 
       const incomingSerialized = safeStringify(incomingData);
@@ -2081,6 +2103,8 @@ export default function App() {
       if (incomingData.gridRoutine !== undefined) setGridRoutine(incomingData.gridRoutine);
       if (incomingData.activeThemePreset !== undefined) setActiveThemePreset(incomingData.activeThemePreset);
       if (incomingData.customThemeHex !== undefined) setCustomThemeHex(incomingData.customThemeHex);
+      if (incomingData.loadingScreenVerticalImage !== undefined) setLoadingScreenVerticalImage(incomingData.loadingScreenVerticalImage);
+      if (incomingData.loadingScreenHorizontalImage !== undefined) setLoadingScreenHorizontalImage(incomingData.loadingScreenHorizontalImage);
       if (incomingData.lastDailyResetDate !== undefined) setLastDailyResetDate(incomingData.lastDailyResetDate);
       if (incomingData.bankAccounts !== undefined) setBankAccounts(incomingData.bankAccounts);
       if (incomingData.creditCards !== undefined) setCreditCards(incomingData.creditCards);
@@ -2139,6 +2163,8 @@ export default function App() {
       if (incomingData.gridRoutine !== undefined) localStorage.setItem('mbc_grid_routine', JSON.stringify(incomingData.gridRoutine));
       if (incomingData.activeThemePreset !== undefined) localStorage.setItem('mbc_theme_preset', incomingData.activeThemePreset);
       if (incomingData.customThemeHex !== undefined) localStorage.setItem('mbc_custom_theme_hex', incomingData.customThemeHex);
+      if (incomingData.loadingScreenVerticalImage !== undefined) localStorage.setItem('mbc_loading_screen_vertical_image', incomingData.loadingScreenVerticalImage);
+      if (incomingData.loadingScreenHorizontalImage !== undefined) localStorage.setItem('mbc_loading_screen_horizontal_image', incomingData.loadingScreenHorizontalImage);
       if (incomingData.lastDailyResetDate !== undefined) localStorage.setItem('last_daily_reset_date', incomingData.lastDailyResetDate);
       if (incomingData.bankAccounts !== undefined) localStorage.setItem('mbc_bank_accounts', JSON.stringify(incomingData.bankAccounts));
       if (incomingData.creditCards !== undefined) localStorage.setItem('mbc_credit_cards', JSON.stringify(incomingData.creditCards));
@@ -2356,7 +2382,9 @@ export default function App() {
       dashboardFinancesOpen,
       reminderInitialMode,
       language,
-      backgroundNotificationsEnabled
+      backgroundNotificationsEnabled,
+      loadingScreenVerticalImage,
+      loadingScreenHorizontalImage
     };
     const currentSerialized = safeStringify(currentData);
 
@@ -2444,6 +2472,8 @@ export default function App() {
     customCards,
     activeThemePreset,
     customThemeHex,
+    loadingScreenVerticalImage,
+    loadingScreenHorizontalImage,
     reminders,
     masterTemplates,
     dailyWorkspaceSettings,
@@ -2529,6 +2559,9 @@ export default function App() {
     if (user.syncKey) {
       await connectSyncKey(user.syncKey);
     }
+
+    setIsUnlockLoading(false);
+    setIsSyncLoading(true);
   };
 
   const handleLogout = () => {
@@ -3467,6 +3500,20 @@ export default function App() {
             setBackgroundNotificationsEnabled={setBackgroundNotificationsEnabled}
             dailyWorkspaceSettings={dailyWorkspaceSettings}
             setDailyWorkspaceSettings={setDailyWorkspaceSettings}
+            loadingScreenVerticalImage={loadingScreenVerticalImage}
+            setLoadingScreenVerticalImage={(img) => {
+              setLoadingScreenVerticalImage(img);
+              localStorage.setItem('mbc_loading_screen_vertical_image', img);
+            }}
+            loadingScreenHorizontalImage={loadingScreenHorizontalImage}
+            setLoadingScreenHorizontalImage={(img) => {
+              setLoadingScreenHorizontalImage(img);
+              localStorage.setItem('mbc_loading_screen_horizontal_image', img);
+            }}
+            onPreviewLoadingScreen={() => {
+              setIsUnlockLoading(false);
+              setIsSyncLoading(true);
+            }}
           />
         );
       default:
@@ -3481,7 +3528,43 @@ export default function App() {
         userPhoto={userPhoto}
         correctPassword={appLockPassword}
         appLockBiometricEnabled={appLockBiometricEnabled}
-        onUnlock={() => setIsAppLocked(false)}
+        onUnlock={() => {
+          setIsAppLocked(false);
+          setIsUnlockLoading(true);
+          setIsSyncLoading(true);
+        }}
+      />
+    );
+  }
+
+  // If user is not logged in or auth modal is open, display ONLY the full-screen standalone Auth interface
+  if (!currentUser || isAuthModalOpen) {
+    return (
+      <div className="fixed inset-0 w-full h-full overflow-hidden bg-black">
+        <OfflineNotificationBanner />
+        <AuthModal 
+          isOpen={true} 
+          onSuccess={handleAuthSuccess} 
+        />
+      </div>
+    );
+  }
+
+  // If in brief synchronization / loading state (after unlock or initial startup)
+  if (isSyncLoading) {
+    return (
+      <AppLoadingScreen 
+        userName={userName}
+        userPhoto={userPhoto}
+        loadingScreenVerticalImage={loadingScreenVerticalImage}
+        loadingScreenHorizontalImage={loadingScreenHorizontalImage}
+        syncStatus={syncStatus}
+        isUnlockFlow={isUnlockLoading}
+        minDurationMs={1400}
+        onComplete={() => {
+          setIsSyncLoading(false);
+          setIsUnlockLoading(false);
+        }}
       />
     );
   }
@@ -3512,7 +3595,7 @@ export default function App() {
               onClick={() => {
                 setAccountDeactivated(false);
                 localStorage.setItem('mbc_accountDeactivated', 'false');
-                addXp(20); // Reward welcome back XP
+                addXp(20);
               }}
               className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-xs font-bold uppercase tracking-wider text-white rounded-xl shadow-lg shadow-orange-500/10 active:scale-95 transition-all"
             >
@@ -3520,19 +3603,6 @@ export default function App() {
             </button>
           </div>
         </div>
-      </div>
-    );
-  }
-
-  // If user is not logged in or auth modal is open, display ONLY the full-screen standalone Auth interface
-  if (!currentUser || isAuthModalOpen) {
-    return (
-      <div className="fixed inset-0 w-full h-full overflow-hidden bg-black">
-        <OfflineNotificationBanner />
-        <AuthModal 
-          isOpen={true} 
-          onSuccess={handleAuthSuccess} 
-        />
       </div>
     );
   }
