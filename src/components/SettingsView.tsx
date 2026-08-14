@@ -1432,7 +1432,7 @@ export default function SettingsView({
           </motion.div>
         )}
 
-        {/* VIEW 6: SEGURANÇA E ACESSO À CONTA (Firebase Sync) */}
+        {/* VIEW 6: SEGURANÇA E ACESSO À CONTA (Supabase Sync) */}
         {currentScreen === 'seguranca' && (
           <motion.div
             key="seguranca-screen"

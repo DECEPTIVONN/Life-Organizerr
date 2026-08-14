@@ -1,6 +1,4 @@
 import { loadAuthRecord, saveAuthRecord } from './auth';
-import { db } from '../firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 export interface ConnectedDevice {
   id: string;
@@ -148,35 +146,17 @@ export async function fetchAccountDevices(): Promise<ConnectedDevice[]> {
 
   let devices: ConnectedDevice[] = [];
 
-  // 1. Try loading from Firestore if available
+  // 1. Try loading from Supabase / Auth storage
   try {
-    if (db) {
-      const docRef = doc(db, "connected_devices", accountKey);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists() && docSnap.data()?.devices) {
-        const cloudDevs = docSnap.data().devices;
-        if (Array.isArray(cloudDevs) && cloudDevs.length > 0) {
-          devices = cloudDevs;
-        }
-      }
+    const authRecord = await loadAuthRecord(`auth_devices:${accountKey}`);
+    if (Array.isArray(authRecord) && authRecord.length > 0) {
+      devices = authRecord;
     }
   } catch (err) {
-    console.warn('Firestore devices read warning:', err);
+    console.warn('Auth record devices read warning:', err);
   }
 
-  // 2. Try loading from Supabase / Auth storage if not found in Firestore
-  if (devices.length === 0) {
-    try {
-      const authRecord = await loadAuthRecord(`auth_devices:${accountKey}`);
-      if (Array.isArray(authRecord) && authRecord.length > 0) {
-        devices = authRecord;
-      }
-    } catch (err) {
-      console.warn('Auth record devices read warning:', err);
-    }
-  }
-
-  // 3. Fallback to localStorage dictionary or direct key
+  // 2. Fallback to localStorage dictionary or direct key
   if (devices.length === 0) {
     try {
       const localDictRaw = localStorage.getItem('mbc_account_devices_dict');
@@ -302,20 +282,6 @@ export async function saveAccountDevices(accountKey: string, devices: ConnectedD
     await saveAuthRecord(`auth_devices:${cleanedAccountKey}`, devices);
   } catch (err) {
     console.warn('Supabase saveAccountDevices warning:', err);
-  }
-
-  // Save to Firestore if available
-  try {
-    if (db) {
-      const docRef = doc(db, "connected_devices", cleanedAccountKey);
-      await setDoc(docRef, {
-        accountKey: cleanedAccountKey,
-        devices,
-        updatedAt: new Date().toISOString()
-      }, { merge: true });
-    }
-  } catch (err) {
-    console.warn('Firestore saveAccountDevices warning:', err);
   }
 
   return true;

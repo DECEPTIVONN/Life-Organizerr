@@ -38,7 +38,7 @@ import ProjetosView from './components/ProjetosView';
 import StreakHubModal from './components/StreakHubModal';
 import { LeagueRankingModal } from './components/LeagueRankingModal';
 import { LeagueRankingView } from './components/LeagueRankingView';
-import { saveToSupabase, loadFromSupabase, loadMetadataFromSupabase, getSupabaseClient, subscribeToFirestoreSync, subscribeToCrossTabSync } from './lib/supabase';
+import { saveToSupabase, loadFromSupabase, loadMetadataFromSupabase, getSupabaseClient, subscribeToCrossTabSync } from './lib/supabase';
 import { getOrCreateDeviceId } from './lib/devices';
 import { 
   enqueueMutation, 
@@ -1507,7 +1507,7 @@ export default function App() {
     };
   }, []);
 
-  // --- Firebase / Supabase Synchronization Logic ---
+  // --- Supabase Cloud & Multi-Device Synchronization Logic ---
   const [syncKey, setSyncKey] = useState<string>(() => {
     if (currentUser?.syncKey) return currentUser.syncKey;
     return localStorage.getItem('mbc_sync_key') || 'USUARIO_UNICO';
@@ -2216,16 +2216,7 @@ export default function App() {
     // 1. Initial hydration
     checkRemoteData(true);
 
-    // 2. Realtime Firebase Firestore Subscription (Instant Multi-Device Sync)
-    const unsubscribeFirestore = subscribeToFirestoreSync(syncKey, (incomingPayload, updatedAt, originDeviceId) => {
-      if (isSubscribed && incomingPayload) {
-        applyIncomingData(incomingPayload, updatedAt, originDeviceId);
-        saveOfflineSnapshot(`latest_${syncKey}`, incomingPayload);
-        setSyncStatus('synced');
-      }
-    });
-
-    // 3. Realtime Cross-tab Sync Subscription (Instant <5ms sync between multiple open tabs on same device)
+    // 2. Realtime Cross-tab Sync Subscription (Instant <5ms sync between multiple open tabs on same device)
     const unsubscribeCrossTab = subscribeToCrossTabSync(syncKey, (incomingPayload, updatedAt, originDeviceId) => {
       if (isSubscribed && incomingPayload) {
         applyIncomingData(incomingPayload, updatedAt, originDeviceId);
@@ -2234,7 +2225,7 @@ export default function App() {
       }
     });
 
-    // 4. Realtime Supabase Subscription
+    // 3. Realtime Supabase Subscription
     const client = getSupabaseClient();
     let channel: any = null;
     if (client) {
@@ -2264,14 +2255,14 @@ export default function App() {
       }
     }
 
-    // 5. Fallback periodic sync when tab is visible
+    // 4. Fallback periodic sync when tab is visible
     const pollingInterval = setInterval(() => {
       if (isSubscribed && document.visibilityState === 'visible') {
         checkRemoteData(false);
       }
     }, 60000);
 
-    // 6. Fast sync when window gains focus or online event fires
+    // 5. Fast sync when window gains focus or online event fires
     const handleFocusOrOnline = () => {
       if (isSubscribed && document.visibilityState === 'visible') {
         checkRemoteData(false);
@@ -2283,7 +2274,6 @@ export default function App() {
 
     return () => {
       isSubscribed = false;
-      unsubscribeFirestore();
       unsubscribeCrossTab();
       clearInterval(pollingInterval);
       window.removeEventListener('focus', handleFocusOrOnline);

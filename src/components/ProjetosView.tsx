@@ -324,7 +324,7 @@ export default function ProjetosView({
             id: 'c-idea-1',
             listId: 'l-ideias',
             title: '💡 Registrar Ideia: Notificações em Tempo Real com WebSocket',
-            description: 'Explorar o uso de WebSockets ou Firebase Cloud Messaging para enviar alertas instantâneos de alteração no Kanban aos membros do time.',
+            description: 'Explorar o uso de WebSockets ou Push Notifications para enviar alertas instantâneos de alteração no Kanban aos membros do time.',
             coverColor: '#8b5cf6',
             priority: 'media',
             labels: [
