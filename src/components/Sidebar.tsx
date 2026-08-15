@@ -452,20 +452,16 @@ export default function Sidebar({
   // Navigation Items
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', desc: 'Portal principal', icon: LayoutDashboard },
-    { id: 'classificacao', label: 'Ligas & Ranking', desc: 'Divisões e posição', icon: Trophy },
+    { id: 'checklist', label: 'Missões Diárias', desc: 'Metas e rotinas diárias', icon: CheckSquare },
+    { id: 'calendario', label: 'Agenda', desc: 'Diário & Fé', icon: Calendar },
     { id: 'resumo', label: 'Vida em resumo', desc: 'Painel holístico', icon: Compass },
     { id: 'projetos', label: 'Projetos', desc: 'Quadros Kanban & Hub', icon: FolderKanban },
-    { id: 'checklist', label: 'Missões Diárias', desc: 'Metas e rotinas diárias', icon: CheckSquare },
-    { id: 'rotina', label: 'Rotina Semanal', desc: 'Hábitos frequentes', icon: Clock },
-    { id: 'habitos', label: 'Hábitos', desc: 'Bons & Ruins', icon: Zap },
     { id: 'metas', label: 'Metas', desc: 'Evolução pessoal', icon: Target },
     { id: 'financas', label: 'Finanças', desc: 'Gestão de capital', icon: DollarSign },
-    { id: 'calendario', label: 'Agenda', desc: 'Diário & Fé', icon: Calendar },
     { id: 'anuais', label: 'Anuais', desc: 'Pastas, diários & livros', icon: Layers },
     { id: 'documentos', label: 'Arquivamento', desc: 'Documentos e PDFs', icon: Archive },
     { id: 'notas', label: 'Banco de Notas', desc: 'Segundo cérebro', icon: BookOpen },
     { id: 'lembretes', label: 'Lembretes Rápido', desc: 'Timers e Alertas', icon: Bell },
-    { id: 'perfil', label: 'Perfil de Foco', desc: 'Status e conquistas', icon: User },
     { id: 'configuracoes', label: 'Configurações', desc: 'Ajustes do sistema', icon: Settings },
   ];
 
@@ -479,16 +475,6 @@ export default function Sidebar({
       action: () => {
         setMobileMenuOpen(false);
         setSearchOpen(true);
-      }
-    },
-    {
-      id: 'classificacao',
-      label: 'Ligas & Ranking',
-      desc: 'Divisões e posições',
-      icon: Trophy,
-      action: () => {
-        setActiveTab('classificacao');
-        setMobileMenuOpen(false);
       }
     },
     {
@@ -522,32 +508,12 @@ export default function Sidebar({
       }
     },
     {
-      id: 'rotina',
-      label: 'Rotina Semanal',
-      desc: 'Hábitos frequentes',
-      icon: Clock,
-      action: () => {
-        setActiveTab('rotina');
-        setMobileMenuOpen(false);
-      }
-    },
-    {
       id: 'anuais',
       label: 'Anuais',
       desc: 'Pastas, diários & livros',
       icon: Layers,
       action: () => {
         setActiveTab('anuais');
-        setMobileMenuOpen(false);
-      }
-    },
-    {
-      id: 'habitos',
-      label: 'Hábitos',
-      desc: 'Bons & Ruins',
-      icon: Zap,
-      action: () => {
-        setActiveTab('habitos');
         setMobileMenuOpen(false);
       }
     },
@@ -578,16 +544,6 @@ export default function Sidebar({
       icon: Archive,
       action: () => {
         setActiveTab('documentos');
-        setMobileMenuOpen(false);
-      }
-    },
-    {
-      id: 'perfil',
-      label: 'Perfil de Foco',
-      desc: 'Status e conquistas',
-      icon: User,
-      action: () => {
-        setActiveTab('perfil');
         setMobileMenuOpen(false);
       }
     },
@@ -863,43 +819,6 @@ export default function Sidebar({
                     <p className="text-[10px] text-gray-500 font-mono mt-0.5">Nível {level} ({xpTotal} XP)</p>
                   </div>
                 </div>
-                
-                {/* Classificação & Ligas button */}
-                <button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    if (onOpenRankingModal) onOpenRankingModal();
-                  }}
-                  className="mt-2 w-full flex items-center justify-between hover:bg-orange-500/10 p-2 rounded-xl transition-all group cursor-pointer bg-zinc-900/40 border border-zinc-850/80"
-                  title="Abrir Ranking de Ligas & Classificação"
-                >
-                  <span className="text-[10px] text-zinc-300 group-hover:text-orange-400 flex items-center gap-1.5 font-mono font-bold">
-                    <Trophy className="h-3.5 w-3.5 text-amber-400 fill-amber-500/20" />
-                    <span>Classificação & Ligas</span>
-                  </span>
-                  <span className="text-[10px] font-bold text-amber-400 font-mono bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 rounded-md">
-                    Nível {level}
-                  </span>
-                </button>
-
-                {/* Micro Streak */}
-                <button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    if (onOpenStreakHub) onOpenStreakHub();
-                  }}
-                  className="mt-2 w-full flex items-center justify-between hover:bg-orange-500/10 p-2 rounded-xl transition-all group cursor-pointer bg-zinc-900/40 border border-zinc-850/80"
-                  title="Abrir Central de Ofensivas & Congelamento"
-                >
-                  <span className="text-[10px] text-zinc-300 group-hover:text-orange-300 flex items-center gap-1.5 font-mono font-bold">
-                    <Flame className="h-3.5 w-3.5 text-orange-500 fill-orange-500/20 animate-pulse" />
-                    <span>Central de Ofensivas</span>
-                  </span>
-                  <span className="text-[10px] font-bold text-orange-400 font-mono bg-orange-500/10 border border-orange-500/25 px-2 py-0.5 rounded-md flex items-center gap-1">
-                    <Flame className="h-3 w-3 text-orange-500 fill-orange-500/20" />
-                    <span>{streak} {streak === 1 ? 'dia' : 'dias'}</span>
-                  </span>
-                </button>
               </div>
 
               {/* Navigation Items */}

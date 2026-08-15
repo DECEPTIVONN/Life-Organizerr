@@ -315,7 +315,7 @@ export default function App() {
 
 
   // --- Lifted Navigation Sub-States ---
-  const [checklistActiveTab, setChecklistActiveTab] = useState<'checklist' | 'rotina' | 'rotina-semanal'>('checklist');
+  const [checklistActiveTab, setChecklistActiveTab] = useState<'checklist' | 'rotina' | 'rotina-semanal' | 'habitos'>('checklist');
   const [goalsViewMode, setGoalsViewMode] = useState<'areas' | 'all' | 'leitura' | 'timeline'>('areas');
   const [goalsSelectedArea, setGoalsSelectedArea] = useState<string | null>(null);
   const [settingsScreen, setSettingsScreen] = useState<any>('main');
@@ -3219,6 +3219,8 @@ export default function App() {
             showDateSelector={showChecklistDateSelector}
             lastDailyResetDate={lastDailyResetDate}
             setLastDailyResetDate={setLastDailyResetDate}
+            habits={habits}
+            setHabits={setHabits}
           />
         );
       case 'rotina':
@@ -3251,14 +3253,42 @@ export default function App() {
             showDateSelector={showChecklistDateSelector}
             lastDailyResetDate={lastDailyResetDate}
             setLastDailyResetDate={setLastDailyResetDate}
+            habits={habits}
+            setHabits={setHabits}
           />
         );
       case 'habitos':
         return (
-          <HabitsTrackerView 
+          <ChecklistView 
+            dailyTasks={dailyTasks}
+            setDailyTasks={setDailyTasks}
+            routine={routine}
+            setRoutine={setRoutine}
+            streak={streak}
+            onOpenStreakHub={() => setIsStreakHubOpen(true)}
+            addXp={addXp}
+            xpTotal={xpTotal}
+            bookTracker={bookTracker}
+            setBookTracker={setBookTracker}
+            bibleTracker={bibleTracker}
+            setBibleTracker={setBibleTracker}
+            activeTab="habitos"
+            setActiveTab={setChecklistActiveTab}
+            gridRoutine={gridRoutine}
+            setGridRoutine={setGridRoutine}
+            books={books}
+            setBooks={setBooks}
+            weeklyReviews={weeklyReviews}
+            setWeeklyReviews={setWeeklyReviews}
+            monthlyReviews={monthlyReviews}
+            setMonthlyReviews={setMonthlyReviews}
+            calendarNotes={calendarNotes}
+            setCalendarNotes={setCalendarNotes}
+            showDateSelector={showChecklistDateSelector}
+            lastDailyResetDate={lastDailyResetDate}
+            setLastDailyResetDate={setLastDailyResetDate}
             habits={habits}
             setHabits={setHabits}
-            addXp={addXp}
           />
         );
       case 'metas':

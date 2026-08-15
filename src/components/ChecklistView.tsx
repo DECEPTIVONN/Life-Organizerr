@@ -43,8 +43,9 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { DailyTask, SubTask, BookTracker, BibleTracker, RoutineItem, YearlyBook, WeeklyReview, MonthlyReview, CalendarNote } from '../types';
+import { DailyTask, SubTask, BookTracker, BibleTracker, RoutineItem, YearlyBook, WeeklyReview, MonthlyReview, CalendarNote, Habit } from '../types';
 import RoutineView from './RoutineView';
+import HabitsTrackerView from './HabitsTrackerView';
 import { syncBookWithYearlyBooks, calculateReadingInterval, formatDateBR } from '../utils/bookUtils';
 
 interface ChecklistViewProps {
@@ -57,8 +58,10 @@ interface ChecklistViewProps {
   setBookTracker: React.Dispatch<React.SetStateAction<BookTracker>>;
   bibleTracker: BibleTracker;
   setBibleTracker: React.Dispatch<React.SetStateAction<BibleTracker>>;
-  activeTab?: 'checklist' | 'rotina' | 'rotina-semanal';
-  setActiveTab?: (tab: 'checklist' | 'rotina' | 'rotina-semanal') => void;
+  activeTab?: 'checklist' | 'rotina' | 'rotina-semanal' | 'habitos';
+  setActiveTab?: (tab: 'checklist' | 'rotina' | 'rotina-semanal' | 'habitos') => void;
+  habits?: Habit[];
+  setHabits?: React.Dispatch<React.SetStateAction<Habit[]>>;
   gridRoutine?: Record<string, { text: string; color?: string; startTime?: string; endTime?: string }>;
   setGridRoutine?: (newGrid: any) => void;
   routine?: RoutineItem[];
@@ -186,7 +189,9 @@ export default function ChecklistView({
   showDateSelector = false,
   onOpenStreakHub,
   lastDailyResetDate,
-  setLastDailyResetDate
+  setLastDailyResetDate,
+  habits: propHabits,
+  setHabits: propSetHabits
 }: ChecklistViewProps) {
   const [localBooks, setLocalBooks] = useState<YearlyBook[]>([]);
   const actualBooks = propBooks || localBooks;
@@ -194,11 +199,26 @@ export default function ChecklistView({
   const actualWeeklyReviews = propWeeklyReviews;
   const actualSetWeeklyReviews = propSetWeeklyReviews;
 
+  const [localHabits, setLocalHabits] = useState<Habit[]>(() => {
+    try {
+      const saved = localStorage.getItem('mbc_habits');
+      if (saved && saved !== 'undefined') {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {
+      console.error("Failed to parse mbc_habits", e);
+    }
+    return [];
+  });
+  const actualHabits = propHabits || localHabits;
+  const actualSetHabits = propSetHabits || setLocalHabits;
+
   const todayStr = getTodayDateStr();
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
   const isToday = selectedDate === todayStr;
 
-  const [localActiveTab, setLocalActiveTab] = useState<'checklist' | 'rotina' | 'rotina-semanal'>('checklist');
+  const [localActiveTab, setLocalActiveTab] = useState<'checklist' | 'rotina' | 'rotina-semanal' | 'habitos'>('checklist');
   const activeTab = propActiveTab !== undefined ? propActiveTab : localActiveTab;
   const setActiveTab = propSetActiveTab !== undefined ? propSetActiveTab : setLocalActiveTab;
 
@@ -1718,11 +1738,11 @@ export default function ChecklistView({
         </button>
       </div>
 
-      {/* Tabs Selector for Missões Diárias vs Rotina Diária vs Rotina Semanal */}
-      <div className="flex items-center bg-zinc-900/30 p-1.5 rounded-2xl max-w-xl backdrop-blur-md shadow-lg border border-zinc-800/40">
+      {/* Tabs Selector for Missões Diárias vs Rotina Diária vs Rotina Semanal vs Hábitos */}
+      <div className="flex items-center bg-zinc-900/30 p-1.5 rounded-2xl max-w-2xl backdrop-blur-md shadow-lg border border-zinc-800/40">
         <button
           onClick={() => setActiveTab('checklist')}
-          className={`flex-1 px-4 sm:px-5 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 ${
+          className={`flex-1 px-3 sm:px-4 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 sm:gap-2 ${
             activeTab === 'checklist'
               ? 'bg-gradient-to-r from-orange-600 to-orange-500 text-white shadow-[0_4px_20px_rgba(249,115,22,0.35)] scale-[1.02]'
               : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/30'
@@ -1733,7 +1753,7 @@ export default function ChecklistView({
         </button>
         <button
           onClick={() => setActiveTab('rotina')}
-          className={`flex-1 px-4 sm:px-5 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 ${
+          className={`flex-1 px-3 sm:px-4 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 sm:gap-2 ${
             activeTab === 'rotina'
               ? 'bg-gradient-to-r from-orange-600 to-orange-500 text-white shadow-[0_4px_20px_rgba(249,115,22,0.35)] scale-[1.02]'
               : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/30'
@@ -1744,7 +1764,7 @@ export default function ChecklistView({
         </button>
         <button
           onClick={() => setActiveTab('rotina-semanal')}
-          className={`flex-1 px-4 sm:px-5 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 ${
+          className={`flex-1 px-3 sm:px-4 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 sm:gap-2 ${
             activeTab === 'rotina-semanal'
               ? 'bg-gradient-to-r from-orange-600 to-orange-500 text-white shadow-[0_4px_20px_rgba(249,115,22,0.35)] scale-[1.02]'
               : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/30'
@@ -1752,6 +1772,17 @@ export default function ChecklistView({
         >
           <Calendar className={`h-4 w-4 transition-transform ${activeTab === 'rotina-semanal' ? 'scale-110' : ''}`} />
           <span className="truncate">Rotina Semanal</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('habitos')}
+          className={`flex-1 px-3 sm:px-4 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 sm:gap-2 ${
+            activeTab === 'habitos'
+              ? 'bg-gradient-to-r from-orange-600 to-orange-500 text-white shadow-[0_4px_20px_rgba(249,115,22,0.35)] scale-[1.02]'
+              : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/30'
+          }`}
+        >
+          <Zap className={`h-4 w-4 transition-transform ${activeTab === 'habitos' ? 'scale-110' : ''}`} />
+          <span className="truncate">Hábitos</span>
         </button>
       </div>
 
@@ -3552,6 +3583,14 @@ export default function ChecklistView({
               </div>
             )}
           </AnimatePresence>
+        </div>
+      ) : activeTab === 'habitos' ? (
+        <div className="space-y-6">
+          <HabitsTrackerView 
+            habits={actualHabits}
+            setHabits={actualSetHabits}
+            addXp={addXp}
+          />
         </div>
       ) : (
         <div className="space-y-6">
