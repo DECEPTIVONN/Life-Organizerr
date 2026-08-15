@@ -679,20 +679,42 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                   </button>
                 </div>
                 {newSubtasks.length > 0 && (
-                  <div className="space-y-1.5 pt-1 max-h-36 overflow-y-auto">
+                  <div className="space-y-1.5 pt-1 max-h-36 overflow-y-auto pr-0.5">
                     {newSubtasks.map((st, idx) => (
-                      <div key={st.id} className="flex items-center justify-between bg-zinc-950/70 border border-zinc-850 px-2.5 py-1.5 rounded-lg text-xs text-zinc-300">
-                        <span className="flex items-center gap-2">
-                          <span className="text-orange-500 font-mono text-[10px]">•</span>
-                          {st.text}
-                        </span>
+                      <div 
+                        key={st.id} 
+                        className={`group flex items-center justify-between border px-3 py-2 rounded-xl text-xs transition-all gap-2.5 ${
+                          st.completed 
+                            ? 'bg-zinc-950/40 border-zinc-850/60 text-zinc-500' 
+                            : 'bg-zinc-950/80 border-zinc-850 hover:border-zinc-750 text-zinc-200 shadow-sm'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setNewSubtasks(prev => prev.map((s, i) => i === idx ? { ...s, completed: !s.completed } : s));
+                            }}
+                            className={`w-4.5 h-4.5 rounded-md border flex items-center justify-center transition-all shrink-0 cursor-pointer ${
+                              st.completed
+                                ? 'bg-orange-500 border-orange-500 text-white shadow-[0_0_10px_rgba(249,115,22,0.35)]'
+                                : 'border-zinc-700 bg-zinc-950 hover:border-orange-500/60 hover:bg-zinc-900 text-transparent'
+                            }`}
+                            title={st.completed ? 'Marcar como pendente' : 'Marcar como concluída'}
+                          >
+                            <Check className={`h-3 w-3 stroke-[3] transition-transform ${st.completed ? 'scale-100' : 'scale-0'}`} />
+                          </button>
+                          <span className={`text-xs ${st.completed ? 'line-through text-zinc-500' : 'text-zinc-200'}`}>
+                            {st.text}
+                          </span>
+                        </div>
                         <button
                           type="button"
                           onClick={() => setNewSubtasks(prev => prev.filter((_, i) => i !== idx))}
-                          className="text-zinc-500 hover:text-red-400 transition-colors p-0.5"
-                          title="Remover subtarefa"
+                          className="text-zinc-600 hover:text-red-400 opacity-80 group-hover:opacity-100 transition-colors p-1 shrink-0 rounded-lg hover:bg-red-500/10"
+                          title="Remover etapa"
                         >
-                          <X className="h-3.5 w-3.5" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     ))}
@@ -2060,19 +2082,31 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                         </button>
                       </div>
                       {editSubtasks.length > 0 && (
-                        <div className="space-y-1.5 pt-1 max-h-36 overflow-y-auto">
+                        <div className="space-y-1.5 pt-1 max-h-36 overflow-y-auto pr-0.5">
                           {editSubtasks.map((st, idx) => (
-                            <div key={st.id} className="flex items-center justify-between bg-zinc-900/80 border border-zinc-800 px-3 py-1.5 rounded-xl text-xs text-zinc-200 gap-2">
-                              <div className="flex items-center gap-2 flex-1 min-w-0">
-                                <input
-                                  type="checkbox"
-                                  checked={st.completed}
-                                  onChange={(e) => {
-                                    const checked = e.target.checked;
-                                    setEditSubtasks(prev => prev.map((s, i) => i === idx ? { ...s, completed: checked } : s));
+                            <div 
+                              key={st.id} 
+                              className={`group flex items-center justify-between border px-3 py-2 rounded-xl text-xs transition-all gap-2.5 ${
+                                st.completed 
+                                  ? 'bg-zinc-900/40 border-zinc-800/60 text-zinc-500' 
+                                  : 'bg-zinc-900/90 border-zinc-800 hover:border-zinc-700 text-zinc-200 shadow-sm'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditSubtasks(prev => prev.map((s, i) => i === idx ? { ...s, completed: !s.completed } : s));
                                   }}
-                                  className="w-3.5 h-3.5 rounded border-zinc-700 bg-zinc-950 text-orange-500 accent-orange-500 cursor-pointer"
-                                />
+                                  className={`w-4.5 h-4.5 rounded-md border flex items-center justify-center transition-all shrink-0 cursor-pointer ${
+                                    st.completed
+                                      ? 'bg-orange-500 border-orange-500 text-white shadow-[0_0_10px_rgba(249,115,22,0.35)]'
+                                      : 'border-zinc-700 bg-zinc-950 hover:border-orange-500/60 hover:bg-zinc-900 text-transparent'
+                                  }`}
+                                  title={st.completed ? 'Marcar como pendente' : 'Marcar como concluída'}
+                                >
+                                  <Check className={`h-3 w-3 stroke-[3] transition-transform ${st.completed ? 'scale-100' : 'scale-0'}`} />
+                                </button>
                                 <input
                                   type="text"
                                   value={st.text}
@@ -2080,14 +2114,16 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                     const val = e.target.value;
                                     setEditSubtasks(prev => prev.map((s, i) => i === idx ? { ...s, text: val } : s));
                                   }}
-                                  className={`bg-transparent text-xs text-white outline-none w-full ${st.completed ? 'line-through text-zinc-500' : ''}`}
+                                  className={`bg-transparent text-xs outline-none w-full transition-all ${
+                                    st.completed ? 'line-through text-zinc-500' : 'text-zinc-200 focus:text-white'
+                                  }`}
                                 />
                               </div>
                               <button
                                 type="button"
                                 onClick={() => setEditSubtasks(prev => prev.filter((_, i) => i !== idx))}
-                                className="text-zinc-500 hover:text-red-400 transition-colors p-1 shrink-0"
-                                title="Remover subtarefa"
+                                className="text-zinc-600 hover:text-red-400 opacity-80 group-hover:opacity-100 transition-colors p-1 shrink-0 rounded-lg hover:bg-red-500/10"
+                                title="Remover etapa"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
                               </button>

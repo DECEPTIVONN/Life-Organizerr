@@ -315,7 +315,7 @@ export default function App() {
 
 
   // --- Lifted Navigation Sub-States ---
-  const [checklistActiveTab, setChecklistActiveTab] = useState<'checklist' | 'rotina'>('checklist');
+  const [checklistActiveTab, setChecklistActiveTab] = useState<'checklist' | 'rotina' | 'rotina-semanal'>('checklist');
   const [goalsViewMode, setGoalsViewMode] = useState<'areas' | 'all' | 'leitura' | 'timeline'>('areas');
   const [goalsSelectedArea, setGoalsSelectedArea] = useState<string | null>(null);
   const [settingsScreen, setSettingsScreen] = useState<any>('main');
@@ -3212,6 +3212,8 @@ export default function App() {
             setBooks={setBooks}
             weeklyReviews={weeklyReviews}
             setWeeklyReviews={setWeeklyReviews}
+            monthlyReviews={monthlyReviews}
+            setMonthlyReviews={setMonthlyReviews}
             calendarNotes={calendarNotes}
             setCalendarNotes={setCalendarNotes}
             showDateSelector={showChecklistDateSelector}
@@ -3221,18 +3223,34 @@ export default function App() {
         );
       case 'rotina':
         return (
-          <RoutineView 
+          <ChecklistView 
+            dailyTasks={dailyTasks}
+            setDailyTasks={setDailyTasks}
             routine={routine}
             setRoutine={setRoutine}
+            streak={streak}
+            onOpenStreakHub={() => setIsStreakHubOpen(true)}
+            addXp={addXp}
+            xpTotal={xpTotal}
+            bookTracker={bookTracker}
+            setBookTracker={setBookTracker}
+            bibleTracker={bibleTracker}
+            setBibleTracker={setBibleTracker}
+            activeTab="rotina-semanal"
+            setActiveTab={setChecklistActiveTab}
             gridRoutine={gridRoutine}
             setGridRoutine={setGridRoutine}
-            addXp={addXp}
-            monthlyReviews={monthlyReviews}
-            setMonthlyReviews={setMonthlyReviews}
+            books={books}
+            setBooks={setBooks}
             weeklyReviews={weeklyReviews}
             setWeeklyReviews={setWeeklyReviews}
-            notes={calendarNotes}
-            setNotes={setCalendarNotes}
+            monthlyReviews={monthlyReviews}
+            setMonthlyReviews={setMonthlyReviews}
+            calendarNotes={calendarNotes}
+            setCalendarNotes={setCalendarNotes}
+            showDateSelector={showChecklistDateSelector}
+            lastDailyResetDate={lastDailyResetDate}
+            setLastDailyResetDate={setLastDailyResetDate}
           />
         );
       case 'habitos':

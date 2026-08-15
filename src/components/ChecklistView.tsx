@@ -43,7 +43,8 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { DailyTask, SubTask, BookTracker, BibleTracker, RoutineItem, YearlyBook, WeeklyReview, CalendarNote } from '../types';
+import { DailyTask, SubTask, BookTracker, BibleTracker, RoutineItem, YearlyBook, WeeklyReview, MonthlyReview, CalendarNote } from '../types';
+import RoutineView from './RoutineView';
 import { syncBookWithYearlyBooks, calculateReadingInterval, formatDateBR } from '../utils/bookUtils';
 
 interface ChecklistViewProps {
@@ -56,8 +57,8 @@ interface ChecklistViewProps {
   setBookTracker: React.Dispatch<React.SetStateAction<BookTracker>>;
   bibleTracker: BibleTracker;
   setBibleTracker: React.Dispatch<React.SetStateAction<BibleTracker>>;
-  activeTab?: 'checklist' | 'rotina';
-  setActiveTab?: (tab: 'checklist' | 'rotina') => void;
+  activeTab?: 'checklist' | 'rotina' | 'rotina-semanal';
+  setActiveTab?: (tab: 'checklist' | 'rotina' | 'rotina-semanal') => void;
   gridRoutine?: Record<string, { text: string; color?: string; startTime?: string; endTime?: string }>;
   setGridRoutine?: (newGrid: any) => void;
   routine?: RoutineItem[];
@@ -66,6 +67,8 @@ interface ChecklistViewProps {
   setBooks?: React.Dispatch<React.SetStateAction<YearlyBook[]>>;
   weeklyReviews?: WeeklyReview[];
   setWeeklyReviews?: React.Dispatch<React.SetStateAction<WeeklyReview[]>>;
+  monthlyReviews?: MonthlyReview[];
+  setMonthlyReviews?: React.Dispatch<React.SetStateAction<MonthlyReview[]>>;
   calendarNotes?: CalendarNote[];
   setCalendarNotes?: React.Dispatch<React.SetStateAction<CalendarNote[]>>;
   showDateSelector?: boolean;
@@ -176,6 +179,8 @@ export default function ChecklistView({
   setBooks: propSetBooks,
   weeklyReviews: propWeeklyReviews,
   setWeeklyReviews: propSetWeeklyReviews,
+  monthlyReviews: propMonthlyReviews = [],
+  setMonthlyReviews: propSetMonthlyReviews,
   calendarNotes,
   setCalendarNotes,
   showDateSelector = false,
@@ -193,7 +198,7 @@ export default function ChecklistView({
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
   const isToday = selectedDate === todayStr;
 
-  const [localActiveTab, setLocalActiveTab] = useState<'checklist' | 'rotina'>('checklist');
+  const [localActiveTab, setLocalActiveTab] = useState<'checklist' | 'rotina' | 'rotina-semanal'>('checklist');
   const activeTab = propActiveTab !== undefined ? propActiveTab : localActiveTab;
   const setActiveTab = propSetActiveTab !== undefined ? propSetActiveTab : setLocalActiveTab;
 
@@ -1713,29 +1718,40 @@ export default function ChecklistView({
         </button>
       </div>
 
-      {/* Tabs Selector for Checklist vs Routine Grid */}
-      <div className="flex items-center bg-zinc-900/30 p-1.5 rounded-2xl max-w-md backdrop-blur-md shadow-lg">
+      {/* Tabs Selector for Missões Diárias vs Rotina Diária vs Rotina Semanal */}
+      <div className="flex items-center bg-zinc-900/30 p-1.5 rounded-2xl max-w-xl backdrop-blur-md shadow-lg border border-zinc-800/40">
         <button
           onClick={() => setActiveTab('checklist')}
-          className={`flex-1 px-5 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2.5 ${
+          className={`flex-1 px-4 sm:px-5 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 ${
             activeTab === 'checklist'
               ? 'bg-gradient-to-r from-orange-600 to-orange-500 text-white shadow-[0_4px_20px_rgba(249,115,22,0.35)] scale-[1.02]'
               : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/30'
           }`}
         >
           <List className={`h-4 w-4 transition-transform ${activeTab === 'checklist' ? 'scale-110' : ''}`} />
-          <span>Missões Diárias</span>
+          <span className="truncate">Missões Diárias</span>
         </button>
         <button
           onClick={() => setActiveTab('rotina')}
-          className={`flex-1 px-5 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2.5 ${
+          className={`flex-1 px-4 sm:px-5 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 ${
             activeTab === 'rotina'
               ? 'bg-gradient-to-r from-orange-600 to-orange-500 text-white shadow-[0_4px_20px_rgba(249,115,22,0.35)] scale-[1.02]'
               : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/30'
           }`}
         >
           <Clock className={`h-4 w-4 transition-transform ${activeTab === 'rotina' ? 'scale-110' : ''}`} />
-          <span>Rotina Diária</span>
+          <span className="truncate">Rotina Diária</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('rotina-semanal')}
+          className={`flex-1 px-4 sm:px-5 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 ${
+            activeTab === 'rotina-semanal'
+              ? 'bg-gradient-to-r from-orange-600 to-orange-500 text-white shadow-[0_4px_20px_rgba(249,115,22,0.35)] scale-[1.02]'
+              : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/30'
+          }`}
+        >
+          <Calendar className={`h-4 w-4 transition-transform ${activeTab === 'rotina-semanal' ? 'scale-110' : ''}`} />
+          <span className="truncate">Rotina Semanal</span>
         </button>
       </div>
 
@@ -2852,7 +2868,7 @@ export default function ChecklistView({
         </div>
       )}
       </>
-      ) : (
+      ) : activeTab === 'rotina' ? (
         <div className="space-y-6">
           {/* Header Card */}
           <div className="bg-zinc-950 border border-zinc-900 p-6 rounded-2xl space-y-6 shadow-xl relative overflow-hidden">
@@ -2861,9 +2877,9 @@ export default function ChecklistView({
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-900 pb-5">
               <div>
                 <h2 className="text-lg font-black text-white flex items-center gap-2.5">
-                  <Clock className="h-5.5 w-5.5 text-orange-500" /> Rotina Semanal
+                  <Clock className="h-5.5 w-5.5 text-orange-500" /> Rotina Diária
                 </h2>
-                <p className="text-xs text-zinc-400 mt-1">Organize seus blocos de tempo para máxima produtividade de segunda a domingo.</p>
+                <p className="text-xs text-zinc-400 mt-1">Organize seus blocos de tempo para máxima produtividade ao longo do dia.</p>
               </div>
               
               <div className="flex items-center gap-2.5">
@@ -3165,19 +3181,31 @@ export default function ChecklistView({
                             </button>
                           </div>
                           {cellSubtasks.length > 0 && (
-                            <div className="space-y-1.5 pt-1 max-h-36 overflow-y-auto">
+                            <div className="space-y-1.5 pt-1 max-h-36 overflow-y-auto pr-0.5">
                               {cellSubtasks.map((st, idx) => (
-                                <div key={st.id} className="flex items-center justify-between bg-zinc-900/80 border border-zinc-800 px-3 py-1.5 rounded-xl text-xs text-zinc-200 gap-2">
-                                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                                    <input
-                                      type="checkbox"
-                                      checked={st.completed}
-                                      onChange={(e) => {
-                                        const checked = e.target.checked;
-                                        setCellSubtasks(prev => prev.map((s, i) => i === idx ? { ...s, completed: checked } : s));
+                                <div 
+                                  key={st.id} 
+                                  className={`group flex items-center justify-between border px-3 py-2 rounded-xl text-xs transition-all gap-2.5 ${
+                                    st.completed 
+                                      ? 'bg-zinc-900/40 border-zinc-800/60 text-zinc-500' 
+                                      : 'bg-zinc-900/90 border-zinc-800 hover:border-zinc-700 text-zinc-200 shadow-sm'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setCellSubtasks(prev => prev.map((s, i) => i === idx ? { ...s, completed: !s.completed } : s));
                                       }}
-                                      className="w-3.5 h-3.5 rounded border-zinc-700 bg-zinc-950 text-orange-500 accent-orange-500 cursor-pointer"
-                                    />
+                                      className={`w-4.5 h-4.5 rounded-md border flex items-center justify-center transition-all shrink-0 cursor-pointer ${
+                                        st.completed
+                                          ? 'bg-orange-500 border-orange-500 text-white shadow-[0_0_10px_rgba(249,115,22,0.35)]'
+                                          : 'border-zinc-700 bg-zinc-950 hover:border-orange-500/60 hover:bg-zinc-900 text-transparent'
+                                      }`}
+                                      title={st.completed ? 'Marcar como pendente' : 'Marcar como concluída'}
+                                    >
+                                      <Check className={`h-3 w-3 stroke-[3] transition-transform ${st.completed ? 'scale-100' : 'scale-0'}`} />
+                                    </button>
                                     <input
                                       type="text"
                                       value={st.text}
@@ -3185,14 +3213,16 @@ export default function ChecklistView({
                                         const val = e.target.value;
                                         setCellSubtasks(prev => prev.map((s, i) => i === idx ? { ...s, text: val } : s));
                                       }}
-                                      className={`bg-transparent text-xs text-white outline-none w-full ${st.completed ? 'line-through text-zinc-500' : ''}`}
+                                      className={`bg-transparent text-xs outline-none w-full transition-all ${
+                                        st.completed ? 'line-through text-zinc-500' : 'text-zinc-200 focus:text-white'
+                                      }`}
                                     />
                                   </div>
                                   <button
                                     type="button"
                                     onClick={() => setCellSubtasks(prev => prev.filter((_, i) => i !== idx))}
-                                    className="text-zinc-500 hover:text-red-400 transition-colors p-1 shrink-0"
-                                    title="Remover subtarefa"
+                                    className="text-zinc-600 hover:text-red-400 opacity-80 group-hover:opacity-100 transition-colors p-1 shrink-0 rounded-lg hover:bg-red-500/10"
+                                    title="Remover etapa"
                                   >
                                     <Trash2 className="h-3.5 w-3.5" />
                                   </button>
@@ -3522,6 +3552,22 @@ export default function ChecklistView({
               </div>
             )}
           </AnimatePresence>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          <RoutineView 
+            routine={propRoutine || []}
+            setRoutine={propSetRoutine || (() => {})}
+            gridRoutine={gridRoutine}
+            setGridRoutine={saveGridRoutine}
+            addXp={addXp}
+            monthlyReviews={propMonthlyReviews}
+            setMonthlyReviews={propSetMonthlyReviews || (() => {})}
+            weeklyReviews={propWeeklyReviews || []}
+            setWeeklyReviews={propSetWeeklyReviews || (() => {})}
+            notes={calendarNotes || []}
+            setNotes={setCalendarNotes}
+          />
         </div>
       )}
 
