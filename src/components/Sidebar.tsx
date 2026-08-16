@@ -1720,7 +1720,7 @@ export default function Sidebar({
             >
               {/* Experience progress micro bar */}
               <div>
-                <div className="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden border border-zinc-800">
+                <div className="w-full bg-zinc-900/80 h-1.5 rounded-full overflow-hidden border border-zinc-800/40">
                   <div className="bg-gradient-to-r from-orange-500 to-amber-500 h-full rounded-full" style={{ width: `${progressPercent}%` }} />
                 </div>
                 <div className="flex items-center justify-between text-[8px] font-mono text-gray-500 mt-1">
@@ -1737,7 +1737,7 @@ export default function Sidebar({
             </motion.div>
           ) : (
             <div 
-              className="w-10 h-1 bg-zinc-900 rounded-full overflow-hidden mt-3 border border-zinc-800"
+              className="w-10 h-1 bg-zinc-900/80 rounded-full overflow-hidden mt-3 border border-zinc-800/40"
               title={`Progresso da página: ${Math.round(scrollProgress)}%`}
             >
               <div 

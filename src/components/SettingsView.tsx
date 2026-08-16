@@ -138,6 +138,12 @@ interface SettingsViewProps {
   loadingScreenHorizontalImage?: string;
   setLoadingScreenHorizontalImage?: (img: string) => void;
   onPreviewLoadingScreen?: () => void;
+
+  // Custom Lock Screen Backgrounds (Desktop & Mobile)
+  lockScreenDesktopImage?: string;
+  setLockScreenDesktopImage?: (img: string) => void;
+  lockScreenMobileImage?: string;
+  setLockScreenMobileImage?: (img: string) => void;
 }
 
 type SettingsScreen = 
@@ -214,7 +220,11 @@ export default function SettingsView({
   setLoadingScreenVerticalImage,
   loadingScreenHorizontalImage = '',
   setLoadingScreenHorizontalImage,
-  onPreviewLoadingScreen
+  onPreviewLoadingScreen,
+  lockScreenDesktopImage = '',
+  setLockScreenDesktopImage,
+  lockScreenMobileImage = '',
+  setLockScreenMobileImage
 }: SettingsViewProps) {
   
   // Theme Color Scheme Modal State
@@ -1911,6 +1921,338 @@ export default function SettingsView({
                   </motion.div>
                 )}
               </AnimatePresence>
+
+              {/* Custom Lock Screen Wallpapers (Desktop & Mobile) */}
+              <div className="pt-4 border-t border-zinc-900 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-xs font-bold text-zinc-200 flex items-center gap-1.5">
+                      <ImageIcon className="h-4 w-4 text-orange-400" />
+                      Wallpaper da Tela de Bloqueio
+                    </h4>
+                    <p className="text-[10px] text-zinc-500 font-mono">Personalize a imagem de fundo para Desktop e Mobile</p>
+                  </div>
+                  {appLockEnabled && (
+                    <button
+                      type="button"
+                      onClick={() => setIsAppLocked(true)}
+                      className="px-2.5 py-1 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 font-mono font-bold text-[9px] rounded-lg transition-all flex items-center gap-1"
+                      title="Testar como fica a tela de bloqueio"
+                    >
+                      <Eye className="w-3 h-3" />
+                      <span>Testar Tela</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Desktop Wallpaper Card */}
+                  <div className="p-3.5 bg-zinc-950 border border-zinc-900 rounded-xl space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <Monitor className="h-3.5 w-3.5 text-orange-400" />
+                        <span className="text-xs font-bold text-zinc-200">Desktop (Horizontal 16:9)</span>
+                      </div>
+                      {lockScreenDesktopImage && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (setLockScreenDesktopImage) setLockScreenDesktopImage('');
+                            setLockSuccess('Wallpaper de desktop restaurado para o padrão!');
+                            setTimeout(() => setLockSuccess(''), 3000);
+                          }}
+                          className="text-[9px] text-red-400 hover:text-red-300 font-mono flex items-center gap-1"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>Restaurar</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Preview Desktop */}
+                    <div className="relative aspect-video w-full rounded-lg overflow-hidden border border-zinc-800 bg-zinc-900 flex items-center justify-center">
+                      <img 
+                        src={lockScreenDesktopImage || '/src/assets/images/1271888.jpg'} 
+                        alt="Desktop Lock Screen Preview"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/src/assets/images/1271888.jpg';
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center pointer-events-none">
+                        <div className="p-2 bg-black/60 rounded-full border border-white/20">
+                          <Lock className="w-4 h-4 text-orange-400" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actions Desktop */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <label className="flex-1 cursor-pointer">
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            className="hidden" 
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file && setLockScreenDesktopImage) {
+                                const reader = new FileReader();
+                                reader.onload = (ev) => {
+                                  const result = ev.target?.result as string;
+                                  if (result) {
+                                    const img = new Image();
+                                    img.onload = () => {
+                                      const canvas = document.createElement('canvas');
+                                      const maxDim = 1920;
+                                      let w = img.width;
+                                      let h = img.height;
+                                      if (w > maxDim || h > maxDim) {
+                                        if (w > h) {
+                                          h = Math.round((h * maxDim) / w);
+                                          w = maxDim;
+                                        } else {
+                                          w = Math.round((w * maxDim) / h);
+                                          h = maxDim;
+                                        }
+                                      }
+                                      canvas.width = w;
+                                      canvas.height = h;
+                                      const ctx = canvas.getContext('2d');
+                                      if (ctx) {
+                                        ctx.drawImage(img, 0, 0, w, h);
+                                        const optimized = canvas.toDataURL('image/jpeg', 0.85);
+                                        setLockScreenDesktopImage(optimized);
+                                      } else {
+                                        setLockScreenDesktopImage(result);
+                                      }
+                                      addXp(25);
+                                      setLockSuccess('Wallpaper de bloqueio Desktop atualizado!');
+                                      setTimeout(() => setLockSuccess(''), 3000);
+                                    };
+                                    img.src = result;
+                                  }
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                          />
+                          <div className="w-full py-2 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 font-mono font-bold text-[10px] rounded-lg flex items-center justify-center gap-1.5 transition-all text-center">
+                            <Upload className="w-3.5 h-3.5" />
+                            <span>Upload Desktop</span>
+                          </div>
+                        </label>
+
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              if (navigator.clipboard && navigator.clipboard.read) {
+                                const items = await navigator.clipboard.read();
+                                for (const item of items) {
+                                  const imageType = item.types.find(t => t.startsWith('image/'));
+                                  if (imageType) {
+                                    const blob = await item.getType(imageType);
+                                    const reader = new FileReader();
+                                    reader.onload = (ev) => {
+                                      const res = ev.target?.result as string;
+                                      if (res && setLockScreenDesktopImage) {
+                                        setLockScreenDesktopImage(res);
+                                        addXp(25);
+                                        setLockSuccess('Imagem Desktop colada da área de transferência!');
+                                        setTimeout(() => setLockSuccess(''), 3000);
+                                      }
+                                    };
+                                    reader.readAsDataURL(blob);
+                                    return;
+                                  }
+                                }
+                              }
+                              if (navigator.clipboard && navigator.clipboard.readText) {
+                                const text = await navigator.clipboard.readText();
+                                if (text && (text.startsWith('http') || text.startsWith('data:image/')) && setLockScreenDesktopImage) {
+                                  setLockScreenDesktopImage(text.trim());
+                                  addXp(25);
+                                  setLockSuccess('Link da imagem Desktop colado com sucesso!');
+                                  setTimeout(() => setLockSuccess(''), 3000);
+                                }
+                              }
+                            } catch (err) {
+                              console.error('Clipboard error:', err);
+                            }
+                          }}
+                          className="px-3 py-2 bg-zinc-850 hover:bg-zinc-800 border border-zinc-750 text-zinc-300 font-mono font-bold text-[10px] rounded-lg flex items-center gap-1 transition-all"
+                          title="Colar imagem ou URL da área de transferência"
+                        >
+                          <Clipboard className="w-3.5 h-3.5" />
+                          <span>Colar</span>
+                        </button>
+                      </div>
+
+                      <input 
+                        type="text" 
+                        value={lockScreenDesktopImage} 
+                        onChange={(e) => setLockScreenDesktopImage && setLockScreenDesktopImage(e.target.value)}
+                        placeholder="Ou URL da imagem desktop (https://...)" 
+                        className="w-full bg-zinc-950 border border-zinc-850 rounded-lg px-2.5 py-1.5 text-[10px] text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-orange-500/40 font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Mobile Wallpaper Card */}
+                  <div className="p-3.5 bg-zinc-950 border border-zinc-900 rounded-xl space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <Smartphone className="h-3.5 w-3.5 text-orange-400" />
+                        <span className="text-xs font-bold text-zinc-200">Mobile (Vertical 9:16)</span>
+                      </div>
+                      {lockScreenMobileImage && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (setLockScreenMobileImage) setLockScreenMobileImage('');
+                            setLockSuccess('Wallpaper mobile restaurado para o padrão!');
+                            setTimeout(() => setLockSuccess(''), 3000);
+                          }}
+                          className="text-[9px] text-red-400 hover:text-red-300 font-mono flex items-center gap-1"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>Restaurar</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Preview Mobile */}
+                    <div className="relative aspect-video w-full rounded-lg overflow-hidden border border-zinc-800 bg-zinc-900 flex items-center justify-center">
+                      <img 
+                        src={lockScreenMobileImage || lockScreenDesktopImage || '/src/assets/images/1271888.jpg'} 
+                        alt="Mobile Lock Screen Preview"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/src/assets/images/1271888.jpg';
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center pointer-events-none">
+                        <div className="p-2 bg-black/60 rounded-full border border-white/20">
+                          <Lock className="w-4 h-4 text-orange-400" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actions Mobile */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <label className="flex-1 cursor-pointer">
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            className="hidden" 
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file && setLockScreenMobileImage) {
+                                const reader = new FileReader();
+                                reader.onload = (ev) => {
+                                  const result = ev.target?.result as string;
+                                  if (result) {
+                                    const img = new Image();
+                                    img.onload = () => {
+                                      const canvas = document.createElement('canvas');
+                                      const maxDim = 1920;
+                                      let w = img.width;
+                                      let h = img.height;
+                                      if (w > maxDim || h > maxDim) {
+                                        if (w > h) {
+                                          h = Math.round((h * maxDim) / w);
+                                          w = maxDim;
+                                        } else {
+                                          w = Math.round((w * maxDim) / h);
+                                          h = maxDim;
+                                        }
+                                      }
+                                      canvas.width = w;
+                                      canvas.height = h;
+                                      const ctx = canvas.getContext('2d');
+                                      if (ctx) {
+                                        ctx.drawImage(img, 0, 0, w, h);
+                                        const optimized = canvas.toDataURL('image/jpeg', 0.85);
+                                        setLockScreenMobileImage(optimized);
+                                      } else {
+                                        setLockScreenMobileImage(result);
+                                      }
+                                      addXp(25);
+                                      setLockSuccess('Wallpaper de bloqueio Mobile atualizado!');
+                                      setTimeout(() => setLockSuccess(''), 3000);
+                                    };
+                                    img.src = result;
+                                  }
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                          />
+                          <div className="w-full py-2 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 font-mono font-bold text-[10px] rounded-lg flex items-center justify-center gap-1.5 transition-all text-center">
+                            <Upload className="w-3.5 h-3.5" />
+                            <span>Upload Mobile</span>
+                          </div>
+                        </label>
+
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              if (navigator.clipboard && navigator.clipboard.read) {
+                                const items = await navigator.clipboard.read();
+                                for (const item of items) {
+                                  const imageType = item.types.find(t => t.startsWith('image/'));
+                                  if (imageType) {
+                                    const blob = await item.getType(imageType);
+                                    const reader = new FileReader();
+                                    reader.onload = (ev) => {
+                                      const res = ev.target?.result as string;
+                                      if (res && setLockScreenMobileImage) {
+                                        setLockScreenMobileImage(res);
+                                        addXp(25);
+                                        setLockSuccess('Imagem Mobile colada da área de transferência!');
+                                        setTimeout(() => setLockSuccess(''), 3000);
+                                      }
+                                    };
+                                    reader.readAsDataURL(blob);
+                                    return;
+                                  }
+                                }
+                              }
+                              if (navigator.clipboard && navigator.clipboard.readText) {
+                                const text = await navigator.clipboard.readText();
+                                if (text && (text.startsWith('http') || text.startsWith('data:image/')) && setLockScreenMobileImage) {
+                                  setLockScreenMobileImage(text.trim());
+                                  addXp(25);
+                                  setLockSuccess('Link da imagem Mobile colado com sucesso!');
+                                  setTimeout(() => setLockSuccess(''), 3000);
+                                }
+                              }
+                            } catch (err) {
+                              console.error('Clipboard error:', err);
+                            }
+                          }}
+                          className="px-3 py-2 bg-zinc-850 hover:bg-zinc-800 border border-zinc-750 text-zinc-300 font-mono font-bold text-[10px] rounded-lg flex items-center gap-1 transition-all"
+                          title="Colar imagem ou URL da área de transferência"
+                        >
+                          <Clipboard className="w-3.5 h-3.5" />
+                          <span>Colar</span>
+                        </button>
+                      </div>
+
+                      <input 
+                        type="text" 
+                        value={lockScreenMobileImage} 
+                        onChange={(e) => setLockScreenMobileImage && setLockScreenMobileImage(e.target.value)}
+                        placeholder="Ou URL da imagem mobile (https://...)" 
+                        className="w-full bg-zinc-950 border border-zinc-850 rounded-lg px-2.5 py-1.5 text-[10px] text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-orange-500/40 font-mono"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </motion.div>
         )}

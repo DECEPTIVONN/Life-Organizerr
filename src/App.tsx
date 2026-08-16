@@ -234,6 +234,31 @@ export default function App() {
     return localStorage.getItem('mbc_loading_screen_horizontal_image') || '';
   });
 
+  // Custom Lock Screen Backgrounds (Desktop Horizontal 16:9, Mobile Vertical 9:16)
+  const [lockScreenDesktopImage, setLockScreenDesktopImage] = useState<string>(() => {
+    return localStorage.getItem('mbc_lock_screen_desktop_image') || '';
+  });
+
+  const [lockScreenMobileImage, setLockScreenMobileImage] = useState<string>(() => {
+    return localStorage.getItem('mbc_lock_screen_mobile_image') || '';
+  });
+
+  useEffect(() => {
+    if (lockScreenDesktopImage) {
+      localStorage.setItem('mbc_lock_screen_desktop_image', lockScreenDesktopImage);
+    } else {
+      localStorage.removeItem('mbc_lock_screen_desktop_image');
+    }
+  }, [lockScreenDesktopImage]);
+
+  useEffect(() => {
+    if (lockScreenMobileImage) {
+      localStorage.setItem('mbc_lock_screen_mobile_image', lockScreenMobileImage);
+    } else {
+      localStorage.removeItem('mbc_lock_screen_mobile_image');
+    }
+  }, [lockScreenMobileImage]);
+
   useEffect(() => {
     if (activeThemePreset === 'custom' && customThemeHex) {
       applyThemeColor(customThemeHex);
@@ -3562,6 +3587,18 @@ export default function App() {
               setIsUnlockLoading(false);
               setIsSyncLoading(true);
             }}
+            lockScreenDesktopImage={lockScreenDesktopImage}
+            setLockScreenDesktopImage={(img) => {
+              setLockScreenDesktopImage(img);
+              if (img) localStorage.setItem('mbc_lock_screen_desktop_image', img);
+              else localStorage.removeItem('mbc_lock_screen_desktop_image');
+            }}
+            lockScreenMobileImage={lockScreenMobileImage}
+            setLockScreenMobileImage={(img) => {
+              setLockScreenMobileImage(img);
+              if (img) localStorage.setItem('mbc_lock_screen_mobile_image', img);
+              else localStorage.removeItem('mbc_lock_screen_mobile_image');
+            }}
           />
         );
       default:
@@ -3576,6 +3613,8 @@ export default function App() {
         userPhoto={userPhoto}
         correctPassword={appLockPassword}
         appLockBiometricEnabled={appLockBiometricEnabled}
+        lockScreenDesktopImage={lockScreenDesktopImage}
+        lockScreenMobileImage={lockScreenMobileImage}
         onUnlock={() => {
           setIsAppLocked(false);
           setIsUnlockLoading(true);

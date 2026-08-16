@@ -47,42 +47,44 @@ a:focus, a:active, a:focus-visible {
 
 /* Custom Styled Scrollbars across the entire application */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 .horizontal-scrollbar::-webkit-scrollbar {
-  height: 8px !important;
+  height: 6px !important;
   display: block !important;
 }
 
 .horizontal-scrollbar::-webkit-scrollbar-track {
-  background: rgba(24, 24, 27, 0.5) !important;
+  background: rgba(24, 24, 27, 0.3) !important;
   border-radius: 9999px;
-  margin-left: 8px;
-  margin-right: 8px;
+  margin-left: 4px;
+  margin-right: 4px;
+  border: none !important;
 }
 
 .horizontal-scrollbar::-webkit-scrollbar-thumb {
   background: #3f3f46 !important;
   border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: none !important;
   transition: all 0.2s ease;
 }
 
 .horizontal-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #f97316 !important;
-  box-shadow: 0 0 10px rgba(249, 115, 22, 0.4);
+  box-shadow: 0 0 6px rgba(249, 115, 22, 0.4);
 }
 
 ::-webkit-scrollbar-track {
-  background: #070709; /* Matches theme dark background */
+  background: transparent;
+  border: none;
 }
 
 ::-webkit-scrollbar-thumb {
   background: #27272a; /* Zinc 800 */
   border-radius: 9999px;
-  border: 1px solid #070709;
+  border: none; /* Decreased border for cleaner ultra-thin scrollbar */
   transition: background-color 0.2s ease;
 }
 
@@ -93,7 +95,7 @@ a:focus, a:active, a:focus-visible {
 /* For Firefox */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #27272a #070709;
+  scrollbar-color: #27272a transparent;
 }
 
 /* On Desktop (lg screen), replace native browser scrollbar with the vertical navbar progress track */

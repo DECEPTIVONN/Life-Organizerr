@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, ShieldAlert, X, Info, Lock, ShieldCheck, KeyRound, Fingerprint, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, ShieldAlert, X, Info, Lock, ShieldCheck, KeyRound, Fingerprint, Loader2, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { verifyBiometric } from '../utils/biometricAuth';
 
@@ -9,6 +9,8 @@ interface LockScreenProps {
   correctPassword?: string;
   onUnlock: () => void;
   appLockBiometricEnabled?: boolean;
+  lockScreenDesktopImage?: string;
+  lockScreenMobileImage?: string;
 }
 
 export default function LockScreen({
@@ -16,7 +18,9 @@ export default function LockScreen({
   userPhoto,
   correctPassword = '',
   onUnlock,
-  appLockBiometricEnabled = false
+  appLockBiometricEnabled = false,
+  lockScreenDesktopImage = '',
+  lockScreenMobileImage = ''
 }: LockScreenProps) {
   const [passwordInput, setPasswordInput] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -25,6 +29,10 @@ export default function LockScreen({
   const [shakeTrigger, setShakeTrigger] = useState(false);
   const [isBiometricAuthenticating, setIsBiometricAuthenticating] = useState(false);
   const [hasTriggeredBiometric, setHasTriggeredBiometric] = useState(false);
+  const [biometricFailedAttempts, setBiometricFailedAttempts] = useState(0);
+
+  // If biometric is enabled and attempts < 3, only show biometric digital option
+  const isBiometricOnlyMode = appLockBiometricEnabled && biometricFailedAttempts < 3;
 
   const handleUnlock = () => {
     if (passwordInput === correctPassword) {
@@ -48,26 +56,48 @@ export default function LockScreen({
       const res = await verifyBiometric(userName);
       if (res.success) {
         onUnlock();
-      } else if (res.error) {
-        setErrorMsg(res.error);
+      } else {
+        const nextAttempts = biometricFailedAttempts + 1;
+        setBiometricFailedAttempts(nextAttempts);
+        setShakeTrigger(true);
+        setTimeout(() => setShakeTrigger(false), 500);
+
+        if (navigator.vibrate) {
+          navigator.vibrate([100, 50, 100]);
+        }
+
+        if (nextAttempts >= 3) {
+          setErrorMsg('Limite de 3 tentativas com digital atingido. Digite sua senha de bloqueio.');
+        } else {
+          setErrorMsg(res.error || `Digital não reconhecida. Tentativa ${nextAttempts} de 3.`);
+        }
       }
     } catch (err) {
-      setErrorMsg('Erro na leitura da digital. Digite sua senha.');
+      const nextAttempts = biometricFailedAttempts + 1;
+      setBiometricFailedAttempts(nextAttempts);
+      setShakeTrigger(true);
+      setTimeout(() => setShakeTrigger(false), 500);
+
+      if (nextAttempts >= 3) {
+        setErrorMsg('Tentativas de digital esgotadas (3/3). Digite sua senha.');
+      } else {
+        setErrorMsg(`Erro na leitura da digital (Tentativa ${nextAttempts}/3).`);
+      }
     } finally {
       setIsBiometricAuthenticating(false);
     }
   };
 
   useEffect(() => {
-    if (appLockBiometricEnabled && !hasTriggeredBiometric) {
+    if (appLockBiometricEnabled && !hasTriggeredBiometric && biometricFailedAttempts < 3) {
       setHasTriggeredBiometric(true);
       // Small timeout to allow component layout mount
       const timer = setTimeout(() => {
         handleBiometricUnlock();
-      }, 300);
+      }, 400);
       return () => clearTimeout(timer);
     }
-  }, [appLockBiometricEnabled, hasTriggeredBiometric]);
+  }, [appLockBiometricEnabled, hasTriggeredBiometric, biometricFailedAttempts]);
 
   const handleResetPasswordWithDataLossWarning = () => {
     if (confirm("⚠️ ATENÇÃO: Limpar a senha local irá remover as configurações de segurança atuais. Caso não possua uma Chave de Sincronização Cloud ativa, seus dados locais também podem ser redefinidos. Deseja continuar?")) {
@@ -85,11 +115,21 @@ export default function LockScreen({
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center select-none overflow-hidden text-zinc-300 font-sans">
       
-      {/* Background Layer with User Image Background, Blended Gradient and Intense Blur */}
+      {/* Background Layer (Desktop Screen: lockScreenDesktopImage or default) */}
       <div 
-        className="absolute inset-0 bg-cover bg-center transition-transform duration-[15000ms] ease-out scale-105"
+        className="hidden md:block absolute inset-0 bg-cover bg-center transition-transform duration-[15000ms] ease-out scale-105"
         style={{
-          backgroundImage: `linear-gradient(to bottom, rgba(4, 4, 5, 0.7) 0%, rgba(4, 4, 5, 0.9) 100%), url('/src/assets/images/1271888.jpg')`,
+          backgroundImage: `linear-gradient(to bottom, rgba(4, 4, 5, 0.75) 0%, rgba(4, 4, 5, 0.92) 100%), url('${lockScreenDesktopImage || '/src/assets/images/1271888.jpg'}')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center'
+        }}
+      />
+
+      {/* Background Layer (Mobile Screen: lockScreenMobileImage or desktop fallback or default) */}
+      <div 
+        className="block md:hidden absolute inset-0 bg-cover bg-center transition-transform duration-[15000ms] ease-out scale-105"
+        style={{
+          backgroundImage: `linear-gradient(to bottom, rgba(4, 4, 5, 0.75) 0%, rgba(4, 4, 5, 0.92) 100%), url('${lockScreenMobileImage || lockScreenDesktopImage || '/src/assets/images/1271888.jpg'}')`,
           backgroundSize: 'cover',
           backgroundPosition: 'center'
         }}
@@ -129,7 +169,9 @@ export default function LockScreen({
         {/* Security Shield Lock Badge Indicator */}
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-zinc-950/80 border border-orange-500/30 rounded-full mb-6 shadow-[0_0_20px_rgba(249,115,22,0.15)] backdrop-blur-md">
           <ShieldCheck className="h-4 w-4 text-orange-400" />
-          <span className="text-[10px] font-mono font-bold tracking-widest text-orange-400 uppercase">TELA DE BLOQUEIO ATIVA</span>
+          <span className="text-[10px] font-mono font-bold tracking-widest text-orange-400 uppercase">
+            {isBiometricOnlyMode ? 'DESBLOQUEIO POR BIOMETRIA' : 'TELA DE BLOQUEIO ATIVA'}
+          </span>
         </div>
 
         {/* User profile picture framed with a sleek double border and state glow */}
@@ -156,11 +198,15 @@ export default function LockScreen({
           {userName}
         </h2>
 
-        {/* Locking description inspired by premium dashboard interfaces */}
+        {/* Locking description */}
         <p className="text-[11px] text-zinc-400/90 max-w-xs mx-auto leading-relaxed mb-8 select-none">
-          {appLockBiometricEnabled ? (
+          {isBiometricOnlyMode ? (
             <>
-              Desbloqueio por digital ativado. Toque na <span className="text-orange-400 font-bold">Impressão Digital</span> ou digite sua senha.
+              Entrada preferencial com <span className="text-orange-400 font-bold">Impressão Digital</span>. Toque no sensor biométrico para desbloquear.
+            </>
+          ) : biometricFailedAttempts >= 3 ? (
+            <>
+              <span className="text-amber-400 font-bold">3 tentativas com digital esgotadas.</span> Digite sua <span className="text-zinc-200 font-bold">Senha de Bloqueio</span> para continuar.
             </>
           ) : (
             <>
@@ -169,96 +215,142 @@ export default function LockScreen({
           )}
         </p>
 
-        {/* Password & Biometric unlock controls */}
-        <div className="w-full max-w-[320px] space-y-4">
-          
-          {/* PRIMARY OPTION: Fingerprint Unlock Button (when biometric is enabled) */}
-          {appLockBiometricEnabled && (
-            <div className="space-y-3">
-              <button
-                type="button"
-                onClick={handleBiometricUnlock}
-                disabled={isBiometricAuthenticating}
-                className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white font-black text-xs py-4 rounded-2xl flex items-center justify-center gap-3 transition-all duration-300 shadow-[0_4px_25px_rgba(249,115,22,0.35)] hover:shadow-[0_6px_35px_rgba(249,115,22,0.5)] active:scale-[0.98] cursor-pointer"
-              >
-                {isBiometricAuthenticating ? (
-                  <Loader2 className="h-5 w-5 animate-spin text-white" />
-                ) : (
-                  <Fingerprint className="h-6 w-6 text-white stroke-[2.2]" />
-                )}
-                <span className="uppercase tracking-[0.18em] font-sans text-xs">
-                  {isBiometricAuthenticating ? 'Lendo Digital...' : 'Desbloquear com Digital'}
-                </span>
-              </button>
-
-              <div className="flex items-center gap-3 py-1">
-                <div className="h-[1px] flex-1 bg-zinc-800/80" />
-                <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">Ou use a senha</span>
-                <div className="h-[1px] flex-1 bg-zinc-800/80" />
-              </div>
-            </div>
-          )}
-
-          {/* SECONDARY / DEFAULT OPTION: Password Input */}
-          <div className="relative group">
-            {/* Input background glow and dynamic border colors on hover/focus */}
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-orange-500/10 via-purple-600/10 to-amber-500/10 rounded-2xl blur opacity-60 group-focus-within:opacity-100 transition duration-500" />
-            
-            {/* Premium key icon on the left */}
-            <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-orange-400 p-1 bg-orange-500/10 rounded-lg border border-orange-500/20 group-focus-within:border-orange-500/40 group-focus-within:bg-orange-500/20 transition-all duration-300 z-20 pointer-events-none flex items-center justify-center">
-              <KeyRound className="h-3.5 w-3.5 stroke-[2]" />
-            </div>
-
-            <input
-              type={showPassword ? "text" : "password"}
-              value={passwordInput}
-              onChange={(e) => {
-                setPasswordInput(e.target.value);
-                setErrorMsg('');
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleUnlock();
-              }}
-              placeholder="••••••••"
-              className="relative w-full bg-zinc-950/60 hover:bg-zinc-950/80 focus:bg-black/90 border border-zinc-900 focus:border-orange-500/40 rounded-2xl pl-12 pr-14 py-4 text-xs text-center text-white placeholder-zinc-700 focus:outline-none transition-all duration-300 font-mono tracking-[0.6em] font-black shadow-2xl"
-              autoFocus={!appLockBiometricEnabled}
-            />
-            
+        {/* ==================================================================== */}
+        {/* MODE A: EXCLUSIVE FINGERPRINT OPTION (Only biometric until 3 failed) */}
+        {/* ==================================================================== */}
+        {isBiometricOnlyMode ? (
+          <div className="w-full max-w-[320px] space-y-4">
             <button
               type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4.5 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-300 transition-colors p-1.5 z-20"
+              onClick={handleBiometricUnlock}
+              disabled={isBiometricAuthenticating}
+              className="w-full relative group overflow-hidden bg-gradient-to-br from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white font-black py-6 px-6 rounded-3xl flex flex-col items-center justify-center gap-3 transition-all duration-300 shadow-[0_10px_40px_rgba(249,115,22,0.35)] hover:shadow-[0_12px_50px_rgba(249,115,22,0.5)] active:scale-[0.98] cursor-pointer"
             >
-              {showPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
+              {/* Pulsing visual glow layer */}
+              <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              
+              <div className="p-4 bg-black/25 rounded-2xl border border-white/20 group-hover:scale-110 transition-transform duration-300 shadow-inner">
+                {isBiometricAuthenticating ? (
+                  <Loader2 className="h-10 w-10 animate-spin text-white" />
+                ) : (
+                  <Fingerprint className="h-10 w-10 text-white stroke-[2.2] animate-pulse" />
+                )}
+              </div>
+
+              <div className="text-center space-y-0.5">
+                <span className="uppercase tracking-[0.2em] font-sans text-xs font-black block">
+                  {isBiometricAuthenticating ? 'Lendo Digital...' : 'Desbloquear com Digital'}
+                </span>
+                <span className="text-[10px] text-white/80 font-mono block">
+                  Toque para autenticar biometria
+                </span>
+              </div>
+            </button>
+
+            {/* Failed attempts status counter */}
+            {biometricFailedAttempts > 0 && (
+              <div className="flex items-center justify-center gap-2">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] font-mono font-bold">
+                  <span>Tentativa {biometricFailedAttempts} de 3</span>
+                </div>
+              </div>
+            )}
+
+            {/* Error Message */}
+            <AnimatePresence>
+              {errorMsg && (
+                <motion.p 
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  className="text-[10px] text-red-400 font-bold font-mono tracking-wider text-center bg-red-950/30 py-2 px-3 rounded-xl border border-red-900/30"
+                >
+                  ⚠️ {errorMsg}
+                </motion.p>
+              )}
+            </AnimatePresence>
+          </div>
+        ) : (
+          /* ==================================================================== */
+          /* MODE B: PASSWORD INPUT (Current screen fallback after 3 fails or if no bio) */
+          /* ==================================================================== */
+          <div className="w-full max-w-[320px] space-y-4">
+            
+            {/* If biometric is enabled and user failed 3 times, show quick retry option */}
+            {appLockBiometricEnabled && (
+              <div className="flex justify-center mb-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBiometricFailedAttempts(0);
+                    setErrorMsg('');
+                    handleBiometricUnlock();
+                  }}
+                  className="inline-flex items-center gap-2 text-[10px] text-orange-400 hover:text-orange-300 font-mono font-bold bg-orange-500/10 hover:bg-orange-500/20 px-3 py-1.5 rounded-full border border-orange-500/30 transition-all cursor-pointer"
+                >
+                  <RefreshCw className="h-3 w-3" />
+                  <span>Tentar biometria novamente</span>
+                </button>
+              </div>
+            )}
+
+            {/* Password Input */}
+            <div className="relative group">
+              {/* Input background glow and dynamic border colors on hover/focus */}
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-orange-500/10 via-purple-600/10 to-amber-500/10 rounded-2xl blur opacity-60 group-focus-within:opacity-100 transition duration-500" />
+              
+              {/* Premium key icon on the left */}
+              <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-orange-400 p-1 bg-orange-500/10 rounded-lg border border-orange-500/20 group-focus-within:border-orange-500/40 group-focus-within:bg-orange-500/20 transition-all duration-300 z-20 pointer-events-none flex items-center justify-center">
+                <KeyRound className="h-3.5 w-3.5 stroke-[2]" />
+              </div>
+
+              <input
+                type={showPassword ? "text" : "password"}
+                value={passwordInput}
+                onChange={(e) => {
+                  setPasswordInput(e.target.value);
+                  setErrorMsg('');
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleUnlock();
+                }}
+                placeholder="••••••••"
+                className="relative w-full bg-zinc-950/60 hover:bg-zinc-950/80 focus:bg-black/90 border border-zinc-900 focus:border-orange-500/40 rounded-2xl pl-12 pr-14 py-4 text-xs text-center text-white placeholder-zinc-700 focus:outline-none transition-all duration-300 font-mono tracking-[0.6em] font-black shadow-2xl"
+                autoFocus={true}
+              />
+              
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4.5 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-300 transition-colors p-1.5 z-20"
+              >
+                {showPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
+              </button>
+            </div>
+
+            {/* Error Message */}
+            <AnimatePresence>
+              {errorMsg && (
+                <motion.p 
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  className="text-[10px] text-red-400 font-bold font-mono tracking-wider text-center bg-red-950/20 py-1.5 px-3 rounded-lg border border-red-900/20"
+                >
+                  ⚠️ {errorMsg}
+                </motion.p>
+              )}
+            </AnimatePresence>
+
+            {/* Unlock Action Button */}
+            <button
+              onClick={handleUnlock}
+              className="w-full text-xs font-black rounded-2xl py-4 transition-all duration-300 font-sans uppercase tracking-[0.18em] cursor-pointer bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white shadow-[0_4px_24px_rgba(249,115,22,0.25)] hover:shadow-[0_4px_30px_rgba(249,115,22,0.45)] active:scale-[0.98]"
+            >
+              Entrar com Senha
             </button>
           </div>
-
-          {/* Correct/Incorrect password error messages */}
-          <AnimatePresence>
-            {errorMsg && (
-              <motion.p 
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                className="text-[10px] text-red-400 font-bold font-mono tracking-wider text-center bg-red-950/20 py-1.5 px-3 rounded-lg border border-red-900/20"
-              >
-                ⚠️ {errorMsg}
-              </motion.p>
-            )}
-          </AnimatePresence>
-
-          {/* Unlock Action Button */}
-          <button
-            onClick={handleUnlock}
-            className={`w-full text-xs font-bold rounded-2xl transition-all duration-300 font-sans uppercase tracking-[0.18em] cursor-pointer ${
-              appLockBiometricEnabled
-                ? 'bg-zinc-900 hover:bg-zinc-850 text-zinc-300 py-3.5 border border-zinc-800 hover:border-zinc-700'
-                : 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white font-black py-4 shadow-[0_4px_24px_rgba(249,115,22,0.25)] hover:shadow-[0_4px_30px_rgba(249,115,22,0.45)]'
-            }`}
-          >
-            Entrar com Senha
-          </button>
-        </div>
+        )}
 
         {/* Forgot password link */}
         <div className="mt-12 space-y-3">
