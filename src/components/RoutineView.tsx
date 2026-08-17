@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Clock, 
   Plus, 
@@ -339,8 +339,49 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
     }, 600);
   };
 
+  // Convert gridRoutine items with showInWeeklyRoutine !== false into RoutineItems for each day
+  const combinedRoutine = useMemo(() => {
+    const list: RoutineItem[] = [...routine];
+    
+    if (gridRoutine) {
+      Object.entries(gridRoutine).forEach(([key, block]: [string, any]) => {
+        if (!block || !block.text || !block.text.trim()) return;
+        // Option to display in weekly routine (default is true):
+        if (block.showInWeeklyRoutine === false) return;
+        
+        const [blockHour, blockDayStr] = key.split('-');
+        const blockDay = parseInt(blockDayStr, 10);
+        if (isNaN(blockDay)) return;
+        
+        // 1=Seg (1), 2=Ter (2), 3=Qua (3), 4=Qui (4), 5=Sex (5), 6=Sáb (6), 7=Dom (0)
+        const routineDay = blockDay === 7 ? 0 : blockDay;
+        
+        const timeRange = block.startTime && block.endTime
+          ? `${block.startTime} - ${block.endTime}`
+          : (block.startTime || blockHour);
+
+        list.push({
+          id: `grid-${key}`,
+          dayOfWeek: routineDay,
+          time: timeRange,
+          task: block.text,
+          completed: !!block.completed,
+          isEveryDay: false,
+          isWeeklyRecurring: block.isWeeklyRecurring !== false,
+          category: block.color || 'Rotina',
+          reminderTime: block.reminderTime,
+          subtasks: block.subtasks ? block.subtasks.map((s: SubTask) => ({ ...s })) : undefined,
+          showInDailyMissions: block.showInDailyMissions !== false,
+          createdDate: block.createdDate
+        });
+      });
+    }
+    
+    return list;
+  }, [routine, gridRoutine]);
+
   // Filter items for the selected day
-  const filteredRoutine = routine
+  const filteredRoutine = combinedRoutine
     .filter(item => item.dayOfWeek === selectedDay || item.isEveryDay)
     .sort((a, b) => a.time.localeCompare(b.time));
 
@@ -378,6 +419,32 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
   };
 
   const handleToggleSubtask = (routineId: string, subtaskId: string) => {
+    if (routineId.startsWith('grid-')) {
+      const gridKey = routineId.replace('grid-', '');
+      if (gridRoutine && gridRoutine[gridKey] && setGridRoutine) {
+        const block = gridRoutine[gridKey];
+        const updatedSubtasks = (block.subtasks || []).map((sub: SubTask) => {
+          if (sub.id === subtaskId) {
+            return { ...sub, completed: !sub.completed };
+          }
+          return sub;
+        });
+        const allCompleted = updatedSubtasks.length > 0 && updatedSubtasks.every((s: SubTask) => s.completed);
+        const updated = {
+          ...gridRoutine,
+          [gridKey]: {
+            ...block,
+            completed: allCompleted,
+            subtasks: updatedSubtasks
+          }
+        };
+        setGridRoutine(updated);
+        if (allCompleted && !block.completed) addXp(10);
+        else if (!allCompleted && block.completed) addXp(-10);
+      }
+      return;
+    }
+
     setRoutine(prev => prev.map(item => {
       if (item.id === routineId && item.subtasks) {
         const updatedSubtasks = item.subtasks.map(sub => {
@@ -417,6 +484,25 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
   };
 
   const handleToggleCompleted = (id: string) => {
+    if (id.startsWith('grid-')) {
+      const gridKey = id.replace('grid-', '');
+      if (gridRoutine && gridRoutine[gridKey] && setGridRoutine) {
+        const block = gridRoutine[gridKey];
+        const nextState = !block.completed;
+        const updated = {
+          ...gridRoutine,
+          [gridKey]: {
+            ...block,
+            completed: nextState,
+            subtasks: block.subtasks?.map((s: SubTask) => ({ ...s, completed: nextState }))
+          }
+        };
+        setGridRoutine(updated);
+        addXp(nextState ? 10 : -10);
+      }
+      return;
+    }
+
     setRoutine(prev => prev.map(item => {
       if (item.id === id) {
         if (item.isEveryDay) {
@@ -465,6 +551,38 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
     e.preventDefault();
     if (!editingItem || !editTaskText.trim()) return;
 
+    if (editingItem.id.startsWith('grid-')) {
+      const gridKey = editingItem.id.replace('grid-', '');
+      if (gridRoutine && setGridRoutine) {
+        const [oldHour, oldDayStr] = gridKey.split('-');
+        const oldBlock = gridRoutine[gridKey] || {};
+        
+        const timeParts = editTime.split('-').map(t => t.trim());
+        const newStartTime = timeParts[0] || oldBlock.startTime || oldHour;
+        const newEndTime = timeParts[1] || oldBlock.endTime;
+        const newDayMon = editSelectedDay === 0 ? 7 : editSelectedDay;
+        const newGridKey = `${newStartTime}-${newDayMon}`;
+
+        const updated = { ...gridRoutine };
+        if (newGridKey !== gridKey) {
+          delete updated[gridKey];
+        }
+        updated[newGridKey] = {
+          ...oldBlock,
+          text: editTaskText.trim(),
+          startTime: newStartTime,
+          endTime: newEndTime,
+          isWeeklyRecurring: editIsWeeklyRecurring,
+          showInDailyMissions: editShowInDailyMissions,
+          reminderTime: editEnableReminder ? (editReminderTime.trim() || newStartTime) : undefined,
+          subtasks: editSubtasks.length > 0 ? editSubtasks : undefined
+        };
+        setGridRoutine(updated);
+      }
+      setEditingItem(null);
+      return;
+    }
+
     setRoutine(prev => prev.map(item => {
       if (item.id === editingItem.id) {
         return {
@@ -489,6 +607,15 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
   const handleDeleteItem = (id: string, completed: boolean) => {
     if (completed) {
       addXp(-10);
+    }
+    if (id.startsWith('grid-')) {
+      const gridKey = id.replace('grid-', '');
+      if (gridRoutine && setGridRoutine) {
+        const updated = { ...gridRoutine };
+        delete updated[gridKey];
+        setGridRoutine(updated);
+      }
+      return;
     }
     setRoutine(routine.filter(item => item.id !== id));
   };
@@ -840,7 +967,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
         <div className="grid grid-cols-7 gap-1 bg-zinc-950 p-1.5 rounded-xl border border-zinc-900">
           {daysOfWeek.map((day) => {
             const isActive = selectedDay === day.id;
-            const count = routine.filter(item => item.dayOfWeek === day.id || item.isEveryDay).length;
+            const count = combinedRoutine.filter(item => item.dayOfWeek === day.id || item.isEveryDay).length;
             
             return (
               <button
@@ -905,6 +1032,12 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                         <span className={`text-xs font-semibold truncate text-left ${isItemCompleted ? 'line-through text-gray-500' : 'text-white'}`}>
                           {item.task}
                         </span>
+
+                        {item.id.startsWith('grid-') && (
+                          <span className="text-[9px] bg-orange-500/15 text-orange-400 border border-orange-500/30 px-1.5 py-0.5 rounded font-mono uppercase tracking-wide inline-flex items-center gap-1 flex-shrink-0">
+                            <Clock className="h-2.5 w-2.5" /> Bloco de Rotina
+                          </span>
+                        )}
 
                         {item.subtasks && item.subtasks.length > 0 && (
                           <span className="text-[9px] bg-zinc-800/90 text-orange-400 border border-zinc-700/60 px-2 py-0.5 rounded-md font-mono font-bold inline-flex items-center gap-1 flex-shrink-0">
@@ -996,7 +1129,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
           <div className="overflow-x-auto pb-4 scrollbar-none">
             <div className="flex gap-4 min-w-[1200px]">
               {daysOfWeek.map((day) => {
-                const dayTasks = routine
+                const dayTasks = combinedRoutine
                   .filter(item => item.dayOfWeek === day.id || item.isEveryDay)
                   .sort((a, b) => a.time.localeCompare(b.time));
 
@@ -1038,7 +1171,9 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                 <span className="font-mono text-[9px] text-orange-500 font-bold bg-orange-500/5 px-1 py-0.5 rounded">
                                   {item.time}
                                 </span>
-                                {item.isEveryDay ? (
+                                {item.id.startsWith('grid-') ? (
+                                  <span className="text-[7px] font-bold text-orange-400 uppercase tracking-widest bg-orange-500/10 px-1 py-0.5 rounded">Bloco</span>
+                                ) : item.isEveryDay ? (
                                   <span className="text-[7px] font-bold text-gray-500 uppercase tracking-widest">Diário</span>
                                 ) : item.isWeeklyRecurring === false ? (
                                   <span className="text-[7px] font-bold text-zinc-500 uppercase tracking-widest">Pontual</span>

@@ -282,6 +282,7 @@ export default function ChecklistView({
   };
 
   const [cellShowInDailyMissions, setCellShowInDailyMissions] = useState(true);
+  const [cellShowInWeeklyRoutine, setCellShowInWeeklyRoutine] = useState(true);
 
   // Helper to determine time slot period:
   // 06:00 - 12:00 (no final) -> Rotina Matinal ('manha')
@@ -787,6 +788,7 @@ export default function ChecklistView({
     setCellEndTime(block.endTime || getNextHour(hour));
     setCellIsWeeklyRecurring(block.isWeeklyRecurring !== false);
     setCellShowInDailyMissions(block.showInDailyMissions !== false);
+    setCellShowInWeeklyRoutine(block.showInWeeklyRoutine !== false);
     setCellEnableReminder(Boolean(block.reminderTime));
     setCellReminderTime(block.reminderTime || effStartTime);
 
@@ -823,6 +825,7 @@ export default function ChecklistView({
     setCellSelectedDays([dayId]);
     setCellIsWeeklyRecurring(true);
     setCellShowInDailyMissions(true);
+    setCellShowInWeeklyRoutine(true);
     setCellEnableReminder(true);
     setCellReminderTime(hour);
     setCellSubtasks([]);
@@ -3371,7 +3374,40 @@ export default function ChecklistView({
                             />
                           </label>
 
-                          {/* Checkbox 3: Receber Lembrete (Notificação) */}
+                          {/* Checkbox 3: Exibir em Rotina Semanal */}
+                          <label 
+                            className={`group flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer select-none ${
+                              cellShowInWeeklyRoutine
+                                ? 'bg-orange-500/10 border-orange-500/40 text-white shadow-sm'
+                                : 'bg-zinc-900/80 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${
+                                cellShowInWeeklyRoutine
+                                  ? 'bg-orange-500 text-white shadow-md shadow-orange-500/30 ring-2 ring-orange-500/20'
+                                  : 'bg-zinc-950 border border-zinc-700 text-transparent group-hover:border-zinc-500'
+                              }`}>
+                                <Check className="h-3.5 w-3.5 stroke-[3]" />
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-xs font-bold flex items-center gap-1.5">
+                                  <Calendar className="h-3.5 w-3.5 text-orange-400" /> Exibir em Rotina Semanal
+                                </span>
+                                <span className="text-[10px] text-zinc-400">
+                                  {cellShowInWeeklyRoutine ? 'Aparece no respectivo dia da semana na aba Rotina Semanal' : 'Oculto da rotina semanal'}
+                                </span>
+                              </div>
+                            </div>
+                            <input
+                              type="checkbox"
+                              checked={cellShowInWeeklyRoutine}
+                              onChange={(e) => setCellShowInWeeklyRoutine(e.target.checked)}
+                              className="sr-only"
+                            />
+                          </label>
+
+                          {/* Checkbox 4: Receber Lembrete (Notificação) */}
                           <label 
                             className={`group flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer select-none ${
                               cellEnableReminder
@@ -3510,6 +3546,7 @@ export default function ChecklistView({
                               endTime: cellEndTime,
                               isWeeklyRecurring: cellIsWeeklyRecurring,
                               showInDailyMissions: cellShowInDailyMissions,
+                              showInWeeklyRoutine: cellShowInWeeklyRoutine,
                               createdDate: editingCell ? (gridRoutine[`${editingCell.hour}-${editingCell.day}`]?.createdDate || todayStr) : todayStr,
                               reminderTime: cellEnableReminder ? (cellReminderTime.trim() || undefined) : undefined,
                               subtasks: cellSubtasks.length > 0 ? cellSubtasks : undefined
