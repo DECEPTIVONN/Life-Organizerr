@@ -167,4 +167,23 @@ export function applyThemeColor(primaryHex: string) {
 
   root.style.setProperty('--accent-color', shades['500']);
   root.style.setProperty('--accent-glow', shades.glow);
+  root.style.setProperty('--accent-glow-subtle', shades.glowSubtle);
+}
+
+// Auto-apply saved theme on initial script load if in browser
+if (typeof window !== 'undefined') {
+  try {
+    const savedPreset = localStorage.getItem('mbc_theme_preset') || 'default';
+    const savedCustomHex = localStorage.getItem('mbc_custom_theme_hex') || '#3396f3';
+    if (savedPreset === 'custom' && savedCustomHex) {
+      applyThemeColor(savedCustomHex);
+    } else {
+      const presetObj = THEME_PRESETS.find(p => p.id === savedPreset);
+      if (presetObj) {
+        applyThemeColor(presetObj.primaryHex);
+      }
+    }
+  } catch {
+    // Ignore storage errors
+  }
 }

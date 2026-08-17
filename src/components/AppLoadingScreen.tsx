@@ -113,7 +113,7 @@ export default function AppLoadingScreen({
               </>
             ) : (
               <>
-                <Cloud className="w-4 h-4 text-orange-400 animate-pulse" />
+                <Cloud className="w-4 h-4 animate-pulse" style={{ color: 'var(--color-orange-400, #fb923c)' }} />
                 <span className="text-zinc-200">
                   {isUnlockFlow ? 'Validando e sincronizando dados...' : 'Sincronizando dados...'}
                 </span>
@@ -121,7 +121,10 @@ export default function AppLoadingScreen({
             )}
           </span>
 
-          <span className="font-bold font-mono text-orange-400 bg-black/60 px-2.5 py-1 rounded-md border border-white/10 backdrop-blur-sm shadow-sm">
+          <span 
+            className="font-bold font-mono bg-black/60 px-2.5 py-1 rounded-md border border-white/10 backdrop-blur-sm shadow-sm"
+            style={{ color: 'var(--color-orange-400, #fb923c)' }}
+          >
             {progress}%
           </span>
         </div>
@@ -129,8 +132,12 @@ export default function AppLoadingScreen({
         {/* Progress Track (Ponta a ponta de ponta horizontal completa no Desktop) */}
         <div className="h-1.5 md:h-2 w-full bg-black/80 backdrop-blur-md overflow-hidden border-y border-white/10 md:border-x-0 shadow-lg shadow-black/60 px-0">
           <motion.div
-            className="h-full bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500 relative"
-            style={{ width: `${progress}%` }}
+            className="h-full relative"
+            style={{ 
+              width: `${progress}%`,
+              background: 'linear-gradient(90deg, var(--color-orange-600, #ea580c) 0%, var(--color-orange-400, #fb923c) 50%, var(--color-orange-500, #f97316) 100%)',
+              boxShadow: '0 0 16px var(--accent-glow, rgba(249, 115, 22, 0.6))'
+            }}
             transition={{ ease: 'easeOut', duration: 0.08 }}
           >
             {/* Shimmer light effect */}

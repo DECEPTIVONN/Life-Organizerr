@@ -3778,11 +3778,29 @@ export default function App() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
-            className="fixed bottom-6 right-6 z-50 max-w-sm w-[calc(100vw-3rem)] bg-[#070709] border border-purple-500/50 rounded-2xl p-4 shadow-[0_0_20px_rgba(168,85,247,0.2)] backdrop-blur-md"
+            className="fixed bottom-6 right-6 z-50 max-w-sm w-[calc(100vw-3rem)] bg-[#070709] rounded-2xl p-4 backdrop-blur-md"
+            style={{
+              borderColor: 'var(--color-orange-500, #f97316)',
+              borderWidth: '1.5px',
+              borderStyle: 'solid',
+              boxShadow: '0 0 25px var(--accent-glow, rgba(249, 115, 22, 0.3))'
+            }}
           >
             <div className="flex items-center gap-4">
-              <div className="p-2.5 bg-purple-500/10 rounded-xl border border-purple-500/20 text-white flex items-center justify-center shrink-0 shadow-[0_0_10px_rgba(168,85,247,0.15)]">
-                <Cloud className="h-5 w-5 text-purple-300 animate-pulse" />
+              <div 
+                className="p-2.5 rounded-xl text-white flex items-center justify-center shrink-0"
+                style={{
+                  backgroundColor: 'var(--accent-glow-subtle, rgba(249, 115, 22, 0.15))',
+                  borderColor: 'var(--color-orange-400, #fb923c)',
+                  borderWidth: '1px',
+                  borderStyle: 'solid',
+                  boxShadow: '0 0 12px var(--accent-glow, rgba(249, 115, 22, 0.2))'
+                }}
+              >
+                <Cloud 
+                  className="h-5 w-5 animate-pulse" 
+                  style={{ color: 'var(--color-orange-400, #fb923c)' }}
+                />
               </div>
               <div className="flex-1 min-w-0">
                 <h4 className="text-xs font-black text-white tracking-widest uppercase font-sans">
@@ -3794,7 +3812,7 @@ export default function App() {
               </div>
               <button
                 onClick={() => setShowSyncToast(false)}
-                className="text-zinc-500 hover:text-zinc-300 p-1 rounded-lg transition-colors shrink-0"
+                className="text-zinc-500 hover:text-zinc-300 p-1 rounded-lg transition-colors shrink-0 cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>

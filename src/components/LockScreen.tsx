@@ -168,15 +168,15 @@ export default function LockScreen({
       >
         {/* Subtle holographic watermark background matching premium design */}
         <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
-          <Lock className="w-80 h-80 text-orange-500 stroke-[0.5]" />
+          <Lock className="w-80 h-80 stroke-[0.5]" style={{ color: 'var(--color-orange-500, #f97316)' }} />
         </div>
 
         {/* Security Lock Badge Indicator */}
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-zinc-950/80 border border-zinc-800/80 rounded-full mb-6 shadow-lg backdrop-blur-md">
           {isBiometricOnlyMode ? (
-            <Fingerprint className="h-3.5 w-3.5 text-orange-400" />
+            <Fingerprint className="h-3.5 w-3.5" style={{ color: 'var(--color-orange-400, #fb923c)' }} />
           ) : (
-            <ShieldCheck className="h-3.5 w-3.5 text-orange-400" />
+            <ShieldCheck className="h-3.5 w-3.5" style={{ color: 'var(--color-orange-400, #fb923c)' }} />
           )}
           <span className="text-[10px] font-mono font-bold tracking-widest text-zinc-300 uppercase">
             {isBiometricOnlyMode ? 'DESBLOQUEIO POR BIOMETRIA' : 'TELA DE BLOQUEIO ATIVA'}
@@ -186,7 +186,13 @@ export default function LockScreen({
         {/* User profile picture framed with a sleek double border and state glow */}
         <div className="relative w-28 h-28 mb-5 group cursor-pointer">
           {/* Animated Neon glowing aura */}
-          <div className="absolute -inset-1.5 bg-gradient-to-tr from-purple-600 via-pink-500 to-orange-500 rounded-full blur-md opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-spin-slow" style={{ animationDuration: '8s' }} />
+          <div 
+            className="absolute -inset-1.5 rounded-full blur-md opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-spin-slow" 
+            style={{ 
+              background: 'linear-gradient(to top right, var(--color-orange-600, #ea580c), var(--color-orange-400, #fb923c))',
+              animationDuration: '8s' 
+            }} 
+          />
           
           {/* Deep dark backing */}
           <div className="absolute inset-0.5 bg-[#0a0a0d] rounded-full z-10" />
@@ -211,7 +217,7 @@ export default function LockScreen({
         <p className="text-[11px] text-zinc-400/90 max-w-xs mx-auto leading-relaxed mb-6 select-none">
           {isBiometricOnlyMode ? (
             <>
-              Entrada preferencial com <span className="text-orange-400 font-bold">Impressão Digital</span>. Toque no sensor biométrico para desbloquear.
+              Entrada preferencial com <span className="font-bold" style={{ color: 'var(--color-orange-400, #fb923c)' }}>Impressão Digital</span>. Toque no sensor biométrico para desbloquear.
             </>
           ) : biometricFailedAttempts >= 3 ? (
             <>
@@ -219,7 +225,7 @@ export default function LockScreen({
             </>
           ) : (
             <>
-              O bloqueio do app está ativado. Digite sua <span className="text-zinc-200 font-bold">Senha de Bloqueio do App</span> para acessar o <span className="text-orange-500 font-black tracking-widest font-mono">PLANNER</span>.
+              O bloqueio do app está ativado. Digite sua <span className="text-zinc-200 font-bold">Senha de Bloqueio do App</span> para acessar o <span className="font-black tracking-widest font-mono" style={{ color: 'var(--color-orange-500, #f97316)' }}>PLANNER</span>.
             </>
           )}
         </p>
@@ -235,12 +241,27 @@ export default function LockScreen({
               disabled={isBiometricAuthenticating}
               className="w-full group relative overflow-hidden bg-zinc-950/80 hover:bg-zinc-900/90 border border-zinc-850 hover:border-zinc-700/80 text-white rounded-3xl p-6 flex flex-col items-center justify-center gap-4 transition-all duration-300 shadow-2xl backdrop-blur-md active:scale-[0.98] cursor-pointer"
             >
-              {/* Central Biometric Sensor Circle (Only this element carries the vibrant orange highlight) */}
+              {/* Central Biometric Sensor Circle (Follows user chosen theme) */}
               <div className="relative">
                 {/* Glowing ring animation behind the fingerprint */}
-                <div className="absolute -inset-1.5 bg-orange-500/30 rounded-full blur-md opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" />
+                <div 
+                  className="absolute -inset-1.5 rounded-full blur-md opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300"
+                  style={{
+                    backgroundColor: 'var(--color-orange-500, #f97316)',
+                    opacity: 0.35
+                  }}
+                />
                 
-                <div className="relative w-20 h-20 rounded-full bg-gradient-to-tr from-orange-500 to-amber-500 flex items-center justify-center text-white shadow-[0_0_25px_rgba(249,115,22,0.45)] border border-orange-400/50 group-hover:scale-105 transition-transform duration-300">
+                <div 
+                  className="relative w-20 h-20 rounded-full flex items-center justify-center text-white group-hover:scale-105 transition-transform duration-300"
+                  style={{
+                    background: 'linear-gradient(135deg, var(--color-orange-500, #f97316) 0%, var(--color-orange-400, #fb923c) 100%)',
+                    borderColor: 'var(--color-orange-300, #fdba74)',
+                    borderWidth: '2px',
+                    borderStyle: 'solid',
+                    boxShadow: '0 0 25px var(--accent-glow, rgba(249,115,22,0.45))'
+                  }}
+                >
                   {isBiometricAuthenticating ? (
                     <Loader2 className="h-9 w-9 animate-spin text-white" />
                   ) : (
@@ -358,7 +379,11 @@ export default function LockScreen({
             {/* Unlock Action Button */}
             <button
               onClick={handleUnlock}
-              className="w-full text-xs font-black rounded-2xl py-4 transition-all duration-300 font-sans uppercase tracking-[0.18em] cursor-pointer bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white shadow-[0_4px_24px_rgba(249,115,22,0.25)] hover:shadow-[0_4px_30px_rgba(249,115,22,0.45)] active:scale-[0.98]"
+              className="w-full text-xs font-black rounded-2xl py-4 transition-all duration-300 font-sans uppercase tracking-[0.18em] cursor-pointer text-white active:scale-[0.98]"
+              style={{
+                background: 'linear-gradient(135deg, var(--color-orange-500, #f97316) 0%, var(--color-orange-400, #fb923c) 100%)',
+                boxShadow: '0 4px 24px var(--accent-glow, rgba(249,115,22,0.3))'
+              }}
             >
               Entrar com Senha
             </button>
