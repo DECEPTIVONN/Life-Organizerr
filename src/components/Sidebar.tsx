@@ -727,11 +727,11 @@ export default function Sidebar({
           setIsDraggingScrollTrack(true);
           handleScrollTrackInteraction(e.clientY);
         }}
-        className="hidden lg:flex fixed top-0 right-0 w-2.5 hover:w-3.5 h-full bg-zinc-900/40 hover:bg-zinc-800/80 transition-all duration-150 z-50 cursor-pointer group flex-col justify-start overflow-hidden select-none"
+        className="hidden lg:flex fixed top-0 right-0 w-2 hover:w-3 h-full bg-zinc-950/30 hover:bg-zinc-900/60 transition-all duration-150 z-50 cursor-pointer group flex-col justify-start overflow-hidden select-none border-0"
         title={`Progresso da página: ${Math.round(scrollProgress)}% • Clique ou arraste para navegar`}
       >
         <div 
-          className="w-full bg-gradient-to-b from-orange-500 via-amber-500 to-orange-400 shadow-[0_0_12px_var(--color-orange-500,#f97316)] transition-all duration-75 relative rounded-b-full"
+          className="w-full bg-gradient-to-b from-orange-500 via-amber-500 to-orange-400 shadow-[0_0_8px_var(--color-orange-500,#f97316)] transition-all duration-75 relative rounded-b-full border-0"
           style={{ height: `${scrollProgress}%` }}
         />
       </div>
@@ -1737,11 +1737,11 @@ export default function Sidebar({
             </motion.div>
           ) : (
             <div 
-              className="w-10 h-1 bg-zinc-900/80 rounded-full overflow-hidden mt-3 border border-zinc-800/40"
+              className="w-10 h-1 bg-zinc-900/60 rounded-full overflow-hidden mt-3 border-0"
               title={`Progresso da página: ${Math.round(scrollProgress)}%`}
             >
               <div 
-                className="bg-orange-500 h-full rounded-full transition-all duration-75 shadow-[0_0_6px_var(--color-orange-500,#f97316)]" 
+                className="bg-orange-500 h-full rounded-full transition-all duration-75 shadow-[0_0_4px_var(--color-orange-500,#f97316)] border-0" 
                 style={{ width: `${scrollProgress}%` }} 
               />
             </div>

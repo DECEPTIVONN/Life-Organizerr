@@ -458,7 +458,24 @@ export default function CalendarView({
     addXp(5);
   };
   
-  const [viewMode, setViewMode] = useState<'grid' | 'weekly'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'weekly'>(() => {
+    try {
+      const saved = localStorage.getItem('mbc_agenda_view_mode') || localStorage.getItem('mbc_calendar_view_mode');
+      if (saved === 'weekly' || saved === 'semanal') return 'weekly';
+      return 'grid';
+    } catch {
+      return 'grid';
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('mbc_agenda_view_mode', viewMode);
+      localStorage.setItem('mbc_calendar_view_mode', viewMode);
+    } catch {
+      // ignore
+    }
+  }, [viewMode]);
   const [dayChecklist, setDayChecklist] = useState<DailyTask[]>([]);
   const [expandedDayTasks, setExpandedDayTasks] = useState<Record<string, boolean>>({});
   const [newDayTaskText, setNewDayTaskText] = useState('');
@@ -2062,7 +2079,6 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
           <button
             onClick={() => {
               setCurrentDate(new Date());
-              setViewMode('grid');
             }}
             className="h-7 w-7 rounded-lg border-2 border-zinc-600 hover:border-white text-zinc-400 hover:text-white flex items-center justify-center text-[10px] font-extrabold font-mono transition-all hover:scale-105 active:scale-95"
             title="Hoje"
@@ -2387,9 +2403,9 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="cursor-default bg-[#0a0a0c] border border-zinc-800 rounded-3xl w-full max-w-6xl h-full max-h-[85vh] my-auto flex flex-col overflow-hidden shadow-2xl shadow-orange-500/5 text-left"
+              className="cursor-default bg-[#0a0a0c] border border-zinc-800 rounded-3xl w-full max-w-6xl h-full max-h-[92vh] sm:max-h-[90vh] my-auto flex flex-col overflow-hidden shadow-2xl shadow-orange-500/5 text-left"
             >
-              <div ref={panelRef} className="flex flex-col h-full overflow-hidden">
+              <div ref={panelRef} className="flex flex-col h-full overflow-hidden min-h-0">
           
           <AnimatePresence mode="wait">
             {isEditingTemplates ? (
@@ -2399,9 +2415,9 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.98 }}
-                className="p-5 flex flex-col h-full space-y-4"
+                className="p-4 sm:p-5 flex flex-col h-full overflow-hidden min-h-0 space-y-3"
               >
-                <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
+                <div className="shrink-0 flex justify-between items-center border-b border-zinc-800 pb-3">
                   <div>
                     <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
                       <Settings className="h-4 w-4 text-orange-500" />
@@ -2419,7 +2435,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                   </button>
                 </div>
 
-                <div className="flex-1 space-y-4 overflow-y-auto max-h-[500px] pr-1">
+                <div className="flex-1 space-y-4 overflow-y-auto min-h-0 pr-1">
                   <div>
                     <label className="text-[10px] text-orange-400 font-bold block mb-1 uppercase flex items-center gap-1">
                       <Heart className="h-3 w-3" /> Caderno da Gratidão (Modelo)
@@ -2457,7 +2473,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                   </div>
                 </div>
 
-                <div className="flex gap-2 pt-2 border-t border-zinc-800">
+                <div className="shrink-0 flex gap-2 pt-2 border-t border-zinc-800 bg-[#0a0a0c]">
                   <button
                     onClick={() => setIsEditingTemplates(false)}
                     className="flex-1 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold text-xs rounded-xl transition-colors"
@@ -2479,10 +2495,10 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="p-5 flex flex-col h-full space-y-4"
+                className="p-4 sm:p-5 flex flex-col h-full overflow-hidden min-h-0 space-y-3"
               >
                 {/* Panel Header */}
-                <div className="flex justify-between items-start border-b border-zinc-800 pb-3">
+                <div className="shrink-0 flex justify-between items-start border-b border-zinc-800 pb-3">
                   <div>
                     <h3 className="text-xs font-bold text-white uppercase tracking-wider">
                       Espaço Diário & Fé
@@ -2526,10 +2542,10 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                   </div>
                 ) : (
                   /* Active Day Entry Editor */
-                  <div className="flex-1 flex flex-col space-y-4">
+                  <div className="flex-1 flex flex-col overflow-hidden min-h-0 space-y-3">
                     
                      {/* Primary Topic Selector (Grid de Categorias de Bloco) */}
-                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 bg-zinc-950 p-2 rounded-2xl border border-zinc-900">
+                    <div className="shrink-0 grid grid-cols-3 sm:grid-cols-6 gap-2 bg-zinc-950 p-2 rounded-2xl border border-zinc-900">
                       {[
                         { id: 'diario', label: 'Diário Pessoal', icon: BookOpen },
                         { id: 'checklist', label: 'Checklist', icon: Check },
@@ -2560,8 +2576,8 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                       })}
                     </div>
 
-                    {/* Topic Content Container */}
-                    <div className="flex-1 min-h-[250px] flex flex-col justify-between">
+                    {/* Topic Content Container (Scrollable) */}
+                    <div className="flex-1 overflow-y-auto min-h-0 pr-1 space-y-3 scrollbar-thin">
                       {activeTopic === 'diario' ? (
                         /* DIARIO TOPIC */
                         <div className="space-y-2 flex-1 flex flex-col">
@@ -3347,8 +3363,8 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                       )}
                     </div>
 
-                    {/* Bottom Save Area */}
-                    <div className="pt-3 border-t border-zinc-800 flex items-center justify-between">
+                    {/* Pinned Bottom Save Area */}
+                    <div className="shrink-0 pt-3 border-t border-zinc-800 bg-[#0a0a0c] flex items-center justify-between z-10 sticky bottom-0">
                       <span className="text-[10px] text-gray-500 font-mono">
                         {savingStatus === 'saving' && (
                           <span className="text-orange-400 flex items-center gap-1">

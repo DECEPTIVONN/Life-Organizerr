@@ -43,6 +43,7 @@ import {
 } from 'lucide-react';
 import { subscribeToMutationQueue, processMutationQueue, clearAllMutations, QueueStatus } from '../lib/indexedDbQueue';
 import { isPlatformAuthenticatorAvailable, verifyBiometric } from '../utils/biometricAuth';
+import defaultLockBg from '../assets/images/1271888.jpg';
 import ColorSchemeModal from './ColorSchemeModal';
 import { THEME_PRESETS, applyThemeColor } from '../utils/themeColors';
 import { motion, AnimatePresence } from 'motion/react';
@@ -1972,11 +1973,11 @@ export default function SettingsView({
                     {/* Preview Desktop */}
                     <div className="relative aspect-video w-full rounded-lg overflow-hidden border border-zinc-800 bg-zinc-900 flex items-center justify-center">
                       <img 
-                        src={lockScreenDesktopImage || '/src/assets/images/1271888.jpg'} 
+                        src={lockScreenDesktopImage || defaultLockBg || '/assets/1271888.jpg'} 
                         alt="Desktop Lock Screen Preview"
                         className="w-full h-full object-cover"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/src/assets/images/1271888.jpg';
+                          (e.target as HTMLImageElement).src = defaultLockBg || '/assets/1271888.jpg';
                         }}
                       />
                       <div className="absolute inset-0 bg-black/40 flex items-center justify-center pointer-events-none">
@@ -2125,11 +2126,11 @@ export default function SettingsView({
                     {/* Preview Mobile */}
                     <div className="relative aspect-video w-full rounded-lg overflow-hidden border border-zinc-800 bg-zinc-900 flex items-center justify-center">
                       <img 
-                        src={lockScreenMobileImage || lockScreenDesktopImage || '/src/assets/images/1271888.jpg'} 
+                        src={lockScreenMobileImage || lockScreenDesktopImage || defaultLockBg || '/assets/1271888.jpg'} 
                         alt="Mobile Lock Screen Preview"
                         className="w-full h-full object-cover"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/src/assets/images/1271888.jpg';
+                          (e.target as HTMLImageElement).src = defaultLockBg || '/assets/1271888.jpg';
                         }}
                       />
                       <div className="absolute inset-0 bg-black/40 flex items-center justify-center pointer-events-none">

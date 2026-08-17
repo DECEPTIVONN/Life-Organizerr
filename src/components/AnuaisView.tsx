@@ -2549,10 +2549,10 @@ export default function AnuaisView({
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="cursor-default bg-[#0a0a0c] border border-zinc-800 rounded-3xl w-full max-w-6xl h-full max-h-[85vh] my-auto flex flex-col overflow-hidden shadow-2xl shadow-orange-500/5 text-left"
+              className="cursor-default bg-[#0a0a0c] border border-zinc-800 rounded-3xl w-full max-w-6xl h-full max-h-[92vh] sm:max-h-[90vh] my-auto flex flex-col overflow-hidden shadow-2xl shadow-orange-500/5 text-left"
             >
               {/* Header */}
-              <div className="p-5 border-b border-zinc-850 flex items-center justify-between bg-zinc-950/40">
+              <div className="shrink-0 p-4 sm:p-5 border-b border-zinc-850 flex items-center justify-between bg-zinc-950/40">
                 <div>
                   <h3 className="text-xs font-bold text-white uppercase tracking-wider">
                     Espaço Diário & Fé
@@ -2579,7 +2579,7 @@ export default function AnuaisView({
               </div>
 
               {/* Sub tabs list selectors (Grid de Categorias de Bloco) */}
-              <div className="px-5 py-3 border-b border-zinc-900 grid grid-cols-3 sm:grid-cols-5 gap-2 bg-zinc-950/40">
+              <div className="shrink-0 px-4 sm:px-5 py-3 border-b border-zinc-900 grid grid-cols-3 sm:grid-cols-5 gap-2 bg-zinc-950/40">
                 {[
                   { id: 'diario', label: 'Diário Pessoal', icon: BookOpen },
                   { id: 'checklist', label: 'Checklist Diário', icon: CheckSquare },
@@ -2610,7 +2610,7 @@ export default function AnuaisView({
               </div>
 
               {/* Main Tab Content */}
-              <div className="flex-1 overflow-y-auto p-5 space-y-4">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 min-h-0 scrollbar-thin">
                 {activeTopic === 'diario' && (
                   <div className="space-y-2 flex flex-col h-full min-h-[300px]">
                     <div className="flex justify-between items-center text-[10px] text-zinc-500 uppercase tracking-wider font-bold">
@@ -2966,7 +2966,7 @@ export default function AnuaisView({
               </div>
 
               {/* Save footer */}
-              <div className="p-4 bg-zinc-950 border-t border-zinc-850 flex items-center justify-end gap-2.5">
+              <div className="shrink-0 p-4 bg-zinc-950 border-t border-zinc-850 flex items-center justify-end gap-2.5 sticky bottom-0 z-10">
                 <button
                   type="button"
                   onClick={() => setSelectedDateStr(null)}

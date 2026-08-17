@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, ShieldAlert, X, Info, Lock, ShieldCheck, KeyRound, Fingerprint, Loader2, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { verifyBiometric } from '../utils/biometricAuth';
+import defaultLockBg from '../assets/images/1271888.jpg';
 
 interface LockScreenProps {
   userName: string;
@@ -30,6 +31,10 @@ export default function LockScreen({
   const [isBiometricAuthenticating, setIsBiometricAuthenticating] = useState(false);
   const [hasTriggeredBiometric, setHasTriggeredBiometric] = useState(false);
   const [biometricFailedAttempts, setBiometricFailedAttempts] = useState(0);
+
+  // Default fallback wallpaper
+  const desktopBg = lockScreenDesktopImage || defaultLockBg || '/assets/1271888.jpg';
+  const mobileBg = lockScreenMobileImage || lockScreenDesktopImage || defaultLockBg || '/assets/1271888.jpg';
 
   // If biometric is enabled and attempts < 3, only show biometric digital option
   const isBiometricOnlyMode = appLockBiometricEnabled && biometricFailedAttempts < 3;
@@ -115,21 +120,21 @@ export default function LockScreen({
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center select-none overflow-hidden text-zinc-300 font-sans">
       
-      {/* Background Layer (Desktop Screen: lockScreenDesktopImage or default) */}
+      {/* Background Layer (Desktop Screen: desktopBg) */}
       <div 
         className="hidden md:block absolute inset-0 bg-cover bg-center transition-transform duration-[15000ms] ease-out scale-105"
         style={{
-          backgroundImage: `linear-gradient(to bottom, rgba(4, 4, 5, 0.75) 0%, rgba(4, 4, 5, 0.92) 100%), url('${lockScreenDesktopImage || '/src/assets/images/1271888.jpg'}')`,
+          backgroundImage: `linear-gradient(to bottom, rgba(4, 4, 5, 0.72) 0%, rgba(4, 4, 5, 0.90) 100%), url('${desktopBg}')`,
           backgroundSize: 'cover',
           backgroundPosition: 'center'
         }}
       />
 
-      {/* Background Layer (Mobile Screen: lockScreenMobileImage or desktop fallback or default) */}
+      {/* Background Layer (Mobile Screen: mobileBg) */}
       <div 
         className="block md:hidden absolute inset-0 bg-cover bg-center transition-transform duration-[15000ms] ease-out scale-105"
         style={{
-          backgroundImage: `linear-gradient(to bottom, rgba(4, 4, 5, 0.75) 0%, rgba(4, 4, 5, 0.92) 100%), url('${lockScreenMobileImage || lockScreenDesktopImage || '/src/assets/images/1271888.jpg'}')`,
+          backgroundImage: `linear-gradient(to bottom, rgba(4, 4, 5, 0.72) 0%, rgba(4, 4, 5, 0.90) 100%), url('${mobileBg}')`,
           backgroundSize: 'cover',
           backgroundPosition: 'center'
         }}
@@ -159,23 +164,27 @@ export default function LockScreen({
       <motion.div 
         animate={shakeTrigger ? { x: [-10, 10, -10, 10, -5, 5, 0] } : {}}
         transition={{ duration: 0.5 }}
-        className="relative z-10 w-full max-w-md px-8 py-12 text-center flex flex-col justify-center items-center"
+        className="relative z-10 w-full max-w-md px-6 sm:px-8 py-10 sm:py-12 text-center flex flex-col justify-center items-center"
       >
         {/* Subtle holographic watermark background matching premium design */}
         <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
           <Lock className="w-80 h-80 text-orange-500 stroke-[0.5]" />
         </div>
 
-        {/* Security Shield Lock Badge Indicator */}
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-zinc-950/80 border border-orange-500/30 rounded-full mb-6 shadow-[0_0_20px_rgba(249,115,22,0.15)] backdrop-blur-md">
-          <ShieldCheck className="h-4 w-4 text-orange-400" />
-          <span className="text-[10px] font-mono font-bold tracking-widest text-orange-400 uppercase">
+        {/* Security Lock Badge Indicator */}
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-zinc-950/80 border border-zinc-800/80 rounded-full mb-6 shadow-lg backdrop-blur-md">
+          {isBiometricOnlyMode ? (
+            <Fingerprint className="h-3.5 w-3.5 text-orange-400" />
+          ) : (
+            <ShieldCheck className="h-3.5 w-3.5 text-orange-400" />
+          )}
+          <span className="text-[10px] font-mono font-bold tracking-widest text-zinc-300 uppercase">
             {isBiometricOnlyMode ? 'DESBLOQUEIO POR BIOMETRIA' : 'TELA DE BLOQUEIO ATIVA'}
           </span>
         </div>
 
         {/* User profile picture framed with a sleek double border and state glow */}
-        <div className="relative w-28 h-28 mb-6 group cursor-pointer">
+        <div className="relative w-28 h-28 mb-5 group cursor-pointer">
           {/* Animated Neon glowing aura */}
           <div className="absolute -inset-1.5 bg-gradient-to-tr from-purple-600 via-pink-500 to-orange-500 rounded-full blur-md opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-spin-slow" style={{ animationDuration: '8s' }} />
           
@@ -199,7 +208,7 @@ export default function LockScreen({
         </h2>
 
         {/* Locking description */}
-        <p className="text-[11px] text-zinc-400/90 max-w-xs mx-auto leading-relaxed mb-8 select-none">
+        <p className="text-[11px] text-zinc-400/90 max-w-xs mx-auto leading-relaxed mb-6 select-none">
           {isBiometricOnlyMode ? (
             <>
               Entrada preferencial com <span className="text-orange-400 font-bold">Impressão Digital</span>. Toque no sensor biométrico para desbloquear.
@@ -224,25 +233,29 @@ export default function LockScreen({
               type="button"
               onClick={handleBiometricUnlock}
               disabled={isBiometricAuthenticating}
-              className="w-full relative group overflow-hidden bg-gradient-to-br from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white font-black py-6 px-6 rounded-3xl flex flex-col items-center justify-center gap-3 transition-all duration-300 shadow-[0_10px_40px_rgba(249,115,22,0.35)] hover:shadow-[0_12px_50px_rgba(249,115,22,0.5)] active:scale-[0.98] cursor-pointer"
+              className="w-full group relative overflow-hidden bg-zinc-950/80 hover:bg-zinc-900/90 border border-zinc-850 hover:border-zinc-700/80 text-white rounded-3xl p-6 flex flex-col items-center justify-center gap-4 transition-all duration-300 shadow-2xl backdrop-blur-md active:scale-[0.98] cursor-pointer"
             >
-              {/* Pulsing visual glow layer */}
-              <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              
-              <div className="p-4 bg-black/25 rounded-2xl border border-white/20 group-hover:scale-110 transition-transform duration-300 shadow-inner">
-                {isBiometricAuthenticating ? (
-                  <Loader2 className="h-10 w-10 animate-spin text-white" />
-                ) : (
-                  <Fingerprint className="h-10 w-10 text-white stroke-[2.2] animate-pulse" />
-                )}
+              {/* Central Biometric Sensor Circle (Only this element carries the vibrant orange highlight) */}
+              <div className="relative">
+                {/* Glowing ring animation behind the fingerprint */}
+                <div className="absolute -inset-1.5 bg-orange-500/30 rounded-full blur-md opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" />
+                
+                <div className="relative w-20 h-20 rounded-full bg-gradient-to-tr from-orange-500 to-amber-500 flex items-center justify-center text-white shadow-[0_0_25px_rgba(249,115,22,0.45)] border border-orange-400/50 group-hover:scale-105 transition-transform duration-300">
+                  {isBiometricAuthenticating ? (
+                    <Loader2 className="h-9 w-9 animate-spin text-white" />
+                  ) : (
+                    <Fingerprint className="h-10 w-10 text-white stroke-[2.2] animate-pulse" />
+                  )}
+                </div>
               </div>
 
-              <div className="text-center space-y-0.5">
-                <span className="uppercase tracking-[0.2em] font-sans text-xs font-black block">
+              {/* Action Text */}
+              <div className="text-center space-y-1">
+                <span className="uppercase tracking-[0.18em] font-sans text-xs font-black text-zinc-100 block">
                   {isBiometricAuthenticating ? 'Lendo Digital...' : 'Desbloquear com Digital'}
                 </span>
-                <span className="text-[10px] text-white/80 font-mono block">
-                  Toque para autenticar biometria
+                <span className="text-[10px] text-zinc-400 font-mono block">
+                  Toque no sensor para autenticar
                 </span>
               </div>
             </button>
@@ -353,7 +366,7 @@ export default function LockScreen({
         )}
 
         {/* Forgot password link */}
-        <div className="mt-12 space-y-3">
+        <div className="mt-10 space-y-2.5">
           <button
             onClick={() => setShowForgotHelp(true)}
             className="text-[10px] text-zinc-500 hover:text-orange-400 font-bold uppercase tracking-[0.15em] font-sans transition-colors cursor-pointer"

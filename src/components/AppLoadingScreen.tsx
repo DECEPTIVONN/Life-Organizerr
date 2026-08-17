@@ -96,36 +96,24 @@ export default function AppLoadingScreen({
       {/* Subtle bottom gradient to ensure 100% legibility for the sync bar */}
       <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none" />
 
-      {/* Bottom Synchronization Bar (Minimal & Clean) */}
-      <div className="relative z-10 w-full max-w-xl mx-auto px-6 sm:px-10 pb-8 sm:pb-12 space-y-2.5">
-        {/* Progress Track */}
-        <div className="h-1.5 w-full bg-black/60 backdrop-blur-md rounded-full overflow-hidden p-[1px] border border-white/10 shadow-lg shadow-black/40">
-          <motion.div
-            className="h-full bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500 rounded-full relative"
-            style={{ width: `${progress}%` }}
-            transition={{ ease: 'easeOut', duration: 0.08 }}
-          >
-            {/* Shimmer light effect */}
-            <div className="absolute inset-0 bg-white/25 animate-pulse" />
-          </motion.div>
-        </div>
-
+      {/* Bottom Synchronization Bar (Edge-to-edge horizontally on desktop) */}
+      <div className="relative z-10 w-full md:max-w-none mx-auto pb-6 sm:pb-8 md:pb-6 space-y-2.5">
         {/* Status Line */}
-        <div className="flex items-center justify-between text-[11px] font-mono tracking-tight text-zinc-300 px-1 drop-shadow-md">
-          <span className="flex items-center gap-1.5">
+        <div className="flex items-center justify-between text-[11px] md:text-xs font-mono tracking-tight text-zinc-300 px-6 sm:px-10 md:px-10 max-w-6xl mx-auto drop-shadow-md">
+          <span className="flex items-center gap-2">
             {progress >= 100 ? (
               <>
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="text-zinc-200 font-medium">Sincronizado</span>
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <span className="text-zinc-200 font-semibold">Sincronizado</span>
               </>
             ) : syncStatus === 'error' ? (
               <>
-                <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
+                <AlertCircle className="w-4 h-4 text-amber-400" />
                 <span className="text-zinc-200">Sincronizando offline...</span>
               </>
             ) : (
               <>
-                <Cloud className="w-3.5 h-3.5 text-orange-400 animate-pulse" />
+                <Cloud className="w-4 h-4 text-orange-400 animate-pulse" />
                 <span className="text-zinc-200">
                   {isUnlockFlow ? 'Validando e sincronizando dados...' : 'Sincronizando dados...'}
                 </span>
@@ -133,9 +121,21 @@ export default function AppLoadingScreen({
             )}
           </span>
 
-          <span className="font-bold font-mono text-orange-400 bg-black/40 px-2 py-0.5 rounded-md border border-white/5 backdrop-blur-sm">
+          <span className="font-bold font-mono text-orange-400 bg-black/60 px-2.5 py-1 rounded-md border border-white/10 backdrop-blur-sm shadow-sm">
             {progress}%
           </span>
+        </div>
+
+        {/* Progress Track (Ponta a ponta de ponta horizontal completa no Desktop) */}
+        <div className="h-1.5 md:h-2 w-full bg-black/80 backdrop-blur-md overflow-hidden border-y border-white/10 md:border-x-0 shadow-lg shadow-black/60 px-0">
+          <motion.div
+            className="h-full bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500 relative"
+            style={{ width: `${progress}%` }}
+            transition={{ ease: 'easeOut', duration: 0.08 }}
+          >
+            {/* Shimmer light effect */}
+            <div className="absolute inset-0 bg-white/25 animate-pulse" />
+          </motion.div>
         </div>
       </div>
     </motion.div>

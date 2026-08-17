@@ -72,10 +72,10 @@ export default function TagInputWithMention({
   const [selectedColor, setSelectedColor] = useState('#f59e0b');
   const [selectedParentGroup, setSelectedParentGroup] = useState<string | null>(null);
   const [selectedParentTag, setSelectedParentTag] = useState<TagItem | null>(null);
+  const [expandedTagIds, setExpandedTagIds] = useState<Record<string, boolean>>({});
   const [dropdownPos, setDropdownPos] = useState({ top: 38, left: 12 });
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const backdropRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -88,14 +88,6 @@ export default function TagInputWithMention({
       setNewTagNameInput(clean);
     }
   }, [dropdownQuery, isCreationMode]);
-
-  // Sync scrolling between textarea and backdrop layer
-  const handleScroll = () => {
-    if (textareaRef.current && backdropRef.current) {
-      backdropRef.current.scrollTop = textareaRef.current.scrollTop;
-      backdropRef.current.scrollLeft = textareaRef.current.scrollLeft;
-    }
-  };
 
   // Recalculate dropdown position on exact line where `@` or `@#` is typed
   const updateDropdownPosition = (targetIndex: number) => {
@@ -162,33 +154,42 @@ export default function TagInputWithMention({
     setSelectedParentTag(null);
   };
 
-  // Insert tag into textarea at cursor position
+  // Insert tag into textarea cleanly and immediately restore typing
   const insertTagIntoText = (tagName: string) => {
     const cleanTagName = tagName.replace(/^[@#]+/, '').replace(/#/g, '').trim();
-    if (!textareaRef.current) return;
+    if (!cleanTagName) return;
 
-    const cursorPos = textareaRef.current.selectionStart || 0;
-    const textBefore = value.substring(0, cursorPos);
-    const textAfter = value.substring(cursorPos);
+    const textarea = textareaRef.current;
+    const currentVal = value || '';
+    const cursorPos = textarea?.selectionStart ?? currentVal.length;
+
+    const textBefore = currentVal.substring(0, cursorPos);
+    const textAfter = currentVal.substring(cursorPos);
 
     // Find nearest `@#` or `@` before cursor
     const lastAtHash = textBefore.lastIndexOf('@#');
     const lastAt = textBefore.lastIndexOf('@');
 
     let targetIndex = -1;
-    if (lastAtHash !== -1 && lastAtHash >= lastAt - 1) {
+    if (lastAtHash !== -1 && lastAtHash >= textBefore.length - 30) {
       targetIndex = lastAtHash;
-    } else if (lastAt !== -1) {
+    } else if (lastAt !== -1 && lastAt >= textBefore.length - 30) {
       targetIndex = lastAt;
     }
 
-    let newText = value;
+    let newText: string;
+    let nextCursorPos: number;
+
     if (targetIndex !== -1) {
-      const prefix = value.substring(0, targetIndex);
-      // Replaces command with @TagName
-      newText = `${prefix}@${cleanTagName} ${textAfter}`;
+      const prefix = textBefore.substring(0, targetIndex);
+      const inserted = `@${cleanTagName} `;
+      newText = `${prefix}${inserted}${textAfter}`;
+      nextCursorPos = prefix.length + inserted.length;
     } else {
-      newText = `${value} @${cleanTagName} `;
+      const prefix = currentVal ? `${currentVal} ` : '';
+      const inserted = `@${cleanTagName} `;
+      newText = `${prefix}${inserted}`;
+      nextCursorPos = newText.length;
     }
 
     onChange(newText);
@@ -202,15 +203,13 @@ export default function TagInputWithMention({
       onTagSelected(cleanTagName);
     }
 
-    // Refocus textarea and set cursor after tag
+    // Refocus textarea and place cursor directly after tag
     setTimeout(() => {
       if (textareaRef.current) {
         textareaRef.current.focus();
-        const startPos = targetIndex !== -1 ? targetIndex : value.length;
-        const newCursorPos = startPos + cleanTagName.length + 2; // `@` + name + space
-        textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
+        textareaRef.current.setSelectionRange(nextCursorPos, nextCursorPos);
       }
-    }, 50);
+    }, 20);
   };
 
   const handleCreateInlineTag = (e?: React.FormEvent) => {
@@ -231,43 +230,22 @@ export default function TagInputWithMention({
     insertTagIntoText(created.name);
   };
 
-  // Highlight used tags in text layer using defined tag colors
-  const renderHighlightedContent = (text: string) => {
-    if (!text) return null;
-
-    // Match tags in format @TagName, @#TagName, or #TagName
-    const regex = /(@#[^\s@#]+|@[^\s@#]+|#[^\s@#]+)/g;
-    const parts = text.split(regex);
-
-    return (
-      <>
-        {parts.map((part, i) => {
-          if (part.startsWith('@') || part.startsWith('#')) {
-            const cleanName = part.replace(/^[@#]+/, '').replace(/#/g, '').trim();
-            const matchedTag = tags.find(t => t.name.toLowerCase() === cleanName.toLowerCase());
-            const tagColor = matchedTag ? matchedTag.color : '#f97316';
-
-            return (
-              <mark
-                key={i}
-                className="bg-transparent rounded px-0.5 font-bold transition-all pointer-events-none"
-                style={{
-                  color: tagColor,
-                  backgroundColor: `${tagColor}22`,
-                  borderBottom: `2px solid ${tagColor}`,
-                  boxShadow: `0 2px 6px ${tagColor}22`
-                }}
-              >
-                {part}
-              </mark>
-            );
-          }
-          return <span key={i} className="text-white">{part}</span>;
-        })}
-        {text.endsWith('\n') && <br />}
-      </>
-    );
+  // Extract active tags used in the current text for visual chips display
+  const extractUsedTags = () => {
+    if (!value) return [];
+    const matches = value.match(/@[^\s@#]+/g) || [];
+    const unique = Array.from(new Set(matches.map(m => m.replace(/^@/, '').trim()))).filter(Boolean);
+    return unique.map(name => {
+      const found = tags.find(t => t.name.toLowerCase() === name.toLowerCase());
+      return {
+        name,
+        color: found ? found.color : '#f97316',
+        group: found ? found.group : undefined
+      };
+    });
   };
+
+  const usedTags = extractUsedTags();
 
   // Group tags
   const availableGroups = Array.from(new Set([...DEFAULT_TAG_GROUPS, ...tags.map(t => t.group)])).filter(Boolean);
@@ -278,38 +256,23 @@ export default function TagInputWithMention({
     <div className={`relative w-full ${isFlex ? 'flex-1 flex flex-col min-h-[220px]' : 'space-y-1.5'}`}>
       <div className={`relative bg-zinc-950 border border-zinc-800 rounded-xl focus-within:border-orange-500/80 transition-all overflow-hidden ${isFlex ? 'flex-1 flex flex-col' : ''}`}>
         
-        {/* Backdrop Layer for Tag Highlighting with assigned tag colors */}
-        <div
-          ref={backdropRef}
-          aria-hidden="true"
-          className="absolute inset-0 z-0 pointer-events-none px-3.5 py-2.5 text-xs font-sans leading-relaxed text-white whitespace-pre-wrap break-words overflow-auto select-none"
-          style={{
-            wordBreak: 'break-word',
-            color: '#ffffff'
-          }}
-        >
-          {renderHighlightedContent(value)}
-        </div>
-
-        {/* Textarea Layer (Transparent text, visible cursor, full editing capability) */}
+        {/* Direct, responsive native textarea for 100% reliable editing and typing */}
         <textarea
           ref={textareaRef}
           value={value}
           onChange={handleTextareaChange}
-          onScroll={handleScroll}
           placeholder={placeholder}
           rows={rows}
-          className={`relative z-10 w-full px-3.5 py-2.5 bg-transparent text-transparent caret-orange-500 placeholder-zinc-500 text-xs font-sans leading-relaxed focus:outline-none transition-all resize-y selection:bg-orange-500/30 selection:text-white ${
+          className={`relative z-10 w-full px-3.5 py-2.5 bg-transparent text-zinc-100 placeholder-zinc-500 text-xs font-sans leading-relaxed focus:outline-none transition-all resize-y caret-orange-500 selection:bg-orange-500/30 selection:text-white ${
             isFlex ? 'flex-1 h-full min-h-[220px] sm:min-h-[280px] lg:min-h-[340px]' : ''
           } ${className}`}
           style={{
-            WebkitTextFillColor: 'transparent',
             wordBreak: 'break-word'
           }}
         />
 
         {/* Floating Quick Action Button */}
-        <div className="absolute right-2 bottom-2 z-20 flex items-center gap-1.5">
+        <div className="absolute right-2 bottom-2 z-20 flex items-center gap-1.5 bg-zinc-950/80 p-1 rounded-xl backdrop-blur-sm border border-zinc-800/80 shadow-md">
           <button
             type="button"
             onClick={() => {
@@ -322,18 +285,18 @@ export default function TagInputWithMention({
               setSelectedParentTag(null);
               setIsCreationMode(false);
             }}
-            className="p-1.5 bg-zinc-900/90 hover:bg-orange-500/20 hover:text-orange-400 border border-zinc-800 text-zinc-400 rounded-lg text-xs transition-colors flex items-center gap-1 shadow-sm"
+            className="p-1.5 bg-zinc-900 hover:bg-orange-500/20 hover:text-orange-400 border border-zinc-800 text-zinc-300 rounded-lg text-xs transition-colors flex items-center gap-1 shadow-sm"
             title="Inserir Tag (@)"
           >
-            <TagIcon className="h-3.5 w-3.5" />
-            <span className="text-[10px] font-mono font-bold">@</span>
+            <TagIcon className="h-3.5 w-3.5 text-orange-400" />
+            <span className="text-[10px] font-mono font-bold text-orange-400">@</span>
           </button>
 
           {openTagManagerModal && (
             <button
               type="button"
               onClick={openTagManagerModal}
-              className="p-1.5 bg-zinc-900/90 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-800 rounded-lg text-xs transition-colors"
+              className="p-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 rounded-lg text-xs transition-colors"
               title="Central de Tags"
             >
               <Folder className="h-3.5 w-3.5" />
@@ -341,6 +304,27 @@ export default function TagInputWithMention({
           )}
         </div>
       </div>
+
+      {/* Chips bar showing active tags with their colors */}
+      {usedTags.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 px-1 pt-1">
+          <span className="text-[10px] text-zinc-500 font-mono font-medium">Tags ativas:</span>
+          {usedTags.map(tag => (
+            <span
+              key={tag.name}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold border shadow-xs"
+              style={{
+                backgroundColor: `${tag.color}18`,
+                borderColor: `${tag.color}40`,
+                color: tag.color
+              }}
+            >
+              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: tag.color }} />
+              @{tag.name}
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Mention Dropdown Overlay - Positioned exactly at line invocation */}
       {showDropdown && (
@@ -513,7 +497,7 @@ export default function TagInputWithMention({
                     ))}
                 </div>
               ) : (
-                /* Showing Groups and Main Tags in a Clean Tree Hierarchy */
+                /* Showing Groups and Main Tags in a Clean Tree Hierarchy with Click-to-Expand Sub-tags */
                 availableGroups.map(groupName => {
                   const groupTags = tags.filter(t => t.group === groupName);
                   if (groupTags.length === 0) return null;
@@ -526,32 +510,64 @@ export default function TagInputWithMention({
                   const renderTagTree = (tag: TagItem, level: number = 0): React.ReactNode => {
                     const subTags = tags.filter(st => st.id !== tag.id && (st.parentTagId === tag.id || (st.parentTagName && st.parentTagName === tag.name)));
                     const hasSubTags = subTags.length > 0;
+                    const isExpanded = !!expandedTagIds[tag.id];
 
                     return (
                       <div key={tag.id} className="space-y-1">
-                        <button
-                          type="button"
-                          onClick={() => insertTagIntoText(tag.name)}
-                          className={`w-full text-left px-2.5 py-1.5 rounded-lg bg-zinc-950 hover:bg-zinc-800/90 text-zinc-200 flex items-center justify-between border border-zinc-800/60 transition-all group ${
+                        <div
+                          className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-zinc-950 hover:bg-zinc-800/90 border border-zinc-800/60 transition-all ${
                             level > 0 ? 'bg-zinc-950/70 border-zinc-850' : ''
                           }`}
                         >
-                          <span className="flex items-center gap-2 min-w-0">
+                          {/* Clicking tag name or row inserts tag if no subtags or toggles expansion if subtags exist */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (hasSubTags) {
+                                setExpandedTagIds(prev => ({ ...prev, [tag.id]: !prev[tag.id] }));
+                              } else {
+                                insertTagIntoText(tag.name);
+                              }
+                            }}
+                            className="flex items-center gap-2 min-w-0 flex-1 text-left"
+                          >
                             <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: tag.color }} />
                             <span className={`font-semibold truncate ${level > 0 ? 'text-[11px]' : 'text-xs'}`} style={{ color: tag.color }}>
                               #{tag.name}
                             </span>
-                          </span>
+                          </button>
 
+                          {/* Sub-tag toggle button - ONLY opened upon clicking the parent tag */}
                           {hasSubTags && (
-                            <span className="text-[9px] text-orange-400 font-mono bg-orange-500/10 px-1.5 py-0.5 rounded border border-orange-500/20 shrink-0">
-                              {subTags.length} sub-tag{subTags.length > 1 ? 's' : ''}
-                            </span>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => insertTagIntoText(tag.name)}
+                                className="text-[10px] text-zinc-400 hover:text-white px-1.5 py-0.5 rounded bg-zinc-900 hover:bg-zinc-800 border border-zinc-800"
+                                title={`Inserir #${tag.name}`}
+                              >
+                                Usar
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setExpandedTagIds(prev => ({ ...prev, [tag.id]: !prev[tag.id] }))}
+                                className={`text-[9px] font-mono px-1.5 py-0.5 rounded border transition-colors flex items-center gap-1 ${
+                                  isExpanded
+                                    ? 'bg-orange-500 text-white border-orange-400'
+                                    : 'text-orange-400 bg-orange-500/10 hover:bg-orange-500/20 border-orange-500/30'
+                                }`}
+                              >
+                                <span>{subTags.length} sub-tags</span>
+                                <ChevronRight className={`h-2.5 w-2.5 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                              </button>
+                            </div>
                           )}
-                        </button>
+                        </div>
 
-                        {hasSubTags && (
-                          <div className="ml-3 pl-2.5 border-l-2 border-orange-500/30 space-y-1 my-1">
+                        {/* Sub-tags are ONLY rendered when the user has clicked to expand */}
+                        {hasSubTags && isExpanded && (
+                          <div className="ml-3 pl-2.5 border-l-2 border-orange-500/40 space-y-1 my-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
+                            <div className="text-[9px] text-zinc-500 font-mono px-1">Sub-tags de #{tag.name}:</div>
                             {subTags.map(subTag => renderTagTree(subTag, level + 1))}
                           </div>
                         )}
