@@ -46,7 +46,8 @@ import {
   processMutationQueue, 
   loadOfflineSnapshot, 
   saveOfflineSnapshot,
-  subscribeToMutationQueue 
+  subscribeToMutationQueue,
+  clearAllMutations
 } from './lib/indexedDbQueue';
 import { OfflineNotificationBanner } from './components/OfflineNotificationBanner';
 import { sendSystemNotification, syncAlarmsToServiceWorker } from './lib/notificationHelper';
@@ -1929,118 +1930,20 @@ export default function App() {
         return;
       }
 
-      // Check if local state has newer pending changes
-      const lastLocalWrite = localStorage.getItem('mbc_last_local_write');
-      if (lastLocalWrite && remoteUpdatedAt) {
-        const localTime = new Date(lastLocalWrite).getTime();
-        const remoteTime = new Date(remoteUpdatedAt).getTime();
-        if (localTime > remoteTime + 1000) {
-          // Local changes are strictly newer than incoming remote snapshot; keep local edits
-          return;
-        }
-      }
-
       // Mark that we are applying remote updates to prevent auto-save from echoing back
       isApplyingRemoteUpdateRef.current = true;
 
       const current = latestStateRef.current;
 
-      // Intelligent merging for collections - local edits take precedence over stale remote
-      let mergedTasks = current.dailyTasks;
-      if (Array.isArray(data.dailyTasks)) {
-        if (!current.dailyTasks || current.dailyTasks.length === 0) {
-          mergedTasks = data.dailyTasks;
-        } else {
-          const localTaskMap = new Map<string, any>((current.dailyTasks || []).map((t: any) => [String(t.id), t]));
-          mergedTasks = data.dailyTasks.map((t: any) => {
-            const localT = localTaskMap.get(String(t.id));
-            if (localT) {
-              return {
-                ...t,
-                ...localT,
-                completed: Boolean(localT.completed || t.completed)
-              };
-            }
-            return t;
-          });
-        }
-      }
-
-      let mergedHabits = current.habits;
-      if (Array.isArray(data.habits)) {
-        const localHabitMap = new Map<string, any>((current.habits || []).map((h: any) => [String(h.id), h]));
-        const mergedHMap = new Map<string, any>();
-        for (const h of data.habits) {
-          if (h && typeof h === 'object' && h.id) {
-            const localH = localHabitMap.get(String(h.id));
-            if (localH) {
-              mergedHMap.set(String(h.id), {
-                ...localH,
-                ...h,
-                completedToday: Boolean(localH.completedToday || h.completedToday),
-                streak: Math.max(Number(localH.streak || 0), Number(h.streak || 0))
-              });
-            } else {
-              mergedHMap.set(String(h.id), h);
-            }
-          }
-        }
-        localHabitMap.forEach((localH, id) => {
-          if (!mergedHMap.has(id)) {
-            mergedHMap.set(id, localH);
-          }
-        });
-        mergedHabits = Array.from(mergedHMap.values());
-      }
-
-      let mergedProjects = current.projects;
-      if (Array.isArray(data.projects)) {
-        const localProjMap = new Map<string, any>((current.projects || []).map((p: any) => [String(p.id), p]));
-        const mergedPMap = new Map<string, any>();
-        for (const p of data.projects) {
-          if (p && typeof p === 'object' && p.id) {
-            const localP = localProjMap.get(String(p.id)) || {};
-            mergedPMap.set(String(p.id), { ...localP, ...p });
-          }
-        }
-        localProjMap.forEach((localP, id) => {
-          if (!mergedPMap.has(id)) {
-            mergedPMap.set(id, localP);
-          }
-        });
-        mergedProjects = Array.from(mergedPMap.values());
-      }
-
-      let mergedGoals = current.goals;
-      if (Array.isArray(data.goals)) {
-        const localGoalMap = new Map<string, any>((current.goals || []).map((g: any) => [String(g.id), g]));
-        const mergedGMap = new Map<string, any>();
-        for (const g of data.goals) {
-          if (g && typeof g === 'object' && g.id) {
-            const localG = localGoalMap.get(String(g.id)) || {};
-            mergedGMap.set(String(g.id), { ...localG, ...g });
-          }
-        }
-        localGoalMap.forEach((localG, id) => {
-          if (!mergedGMap.has(id)) {
-            mergedGMap.set(id, localG);
-          }
-        });
-        mergedGoals = Array.from(mergedGMap.values());
-      }
-
-      const mergedXp = Math.max(Number(data.xpTotal ?? 0), Number(current.xpTotal ?? 0));
-      const mergedStreak = Math.max(Number(data.streak ?? 0), Number(current.streak ?? 0));
-
       const incomingData = {
         userName: data.userName !== undefined ? data.userName : current.userName,
         userPhoto: data.userPhoto !== undefined ? data.userPhoto : current.userPhoto,
         userHandle: data.userHandle !== undefined ? data.userHandle : current.userHandle,
-        xpTotal: mergedXp,
-        streak: mergedStreak,
-        dailyTasks: mergedTasks,
-        goals: mergedGoals,
-        timelines: data.timelines !== undefined ? data.timelines : current.timelines,
+        xpTotal: data.xpTotal !== undefined ? Number(data.xpTotal) : current.xpTotal,
+        streak: data.streak !== undefined ? Number(data.streak) : current.streak,
+        dailyTasks: Array.isArray(data.dailyTasks) ? data.dailyTasks : (data.dailyTasks !== undefined ? data.dailyTasks : current.dailyTasks),
+        goals: Array.isArray(data.goals) ? data.goals : (data.goals !== undefined ? data.goals : current.goals),
+        timelines: Array.isArray(data.timelines) ? data.timelines : (data.timelines !== undefined ? data.timelines : current.timelines),
         finances: data.finances !== undefined ? data.finances : current.finances,
         routine: data.routine !== undefined ? data.routine : current.routine,
         calendarNotes: data.calendarNotes !== undefined ? data.calendarNotes : current.calendarNotes,
@@ -2048,12 +1951,12 @@ export default function App() {
         weeklyReviews: data.weeklyReviews !== undefined ? data.weeklyReviews : current.weeklyReviews,
         documents: data.documents !== undefined ? data.documents : current.documents,
         notes: data.notes !== undefined ? data.notes : current.notes,
-        bookTracker: data.bookTracker || current.bookTracker,
-        bibleTracker: data.bibleTracker || current.bibleTracker,
+        bookTracker: data.bookTracker !== undefined ? data.bookTracker : current.bookTracker,
+        bibleTracker: data.bibleTracker !== undefined ? data.bibleTracker : current.bibleTracker,
         areaImages: data.areaImages !== undefined ? data.areaImages : current.areaImages,
         lifeSummary: data.lifeSummary ? mergeWithDefaults(data.lifeSummary) : current.lifeSummary,
         futureEvents: data.futureEvents !== undefined ? data.futureEvents : current.futureEvents,
-        habits: mergedHabits,
+        habits: Array.isArray(data.habits) ? data.habits : (data.habits !== undefined ? data.habits : current.habits),
         gridRoutine: data.gridRoutine !== undefined ? data.gridRoutine : current.gridRoutine,
         customCards: data.customCards !== undefined ? data.customCards : current.customCards,
         activeThemePreset: data.activeThemePreset !== undefined ? data.activeThemePreset : current.activeThemePreset,
@@ -2061,7 +1964,7 @@ export default function App() {
         reminders: data.reminders !== undefined ? data.reminders : current.reminders,
         masterTemplates: data.masterTemplates !== undefined ? data.masterTemplates : (current as any).masterTemplates,
         dailyWorkspaceSettings: data.dailyWorkspaceSettings !== undefined ? data.dailyWorkspaceSettings : (current as any).dailyWorkspaceSettings,
-        projects: mergedProjects,
+        projects: Array.isArray(data.projects) ? data.projects : (data.projects !== undefined ? data.projects : current.projects),
         lastDailyResetDate: data.lastDailyResetDate !== undefined ? data.lastDailyResetDate : current.lastDailyResetDate,
         bankAccounts: data.bankAccounts !== undefined ? data.bankAccounts : current.bankAccounts,
         creditCards: data.creditCards !== undefined ? data.creditCards : current.creditCards,
@@ -2218,9 +2121,13 @@ export default function App() {
       if (incomingData.language !== undefined) localStorage.setItem('mbc_language', incomingData.language);
       if (incomingData.backgroundNotificationsEnabled !== undefined) localStorage.setItem('mbc_background_notifications_enabled', String(incomingData.backgroundNotificationsEnabled));
 
+      if (originDeviceId && originDeviceId !== currentDevId) {
+        setShowSyncToast(true);
+      }
+
       setTimeout(() => {
         isApplyingRemoteUpdateRef.current = false;
-      }, 500);
+      }, 1500);
     };
 
     async function checkRemoteData(isInitial = false) {
@@ -2240,7 +2147,10 @@ export default function App() {
             lastRemoteUpdatedAtRef.current = remoteRecord.updated_at;
           }
           applyIncomingData(remoteRecord.data, remoteRecord.updated_at, remoteRecord.originDeviceId);
-          saveOfflineSnapshot(`latest_${syncKey}`, remoteRecord.data);
+          await saveOfflineSnapshot(`latest_${syncKey}`, remoteRecord.data);
+          if (isInitial) {
+            await clearAllMutations();
+          }
         } else if (isInitial) {
           const offlineSnapshot = await loadOfflineSnapshot(`latest_${syncKey}`);
           if (offlineSnapshot && isSubscribed) {
@@ -2261,9 +2171,12 @@ export default function App() {
         }
       } finally {
         if (isSubscribed && isInitial) {
-          setIsInitialLoadComplete(true);
-          isInitialLoadCompleteRef.current = true;
-          processMutationQueue(saveToSupabase);
+          setTimeout(() => {
+            if (isSubscribed) {
+              setIsInitialLoadComplete(true);
+              isInitialLoadCompleteRef.current = true;
+            }
+          }, 500);
         }
       }
     }
@@ -2342,7 +2255,7 @@ export default function App() {
 
   // Debounced push to Cloud (Firestore + Supabase) via IndexedDB Mutation Queue
   useEffect(() => {
-    if (!isInitialLoadComplete) return;
+    if (!isInitialLoadComplete || !isInitialLoadCompleteRef.current) return;
     if (!syncKey) return;
 
     // If this render was triggered by applying an incoming remote update, do not push back to avoid infinite loops
@@ -2414,13 +2327,15 @@ export default function App() {
     const currentSerialized = safeStringify(currentData);
 
     // If current state matches the last synced state, do not push (prevents loops)
-    if (currentSerialized === lastSyncedStateRef.current) {
+    if (currentSerialized === lastSyncedStateRef.current || !lastSyncedStateRef.current) {
       return;
     }
 
     setSyncStatus('syncing');
 
     const performSync = async () => {
+      if (isApplyingRemoteUpdateRef.current) return;
+
       try {
         const nowIso = new Date().toISOString();
         localStorage.setItem('mbc_last_local_write', nowIso);
@@ -2437,7 +2352,6 @@ export default function App() {
 
         // 2. Process queue if online
         if (typeof navigator !== 'undefined' && navigator.onLine) {
-          const devId = getOrCreateDeviceId();
           const queueResult = await processMutationQueue(saveToSupabase);
           if (queueResult.failed === 0) {
             lastSyncedStateRef.current = currentSerialized;
@@ -2497,8 +2411,6 @@ export default function App() {
     customCards,
     activeThemePreset,
     customThemeHex,
-    loadingScreenVerticalImage,
-    loadingScreenHorizontalImage,
     reminders,
     masterTemplates,
     dailyWorkspaceSettings,
@@ -2530,6 +2442,8 @@ export default function App() {
     reminderInitialMode,
     language,
     backgroundNotificationsEnabled,
+    loadingScreenVerticalImage,
+    loadingScreenHorizontalImage,
     isInitialLoadComplete
   ]);
 

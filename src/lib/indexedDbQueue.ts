@@ -443,27 +443,4 @@ if (typeof window !== 'undefined') {
     console.log('🌐 Rede restabelecida! Processando fila de mutações IndexedDB...');
     processMutationQueue();
   });
-
-  window.addEventListener('focus', () => {
-    if (navigator.onLine) {
-      processMutationQueue();
-    }
-  });
-
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && navigator.onLine) {
-      processMutationQueue();
-    }
-  });
-
-  // Periodic check if there are pending mutations
-  setInterval(() => {
-    if (typeof navigator !== 'undefined' && navigator.onLine) {
-      getPendingMutationsCount().then((count) => {
-        if (count > 0 && !isProcessingQueue) {
-          processMutationQueue();
-        }
-      });
-    }
-  }, 15000);
 }
