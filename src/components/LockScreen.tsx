@@ -320,7 +320,13 @@ export default function LockScreen({
                     setErrorMsg('');
                     handleBiometricUnlock();
                   }}
-                  className="inline-flex items-center gap-2 text-[10px] text-orange-400 hover:text-orange-300 font-mono font-bold bg-orange-500/10 hover:bg-orange-500/20 px-3 py-1.5 rounded-full border border-orange-500/30 transition-all cursor-pointer"
+                  className="inline-flex items-center gap-2 text-[10px] font-mono font-bold px-3 py-1.5 rounded-full border transition-all cursor-pointer"
+                  style={{
+                    color: 'var(--color-orange-400, #fb923c)',
+                    backgroundColor: 'var(--accent-glow-subtle, rgba(249,115,22,0.12))',
+                    borderColor: 'var(--color-orange-500, #f97316)',
+                    borderWidth: '1px'
+                  }}
                 >
                   <RefreshCw className="h-3 w-3" />
                   <span>Tentar biometria novamente</span>
@@ -334,7 +340,14 @@ export default function LockScreen({
               <div className="absolute -inset-0.5 bg-gradient-to-r from-orange-500/10 via-purple-600/10 to-amber-500/10 rounded-2xl blur opacity-60 group-focus-within:opacity-100 transition duration-500" />
               
               {/* Premium key icon on the left */}
-              <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-orange-400 p-1 bg-orange-500/10 rounded-lg border border-orange-500/20 group-focus-within:border-orange-500/40 group-focus-within:bg-orange-500/20 transition-all duration-300 z-20 pointer-events-none flex items-center justify-center">
+              <div 
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 p-1 rounded-lg border transition-all duration-300 z-20 pointer-events-none flex items-center justify-center"
+                style={{
+                  color: 'var(--color-orange-400, #fb923c)',
+                  backgroundColor: 'var(--accent-glow-subtle, rgba(249,115,22,0.12))',
+                  borderColor: 'var(--color-orange-500, #f97316)'
+                }}
+              >
                 <KeyRound className="h-3.5 w-3.5 stroke-[2]" />
               </div>
 
@@ -349,7 +362,7 @@ export default function LockScreen({
                   if (e.key === 'Enter') handleUnlock();
                 }}
                 placeholder="••••••••"
-                className="relative w-full bg-zinc-950/60 hover:bg-zinc-950/80 focus:bg-black/90 border border-zinc-900 focus:border-orange-500/40 rounded-2xl pl-12 pr-14 py-4 text-xs text-center text-white placeholder-zinc-700 focus:outline-none transition-all duration-300 font-mono tracking-[0.6em] font-black shadow-2xl"
+                className="relative w-full bg-zinc-950/60 hover:bg-zinc-950/80 focus:bg-black/90 border border-zinc-900 focus:border-zinc-700 rounded-2xl pl-12 pr-14 py-4 text-xs text-center text-white placeholder-zinc-700 focus:outline-none transition-all duration-300 font-mono tracking-[0.6em] font-black shadow-2xl"
                 autoFocus={true}
               />
               

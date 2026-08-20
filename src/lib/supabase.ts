@@ -135,6 +135,57 @@ export async function testSupabaseConnection(): Promise<{ ok: boolean; message: 
   }
 }
 
+// Active Supabase realtime channels cache for instant remote broadcasts across multiple devices
+const activeChannels = new Map<string, any>();
+
+export function getOrCreateRealtimeChannel(syncKey: string): any | null {
+  const client = getSupabaseClient();
+  if (!client || !syncKey) return null;
+  const cleanKey = syncKey.trim().toUpperCase();
+
+  if (activeChannels.has(cleanKey)) {
+    return activeChannels.get(cleanKey);
+  }
+
+  try {
+    const channel = client.channel(`sync_room_${cleanKey}`, {
+      config: {
+        broadcast: { ack: false, self: false }
+      }
+    });
+    channel.subscribe((status: string) => {
+      if (status === 'SUBSCRIBED') {
+        // Channel ready for real-time broadcasts
+      }
+    });
+    activeChannels.set(cleanKey, channel);
+    return channel;
+  } catch (err) {
+    console.warn('Realtime channel creation error:', err);
+    return null;
+  }
+}
+
+export function broadcastRemoteStateChange(syncKey: string, updatedAt: string, originDeviceId?: string): void {
+  try {
+    const channel = getOrCreateRealtimeChannel(syncKey);
+    if (channel) {
+      channel.send({
+        type: 'broadcast',
+        event: 'REMOTE_STATE_UPDATED',
+        payload: {
+          syncKey: syncKey.trim().toUpperCase(),
+          updated_at: updatedAt,
+          originDeviceId: originDeviceId || getOrCreateDeviceId(),
+          timestamp: Date.now()
+        }
+      });
+    }
+  } catch (e) {
+    // Non-fatal broadcast error
+  }
+}
+
 export async function saveToSupabase(syncKey: string, payload: any, originDeviceId?: string): Promise<boolean> {
   let supabaseSuccess = false;
   const nowIso = new Date().toISOString();
@@ -160,6 +211,8 @@ export async function saveToSupabase(syncKey: string, payload: any, originDevice
         console.error('Supabase save error:', error);
       } else {
         supabaseSuccess = true;
+        // Broadcast across different devices worldwide via Realtime (<100ms)
+        broadcastRemoteStateChange(cleanKey, nowIso, devId);
       }
     } catch (err) {
       console.error('Supabase save exception:', err);

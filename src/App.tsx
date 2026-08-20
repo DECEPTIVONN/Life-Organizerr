@@ -1917,11 +1917,11 @@ export default function App() {
     if (!syncKey) return;
 
     let isSubscribed = true;
+    const currentDevId = getOrCreateDeviceId();
 
     const applyIncomingData = (data: any, remoteUpdatedAt?: string, originDeviceId?: string) => {
       if (!data || typeof data !== 'object') return;
 
-      const currentDevId = getOrCreateDeviceId();
       if (originDeviceId && originDeviceId === currentDevId) {
         // Echo of our own write from server, only update timestamp ref
         if (remoteUpdatedAt) {
@@ -2125,9 +2125,14 @@ export default function App() {
         setShowSyncToast(true);
       }
 
+      // Keep last synced state in sync with incoming payload to avoid bounce-back
+      try {
+        lastSyncedStateRef.current = safeStringify(incomingData);
+      } catch (e) {}
+
       setTimeout(() => {
         isApplyingRemoteUpdateRef.current = false;
-      }, 1500);
+      }, 1200);
     };
 
     async function checkRemoteData(isInitial = false) {
@@ -2193,44 +2198,71 @@ export default function App() {
       }
     });
 
-    // 3. Realtime Supabase Subscription
+    // 3. Realtime Supabase Multi-Device Subscriptions (<100ms instant cross-device sync)
     const client = getSupabaseClient();
-    let channel: any = null;
-    if (client) {
+    const cleanSyncKey = syncKey.trim().toUpperCase();
+    let postgresChannel: any = null;
+    let broadcastRoomChannel: any = null;
+
+    if (client && cleanSyncKey) {
       try {
-        channel = client
-          .channel(`realtime_user_sync_${syncKey}`)
+        // A. Postgres Table Changes Listener
+        postgresChannel = client
+          .channel(`realtime_user_sync_${cleanSyncKey}`)
           .on(
             'postgres_changes',
             {
               event: '*',
               schema: 'public',
               table: 'user_sync',
-              filter: `sync_key=eq.${syncKey}`
+              filter: `sync_key=eq.${cleanSyncKey}`
             },
             (payload: any) => {
               if (payload?.new?.data && isSubscribed) {
                 const originDevId = payload.new.data?._originDeviceId || (payload.new as any).origin_device_id || '';
-                applyIncomingData(payload.new.data, payload.new.updated_at, originDevId);
-                saveOfflineSnapshot(`latest_${syncKey}`, payload.new.data);
-                setSyncStatus('synced');
+                if (originDevId !== currentDevId) {
+                  applyIncomingData(payload.new.data, payload.new.updated_at, originDevId);
+                  saveOfflineSnapshot(`latest_${syncKey}`, payload.new.data);
+                  setSyncStatus('synced');
+                }
+              }
+            }
+          )
+          .subscribe();
+
+        // B. Instant Global Broadcast Channel (Peer-to-peer across PC, mobile, tablets)
+        broadcastRoomChannel = client
+          .channel(`sync_room_${cleanSyncKey}`, {
+            config: { broadcast: { ack: false, self: false } }
+          })
+          .on(
+            'broadcast',
+            { event: 'REMOTE_STATE_UPDATED' },
+            (payload: any) => {
+              if (!isSubscribed) return;
+              const bData = payload?.payload;
+              if (bData && bData.syncKey === cleanSyncKey) {
+                const originDevId = bData.originDeviceId || '';
+                if (originDevId !== currentDevId) {
+                  checkRemoteData(false);
+                }
               }
             }
           )
           .subscribe();
       } catch (e) {
-        console.warn('Realtime channel subscribe failed:', e);
+        console.warn('Realtime channels subscribe warning:', e);
       }
     }
 
-    // 4. Fallback periodic sync when tab is visible
+    // 4. Ultra-responsive active polling (every 3.5 seconds while tab is active)
     const pollingInterval = setInterval(() => {
       if (isSubscribed && document.visibilityState === 'visible') {
         checkRemoteData(false);
       }
-    }, 60000);
+    }, 3500);
 
-    // 5. Fast sync when window gains focus or online event fires
+    // 5. Instant check on window focus, online event, or visibility change
     const handleFocusOrOnline = () => {
       if (isSubscribed && document.visibilityState === 'visible') {
         checkRemoteData(false);
@@ -2240,6 +2272,17 @@ export default function App() {
     window.addEventListener('online', handleFocusOrOnline);
     document.addEventListener('visibilitychange', handleFocusOrOnline);
 
+    // 6. Throttled touch/click interaction refresh (refreshes if user taps after idle)
+    let lastInteractionCheckTime = 0;
+    const handleUserInteraction = () => {
+      const now = Date.now();
+      if (now - lastInteractionCheckTime > 3000 && isSubscribed && document.visibilityState === 'visible') {
+        lastInteractionCheckTime = now;
+        checkRemoteData(false);
+      }
+    };
+    window.addEventListener('pointerdown', handleUserInteraction, { passive: true });
+
     return () => {
       isSubscribed = false;
       unsubscribeCrossTab();
@@ -2247,8 +2290,10 @@ export default function App() {
       window.removeEventListener('focus', handleFocusOrOnline);
       window.removeEventListener('online', handleFocusOrOnline);
       document.removeEventListener('visibilitychange', handleFocusOrOnline);
-      if (client && channel) {
-        client.removeChannel(channel);
+      window.removeEventListener('pointerdown', handleUserInteraction);
+      if (client) {
+        if (postgresChannel) client.removeChannel(postgresChannel);
+        if (broadcastRoomChannel) client.removeChannel(broadcastRoomChannel);
       }
     };
   }, [syncKey]);
