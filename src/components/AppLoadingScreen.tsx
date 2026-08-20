@@ -97,9 +97,9 @@ export default function AppLoadingScreen({
       <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none" />
 
       {/* Bottom Synchronization Bar (Edge-to-edge horizontally on desktop) */}
-      <div className="relative z-10 w-full md:max-w-none mx-auto pb-6 sm:pb-8 md:pb-6 space-y-2.5">
+      <div className="relative z-10 w-full mx-auto pb-6 sm:pb-8 md:pb-6 space-y-2.5">
         {/* Status Line */}
-        <div className="flex items-center justify-between text-[11px] md:text-xs font-mono tracking-tight text-zinc-300 px-6 sm:px-10 md:px-10 max-w-6xl mx-auto drop-shadow-md">
+        <div className="w-full flex items-center justify-between text-[11px] md:text-xs font-mono tracking-tight text-zinc-300 px-4 sm:px-6 md:px-8 lg:px-10 drop-shadow-md">
           <span className="flex items-center gap-2">
             {progress >= 100 ? (
               <>
