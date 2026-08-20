@@ -3222,7 +3222,7 @@ export default function App() {
             setBookTracker={setBookTracker}
             bibleTracker={bibleTracker}
             setBibleTracker={setBibleTracker}
-            activeTab="rotina-semanal"
+            activeTab={checklistActiveTab === 'checklist' ? 'rotina' : checklistActiveTab}
             setActiveTab={setChecklistActiveTab}
             gridRoutine={gridRoutine}
             setGridRoutine={setGridRoutine}

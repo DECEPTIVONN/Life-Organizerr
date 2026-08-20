@@ -223,7 +223,7 @@ export default function ChecklistView({
   const setActiveTab = propSetActiveTab !== undefined ? propSetActiveTab : setLocalActiveTab;
 
   const HOURS = [
-    '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00',
+    '05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00',
     '13:00', '14:00', '15:00', '16:00', '17:00', '18:00',
     '19:00', '20:00', '21:00', '22:00', '23:00', '24:00'
   ];
@@ -651,7 +651,7 @@ export default function ChecklistView({
   const [chaptersLoggedToday, setChaptersLoggedToday] = useState('');
 
   // Cell editing & block configuration states
-  const [editingCell, setEditingCell] = useState<{ hour: string; day: number } | null>(null);
+  const [editingCell, setEditingCell] = useState<{ hour: string; day: number; originalKey?: string; block?: any } | null>(null);
   const [originalGroupKeys, setOriginalGroupKeys] = useState<string[]>([]);
   const [cellText, setCellText] = useState('');
   const [cellColor, setCellColor] = useState('gray');
@@ -688,45 +688,67 @@ export default function ChecklistView({
     }
     const [h, m] = hour.split(':').map(Number);
     const nextH = (h + 1) % 24;
-    return `${String(nextH).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    return `${String(nextH).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}`;
+  };
+
+  const timeStringToMinutes = (timeStr?: string): number => {
+    if (!timeStr) return 0;
+    const clean = timeStr.trim();
+    if (clean === '24:00') return 24 * 60;
+    const parts = clean.split(':').map(Number);
+    if (parts.length < 2 || isNaN(parts[0]) || isNaN(parts[1])) return 0;
+    return parts[0] * 60 + parts[1];
   };
 
   const getCellBlockInfo = (hour: string, dayId: number) => {
-    const exactKey = `${hour}-${dayId}`;
-    const block = gridRoutine[exactKey];
-    if (block) {
-      const startIdx = HOURS.indexOf(hour);
-      const endHour = block.endTime || getNextHour(hour);
-      const endIdx = HOURS.indexOf(endHour);
-      let rowSpan = 1;
-      if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
-        rowSpan = endIdx - startIdx;
+    const slotStart = timeStringToMinutes(hour);
+    const slotEnd = slotStart + 60;
+
+    if (!gridRoutine || typeof gridRoutine !== 'object') {
+      return { type: 'empty' as const };
+    }
+
+    let startCandidate: { block: any; key: string; rowSpan: number } | null = null;
+    let isCovered = false;
+
+    // Scan all entries in gridRoutine for this day to reliably match any exact or non-exact hours
+    for (const [key, rawBlock] of Object.entries(gridRoutine)) {
+      const block = rawBlock as any;
+      if (!block || typeof block !== 'object' || !block.text || !block.text.trim()) continue;
+
+      const [blockHStr, blockDStr] = key.split('-');
+      const blockDay = parseInt(blockDStr, 10);
+      if (isNaN(blockDay) || blockDay !== dayId) continue;
+
+      const rawStart = block.startTime || blockHStr || '08:00';
+      const rawEnd = block.endTime || getNextHour(rawStart);
+      const bStartMin = timeStringToMinutes(rawStart);
+      const bEndMin = Math.max(bStartMin + 30, timeStringToMinutes(rawEnd));
+
+      // 1. Check if block starts inside this hour slot
+      if (bStartMin >= slotStart && bStartMin < slotEnd) {
+        const rowSpan = Math.max(1, Math.ceil((bEndMin - slotStart) / 60));
+        startCandidate = { block, key, rowSpan };
+        break;
       }
+
+      // 2. Check if block started earlier and covers this hour slot
+      if (slotStart > bStartMin && slotStart < bEndMin) {
+        isCovered = true;
+      }
+    }
+
+    if (startCandidate) {
       return {
         type: 'start' as const,
-        block,
-        rowSpan
+        block: startCandidate.block,
+        key: startCandidate.key,
+        rowSpan: startCandidate.rowSpan
       };
     }
 
-    const currentIdx = HOURS.indexOf(hour);
-    if (currentIdx > 0) {
-      for (let i = 0; i < currentIdx; i++) {
-        const earlierHour = HOURS[i];
-        const earlierKey = `${earlierHour}-${dayId}`;
-        const b = gridRoutine[earlierKey];
-        if (b) {
-          const startIdx = HOURS.indexOf(earlierHour);
-          const endHour = b.endTime || getNextHour(earlierHour);
-          const endIdx = HOURS.indexOf(endHour);
-          if (startIdx !== -1 && endIdx !== -1 && startIdx <= currentIdx && endIdx > currentIdx) {
-            return {
-              type: 'covered' as const,
-              block: b
-            };
-          }
-        }
-      }
+    if (isCovered) {
+      return { type: 'covered' as const };
     }
 
     return { type: 'empty' as const };
@@ -779,13 +801,14 @@ export default function ChecklistView({
 
   const currentWeekDates = getCurrentWeekDates();
 
-  const handleOpenEditModal = (hour: string, dayId: number, block: any) => {
-    setEditingCell({ hour, day: dayId });
-    setCellText(block.text);
-    setCellColor(block.color || 'gray');
+  const handleOpenEditModal = (hour: string, dayId: number, block: any, blockKey?: string) => {
+    const actualKey = blockKey || `${block.startTime || hour}-${dayId}`;
+    setEditingCell({ hour, day: dayId, originalKey: actualKey, block });
+    setCellText(block.text || '');
+    setCellColor(block.color || 'Rotina');
     const effStartTime = block.startTime || hour;
     setCellStartTime(effStartTime);
-    setCellEndTime(block.endTime || getNextHour(hour));
+    setCellEndTime(block.endTime || getNextHour(effStartTime));
     setCellIsWeeklyRecurring(block.isWeeklyRecurring !== false);
     setCellShowInDailyMissions(block.showInDailyMissions !== false);
     setCellShowInWeeklyRoutine(block.showInWeeklyRoutine !== false);
@@ -795,17 +818,22 @@ export default function ChecklistView({
     // Find all keys and days in gridRoutine matching this block text and start time
     const matchedKeys: string[] = [];
     const matchedDays: number[] = [];
-    for (let d = 1; d <= 7; d++) {
-      const key = `${effStartTime}-${d}`;
-      const cell = gridRoutine[key];
-      if (cell && cell.text === block.text) {
-        matchedKeys.push(key);
-        matchedDays.push(d);
-      }
+    if (gridRoutine) {
+      Object.entries(gridRoutine).forEach(([k, cell]: [string, any]) => {
+        if (!cell || !cell.text) return;
+        const [cellH, cellDStr] = k.split('-');
+        const cellD = parseInt(cellDStr, 10);
+        const cellStart = cell.startTime || cellH;
+        if (cell.text === block.text && cellStart === effStartTime) {
+          matchedKeys.push(k);
+          if (!isNaN(cellD) && !matchedDays.includes(cellD)) {
+            matchedDays.push(cellD);
+          }
+        }
+      });
     }
-    const currentKey = `${hour}-${dayId}`;
-    if (!matchedKeys.includes(currentKey)) {
-      matchedKeys.push(currentKey);
+    if (actualKey && !matchedKeys.includes(actualKey)) {
+      matchedKeys.push(actualKey);
     }
 
     setOriginalGroupKeys(matchedKeys);
@@ -3008,7 +3036,7 @@ export default function ChecklistView({
                               className="p-1 border-r border-zinc-900 align-top"
                             >
                               <div 
-                                onClick={() => handleOpenEditModal(hour, dayId, block)}
+                                onClick={() => handleOpenEditModal(hour, dayId, block, cellInfo.key)}
                                 className={`h-full p-2.5 rounded-none border flex flex-col justify-between transition-all hover:brightness-110 cursor-pointer shadow-md active:scale-[0.99] select-none ${colorClasses}`}
                                 style={{ minHeight: `${rowSpan * 42}px` }}
                               >
@@ -3498,10 +3526,14 @@ export default function ChecklistView({
                           if (originalGroupKeys.length > 0) {
                             originalGroupKeys.forEach(k => delete updated[k]);
                           }
+                          if (editingCell?.originalKey) {
+                            delete updated[editingCell.originalKey];
+                          }
                           if (editingCell) {
                             delete updated[`${editingCell.hour}-${editingCell.day}`];
                           }
                           saveGridRoutine(updated);
+                          setIsAddingBlock(false);
                           setEditingCell(null);
                         }}
                         className="text-xs font-semibold text-red-400 bg-red-400/5 hover:bg-red-400/10 hover:text-red-300 border border-red-500/10 px-4 py-2 rounded-xl transition-all flex items-center gap-1.5"
@@ -3529,17 +3561,22 @@ export default function ChecklistView({
                         onClick={() => {
                           const updated = { ...gridRoutine };
                           
-                          // If editing, delete all original group keys
+                          // If editing, delete all original group keys and previous keys
                           if (editingCell) {
                             if (originalGroupKeys.length > 0) {
                               originalGroupKeys.forEach(k => delete updated[k]);
+                            }
+                            if (editingCell.originalKey) {
+                              delete updated[editingCell.originalKey];
                             }
                             delete updated[`${editingCell.hour}-${editingCell.day}`];
                           }
 
                           // Save block for each selected day
+                          const todayStr = getTodayDateStr();
                           cellSelectedDays.forEach(dayId => {
-                            updated[`${cellStartTime}-${dayId}`] = {
+                            const key = `${cellStartTime}-${dayId}`;
+                            updated[key] = {
                               text: cellText.trim(),
                               color: cellColor,
                               startTime: cellStartTime,
@@ -3547,8 +3584,8 @@ export default function ChecklistView({
                               isWeeklyRecurring: cellIsWeeklyRecurring,
                               showInDailyMissions: cellShowInDailyMissions,
                               showInWeeklyRoutine: cellShowInWeeklyRoutine,
-                              createdDate: editingCell ? (gridRoutine[`${editingCell.hour}-${editingCell.day}`]?.createdDate || todayStr) : todayStr,
-                              reminderTime: cellEnableReminder ? (cellReminderTime.trim() || undefined) : undefined,
+                              createdDate: editingCell?.block?.createdDate || todayStr,
+                              reminderTime: cellEnableReminder ? (cellReminderTime.trim() || cellStartTime) : undefined,
                               subtasks: cellSubtasks.length > 0 ? cellSubtasks : undefined
                             };
                           });
