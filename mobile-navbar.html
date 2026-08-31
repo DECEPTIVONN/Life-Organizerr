@@ -1,0 +1,1050 @@
+<!--
+╔══════════════════════════════════════════════════════════════════════════════════╗
+║  TRONUS HUD — MOBILE NAVBAR COMPLETA & BLUEPRINT STANDALONE                     ║
+╠══════════════════════════════════════════════════════════════════════════════════╣
+║  Arquivo autocontido com HTML5, CSS3 avançado, SVG vetorial e JavaScript puro.    ║
+║  Blueprint de referência com Documentação, Guia de Separação e Sistema de Cores.║
+╠══════════════════════════════════════════════════════════════════════════════════╣
+║  COMO USAR:                                                                      ║
+║  1. Abra este arquivo diretamente no navegador para visualizar o blueprint e     ║
+║     a área interativa de testes com o simulador de dispositivo móvel.            ║
+║  2. Copie as seções HTML/CSS/JS para o seu projeto (Vanilla, React ou Vue).      ║
+║  3. Configure as variáveis CSS do :root para sincronizar com seu tema.           ║
+╚══════════════════════════════════════════════════════════════════════════════════╝
+-->
+
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>TRONUS Mobile Navbar — Blueprint & Design System</title>
+
+  <!-- Google Fonts: Rajdhani, JetBrains Mono, Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;800&family=Rajdhani:wght@500;600;700;900&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+            rajdhani: ['Rajdhani', 'sans-serif'],
+          },
+          colors: {
+            tronus: {
+              orange: '#f97316',
+              amber: '#f59e0b',
+              gold: '#fbbf24',
+              rose: '#f43f5e',
+              dark: '#040405',
+              surface: '#09090b',
+              card: '#121215',
+              border: '#27272a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* =========================================================================
+       1. SISTEMA DE CORES & DESIGN TOKENS (CSS VARIABLES)
+       ========================================================================= */
+    :root {
+      /* Cores Principais do TRONUS Cyber HUD */
+      --tronus-orange: #f97316;
+      --tronus-orange-glow: rgba(249, 115, 22, 0.8);
+      --tronus-orange-subtle: rgba(249, 115, 22, 0.12);
+      --tronus-orange-border: rgba(249, 115, 22, 0.3);
+      
+      --tronus-amber: #f59e0b;
+      --tronus-amber-glow: rgba(245, 158, 11, 0.7);
+      
+      --tronus-rose: #f43f5e;
+      --tronus-rose-glow: rgba(244, 63, 94, 0.7);
+
+      /* Superfícies e Fundos Escuros */
+      --tronus-bg-root: #040405;
+      --tronus-bg-surface: #09090b;
+      --tronus-bg-card: #121215;
+      --tronus-bg-card-hover: #1c1c21;
+
+      /* Bordas e Divisores */
+      --tronus-border-subtle: #1f1f23;
+      --tronus-border-medium: #27272a;
+      --tronus-border-highlight: rgba(249, 115, 22, 0.4);
+
+      /* Tipografia */
+      --tronus-text-primary: #f8fafc;
+      --tronus-text-muted: #a1a1aa;
+      --tronus-text-dim: #71717a;
+
+      /* Safe Area & Alturas */
+      --header-mobile-height: 56px;
+      --bottom-nav-mobile-height: 92px;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    /* Scrollbar personalizada */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #040405;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #27272a;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--tronus-orange);
+    }
+
+    /* Efeitos de Glow HUD */
+    .glow-orange {
+      box-shadow: 0 0 15px var(--tronus-orange-glow);
+    }
+    .glow-orange-drop {
+      filter: drop-shadow(0 0 8px var(--tronus-orange-glow));
+    }
+    .glow-orange-subtle {
+      box-shadow: 0 0 20px var(--tronus-orange-subtle);
+    }
+    .text-glow-orange {
+      text-shadow: 0 0 8px var(--tronus-orange-glow);
+    }
+
+    /* Animações */
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 0.8; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.04); }
+    }
+    .animate-pulse-glow {
+      animation: pulseGlow 2.5s infinite ease-in-out;
+    }
+
+    /* Simulação do celular */
+    .mockup-frame {
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(249, 115, 22, 0.25), 0 0 30px rgba(249, 115, 22, 0.1);
+    }
+  </style>
+</head>
+
+<body class="bg-[#040405] text-[#f8fafc] font-sans selection:bg-orange-500/30 selection:text-orange-300 min-h-screen">
+
+  <!-- =========================================================================
+       TOPO DA PÁGINA: CABEÇALHO DO GUIA & BLUEPRINT
+       ========================================================================= -->
+  <header class="border-b border-zinc-850 bg-[#070709]/90 backdrop-blur-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="h-9 w-9 bg-gradient-to-br from-orange-500 to-amber-600 rounded-xl flex items-center justify-center shadow-[0_0_12px_rgba(249,115,22,0.4)] border border-orange-400/40">
+          <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="14" height="20" x="5" y="2" rx="2" ry="2"/>
+            <path d="M12 18h.01"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-rajdhani font-black text-lg tracking-wider text-white">TRONUS MOBILE NAVBAR</h1>
+            <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20">BLUEPRINT v5.0</span>
+          </div>
+          <p class="text-xs text-zinc-400 font-medium">Guia Standalone, Arquitetura de Separação e Design System</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2.5">
+        <a href="#quick-start" class="text-xs font-mono font-bold px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-700 transition-colors">
+          Documentação
+        </a>
+        <a href="#color-system" class="text-xs font-mono font-bold px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-orange-400 hover:bg-orange-500/10 hover:border-orange-500/30 transition-colors">
+          Sistema de Cores
+        </a>
+        <a href="#interactive-simulator" class="text-xs font-mono font-bold px-3.5 py-1.5 rounded-lg bg-orange-500 text-white hover:bg-orange-600 shadow-[0_0_12px_rgba(249,115,22,0.3)] transition-all">
+          Testar Simulador
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- =========================================================================
+       CONTEÚDO PRINCIPAL: GUIA DE ESPECIFICAÇÃO & SIMULADOR INTERATIVO
+       ========================================================================= -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-12">
+
+    <!-- HERO / INTRODUÇÃO -->
+    <section class="relative rounded-2xl bg-gradient-to-b from-[#09090c] to-[#040405] border border-orange-500/20 p-6 sm:p-8 overflow-hidden shadow-[0_0_35px_rgba(249,115,22,0.06)]">
+      <div class="absolute -right-20 -top-20 w-80 h-80 bg-orange-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      
+      <div class="relative z-10 max-w-3xl space-y-4">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs font-mono">
+          <span class="w-2 h-2 rounded-full bg-orange-500 animate-ping"></span>
+          Especificação Oficial de Navegação Mobile
+        </div>
+        <h2 class="font-rajdhani font-black text-2xl sm:text-3xl text-white tracking-wide">
+          ARQUITETURA DE NAVEGAÇÃO MOBILE RESPONSIVA E CURVED HUD
+        </h2>
+        <p class="text-sm text-zinc-300 leading-relaxed">
+          A interface mobile do TRONUS é composta por três camadas integradas: 
+          <strong>1. Header Superior com Barra de Progresso</strong>, 
+          <strong>2. Barra Inferior Futurista com Curvatura SVG e Feedback Tátil</strong>, e 
+          <strong>3. Menu Lateral Deslizante (Slideover Drawer) com Menu Radial de Atalhos Rápidos</strong>.
+        </p>
+      </div>
+    </section>
+
+    <!-- GRID PRINCIPAL: GUIA TEÓRICO (ESQUERDA) + SIMULADOR INTERATIVO (DIREITA) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      
+      <!-- COLUNA ESQUERDA: DOCUMENTAÇÃO & DIRETRIZES (7 colunas) -->
+      <div class="lg:col-span-7 space-y-8" id="quick-start">
+        
+        <!-- SEÇÃO 1: LÓGICA DE SEPARAÇÃO DESKTOP VS MOBILE -->
+        <section class="bg-[#09090b] border border-zinc-800/80 rounded-2xl p-6 space-y-4">
+          <div class="flex items-center gap-3 pb-3 border-b border-zinc-800">
+            <div class="p-2 bg-orange-500/10 text-orange-400 rounded-lg border border-orange-500/20">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="font-rajdhani font-bold text-lg text-white">1. LÓGICA DE SEPARAÇÃO (DESKTOP VS MOBILE)</h3>
+              <p class="text-xs text-zinc-400">Como a navbar mobile coexiste com a aplicação sem conflitar com o Desktop</p>
+            </div>
+          </div>
+
+          <p class="text-xs text-zinc-300 leading-relaxed">
+            Para garantir máximo desempenho, ergonomia e evitar vazamento de cliques ou sobreposição de layouts, o sistema segue diretrizes estritas:
+          </p>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+            <div class="bg-zinc-950/80 border border-zinc-800/80 p-3.5 rounded-xl space-y-2">
+              <span class="text-xs font-mono font-bold text-orange-400 flex items-center gap-1.5">
+                <span>📱</span> MOBILE (≤ 1023px ou lg:hidden)
+              </span>
+              <ul class="text-[11px] text-zinc-400 space-y-1 list-disc list-inside">
+                <li>Header superior fixo (<code class="text-orange-300">h-14</code> / 56px).</li>
+                <li>Barra inferior curva fixa (<code class="text-orange-300">h-[92px]</code>).</li>
+                <li>Conteúdo possui <code class="text-orange-300">pt-14 pb-24</code>.</li>
+                <li>Menu deslizante com toque e gestos.</li>
+              </ul>
+            </div>
+
+            <div class="bg-zinc-950/80 border border-zinc-800/80 p-3.5 rounded-xl space-y-2">
+              <span class="text-xs font-mono font-bold text-zinc-300 flex items-center gap-1.5">
+                <span>🖥️</span> DESKTOP (≥ 1024px ou hidden lg:flex)
+              </span>
+              <ul class="text-[11px] text-zinc-400 space-y-1 list-disc list-inside">
+                <li>Toda a barra mobile é ocultada com <code class="text-zinc-300">lg:hidden</code>.</li>
+                <li>Não consome eventos de toque nem memória.</li>
+                <li>A barra lateral desktop assume o controle.</li>
+                <li>Zero repetição de DOM ativo.</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- POINTER EVENTS & SVG TRANSPARENCY -->
+          <div class="bg-orange-500/5 border border-orange-500/20 rounded-xl p-4 space-y-2">
+            <h4 class="text-xs font-bold text-orange-400 font-mono flex items-center gap-1.5">
+              <span>⚡</span> REGRA DE OURO: pointer-events: none vs pointer-events: auto
+            </h4>
+            <p class="text-[11px] text-zinc-300 leading-relaxed">
+              A barra inferior curva tem <strong>92px de altura</strong> para acomodar o domo central do botão Home (<code class="text-orange-300 font-mono">x=50</code>). 
+              Para que os cantos vazios superiores do SVG não bloqueiem cliques nos botões da página que estiverem passando por trás, a tag externa recebe:
+            </p>
+            <div class="bg-black/80 border border-zinc-850 p-2.5 rounded-lg font-mono text-[11px] text-zinc-300 space-y-1">
+              <div><span class="text-zinc-500">&lt;!-- Container Pai --&gt;</span></div>
+              <div><span class="text-orange-400">&lt;div</span> class="fixed bottom-0 inset-x-0 h-[92px] <span class="text-amber-400 font-bold">pointer-events-none</span> z-40"<span class="text-orange-400">&gt;</span></div>
+              <div class="pl-4"><span class="text-zinc-500">&lt;!-- Filhos Interativos --&gt;</span></div>
+              <div class="pl-4"><span class="text-orange-400">&lt;div</span> class="<span class="text-amber-400 font-bold">pointer-events-auto</span> flex justify-around"<span class="text-orange-400">&gt;</span>...<span class="text-orange-400">&lt;/div&gt;</span></div>
+              <div><span class="text-orange-400">&lt;/div&gt;</span></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SEÇÃO 2: SISTEMA DE CORES & PALETA OFICIAL -->
+        <section class="bg-[#09090b] border border-zinc-800/80 rounded-2xl p-6 space-y-4" id="color-system">
+          <div class="flex items-center gap-3 pb-3 border-b border-zinc-800">
+            <div class="p-2 bg-amber-500/10 text-amber-400 rounded-lg border border-amber-500/20">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10"/>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 2a10 10 0 0 1 10 10c0 5.523-4.477 10-10 10M12 2a10 10 0 0 0-10 10c0 5.523 4.477 10 10 10"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="font-rajdhani font-bold text-lg text-white">2. SISTEMA DE CORES & TOKENS VISUAIS</h3>
+              <p class="text-xs text-zinc-400">Paleta oficial TRONUS Cyberpunk / HUD</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <!-- Cor 1: Orange Primário -->
+            <div class="bg-zinc-950 border border-zinc-800 p-3 rounded-xl space-y-2">
+              <div class="h-10 rounded-lg bg-[#f97316] shadow-[0_0_12px_rgba(249,115,22,0.6)] flex items-end p-1.5 justify-end">
+                <span class="text-[9px] font-mono font-black text-black bg-white/90 px-1 rounded">PRIMARY</span>
+              </div>
+              <div>
+                <span class="text-xs font-bold text-white block">Tronus Orange</span>
+                <span class="text-[10px] font-mono text-orange-400">#f97316</span>
+              </div>
+            </div>
+
+            <!-- Cor 2: Amber Secundário -->
+            <div class="bg-zinc-950 border border-zinc-800 p-3 rounded-xl space-y-2">
+              <div class="h-10 rounded-lg bg-[#f59e0b] shadow-[0_0_12px_rgba(245,158,11,0.5)] flex items-end p-1.5 justify-end">
+                <span class="text-[9px] font-mono font-black text-black bg-white/90 px-1 rounded">ACCENT</span>
+              </div>
+              <div>
+                <span class="text-xs font-bold text-white block">Tronus Amber</span>
+                <span class="text-[10px] font-mono text-amber-400">#f59e0b</span>
+              </div>
+            </div>
+
+            <!-- Cor 3: Obsidian Dark -->
+            <div class="bg-zinc-950 border border-zinc-800 p-3 rounded-xl space-y-2">
+              <div class="h-10 rounded-lg bg-[#040405] border border-zinc-700 flex items-end p-1.5 justify-end">
+                <span class="text-[9px] font-mono font-bold text-zinc-400">BG ROOT</span>
+              </div>
+              <div>
+                <span class="text-xs font-bold text-white block">Obsidian Dark</span>
+                <span class="text-[10px] font-mono text-zinc-400">#040405</span>
+              </div>
+            </div>
+
+            <!-- Cor 4: Surface Dark -->
+            <div class="bg-zinc-950 border border-zinc-800 p-3 rounded-xl space-y-2">
+              <div class="h-10 rounded-lg bg-[#09090b] border border-zinc-700 flex items-end p-1.5 justify-end">
+                <span class="text-[9px] font-mono font-bold text-zinc-400">SURFACE</span>
+              </div>
+              <div>
+                <span class="text-xs font-bold text-white block">Zinc Surface</span>
+                <span class="text-[10px] font-mono text-zinc-400">#09090b</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- TABELA DE TOKENS E HIERARQUIA -->
+          <div class="border border-zinc-800 rounded-xl overflow-hidden text-xs">
+            <table class="w-full text-left border-collapse">
+              <thead class="bg-zinc-900/80 font-mono text-[10px] text-zinc-400 uppercase">
+                <tr>
+                  <th class="p-2.5 border-b border-zinc-800">Elemento</th>
+                  <th class="p-2.5 border-b border-zinc-800">Cor / Variável</th>
+                  <th class="p-2.5 border-b border-zinc-800">Efeito Visual</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-zinc-850 font-mono text-[11px]">
+                <tr>
+                  <td class="p-2.5 text-zinc-300">Botão Ativo (Bottom Bar)</td>
+                  <td class="p-2.5 text-orange-400 font-bold">#f97316 (var(--tronus-orange))</td>
+                  <td class="p-2.5 text-zinc-400">Elevação -10px + Neon Drop Shadow</td>
+                </tr>
+                <tr>
+                  <td class="p-2.5 text-zinc-300">Borda Curva SVG</td>
+                  <td class="p-2.5 text-orange-400">stroke="#f97316" strokeWidth="1.5"</td>
+                  <td class="p-2.5 text-zinc-400">drop-shadow [0 -8px 16px rgba(249,115,22,0.25)]</td>
+                </tr>
+                <tr>
+                  <td class="p-2.5 text-zinc-300">Fundo da Barra Curva</td>
+                  <td class="p-2.5 text-zinc-400">fill="#09090b" opacity="0.98"</td>
+                  <td class="p-2.5 text-zinc-400">Backdrop Blur de alto contraste</td>
+                </tr>
+                <tr>
+                  <td class="p-2.5 text-zinc-300">Barra de Progresso (Topo)</td>
+                  <td class="p-2.5 text-amber-400">linear-gradient(90deg, #f97316, #f59e0b)</td>
+                  <td class="p-2.5 text-zinc-400">glow 0 0 10px #f97316</td>
+                </tr>
+                <tr>
+                  <td class="p-2.5 text-zinc-300">Botão Inativo / Normal</td>
+                  <td class="p-2.5 text-zinc-400">#a1a1aa (zinc-400)</td>
+                  <td class="p-2.5 text-zinc-400">Hover suave para branco (#ffffff)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- SEÇÃO 3: ESTRUTURA DO SVG CURVO -->
+        <section class="bg-[#09090b] border border-zinc-800/80 rounded-2xl p-6 space-y-4">
+          <div class="flex items-center gap-3 pb-3 border-b border-zinc-800">
+            <div class="p-2 bg-orange-500/10 text-orange-400 rounded-lg border border-orange-500/20">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="font-rajdhani font-bold text-lg text-white">3. GEOMETRIA DO SVG CURVO (HUD DOME)</h3>
+              <p class="text-xs text-zinc-400">A matemática vetorial que cria a curva orgânica com elevação central</p>
+            </div>
+          </div>
+
+          <p class="text-xs text-zinc-300 leading-relaxed">
+            O efeito curvo é renderizado via SVG inline com <code class="text-orange-300 font-mono">preserveAspectRatio="none"</code> e coordenadas normalizadas (0 a 100):
+          </p>
+
+          <div class="bg-black/90 border border-zinc-850 p-4 rounded-xl font-mono text-xs text-zinc-300 space-y-2 overflow-x-auto">
+            <div class="text-zinc-500">&lt;!-- Curva Bezier Quadrática: M 0 30 Q 50 0 100 30 --&gt;</div>
+            <div>&lt;<span class="text-orange-400">svg</span> class="w-full h-full filter drop-shadow-[0_-8px_16px_rgba(249,115,22,0.25)]" viewBox="0 0 100 100" preserveAspectRatio="none"&gt;</div>
+            <div class="pl-4">&lt;<span class="text-amber-400">path</span> d="<span class="text-orange-300 font-bold">M 0 30 Q 50 0 100 30 L 100 100 L 0 100 Z</span>" fill="none" stroke="#f97316" stroke-width="1.5" /&gt;</div>
+            <div class="pl-4">&lt;<span class="text-amber-400">path</span> d="<span class="text-orange-300 font-bold">M 0 30 Q 50 0 100 30 L 100 100 L 0 100 Z</span>" fill="#09090b" opacity="0.98" /&gt;</div>
+            <div>&lt;/<span class="text-orange-400">svg</span>&gt;</div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-[11px]">
+            <div class="bg-zinc-950 p-3 rounded-lg border border-zinc-850">
+              <strong class="text-orange-400 block font-mono">M 0 30</strong>
+              <span class="text-zinc-400">Inicia na borda esquerda a 30% do topo da barra.</span>
+            </div>
+            <div class="bg-zinc-950 p-3 rounded-lg border border-zinc-850">
+              <strong class="text-amber-400 block font-mono">Q 50 0 100 30</strong>
+              <span class="text-zinc-400">Ponto de controle no centro (x=50, y=0) criando o domo do Home.</span>
+            </div>
+            <div class="bg-zinc-950 p-3 rounded-lg border border-zinc-850">
+              <strong class="text-zinc-300 block font-mono">L 100 100 L 0 100</strong>
+              <span class="text-zinc-400">Fecha o polígono nos cantos inferiores da tela.</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- SEÇÃO 4: MOTOR DE LONG-PRESS (GESTOS PARA O BOTÃO NOTAS) -->
+        <section class="bg-[#09090b] border border-zinc-800/80 rounded-2xl p-6 space-y-4">
+          <div class="flex items-center gap-3 pb-3 border-b border-zinc-800">
+            <div class="p-2 bg-rose-500/10 text-rose-400 rounded-lg border border-rose-500/20">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="font-rajdhani font-bold text-lg text-white">4. GESTOS E LONG-PRESS (MENU RÁPIDO DE TIMER/LEMBRETES)</h3>
+              <p class="text-xs text-zinc-400">Mecanismo de pressionar e segurar no botão Notas</p>
+            </div>
+          </div>
+
+          <p class="text-xs text-zinc-300 leading-relaxed">
+            Ao segurar o botão <strong>Notas</strong> por mais de <code class="text-orange-400 font-mono">500ms</code>, um anel circular animado preenche o ícone e dispara o menu popover com atalhos para <em>Lembretes</em>, <em>Cronômetro</em> e <em>Pomodoro</em>. Se o usuário soltar antes, ocorre apenas a navegação simples para Notas.
+          </p>
+        </section>
+
+      </div>
+
+      <!-- COLUNA DIREITA: SIMULADOR INTERATIVO DO CELULAR (5 colunas) -->
+      <div class="lg:col-span-5 sticky top-20" id="interactive-simulator">
+        <div class="flex items-center justify-between mb-3 px-1">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span class="text-xs font-mono font-bold text-white uppercase tracking-wider">Simulador Ao Vivo</span>
+          </div>
+          <span class="text-[11px] font-mono text-zinc-500">Resolução: 375x667 (Mobile)</span>
+        </div>
+
+        <!-- MOCKUP CONTAINER DO SMARTPHONE -->
+        <div class="mockup-frame w-full max-w-[390px] mx-auto h-[700px] bg-[#040405] rounded-[44px] border-[6px] border-zinc-800 relative overflow-hidden flex flex-col select-none">
+          
+          <!-- Dynamic Island / Notch simulada -->
+          <div class="absolute top-2.5 inset-x-0 flex justify-center z-50 pointer-events-none">
+            <div class="w-28 h-4 bg-black rounded-full border border-zinc-850 flex items-center justify-end px-2">
+              <div class="w-2 h-2 rounded-full bg-zinc-900 border border-zinc-800"></div>
+            </div>
+          </div>
+
+          <!-- =================================================================
+               COMPONENTE 1: PROGRESSIVE PAGE SCROLL BAR (TOPO)
+               ================================================================= -->
+          <div id="simProgressBar" class="absolute top-0 left-0 h-1 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 z-50 transition-all duration-75 shadow-[0_0_10px_#f97316]" style="width: 35%;"></div>
+
+          <!-- =================================================================
+               COMPONENTE 2: MOBILE HEADER BAR (TOPO)
+               ================================================================= -->
+          <header class="absolute top-0 inset-x-0 h-14 bg-[#09090b]/90 backdrop-blur-md border-b border-zinc-900/80 flex items-center justify-between px-4 z-40 pt-2">
+            <!-- Foto de Perfil / Usuário -->
+            <button onclick="simNavigate('perfil')" class="flex items-center active:scale-95 transition-transform" title="Perfil">
+              <img src="https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=100" alt="Avatar" class="h-8 w-8 rounded-full object-cover border border-orange-500/30 shadow-[0_0_8px_rgba(249,115,22,0.2)]" />
+            </button>
+
+            <!-- Ações Direitas: Busca e Fullscreen -->
+            <div class="flex items-center gap-2">
+              <button onclick="simToggleSearch(true)" class="p-2 bg-zinc-900/60 hover:bg-zinc-900 text-zinc-400 hover:text-orange-400 rounded-xl border border-zinc-800/80 transition-all active:scale-95">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <circle cx="11" cy="11" r="8"/>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+              </button>
+              <button onclick="simToggleFullscreen()" class="p-2 bg-zinc-900/60 hover:bg-zinc-900 text-zinc-400 hover:text-white rounded-xl border border-zinc-800/80 transition-all active:scale-95">
+                <svg id="simFsIcon" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+                </svg>
+              </button>
+            </div>
+          </header>
+
+          <!-- =================================================================
+               ÁREA DE CONTEÚDO ROLÁVEL DO CELULAR (BODY SCROLLABLE)
+               ================================================================= -->
+          <div id="simScrollContainer" onscroll="simHandleScroll()" class="flex-1 overflow-y-auto pt-16 pb-28 px-4 space-y-4 text-left">
+            
+            <div class="p-4 bg-zinc-950/80 rounded-2xl border border-zinc-850 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-mono uppercase text-orange-400 font-bold">Aba Ativa</span>
+                <span id="simActiveTabBadge" class="text-[10px] font-mono px-2 py-0.5 rounded-md bg-orange-500/10 text-orange-400 border border-orange-500/20 uppercase font-black">HOME</span>
+              </div>
+              <h3 id="simPageTitle" class="text-base font-bold text-white font-rajdhani">Painel Geral (Dashboard)</h3>
+              <p id="simPageDescription" class="text-xs text-zinc-400 leading-relaxed">
+                Este é o simulador completo da navbar mobile. Clique nos ícones da barra inferior ou abra o menu lateral para testar a experiência!
+              </p>
+            </div>
+
+            <!-- Demonstração de Cards -->
+            <div class="grid grid-cols-2 gap-2.5">
+              <div class="p-3 bg-zinc-900/40 rounded-xl border border-zinc-850 space-y-1">
+                <span class="text-[10px] font-mono text-zinc-500">XP Acumulado</span>
+                <div class="text-sm font-black text-orange-400 font-mono">1.450 XP</div>
+              </div>
+              <div class="p-3 bg-zinc-900/40 rounded-xl border border-zinc-850 space-y-1">
+                <span class="text-[10px] font-mono text-zinc-500">Ofensiva Atual</span>
+                <div class="text-sm font-black text-amber-400 font-mono">🔥 14 Dias</div>
+              </div>
+            </div>
+
+            <!-- Dica de Long-Press -->
+            <div class="p-3.5 bg-orange-500/5 border border-orange-500/20 rounded-xl text-xs space-y-1">
+              <div class="font-bold text-orange-400 font-mono text-[11px] flex items-center gap-1.5">
+                <span>💡</span> GESTO INTERATIVO
+              </div>
+              <p class="text-zinc-300 text-[11px] leading-relaxed">
+                <strong>Pressione e segure</strong> o botão <strong class="text-orange-300">NOTAS</strong> na barra inferior para abrir o menu rápido de Timer e Pomodoro!
+              </p>
+            </div>
+
+            <!-- Conteúdo longo para permitir scroll e testar a barra de progresso -->
+            <div class="space-y-2 pt-2">
+              <div class="text-[11px] font-mono font-bold text-zinc-500 uppercase">Lista de Tarefas de Hoje</div>
+              <div class="p-3 bg-zinc-950 rounded-xl border border-zinc-850 flex items-center justify-between text-xs">
+                <span class="text-zinc-300">Treino & Cardio Matinal</span>
+                <span class="text-emerald-400 font-mono text-[10px]">Concluído</span>
+              </div>
+              <div class="p-3 bg-zinc-950 rounded-xl border border-zinc-850 flex items-center justify-between text-xs">
+                <span class="text-zinc-300">Leitura Bíblica & Reflexão</span>
+                <span class="text-orange-400 font-mono text-[10px]">Pendente</span>
+              </div>
+              <div class="p-3 bg-zinc-950 rounded-xl border border-zinc-850 flex items-center justify-between text-xs">
+                <span class="text-zinc-300">Revisão de Metas Semanais</span>
+                <span class="text-zinc-500 font-mono text-[10px]">16:00</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- =================================================================
+               COMPONENTE 3: MOBILE CURVED FUTURISTIC BOTTOM NAV BAR (HUD)
+               ================================================================= -->
+          <div class="absolute bottom-0 inset-x-0 h-[92px] pointer-events-none z-40 select-none">
+            
+            <!-- SVG background with neon glowing stroke -->
+            <div class="absolute inset-0 pointer-events-auto">
+              <svg class="w-full h-full filter drop-shadow-[0_-8px_16px_rgba(249,115,22,0.25)]" viewBox="0 0 100 100" preserveAspectRatio="none">
+                <!-- Borda de neon laranja com curvatura Bezier -->
+                <path d="M 0 30 Q 50 0 100 30 L 100 100 L 0 100 Z" fill="none" stroke="#f97316" stroke-width="1.5" />
+                <!-- Preenchimento escuro com leve transparência -->
+                <path d="M 0 30 Q 50 0 100 30 L 100 100 L 0 100 Z" fill="#09090b" opacity="0.98" />
+              </svg>
+            </div>
+
+            <!-- Botões de Navegação -->
+            <div class="absolute inset-x-0 bottom-0 top-3 flex items-start justify-around px-2 pb-2 pointer-events-auto">
+              
+              <!-- Item 1: MENU -->
+              <button onclick="simToggleMenu(true)" class="relative flex flex-col items-center justify-center w-14 h-14 group cursor-pointer outline-none active:scale-95 transition-transform" id="btn-nav-menu">
+                <div id="icon-nav-menu" class="text-zinc-400 group-hover:text-white transition-all duration-300">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
+                  </svg>
+                </div>
+                <div id="indicator-nav-menu" class="hidden absolute bottom-5.5 w-6 h-0.5 bg-orange-500 rounded-full shadow-[0_0_12px_#f97316] z-10"></div>
+                <span id="label-nav-menu" class="hidden absolute bottom-1.5 text-[7px] font-mono font-black tracking-widest text-orange-500 uppercase">MENU</span>
+              </button>
+
+              <!-- Item 2: AGENDA (Calendário) -->
+              <button onclick="simNavigate('calendario')" class="relative flex flex-col items-center justify-center w-14 h-14 group cursor-pointer outline-none active:scale-95 transition-transform" id="btn-nav-calendario">
+                <div id="icon-nav-calendario" class="text-zinc-400 group-hover:text-white transition-all duration-300">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                  </svg>
+                </div>
+                <div id="indicator-nav-calendario" class="hidden absolute bottom-5.5 w-6 h-0.5 bg-orange-500 rounded-full shadow-[0_0_12px_#f97316] z-10"></div>
+                <span id="label-nav-calendario" class="hidden absolute bottom-1.5 text-[7px] font-mono font-black tracking-widest text-orange-500 uppercase">AGENDA</span>
+              </button>
+
+              <!-- Item 3: HOME (Dashboard) - Central / Peak da Curva -->
+              <button onclick="simNavigate('dashboard')" class="relative flex flex-col items-center justify-center w-14 h-14 group cursor-pointer outline-none active:scale-95 transition-transform" id="btn-nav-dashboard">
+                <div id="icon-nav-dashboard" class="text-orange-500 scale-115 -translate-y-2.5 filter drop-shadow-[0_0_10px_rgba(249,115,22,0.8)] transition-all duration-300">
+                  <svg class="w-5.5 h-5.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                    <rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>
+                  </svg>
+                </div>
+                <div id="indicator-nav-dashboard" class="absolute bottom-5.5 w-6 h-0.5 bg-orange-500 rounded-full shadow-[0_0_12px_#f97316] z-10"></div>
+                <span id="label-nav-dashboard" class="absolute bottom-1.5 text-[7px] font-mono font-black tracking-widest text-orange-500 uppercase">HOME</span>
+              </button>
+
+              <!-- Item 4: TAREFAS (Checklist) -->
+              <button onclick="simNavigate('checklist')" class="relative flex flex-col items-center justify-center w-14 h-14 group cursor-pointer outline-none active:scale-95 transition-transform" id="btn-nav-checklist">
+                <div id="icon-nav-checklist" class="text-zinc-400 group-hover:text-white transition-all duration-300">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                  </svg>
+                </div>
+                <div id="indicator-nav-checklist" class="hidden absolute bottom-5.5 w-6 h-0.5 bg-orange-500 rounded-full shadow-[0_0_12px_#f97316] z-10"></div>
+                <span id="label-nav-checklist" class="hidden absolute bottom-1.5 text-[7px] font-mono font-black tracking-widest text-orange-500 uppercase">TAREFAS</span>
+              </button>
+
+              <!-- Item 5: NOTAS (Com Suporte a Long-Press) -->
+              <button 
+                id="btn-nav-notas"
+                onmousedown="simStartHold()" 
+                onmouseup="simEndHold(event)" 
+                onmouseleave="simCancelHold()" 
+                ontouchstart="simStartHold()" 
+                ontouchend="simEndHold(event)" 
+                class="relative flex flex-col items-center justify-center w-14 h-14 group cursor-pointer outline-none active:scale-95 transition-transform"
+              >
+                <!-- Anel de progresso do long-press -->
+                <svg id="simHoldRing" class="hidden absolute inset-0 w-full h-full -rotate-90 pointer-events-none z-20 overflow-visible">
+                  <circle cx="28" cy="28" r="22" stroke="rgba(249, 115, 22, 0.2)" stroke-width="3" fill="none" />
+                  <circle id="simHoldCircle" cx="28" cy="28" r="22" stroke="#f97316" stroke-width="3" fill="none" stroke-dasharray="138" stroke-dashoffset="138" stroke-linecap="round" />
+                </svg>
+
+                <div id="icon-nav-notas" class="text-zinc-400 group-hover:text-white transition-all duration-300">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+                  </svg>
+                </div>
+                <div id="indicator-nav-notas" class="hidden absolute bottom-5.5 w-6 h-0.5 bg-orange-500 rounded-full shadow-[0_0_12px_#f97316] z-10"></div>
+                <span id="label-nav-notas" class="hidden absolute bottom-1.5 text-[7px] font-mono font-black tracking-widest text-orange-500 uppercase">NOTAS</span>
+              </button>
+
+            </div>
+          </div>
+
+          <!-- =================================================================
+               COMPONENTE 4: POPOVER FLUTUANTE DE AÇÕES RÁPIDAS (LONG-PRESS)
+               ================================================================= -->
+          <div id="simQuickPopover" class="hidden absolute inset-0 z-50 flex items-end justify-end p-4 pb-24 bg-black/70 backdrop-blur-sm transition-all duration-200">
+            <div class="absolute inset-0" onclick="simCloseQuickPopover()"></div>
+            
+            <div class="relative z-10 w-60 bg-zinc-900/95 border border-zinc-800 rounded-2xl p-3 shadow-2xl space-y-2 backdrop-blur-xl">
+              <div class="text-[10px] font-mono font-bold text-orange-400 uppercase tracking-wider px-1">Atalhos de Foco</div>
+              
+              <button onclick="simSelectQuickAction('Lembretes Rápido')" class="w-full p-2.5 rounded-xl bg-zinc-800/60 hover:bg-zinc-800 border border-zinc-700/40 hover:border-orange-500/50 flex items-center gap-3 text-left transition-all">
+                <div class="p-2 rounded-lg bg-orange-500/10 text-orange-400 border border-orange-500/20">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                </div>
+                <div>
+                  <div class="text-xs font-bold text-white">Lembretes</div>
+                  <div class="text-[9px] text-zinc-400">Criar alerta rápido</div>
+                </div>
+              </button>
+
+              <button onclick="simSelectQuickAction('Cronômetro Regressivo')" class="w-full p-2.5 rounded-xl bg-zinc-800/60 hover:bg-zinc-800 border border-zinc-700/40 hover:border-orange-500/50 flex items-center gap-3 text-left transition-all">
+                <div class="p-2 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+                <div>
+                  <div class="text-xs font-bold text-white">Cronômetro</div>
+                  <div class="text-[9px] text-zinc-400">Timer programado</div>
+                </div>
+              </button>
+
+              <button onclick="simSelectQuickAction('Sessão Pomodoro')" class="w-full p-2.5 rounded-xl bg-zinc-800/60 hover:bg-zinc-800 border border-zinc-700/40 hover:border-orange-500/50 flex items-center gap-3 text-left transition-all">
+                <div class="p-2 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                </div>
+                <div>
+                  <div class="text-xs font-bold text-white">Pomodoro</div>
+                  <div class="text-[9px] text-zinc-400">Ciclos de 25min / 5min</div>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <!-- =================================================================
+               COMPONENTE 5: SLIDEOVER DRAWER (MENU LATERAL DESLIZANTE)
+               ================================================================= -->
+          <div id="simDrawerOverlay" class="hidden absolute inset-0 z-50 bg-black/80 backdrop-blur-sm transition-opacity duration-200" onclick="simToggleMenu(false)"></div>
+
+          <aside id="simDrawerMenu" class="absolute top-0 left-0 bottom-0 w-64 bg-[#09090b] border-r border-zinc-850 z-50 p-5 pt-8 flex flex-col justify-between -translate-x-full transition-transform duration-300 ease-out shadow-2xl">
+            
+            <div class="space-y-4">
+              <!-- Topo do Drawer com Fechar -->
+              <div class="flex items-center justify-between pb-3 border-b border-zinc-850">
+                <div class="flex items-center gap-2">
+                  <div class="w-6 h-6 rounded-md bg-orange-500/20 text-orange-400 flex items-center justify-center font-black text-xs font-mono">T</div>
+                  <span class="font-rajdhani font-black text-sm text-white tracking-wider">TRONUS HUD</span>
+                </div>
+                <button onclick="simToggleMenu(false)" class="p-1 rounded-lg text-zinc-500 hover:text-white hover:bg-zinc-900 transition-colors">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+
+              <!-- Card de Perfil & Nível -->
+              <div class="p-3 bg-zinc-950 rounded-xl border border-zinc-850 flex items-center gap-3">
+                <div class="p-2 bg-orange-500/10 rounded-lg text-orange-500 border border-orange-500/20">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
+                </div>
+                <div>
+                  <h4 class="text-xs font-black text-white uppercase tracking-wider">Membro Premium</h4>
+                  <p class="text-[9px] text-zinc-500 font-mono">Nível 5 (1.450 XP)</p>
+                </div>
+              </div>
+
+              <!-- Lista de Navegação do Drawer -->
+              <nav class="space-y-1 text-xs">
+                <button onclick="simNavigate('rotina'); simToggleMenu(false)" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-900 text-left transition-colors">
+                  <svg class="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
+                  <span>Rotinas & Hábitos</span>
+                </button>
+                <button onclick="simNavigate('metas'); simToggleMenu(false)" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-900 text-left transition-colors">
+                  <svg class="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+                  <span>Metas & Visão</span>
+                </button>
+                <button onclick="simNavigate('financas'); simToggleMenu(false)" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-900 text-left transition-colors">
+                  <svg class="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                  <span>Finanças & Patrimônio</span>
+                </button>
+                <button onclick="simNavigate('documentos'); simToggleMenu(false)" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-900 text-left transition-colors">
+                  <svg class="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  <span>Documentos & Cofre</span>
+                </button>
+              </nav>
+            </div>
+
+            <!-- Rodapé do Drawer -->
+            <div class="pt-3 border-t border-zinc-850 text-center text-[9px] text-zinc-600 font-mono uppercase">
+              TRONUS SYSTEMS v5.0
+            </div>
+          </aside>
+
+          <!-- =================================================================
+               COMPONENTE 6: OVERLAY DE BUSCA GLOBAL (SEARCH)
+               ================================================================= -->
+          <div id="simSearchModal" class="hidden absolute inset-0 z-50 bg-black/90 backdrop-blur-md p-4 flex flex-col justify-start pt-10">
+            <div class="flex items-center gap-2 pb-3 border-b border-zinc-850">
+              <input id="simSearchInput" type="text" placeholder="Buscar tarefas, notas, metas..." class="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white placeholder:text-zinc-600 outline-none focus:border-orange-500" />
+              <button onclick="simToggleSearch(false)" class="p-2 text-zinc-400 hover:text-white">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+
+            <div class="py-3 text-[11px] text-zinc-500 font-mono">Resultados Sugeridos:</div>
+            <div class="space-y-1.5 overflow-y-auto">
+              <div onclick="simNavigate('checklist'); simToggleSearch(false)" class="p-2 bg-zinc-950 rounded-lg border border-zinc-850 text-xs text-zinc-300 hover:border-orange-500 cursor-pointer">
+                ✓ <strong class="text-white">Treino & Saúde</strong> em Tarefas
+              </div>
+              <div onclick="simNavigate('calendario'); simToggleSearch(false)" class="p-2 bg-zinc-950 rounded-lg border border-zinc-850 text-xs text-zinc-300 hover:border-orange-500 cursor-pointer">
+                📅 <strong class="text-white">Culto & Comunhão</strong> na Agenda
+              </div>
+              <div onclick="simNavigate('metas'); simToggleSearch(false)" class="p-2 bg-zinc-950 rounded-lg border border-zinc-850 text-xs text-zinc-300 hover:border-orange-500 cursor-pointer">
+                🎯 <strong class="text-white">Reserva de Emergência</strong> em Metas
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- =========================================================================
+         SEÇÃO 5: SNIPPET STANDALONE PURO (PRONTO PARA COPIAR E COLAR)
+         ========================================================================= -->
+    <section class="bg-[#09090b] border border-zinc-800/80 rounded-2xl p-6 sm:p-8 space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-zinc-800">
+        <div>
+          <h3 class="font-rajdhani font-black text-xl text-white">5. CÓDIGO FONTE STANDALONE DA BARRA MOBILE</h3>
+          <p class="text-xs text-zinc-400">Copie este bloco para injetar a navbar mobile em qualquer página HTML ou componente React/Vue</p>
+        </div>
+        <button onclick="simCopyCode()" class="text-xs font-mono font-bold px-4 py-2 rounded-xl bg-orange-500/10 border border-orange-500/30 text-orange-400 hover:bg-orange-500 hover:text-white transition-all shadow-[0_0_12px_rgba(249,115,22,0.15)] flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          <span id="simCopyBtnText">Copiar HTML/SVG</span>
+        </button>
+      </div>
+
+      <div class="relative">
+        <pre class="bg-black/90 border border-zinc-850 p-4 rounded-xl text-xs font-mono text-zinc-300 overflow-x-auto max-h-96 leading-relaxed select-all">
+&lt;!-- =========================================================================
+     TRONUS MOBILE NAVBAR — CURVED HUD SVG &amp; 5 NAVEGAÇÕES
+     ========================================================================= --&gt;
+&lt;div class="lg:hidden fixed bottom-0 left-0 right-0 h-[92px] pointer-events-none z-40 select-none"&gt;
+
+  &lt;!-- SVG Background com Curva Bezier e Neon Glow --&gt;
+  &lt;div class="absolute inset-0 pointer-events-auto"&gt;
+    &lt;svg class="w-full h-full filter drop-shadow-[0_-8px_16px_rgba(249,115,22,0.25)]" viewBox="0 0 100 100" preserveAspectRatio="none"&gt;
+      &lt;path d="M 0 30 Q 50 0 100 30 L 100 100 L 0 100 Z" fill="none" stroke="#f97316" stroke-width="1.5" /&gt;
+      &lt;path d="M 0 30 Q 50 0 100 30 L 100 100 L 0 100 Z" fill="#09090b" opacity="0.98" /&gt;
+    &lt;/svg&gt;
+  &lt;/div&gt;
+
+  &lt;!-- Botões de Navegação --&gt;
+  &lt;div class="absolute inset-x-0 bottom-0 top-3 flex items-start justify-around px-2 pb-2 pointer-events-auto"&gt;
+
+    &lt;!-- 1. MENU (Slideover) --&gt;
+    &lt;button onclick="openMobileMenu()" class="relative flex flex-col items-center justify-center w-14 h-14"&gt;
+      &lt;svg class="w-5 h-5 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
+        &lt;line x1="3" y1="12" x2="21" y2="12"/&gt;&lt;line x1="3" y1="6" x2="21" y2="6"/&gt;&lt;line x1="3" y1="18" x2="21" y2="18"/&gt;
+      &lt;/svg&gt;
+    &lt;/button&gt;
+
+    &lt;!-- 2. AGENDA --&gt;
+    &lt;button onclick="navigate('calendario')" class="relative flex flex-col items-center justify-center w-14 h-14"&gt;
+      &lt;svg class="w-5 h-5 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
+        &lt;rect x="3" y="4" width="18" height="18" rx="2" ry="2"/&gt;&lt;line x1="16" y1="2" x2="16" y2="6"/&gt;&lt;line x1="8" y1="2" x2="8" y2="6"/&gt;&lt;line x1="3" y1="10" x2="21" y2="10"/&gt;
+      &lt;/svg&gt;
+    &lt;/button&gt;
+
+    &lt;!-- 3. HOME (DASHBOARD - CENTRO / ELEVAÇÃO) --&gt;
+    &lt;button onclick="navigate('dashboard')" class="relative flex flex-col items-center justify-center w-14 h-14"&gt;
+      &lt;div class="text-orange-500 scale-115 -translate-y-2.5 filter drop-shadow-[0_0_10px_rgba(249,115,22,0.8)]"&gt;
+        &lt;svg class="w-5.5 h-5.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"&gt;
+          &lt;rect x="3" y="3" width="7" height="9" rx="1"/&gt;&lt;rect x="14" y="3" width="7" height="5" rx="1"/&gt;&lt;rect x="14" y="12" width="7" height="9" rx="1"/&gt;&lt;rect x="3" y="16" width="7" height="5" rx="1"/&gt;
+        &lt;/svg&gt;
+      &lt;/div&gt;
+      &lt;div class="absolute bottom-5.5 w-6 h-0.5 bg-orange-500 rounded-full shadow-[0_0_12px_#f97316] z-10"&gt;&lt;/div&gt;
+      &lt;span class="absolute bottom-1.5 text-[7px] font-mono font-black tracking-widest text-orange-500 uppercase"&gt;HOME&lt;/span&gt;
+    &lt;/button&gt;
+
+    &lt;!-- 4. TAREFAS (Checklist) --&gt;
+    &lt;button onclick="navigate('checklist')" class="relative flex flex-col items-center justify-center w-14 h-14"&gt;
+      &lt;svg class="w-5 h-5 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
+        &lt;polyline points="9 11 12 14 22 4"/&gt;&lt;path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/&gt;
+      &lt;/svg&gt;
+    &lt;/button&gt;
+
+    &lt;!-- 5. NOTAS (Com Long-Press) --&gt;
+    &lt;button onmousedown="startHold()" onmouseup="endHold()" class="relative flex flex-col items-center justify-center w-14 h-14"&gt;
+      &lt;svg class="w-5 h-5 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;
+        &lt;path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/&gt;&lt;path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/&gt;
+      &lt;/svg&gt;
+    &lt;/button&gt;
+
+  &lt;/div&gt;
+&lt;/div&gt;</pre>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- =========================================================================
+       RODAPÉ DO BLUEPRINT
+       ========================================================================= -->
+  <footer class="border-t border-zinc-850 py-8 text-center text-xs text-zinc-500 font-mono">
+    TRONUS DESIGN SYSTEM • STANDALONE MOBILE NAVBAR BLUEPRINT & ARCHITECTURE GUIDE
+  </footer>
+
+  <!-- =========================================================================
+       JAVASCRIPT INTERATIVO DO SIMULADOR (STANDALONE LOGIC)
+       ========================================================================= -->
+  <script>
+    let activeTab = 'dashboard';
+    let holdTimer = null;
+    let holdProgress = 0;
+    let holdInterval = null;
+    let isHoldingTriggered = false;
+    let isFullscreen = false;
+
+    const pagesData = {
+      dashboard: {
+        title: 'Painel Geral (Dashboard)',
+        badge: 'HOME',
+        desc: 'Visão consolidada com métricas de XP, ofensiva diária, atalhos para hábitos e gráficos de progresso.'
+      },
+      calendario: {
+        title: 'Agenda & Calendário de Fé',
+        badge: 'AGENDA',
+        desc: 'Controle de sono, rotinas espirituais, leitura bíblica e agendamento de eventos do dia.'
+      },
+      checklist: {
+        title: 'Checklist & Missões Diárias',
+        badge: 'TAREFAS',
+        desc: 'Grade de horários, tarefas organizadas por período e marcação de conclusão rápida.'
+      },
+      notas: {
+        title: 'Caderno de Notas & Ideias',
+        badge: 'NOTAS',
+        desc: 'Anotações livres com suporte a tags, links rápidos e atalhos de cronômetro.'
+      },
+      rotina: {
+        title: 'Rotinas & Hábitos Semanais',
+        badge: 'ROTINAS',
+        desc: 'Mapeamento horário completo de segunda a domingo com recorrência configurável.'
+      },
+      metas: {
+        title: 'Metas de Curto & Longo Prazo',
+        badge: 'METAS',
+        desc: 'Quadro de visão com fotos, alvos financeiros, desenvolvimento pessoal e carreira.'
+      },
+      financas: {
+        title: 'Gestão Financeira & Patrimônio',
+        badge: 'FINANÇAS',
+        desc: 'Entradas, despesas fixas, investimentos e progresso de poupança.'
+      },
+      documentos: {
+        title: 'Cofre de Documentos & Arquivos',
+        badge: 'COFRE',
+        desc: 'Armazenamento seguro de certificados, comprovantes e registros importantes.'
+      },
+      perfil: {
+        title: 'Perfil & Nível de Usuário',
+        badge: 'PERFIL',
+        desc: 'Gerenciamento de conta, fotos, sincronização na nuvem e preferências do sistema.'
+      }
+    };
+
+    function simNavigate(tabId) {
+      activeTab = tabId;
+      const data = pagesData[tabId] || pagesData.dashboard;
+      
+      document.getElementById('simPageTitle').innerText = data.title;
+      document.getElementById('simPageDescription').innerText = data.desc;
+      document.getElementById('simActiveTabBadge').innerText = data.badge;
+
+      // Atualiza os estilos da barra inferior
+      const tabs = ['menu', 'calendario', 'dashboard', 'checklist', 'notas'];
+      tabs.forEach(t => {
+        const icon = document.getElementById(`icon-nav-${t}`);
+        const indicator = document.getElementById(`indicator-nav-${t}`);
+        const label = document.getElementById(`label-nav-${t}`);
+
+        if (t === tabId && tabId !== 'menu') {
+          icon.className = 'text-orange-500 scale-115 -translate-y-2.5 filter drop-shadow-[0_0_10px_rgba(249,115,22,0.8)] transition-all duration-300';
+          if (indicator) indicator.classList.remove('hidden');
+          if (label) label.classList.remove('hidden');
+        } else {
+          icon.className = 'text-zinc-400 group-hover:text-white transition-all duration-300';
+          if (indicator) indicator.classList.add('hidden');
+          if (label) label.classList.add('hidden');
+        }
+      });
+    }
+
+    function simHandleScroll() {
+      const el = document.getElementById('simScrollContainer');
+      const max = el.scrollHeight - el.clientHeight;
+      const percent = max > 0 ? (el.scrollTop / max) * 100 : 0;
+      document.getElementById('simProgressBar').style.width = Math.min(100, Math.max(5, percent)) + '%';
+    }
+
+    function simToggleMenu(open) {
+      const overlay = document.getElementById('simDrawerOverlay');
+      const drawer = document.getElementById('simDrawerMenu');
+      if (open) {
+        overlay.classList.remove('hidden');
+        drawer.classList.remove('-translate-x-full');
+      } else {
+        overlay.classList.add('hidden');
+        drawer.classList.add('-translate-x-full');
+      }
+    }
+
+    function simToggleSearch(open) {
+      const modal = document.getElementById('simSearchModal');
+      if (open) {
+        modal.classList.remove('hidden');
+        document.getElementById('simSearchInput').focus();
+      } else {
+        modal.classList.add('hidden');
+      }
+    }
+
+    function simToggleFullscreen() {
+      isFullscreen = !isFullscreen;
+      const icon = document.getElementById('simFsIcon');
+      if (isFullscreen) {
+        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M9 9L4 4m0 0l5 0m-5 0l0 5m11 0l5-5m0 0l-5 0m5 0l0 5M9 15l-5 5m0 0l5 0m-5 0l0-5m11 0l5 5m0 0l-5 0m5 0l0-5"/>';
+      } else {
+        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>';
+      }
+    }
+
+    /* Long-Press Engine */
+    function simStartHold() {
+      isHoldingTriggered = false;
+      holdProgress = 0;
+      const ring = document.getElementById('simHoldRing');
+      const circle = document.getElementById('simHoldCircle');
+      ring.classList.remove('hidden');
+
+      const start = Date.now();
+      const duration = 500;
+
+      holdInterval = setInterval(() => {
+        const elapsed = Date.now() - start;
+        holdProgress = Math.min(100, (elapsed / duration) * 100);
+        const offset = 138 - (138 * holdProgress) / 100;
+        circle.style.strokeDashoffset = offset;
+
+        if (elapsed >= duration) {
+          clearInterval(holdInterval);
+          isHoldingTriggered = true;
+          ring.classList.add('hidden');
+          document.getElementById('simQuickPopover').classList.remove('hidden');
+        }
+      }, 16);
+    }
+
+    function simEndHold(e) {
+      if (holdInterval) clearInterval(holdInterval);
+      document.getElementById('simHoldRing').classList.add('hidden');
+      document.getElementById('simHoldCircle').style.strokeDashoffset = '138';
+
+      if (!isHoldingTriggered) {
+        simNavigate('notas');
+      }
+    }
+
+    function simCancelHold() {
+      if (holdInterval) clearInterval(holdInterval);
+      document.getElementById('simHoldRing').classList.add('hidden');
+      document.getElementById('simHoldCircle').style.strokeDashoffset = '138';
+    }
+
+    function simCloseQuickPopover() {
+      document.getElementById('simQuickPopover').classList.add('hidden');
+    }
+
+    function simSelectQuickAction(actionName) {
+      simCloseQuickPopover();
+      document.getElementById('simPageTitle').innerText = 'Ação Rápida: ' + actionName;
+      document.getElementById('simPageDescription').innerText = 'Atalho de foco disparado através do menu radial por pressão no botão Notas.';
+    }
+
+    function simCopyCode() {
+      const code = `<!-- TRONUS CURVED MOBILE NAVBAR -->
+<div class="lg:hidden fixed bottom-0 left-0 right-0 h-[92px] pointer-events-none z-40 select-none">
+  <div class="absolute inset-0 pointer-events-auto">
+    <svg class="w-full h-full filter drop-shadow-[0_-8px_16px_rgba(249,115,22,0.25)]" viewBox="0 0 100 100" preserveAspectRatio="none">
+      <path d="M 0 30 Q 50 0 100 30 L 100 100 L 0 100 Z" fill="none" stroke="#f97316" stroke-width="1.5" />
+      <path d="M 0 30 Q 50 0 100 30 L 100 100 L 0 100 Z" fill="#09090b" opacity="0.98" />
+    </svg>
+  </div>
+  <div class="absolute inset-x-0 bottom-0 top-3 flex items-start justify-around px-2 pb-2 pointer-events-auto">
+    <!-- Items: Menu, Agenda, Home, Tarefas, Notas -->
+  </div>
+</div>`;
+      navigator.clipboard.writeText(code).then(() => {
+        const btnText = document.getElementById('simCopyBtnText');
+        btnText.innerText = 'Copiado!';
+        setTimeout(() => { btnText.innerText = 'Copiar HTML/SVG'; }, 2000);
+      });
+    }
+  </script>
+
+</body>
+</html>

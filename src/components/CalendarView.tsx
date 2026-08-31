@@ -46,6 +46,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import TagManagementModal from './TagManagementModal';
 import TagInputWithMention from './TagInputWithMention';
+import WaterTracker from './WaterTracker';
 import { CalendarNote, DailyTask, SubTask, MonthlyReview, BookTracker, BibleTracker, RoutineItem, WeeklyReview, FutureEvent } from '../types';
 import { saveGoogleOAuthTokens, clearGoogleOAuthSession, refreshGoogleAccessToken, getValidGoogleAccessToken } from '../utils/googleToken';
 import { handleAutoListKeyDown, formatTimeInput, moveCursorToEnd } from '../utils/listUtils';
@@ -2501,7 +2502,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                 <div className="shrink-0 flex justify-between items-start border-b border-zinc-800 pb-3">
                   <div>
                     <h3 className="text-xs font-bold text-white uppercase tracking-wider">
-                      Espaço Diário & Fé
+                      Meu Dia
                     </h3>
                     <p className="text-[10px] text-orange-500 font-mono font-bold mt-0.5 capitalize">
                       {selectedDateStr ? formatLongDate(selectedDateStr) : 'Selecione uma data'}
@@ -2933,7 +2934,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                             <div className="grid grid-cols-2 gap-3">
                               <div>
                                 <label className="text-[10px] text-zinc-400 font-bold block mb-1">
-                                  Quando se deitou:
+                                  Quando se deitou (ontem):
                                 </label>
                                 <input
                                   type="time"
@@ -2959,7 +2960,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                               
                               <div>
                                 <label className="text-[10px] text-zinc-400 font-bold block mb-1">
-                                  Quando acordou:
+                                  Quando acordou (hoje):
                                 </label>
                                 <input
                                   type="time"
@@ -3064,64 +3065,11 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                           </div>
 
                           {/* Water Section */}
-                          <div className="bg-zinc-950/40 border border-zinc-900 rounded-xl p-3.5 space-y-3">
-                            <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
-                              <div className="flex items-center gap-2">
-                                <Zap className="h-4 w-4 text-blue-500" />
-                                <span className="text-xs font-bold text-white uppercase tracking-wider">
-                                  Consumo de Água
-                                </span>
-                              </div>
-                              <span className="text-xs font-bold text-blue-400 font-mono">
-                                {waterLiters.toFixed(1)} Litros
-                              </span>
-                            </div>
-
-                            <div className="flex items-center gap-3">
-                              <button
-                                type="button"
-                                onClick={() => setWaterLiters(prev => Math.max(0, parseFloat((prev - 0.25).toFixed(2))))}
-                                className="w-10 h-10 bg-zinc-950 border border-zinc-850 rounded-lg flex items-center justify-center text-xs text-zinc-400 hover:text-white transition-colors"
-                              >
-                                -250ml
-                              </button>
-                              <div className="flex-1 text-center font-mono font-bold text-zinc-300 text-sm">
-                                {waterLiters.toFixed(2)} L
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => setWaterLiters(prev => parseFloat((prev + 0.25).toFixed(2)))}
-                                className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-lg flex items-center justify-center text-xs text-blue-400 hover:text-blue-300 transition-colors"
-                              >
-                                +250ml
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setWaterLiters(prev => parseFloat((prev + 0.50).toFixed(2)))}
-                                className="w-10 h-10 bg-zinc-900 border border-blue-900/30 rounded-lg flex items-center justify-center text-xs text-blue-400 hover:text-blue-300 transition-colors"
-                              >
-                                +500ml
-                              </button>
-                            </div>
-                            
-                            {/* Water range / slider option for custom amount */}
-                            <div className="space-y-1">
-                              <div className="flex justify-between text-[9px] text-zinc-500 font-mono">
-                                <span>0L</span>
-                                <span>Meta: 3.0L</span>
-                                <span>5L</span>
-                              </div>
-                              <input
-                                type="range"
-                                min="0"
-                                max="5"
-                                step="0.1"
-                                value={waterLiters}
-                                onChange={(e) => setWaterLiters(parseFloat(parseFloat(e.target.value).toFixed(2)))}
-                                className="w-full accent-blue-500 bg-zinc-950 border border-zinc-850 rounded-lg h-2"
-                              />
-                            </div>
-                          </div>
+                          <WaterTracker 
+                            waterLiters={waterLiters} 
+                            onChange={setWaterLiters} 
+                            onAddXp={addXp} 
+                          />
                         </div>
                       ) : (
                         /* AGENDA / GOOGLE CALENDAR TOPIC */

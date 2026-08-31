@@ -245,11 +245,11 @@ export async function syncAlarmsToServiceWorker(payload: {
     });
   }
 
-  // 6. Espaço Diário & Fé
+  // 6. Meu Dia
   if (isBgEnabled && payload.dailySpaceEnabled !== false && payload.dailySpaceTime) {
     alarms.push({
       id: 'daily-space-reminder',
-      title: 'Espaço Diário & Fé',
+      title: 'Meu Dia',
       body: 'Hora de registrar suas reflexões do dia, checklist, orações e hábitos!',
       scheduledTime: payload.dailySpaceTime,
       targetTimestamp: computeTargetTimestamp(payload.dailySpaceTime)

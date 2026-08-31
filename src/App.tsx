@@ -154,14 +154,8 @@ export default function App() {
     return enabled && pass !== '';
   });
 
-  // Brief elegant loading screen state (shown on initial load if unlocked, or right after unlocking)
-  const [isSyncLoading, setIsSyncLoading] = useState<boolean>(() => {
-    const enabled = localStorage.getItem('mbc_app_lock_enabled') === 'true';
-    const pass = localStorage.getItem('mbc_app_lock_password') || '';
-    const isLockedInitially = enabled && pass !== '';
-    // If not locked initially, show initial loading/sync splash
-    return !isLockedInitially;
-  });
+  // Loading screen state (only displayed when genuinely synchronizing data with the cloud)
+  const [isSyncLoading, setIsSyncLoading] = useState<boolean>(false);
   const [isUnlockLoading, setIsUnlockLoading] = useState<boolean>(false);
 
   // --- Core Auth & User Session States ---
@@ -1891,14 +1885,14 @@ export default function App() {
         }
       }
 
-      // 6. Espaço Diário & Fé Notification Trigger
+      // 6. Meu Dia Notification Trigger
       const dailySpaceNotifEnabled = localStorage.getItem('mbc_daily_workspace_notif_enabled') !== 'false';
       const dailySpaceTime = localStorage.getItem('mbc_daily_workspace_reminder_time') || '21:00';
       if (dailySpaceNotifEnabled && dailySpaceTime === currentHHMM) {
         const key = `dailyworkspace-${todayDateStr}-${currentHHMM}`;
         if (!notifiedKeysRef.current.has(key)) {
           notifiedKeysRef.current.add(key);
-          sendSystemNotification('Espaço Diário & Fé', {
+          sendSystemNotification('Meu Dia', {
             body: 'Hora de registrar suas reflexões do dia, checklist, orações e hábitos!',
             tag: 'dailyworkspace'
           });
@@ -3576,8 +3570,8 @@ export default function App() {
         lockScreenMobileImage={lockScreenMobileImage}
         onUnlock={() => {
           setIsAppLocked(false);
-          setIsUnlockLoading(true);
-          setIsSyncLoading(true);
+          setIsUnlockLoading(false);
+          setIsSyncLoading(false);
         }}
       />
     );

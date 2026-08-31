@@ -534,7 +534,7 @@ export default function TagManagementModal({
                         let moduleIcon = <BookOpen className="h-3.5 w-3.5 text-orange-400" />;
                         let moduleBadgeClass = 'bg-orange-500/10 text-orange-400 border-orange-500/20';
 
-                        if (item.sourceModule === 'Espaço Diário & Fé') {
+                        if (item.sourceModule === 'Meu Dia' || item.sourceModule === 'Espaço Diário & Fé') {
                           moduleIcon = <Sparkles className="h-3.5 w-3.5 text-purple-400" />;
                           moduleBadgeClass = 'bg-purple-500/10 text-purple-400 border-purple-500/20';
                         } else if (item.sourceModule === 'Anuais / Metas') {

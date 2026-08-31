@@ -40,6 +40,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import TagManagementModal from './TagManagementModal';
 import TagInputWithMention from './TagInputWithMention';
+import WaterTracker from './WaterTracker';
 import { CalendarNote, DailyTask, MonthlyReview, WeeklyReview, YearlyBook, SubTask, Goal, FinanceEntry } from '../types';
 import { calculateReadingInterval, formatDateBR } from '../utils/bookUtils';
 import { handleAutoListKeyDown, formatTimeInput, moveCursorToEnd } from '../utils/listUtils';
@@ -2460,7 +2461,7 @@ export default function AnuaisView({
                     Registros Diários (Ordem Descendente)
                   </span>
                   <span className="text-[9px] text-zinc-600 font-mono block">
-                    Selecione um dia para abrir o Espaço Diário & Fé
+                    Selecione um dia para abrir Meu Dia
                   </span>
                 </div>
 
@@ -2555,7 +2556,7 @@ export default function AnuaisView({
               <div className="shrink-0 p-4 sm:p-5 border-b border-zinc-850 flex items-center justify-between bg-zinc-950/40">
                 <div>
                   <h3 className="text-xs font-bold text-white uppercase tracking-wider">
-                    Espaço Diário & Fé
+                    Meu Dia
                   </h3>
                   <p className="text-[10.5px] text-orange-500 font-mono font-bold mt-0.5">
                     Data: {selectedDateStr.split('-').reverse().join('/')}
@@ -2855,7 +2856,7 @@ export default function AnuaisView({
 
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="text-[10px] text-zinc-500 block mb-1">Deitou-se às:</label>
+                          <label className="text-[10px] text-zinc-500 block mb-1">Quando se deitou (ontem):</label>
                           <input
                             type="time"
                             value={sleepBedTime}
@@ -2878,7 +2879,7 @@ export default function AnuaisView({
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] text-zinc-500 block mb-1">Acordou às:</label>
+                          <label className="text-[10px] text-zinc-500 block mb-1">Quando acordou (hoje):</label>
                           <input
                             type="time"
                             value={sleepWakeTime}
@@ -2947,38 +2948,12 @@ export default function AnuaisView({
                       </div>
                     </div>
 
-                    {/* Water incrementer */}
-                    <div className="bg-zinc-950 p-4 border border-zinc-900 rounded-2xl flex items-center justify-between">
-                      <div className="space-y-1">
-                        <span className="text-[10px] text-zinc-400 font-bold block uppercase tracking-wider">Hidratação</span>
-                        <div className="text-sm font-mono font-bold text-white">
-                          {waterLiters.toFixed(1)} L / 3.0 L
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setWaterLiters(prev => Math.max(0, prev - 0.5));
-                            addXp(-2);
-                          }}
-                          className="w-8 h-8 rounded-full bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 font-bold text-zinc-400 text-sm flex items-center justify-center transition-all"
-                        >
-                          -
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setWaterLiters(prev => Math.min(6, prev + 0.5));
-                            addXp(5);
-                          }}
-                          className="w-8 h-8 rounded-full bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 font-bold text-orange-500 text-sm flex items-center justify-center transition-all"
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
+                    {/* Water Section */}
+                    <WaterTracker 
+                      waterLiters={waterLiters} 
+                      onChange={setWaterLiters} 
+                      onAddXp={addXp} 
+                    />
                   </div>
                 )}
               </div>

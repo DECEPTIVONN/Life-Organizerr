@@ -13,7 +13,7 @@ export interface TagItem {
 
 export interface TagHistoryItem {
   id: string;
-  sourceModule: 'Notas' | 'Espaço Diário & Fé' | 'Anuais / Metas' | 'Lembretes' | 'Eventos';
+  sourceModule: 'Notas' | 'Meu Dia' | 'Espaço Diário & Fé' | 'Anuais / Metas' | 'Lembretes' | 'Eventos';
   title: string;
   date: string;
   snippet: string;
@@ -163,7 +163,7 @@ export function queryTagHistory(
     }
   });
 
-  // Search Calendar / Espaço Diário & Fé
+  // Search Calendar / Meu Dia
   allCalendarNotes.forEach(cn => {
     const combinedText = `
       ${cn.title || ''} ${cn.content || ''} ${cn.journalText || ''} 
@@ -173,7 +173,7 @@ export function queryTagHistory(
     if (combinedText.includes(`@${clean}`) || combinedText.includes(clean)) {
       history.push({
         id: `cal-${cn.id}`,
-        sourceModule: 'Espaço Diário & Fé',
+        sourceModule: 'Meu Dia',
         title: cn.title || `Registro do dia ${cn.date}`,
         date: cn.date,
         snippet: cn.journalText || cn.prayerText || cn.content || 'Registro diário ou pedido de fé.',

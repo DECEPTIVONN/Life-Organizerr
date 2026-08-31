@@ -117,7 +117,7 @@ export const getDefaultStreakData = (): StreakHubData => {
       },
       journal: {
         id: 'journal',
-        name: 'Espaço Diário & Fé',
+        name: 'Meu Dia',
         description: 'Reflexões, gratidões e orações diárias',
         currentStreak: 5,
         bestStreak: 14,

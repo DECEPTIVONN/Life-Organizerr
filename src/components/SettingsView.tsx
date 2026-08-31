@@ -2351,13 +2351,13 @@ export default function SettingsView({
                 </div>
               </div>
 
-              {/* Espaço Diário & Fé Reminder */}
+              {/* Meu Dia Reminder */}
               <div className="p-4 bg-zinc-950 border border-zinc-900 rounded-2xl space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
                     <h4 className="text-xs font-bold text-zinc-200 flex items-center gap-2">
                       <Bell className="h-3.5 w-3.5 text-orange-500" />
-                      Lembrete de Espaço Diário & Fé
+                      Lembrete de Meu Dia
                     </h4>
                     <p className="text-[9px] text-zinc-500 font-mono mt-0.5">
                       Alerta diário para diário pessoal, orações, checklist e hábitos.

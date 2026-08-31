@@ -946,7 +946,7 @@ export default function DashboardView({
             </p>
 
             <div className="space-y-2.5">
-              {/* Shortcut: Espaço Diário e Fé */}
+              {/* Shortcut: Meu Dia */}
               <button
                 onClick={() => {
                   localStorage.setItem('calendar_selected_date_str', todayKey);
@@ -958,7 +958,7 @@ export default function DashboardView({
                   <Sparkles className="h-4 w-4" />
                 </div>
                 <div>
-                  <h4 className="text-[11px] font-extrabold text-white group-hover:text-orange-400 transition-colors">Espaço Diário & Fé</h4>
+                  <h4 className="text-[11px] font-extrabold text-white group-hover:text-orange-400 transition-colors">Meu Dia</h4>
                   <p className="text-[9px] text-zinc-500 font-medium mt-0.5">Acesso direto ao devocional, orações e metas do dia.</p>
                 </div>
               </button>
