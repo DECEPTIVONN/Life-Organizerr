@@ -26,6 +26,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { RoutineItem, MonthlyReview, CalendarNote, WeeklyReview, SubTask } from '../types';
 import { handleAutoListKeyDown } from '../utils/listUtils';
+import { cleanupExpiredGridRoutine, cleanupExpiredRoutineItems, isPastWeek } from '../utils/routineUtils';
 
 interface RoutineViewProps {
   routine: RoutineItem[];
@@ -89,6 +90,20 @@ export default function RoutineView({
   const [editSubtasks, setEditSubtasks] = useState<SubTask[]>([]);
   const [editSubtaskInput, setEditSubtaskInput] = useState('');
   const [showClearModal, setShowClearModal] = useState(false);
+
+  // Clean up non-recurring items whose week has ended
+  useEffect(() => {
+    if (gridRoutine && setGridRoutine) {
+      const resGrid = cleanupExpiredGridRoutine(gridRoutine);
+      if (resGrid.removedCount > 0) {
+        setGridRoutine(resGrid.cleaned);
+      }
+    }
+    const resRoutine = cleanupExpiredRoutineItems(routine);
+    if (resRoutine.removedCount > 0) {
+      setRoutine(resRoutine.cleaned);
+    }
+  }, []);
 
   // Days of the week, starting with Sunday as the first day (0)
   const daysOfWeek = [
@@ -341,13 +356,15 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
 
   // Convert gridRoutine items with showInWeeklyRoutine !== false into RoutineItems for each day
   const combinedRoutine = useMemo(() => {
-    const list: RoutineItem[] = [...routine];
+    const list: RoutineItem[] = routine.filter(item => !(item.isWeeklyRecurring === false && isPastWeek(item.createdDate)));
     
     if (gridRoutine) {
       Object.entries(gridRoutine).forEach(([key, block]: [string, any]) => {
         if (!block || !block.text || !block.text.trim()) return;
         // Option to display in weekly routine (default is true):
         if (block.showInWeeklyRoutine === false) return;
+        // If not recurring weekly and its week has ended, do not display
+        if (block.isWeeklyRecurring === false && isPastWeek(block.createdDate)) return;
         
         const [blockHour, blockDayStr] = key.split('-');
         const blockDay = parseInt(blockDayStr, 10);

@@ -47,6 +47,7 @@ import { DailyTask, SubTask, BookTracker, BibleTracker, RoutineItem, YearlyBook,
 import RoutineView from './RoutineView';
 import HabitsTrackerView from './HabitsTrackerView';
 import { syncBookWithYearlyBooks, calculateReadingInterval, formatDateBR } from '../utils/bookUtils';
+import { cleanupExpiredGridRoutine, cleanupExpiredRoutineItems, isPastWeek, getWeekMondayStr } from '../utils/routineUtils';
 
 interface ChecklistViewProps {
   dailyTasks: DailyTask[];
@@ -241,7 +242,7 @@ export default function ChecklistView({
   const [localGridRoutine, setLocalGridRoutine] = useState<Record<string, { text: string; color?: string; startTime?: string; endTime?: string; isWeeklyRecurring?: boolean; showInDailyMissions?: boolean; createdDate?: string; reminderTime?: string; subtasks?: SubTask[] }>>(() => {
     try {
       const saved = localStorage.getItem('mbc_grid_routine');
-      if (saved) return JSON.parse(saved);
+      if (saved) return cleanupExpiredGridRoutine(JSON.parse(saved)).cleaned;
     } catch (e) {
       console.error("Failed to parse mbc_grid_routine", e);
     }
@@ -471,10 +472,24 @@ export default function ChecklistView({
     }
   }, [isToday, todayStr, dailyTasks, setDailyTasks]);
 
-  // Automatic Day Reset Check (Triggers automatically at 0:00 / new calendar day)
+  // Automatic Day & Week Reset Check (Triggers automatically at 0:00 / new calendar day / week transition)
   useEffect(() => {
     const lastResetDate = lastDailyResetDate !== undefined && lastDailyResetDate !== '' ? lastDailyResetDate : localStorage.getItem('last_daily_reset_date');
     const currentToday = getTodayDateStr();
+
+    // Routine & Grid Routine weekly cleanup (Removes non-recurring blocks whose week has ended)
+    if (gridRoutine) {
+      const resGrid = cleanupExpiredGridRoutine(gridRoutine, currentToday);
+      if (resGrid.removedCount > 0) {
+        saveGridRoutine(resGrid.cleaned);
+      }
+    }
+    if (propRoutine && propSetRoutine) {
+      const resRoutine = cleanupExpiredRoutineItems(propRoutine, currentToday);
+      if (resRoutine.removedCount > 0) {
+        propSetRoutine(resRoutine.cleaned);
+      }
+    }
 
     if (!lastResetDate) {
       if (setLastDailyResetDate) setLastDailyResetDate(currentToday);
@@ -497,7 +512,7 @@ export default function ChecklistView({
       if (setLastDailyResetDate) setLastDailyResetDate(currentToday);
       localStorage.setItem('last_daily_reset_date', currentToday);
     }
-  }, [todayStr, setDailyTasks, setBibleTracker, lastDailyResetDate, setLastDailyResetDate]);
+  }, [todayStr, setDailyTasks, setBibleTracker, lastDailyResetDate, setLastDailyResetDate, gridRoutine, propRoutine, propSetRoutine]);
 
   const updateActiveTasks = (updater: (prev: DailyTask[]) => DailyTask[]) => {
     if (selectedDate === todayStr) {
@@ -3357,7 +3372,7 @@ export default function ChecklistView({
                               <div className="flex flex-col">
                                 <span className="text-xs font-bold">Repetir semanalmente</span>
                                 <span className="text-[10px] text-zinc-400">
-                                  {cellIsWeeklyRecurring ? 'Bloco recorrente todas as semanas' : 'Bloco pontual (único)'}
+                                  {cellIsWeeklyRecurring ? 'Bloco recorrente todas as semanas' : 'Bloco pontual (removido ao fim desta semana)'}
                                 </span>
                               </div>
                             </div>

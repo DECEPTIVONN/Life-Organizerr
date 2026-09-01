@@ -54,6 +54,7 @@ import { sendSystemNotification, syncAlarmsToServiceWorker } from './lib/notific
 
 import { DEFAULT_VISION_BOARD_CARDS } from './components/VisionBoard';
 import { BankAccount, CreditCardItem, DebtItem, BudgetLimit } from './components/FinancesView';
+import { cleanupExpiredGridRoutine, cleanupExpiredRoutineItems } from './utils/routineUtils';
 
 // Types
 import { 
@@ -801,7 +802,7 @@ export default function App() {
       const saved = localStorage.getItem('mbc_routine');
       if (saved && saved !== 'undefined') {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed)) return cleanupExpiredRoutineItems(parsed).cleaned;
       }
     } catch (e) {
       console.error("Failed to parse mbc_routine", e);
@@ -1226,7 +1227,7 @@ export default function App() {
   const [gridRoutine, setGridRoutine] = useState<Record<string, { text: string; color?: string; startTime?: string; endTime?: string }>>(() => {
     try {
       const saved = localStorage.getItem('mbc_grid_routine');
-      if (saved) return JSON.parse(saved);
+      if (saved) return cleanupExpiredGridRoutine(JSON.parse(saved)).cleaned;
     } catch (e) {
       console.error("Failed to parse mbc_grid_routine", e);
     }
@@ -1257,6 +1258,18 @@ export default function App() {
   });
   useEffect(() => {
     localStorage.setItem('last_daily_reset_date', lastDailyResetDate);
+  }, [lastDailyResetDate]);
+
+  // Automatically remove non-recurring routine blocks whose week has ended
+  useEffect(() => {
+    const resGrid = cleanupExpiredGridRoutine(gridRoutine);
+    if (resGrid.removedCount > 0) {
+      setGridRoutine(resGrid.cleaned);
+    }
+    const resRoutine = cleanupExpiredRoutineItems(routine);
+    if (resRoutine.removedCount > 0) {
+      setRoutine(resRoutine.cleaned);
+    }
   }, [lastDailyResetDate]);
 
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>(() => {
@@ -2007,7 +2020,7 @@ export default function App() {
       setGoals(incomingData.goals);
       setTimelines(incomingData.timelines || []);
       setFinances(incomingData.finances);
-      setRoutine(incomingData.routine);
+      setRoutine(Array.isArray(incomingData.routine) ? cleanupExpiredRoutineItems(incomingData.routine).cleaned : incomingData.routine);
       setCalendarNotes(incomingData.calendarNotes);
       setMonthlyReviews(incomingData.monthlyReviews);
       setWeeklyReviews(incomingData.weeklyReviews);
@@ -2022,7 +2035,7 @@ export default function App() {
       setProjects(incomingData.projects || []);
       if (incomingData.reminders) setReminders(incomingData.reminders);
       if (incomingData.customCards) setCustomCards(incomingData.customCards);
-      if (incomingData.gridRoutine !== undefined) setGridRoutine(incomingData.gridRoutine);
+      if (incomingData.gridRoutine !== undefined) setGridRoutine(cleanupExpiredGridRoutine(incomingData.gridRoutine).cleaned);
       if (incomingData.activeThemePreset !== undefined) setActiveThemePreset(incomingData.activeThemePreset);
       if (incomingData.customThemeHex !== undefined) setCustomThemeHex(incomingData.customThemeHex);
       if (incomingData.loadingScreenVerticalImage !== undefined) setLoadingScreenVerticalImage(incomingData.loadingScreenVerticalImage);
@@ -3338,6 +3351,8 @@ export default function App() {
             setBookTracker={setBookTracker}
             bibleTracker={bibleTracker}
             setBibleTracker={setBibleTracker}
+            books={books}
+            setBooks={setBooks}
             routine={routine}
             futureEvents={futureEvents}
             setFutureEvents={setFutureEvents}

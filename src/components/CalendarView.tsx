@@ -41,15 +41,18 @@ import {
   Filter,
   ExternalLink,
   Globe,
-  Folder
+  Folder,
+  Flame,
+  Play
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import TagManagementModal from './TagManagementModal';
 import TagInputWithMention from './TagInputWithMention';
 import WaterTracker from './WaterTracker';
-import { CalendarNote, DailyTask, SubTask, MonthlyReview, BookTracker, BibleTracker, RoutineItem, WeeklyReview, FutureEvent } from '../types';
+import { CalendarNote, DailyTask, SubTask, MonthlyReview, BookTracker, BibleTracker, RoutineItem, WeeklyReview, FutureEvent, YearlyBook } from '../types';
 import { saveGoogleOAuthTokens, clearGoogleOAuthSession, refreshGoogleAccessToken, getValidGoogleAccessToken } from '../utils/googleToken';
 import { handleAutoListKeyDown, formatTimeInput, moveCursorToEnd } from '../utils/listUtils';
+import { calculateReadingInterval, syncBookWithYearlyBooks } from '../utils/bookUtils';
 // @ts-ignore
 import classicalLightEngraving from '../assets/images/classical_light_engraving_1784335041654.jpg';
 
@@ -68,6 +71,8 @@ interface CalendarViewProps {
   setBookTracker?: React.Dispatch<React.SetStateAction<BookTracker>>;
   bibleTracker?: BibleTracker;
   setBibleTracker?: React.Dispatch<React.SetStateAction<BibleTracker>>;
+  books?: YearlyBook[];
+  setBooks?: React.Dispatch<React.SetStateAction<YearlyBook[]>>;
   routine?: RoutineItem[];
   futureEvents: FutureEvent[];
   setFutureEvents: React.Dispatch<React.SetStateAction<FutureEvent[]>>;
@@ -91,6 +96,49 @@ const DEFAULT_DECREES_TEMPLATE = `Eu decreto que hoje serei forte, focado(a) e s
 
 const DEFAULT_PRAYER_TEMPLATE = `Senhor, agradeço por mais um dia de vida. Peço sabedoria para guiar minhas ações, proteção para o meu caminho e paz para o meu coração e da minha família. Amém.`;
 
+const months = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+];
+
+const daysOfWeek = ['dom.', 'seg.', 'ter.', 'qua.', 'qui.', 'sex.', 'sáb.'];
+
+// Helper date generators
+const getTodayDateStr = () => {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
+const getTomorrowDateStr = () => {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
+const formatShortDate = (dateStr: string) => {
+  const parts = dateStr.split('-');
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}`;
+  }
+  return dateStr;
+};
+
+const formatLongDate = (dateStr: string) => {
+  try {
+    const parts = dateStr.split('-');
+    const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    return d.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  } catch {
+    return dateStr;
+  }
+};
+
 export default function CalendarView({ 
   notes, 
   setNotes, 
@@ -106,6 +154,8 @@ export default function CalendarView({
   setBookTracker,
   bibleTracker,
   setBibleTracker,
+  books,
+  setBooks,
   routine,
   futureEvents,
   setFutureEvents,
@@ -481,11 +531,475 @@ export default function CalendarView({
   const [expandedDayTasks, setExpandedDayTasks] = useState<Record<string, boolean>>({});
   const [newDayTaskText, setNewDayTaskText] = useState('');
   
+  // Fallback for yearly books list if not passed from parent
+  const [localBooks, setLocalBooks] = useState<YearlyBook[]>(() => {
+    try {
+      const saved = localStorage.getItem('mbc_yearly_books');
+      if (saved && saved !== 'undefined') return JSON.parse(saved);
+    } catch (e) {}
+    return [];
+  });
+  const actualBooks = books !== undefined ? books : localBooks;
+  const actualSetBooks = setBooks !== undefined ? setBooks : setLocalBooks;
+
+  // Subtopic in Leitura tab
+  const [activeSubtopicLeitura, setActiveSubtopicLeitura] = useState<'livro' | 'biblia' | 'historico'>('livro');
+
+  // Book Config form states
+  const [bookFormName, setBookFormName] = useState(bookTracker?.bookName || '');
+  const [bookFormTotalPages, setBookFormTotalPages] = useState(bookTracker?.totalPages || 250);
+  const [bookFormDeadline, setBookFormDeadline] = useState(bookTracker?.deadlineDays || 7);
+  const [bookFormPagesRead, setBookFormPagesRead] = useState(bookTracker?.pagesRead || 0);
+  const [showBookConfig, setShowBookConfig] = useState(false);
+
+  // Bible Config form states
+  const [bibleFormMode, setBibleFormMode] = useState<'vezes' | 'capitulos'>('vezes');
+  const [bibleFormVezes, setBibleFormVezes] = useState(bibleTracker?.vezesNoAno || 1);
+  const [bibleFormCapitulos, setBibleFormCapitulos] = useState(bibleTracker?.capitulosPorDia || 4);
+  const [bibleFormJaLidos, setBibleFormJaLidos] = useState(bibleTracker?.capitulosJaLidos || 0);
+  const [showBibleConfig, setShowBibleConfig] = useState(false);
+
+  // Daily Logging Input states
+  const [pagesLoggedToday, setPagesLoggedToday] = useState('');
+  const [chaptersLoggedToday, setChaptersLoggedToday] = useState('');
+
+  // Keep form values in sync when bookTracker or bibleTracker changes
+  useEffect(() => {
+    if (bookTracker) {
+      setBookFormName(bookTracker.bookName || '');
+      setBookFormTotalPages(bookTracker.totalPages || 250);
+      setBookFormDeadline(bookTracker.deadlineDays || 7);
+      setBookFormPagesRead(bookTracker.pagesRead || 0);
+    }
+  }, [bookTracker]);
+
+  useEffect(() => {
+    if (bibleTracker) {
+      setBibleFormVezes(bibleTracker.vezesNoAno || 1);
+      setBibleFormCapitulos(bibleTracker.capitulosPorDia || 4);
+      setBibleFormJaLidos(bibleTracker.capitulosJaLidos || 0);
+      setBibleFormMode(bibleTracker.capitulosPorDia ? 'capitulos' : 'vezes');
+    }
+  }, [bibleTracker]);
+
+  const getDaysRemainingInYear = () => {
+    const today = new Date();
+    const endOfYear = new Date(today.getFullYear(), 11, 31);
+    const diffTime = Math.max(0, endOfYear.getTime() - today.getTime());
+    return Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+  };
+
+  const daysRemainingInYear = getDaysRemainingInYear();
+
+  const getBookMetrics = () => {
+    const total = bookTracker?.totalPages || 250;
+    const read = bookTracker?.pagesRead || 0;
+    const deadline = bookTracker?.deadlineDays || 7;
+    const bookName = bookTracker?.bookName || '';
+
+    const remainingPages = Math.max(0, total - read);
+
+    let daysElapsed = 0;
+    if (bookTracker?.startedDate) {
+      const [y, m, d] = bookTracker.startedDate.split('-').map(Number);
+      const start = new Date(y, m - 1, d, 12, 0, 0);
+      const today = new Date();
+      start.setHours(0, 0, 0, 0);
+      today.setHours(0, 0, 0, 0);
+      const diffTime = today.getTime() - start.getTime();
+      daysElapsed = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+    }
+
+    const remainingDays = Math.max(1, deadline - daysElapsed);
+    const dailyTarget = Math.ceil(remainingPages / remainingDays);
+    const progressPercent = total > 0 ? Math.min(100, Math.round((read / total) * 100)) : 0;
+
+    return {
+      bookName,
+      total,
+      read,
+      deadline,
+      remainingPages,
+      remainingDays,
+      dailyTarget,
+      progressPercent
+    };
+  };
+
+  const bookMetrics = getBookMetrics();
+
+  const getBibleMetrics = () => {
+    const vezes = bibleTracker?.vezesNoAno || 1;
+    const jaLidos = bibleTracker?.capitulosJaLidos || 0;
+    const readToday = bibleTracker?.lastReadDate === getTodayDateStr() ? bibleTracker?.chaptersReadToday || 0 : 0;
+
+    const totalToRead = BIBLE_TOTAL_CHAPTERS * vezes;
+    const remainingChapters = Math.max(0, totalToRead - jaLidos);
+    const wholeYearTarget = Math.ceil(totalToRead / 365);
+    const adaptedDailyTarget = Math.max(1, Math.ceil(remainingChapters / daysRemainingInYear));
+    const progressPercent = totalToRead > 0 ? Math.min(100, Math.round((jaLidos / totalToRead) * 100)) : 0;
+
+    return {
+      vezes,
+      jaLidos,
+      totalToRead,
+      remainingChapters,
+      wholeYearTarget,
+      adaptedDailyTarget,
+      progressPercent,
+      readToday
+    };
+  };
+
+  const bibleMetrics = getBibleMetrics();
+
+  const calculateStreak = (history: { date: string }[]) => {
+    if (!history || history.length === 0) return 0;
+    const uniqueDates = Array.from(new Set(history.map(h => h.date))).sort().reverse();
+    if (uniqueDates.length === 0) return 0;
+    
+    const todayStr = getTodayDateStr();
+    const [yT, mT, dT] = todayStr.split('-').map(Number);
+    const todayDate = new Date(yT, mT - 1, dT, 12, 0, 0);
+    const yesterdayDate = new Date(todayDate);
+    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+    const yesterdayStr = `${yesterdayDate.getFullYear()}-${String(yesterdayDate.getMonth() + 1).padStart(2, '0')}-${String(yesterdayDate.getDate()).padStart(2, '0')}`;
+    
+    const mostRecent = uniqueDates[0];
+    if (mostRecent !== todayStr && mostRecent !== yesterdayStr) {
+      return 0;
+    }
+    
+    let streak = 1;
+    for (let i = 1; i < uniqueDates.length; i++) {
+      const [yA, mA, dA] = uniqueDates[i - 1].split('-').map(Number);
+      const [yB, mB, dB] = uniqueDates[i].split('-').map(Number);
+      const dateA = new Date(yA, mA - 1, dA, 12, 0, 0);
+      const dateB = new Date(yB, mB - 1, dB, 12, 0, 0);
+      const diffTime = dateA.getTime() - dateB.getTime();
+      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+      if (diffDays === 1) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+    return streak;
+  };
+
+  const getHeatmapData = (history: any[], isBook: boolean) => {
+    const data = [];
+    const today = new Date();
+    
+    for (let i = 27; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      
+      const dayLogs = history.filter(h => h.date === dateStr);
+      const totalRead = dayLogs.reduce((sum, h) => sum + (isBook ? (h.pagesReadToday || 0) : (h.chaptersReadToday || 0)), 0);
+      const target = dayLogs.length > 0 ? (dayLogs[0].dailyTarget || 1) : 1;
+      
+      let level = 0;
+      if (totalRead > 0) {
+        level = totalRead >= target ? 2 : 1;
+      }
+      
+      data.push({
+        date: dateStr,
+        totalRead,
+        target,
+        level,
+        dayOfMonth: d.getDate(),
+        monthLabel: d.toLocaleString('pt-BR', { month: 'short' })
+      });
+    }
+    return data;
+  };
+
+  const bookStreak = calculateStreak(bookTracker?.history || []);
+  const bibleStreak = calculateStreak(bibleTracker?.history || []);
+  const bookHeatmap = getHeatmapData(bookTracker?.history || [], true);
+  const bibleHeatmap = getHeatmapData(bibleTracker?.history || [], false);
+
+  const handleSaveBookConfig = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!setBookTracker) return;
+    const todayStr = getTodayDateStr();
+    const pRead = Number(bookFormPagesRead) || 0;
+    const totalP = Number(bookFormTotalPages) || 250;
+    const isCompleted = pRead >= totalP;
+
+    const newTrackerData: BookTracker = {
+      bookName: bookFormName.trim(),
+      totalPages: totalP,
+      deadlineDays: Number(bookFormDeadline) || 7,
+      pagesRead: pRead,
+      startedDate: bookTracker?.startedDate || todayStr,
+      history: bookTracker?.history || []
+    };
+
+    if (isCompleted) {
+      syncBookWithYearlyBooks(
+        { ...newTrackerData, pagesRead: totalP },
+        actualBooks,
+        actualSetBooks,
+        weeklyReviews,
+        setWeeklyReviews
+      );
+
+      setBookTracker({
+        bookName: '',
+        totalPages: 250,
+        deadlineDays: 7,
+        pagesRead: 0,
+        startedDate: undefined,
+        history: []
+      });
+      setBookFormName('');
+      setBookFormPagesRead(0);
+      setShowBookConfig(false);
+      addXp(100);
+    } else {
+      setBookTracker(newTrackerData);
+      syncBookWithYearlyBooks(
+        newTrackerData,
+        actualBooks,
+        actualSetBooks,
+        weeklyReviews,
+        setWeeklyReviews
+      );
+      setShowBookConfig(false);
+      addXp(20);
+    }
+  };
+
+  const handleLogBookReading = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!setBookTracker) return;
+    const pRead = Number(pagesLoggedToday);
+    if (!pRead || pRead <= 0) return;
+
+    const currentPagesRead = bookTracker?.pagesRead || 0;
+    const total = bookTracker?.totalPages || 250;
+    const updatedPagesRead = Math.min(total, currentPagesRead + pRead);
+    const todayStr = getTodayDateStr();
+
+    const history = bookTracker?.history || [];
+    const targetToday = bookMetrics.dailyTarget;
+
+    const updatedHistory = [
+      {
+        date: todayStr,
+        pagesReadToday: pRead,
+        dailyTarget: targetToday
+      },
+      ...history
+    ];
+
+    const isCompletedNow = updatedPagesRead >= total;
+
+    const updatedTracker = {
+      ...bookTracker,
+      pagesRead: updatedPagesRead,
+      history: updatedHistory
+    };
+
+    if (isCompletedNow) {
+      syncBookWithYearlyBooks(
+        { ...updatedTracker, pagesRead: total },
+        actualBooks,
+        actualSetBooks,
+        weeklyReviews,
+        setWeeklyReviews
+      );
+
+      setBookTracker({
+        bookName: '',
+        totalPages: 250,
+        deadlineDays: 7,
+        pagesRead: 0,
+        startedDate: undefined,
+        history: []
+      });
+      setBookFormName('');
+      setBookFormPagesRead(0);
+      setPagesLoggedToday('');
+      addXp(100);
+    } else {
+      setBookTracker(updatedTracker);
+      syncBookWithYearlyBooks(
+        updatedTracker,
+        actualBooks,
+        actualSetBooks,
+        weeklyReviews,
+        setWeeklyReviews
+      );
+
+      let gainedXp = 10;
+      if (pRead >= targetToday) {
+        gainedXp += 15;
+      }
+      addXp(gainedXp);
+      setPagesLoggedToday('');
+    }
+  };
+
+  const handleCompleteActiveBook = () => {
+    if (!bookTracker?.bookName || !setBookTracker) return;
+    const total = bookTracker.totalPages || 250;
+
+    syncBookWithYearlyBooks(
+      { ...bookTracker, pagesRead: total },
+      actualBooks,
+      actualSetBooks,
+      weeklyReviews,
+      setWeeklyReviews
+    );
+
+    setBookTracker({
+      bookName: '',
+      totalPages: 250,
+      deadlineDays: 7,
+      pagesRead: 0,
+      startedDate: undefined,
+      history: []
+    });
+    setBookFormName('');
+    setBookFormPagesRead(0);
+    addXp(100);
+  };
+
+  const handlePauseActiveBook = () => {
+    if (!bookTracker?.bookName || !setBookTracker) return;
+    const title = bookTracker.bookName;
+    const todayStr = getTodayDateStr();
+    const startDate = bookTracker.startedDate || todayStr;
+    const interval = calculateReadingInterval(startDate, todayStr, 'dropado');
+
+    actualSetBooks(prev => prev.map(b => {
+      if (b.title.trim().toLowerCase() === title.trim().toLowerCase()) {
+        return {
+          ...b,
+          status: 'dropado',
+          endDate: todayStr,
+          readingInterval: interval
+        };
+      }
+      return b;
+    }));
+
+    setBookTracker({
+      bookName: '',
+      totalPages: 250,
+      deadlineDays: 7,
+      pagesRead: 0,
+      startedDate: undefined,
+      history: []
+    });
+    setBookFormName('');
+    setBookFormPagesRead(0);
+  };
+
+  const handleResumeBookFromHistory = (bk: YearlyBook) => {
+    if (!setBookTracker) return;
+    const todayStr = getTodayDateStr();
+    const startDate = bk.startDate || todayStr;
+    const interval = calculateReadingInterval(startDate, undefined, 'lendo');
+
+    actualSetBooks(prev => prev.map(b => b.id === bk.id ? {
+      ...b,
+      status: 'lendo',
+      endDate: undefined,
+      readingInterval: interval
+    } : b));
+
+    const newTracker: BookTracker = {
+      bookName: bk.title,
+      totalPages: bk.totalPages,
+      deadlineDays: 7,
+      pagesRead: bk.pagesRead,
+      startedDate: startDate,
+      history: []
+    };
+
+    setBookTracker(newTracker);
+    setBookFormName(bk.title);
+    setBookFormTotalPages(bk.totalPages);
+    setBookFormPagesRead(bk.pagesRead);
+
+    syncBookWithYearlyBooks(
+      newTracker,
+      actualBooks,
+      actualSetBooks,
+      weeklyReviews,
+      setWeeklyReviews
+    );
+
+    setShowBookConfig(false);
+    setActiveSubtopicLeitura('livro');
+    addXp(15);
+  };
+
+  const handleSaveBibleConfig = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!setBibleTracker) return;
+    setBibleTracker({
+      vezesNoAno: bibleFormMode === 'vezes' ? Number(bibleFormVezes) : undefined,
+      capitulosPorDia: bibleFormMode === 'capitulos' ? Number(bibleFormCapitulos) : undefined,
+      capitulosJaLidos: Number(bibleFormJaLidos) || 0,
+      chaptersReadToday: 0,
+      lastReadDate: getTodayDateStr(),
+      history: bibleTracker?.history || []
+    });
+    setShowBibleConfig(false);
+    addXp(20);
+  };
+
+  const handleLogBibleReading = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!setBibleTracker) return;
+    const chRead = Number(chaptersLoggedToday);
+    if (!chRead || chRead <= 0) return;
+
+    const currentJaLidos = bibleTracker?.capitulosJaLidos || 0;
+    const currentTodayRead = bibleTracker?.lastReadDate === getTodayDateStr() ? bibleTracker?.chaptersReadToday || 0 : 0;
+    const updatedJaLidos = Math.min(BIBLE_TOTAL_CHAPTERS * (bibleTracker?.vezesNoAno || 1), currentJaLidos + chRead);
+
+    const updatedTodayRead = currentTodayRead + chRead;
+    const history = bibleTracker?.history || [];
+    const targetToday = bibleMetrics.adaptedDailyTarget;
+
+    const updatedHistory = [
+      {
+        date: getTodayDateStr(),
+        chaptersReadToday: chRead,
+        dailyTarget: targetToday
+      },
+      ...history
+    ];
+
+    setBibleTracker(prev => ({
+      ...prev,
+      capitulosJaLidos: updatedJaLidos,
+      chaptersReadToday: updatedTodayRead,
+      lastReadDate: getTodayDateStr(),
+      history: updatedHistory
+    }));
+
+    let gainedXp = 10;
+    if (updatedTodayRead >= targetToday && currentTodayRead < targetToday) {
+      gainedXp += 15;
+    }
+    addXp(gainedXp);
+    setChaptersLoggedToday('');
+  };
+
   // Reference for the side panel container to allow smooth scrolling
   const panelRef = React.useRef<HTMLDivElement>(null);
   
   // Topic Tabs for Active Day Note
-  const [activeTopic, setActiveTopic] = useState<'diario' | 'checklist' | 'espiritualidade' | 'alteregos' | 'saude' | 'agenda'>('diario');
+  const [activeTopic, setActiveTopic] = useState<'diario' | 'checklist' | 'espiritualidade' | 'leitura' | 'saude' | 'agenda'>('diario');
   const [activeSubtopic, setActiveSubtopic] = useState<'gratidao' | 'decretos' | 'oracao'>('gratidao');
   
   // Master Templates configuration
@@ -1258,49 +1772,6 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
-
-  const months = [
-    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-  ];
-
-  const daysOfWeek = ['dom.', 'seg.', 'ter.', 'qua.', 'qui.', 'sex.', 'sáb.'];
-
-  // Helper date generators
-  const getTodayDateStr = () => {
-    const d = new Date();
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-  };
-
-  const getTomorrowDateStr = () => {
-    const d = new Date();
-    d.setDate(d.getDate() + 1);
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-  };
-
-  const formatShortDate = (dateStr: string) => {
-    const parts = dateStr.split('-');
-    if (parts.length === 3) {
-      return `${parts[2]}/${parts[1]}`;
-    }
-    return dateStr;
-  };
-
-  const formatLongDate = (dateStr: string) => {
-    try {
-      const parts = dateStr.split('-');
-      const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-      return d.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-    } catch {
-      return dateStr;
-    }
-  };
 
   // Find record for current selected day
   const activeRecord = notes.find(n => n.date === selectedDateStr);
@@ -2396,7 +2867,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
               setSelectedDateStr(null);
               setIsEditingTemplates(false);
             }}
-            className="fixed inset-0 z-[9999] bg-[#040405]/95 backdrop-blur-md flex items-center justify-center p-4 md:p-6 overflow-hidden cursor-pointer"
+            className="fixed inset-0 z-[9999] bg-[#040405]/95 backdrop-blur-md flex items-center justify-center p-1.5 sm:p-4 md:p-6 overflow-y-auto cursor-pointer"
           >
             <motion.div
               onClick={(e) => e.stopPropagation()}
@@ -2404,7 +2875,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="cursor-default bg-[#0a0a0c] border border-zinc-800 rounded-3xl w-full max-w-6xl h-full max-h-[92vh] sm:max-h-[90vh] my-auto flex flex-col overflow-hidden shadow-2xl shadow-orange-500/5 text-left"
+              className="cursor-default bg-[#0a0a0c] border border-zinc-800 rounded-2xl sm:rounded-3xl w-full max-w-6xl h-[94dvh] sm:h-[90vh] max-h-[94dvh] sm:max-h-[90vh] my-auto flex flex-col overflow-hidden shadow-2xl shadow-orange-500/5 text-left"
             >
               <div ref={panelRef} className="flex flex-col h-full overflow-hidden min-h-0">
           
@@ -2546,12 +3017,12 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                   <div className="flex-1 flex flex-col overflow-hidden min-h-0 space-y-3">
                     
                      {/* Primary Topic Selector (Grid de Categorias de Bloco) */}
-                    <div className="shrink-0 grid grid-cols-3 sm:grid-cols-6 gap-2 bg-zinc-950 p-2 rounded-2xl border border-zinc-900">
+                    <div className="shrink-0 grid grid-cols-3 sm:grid-cols-6 gap-1.5 sm:gap-2 bg-zinc-950 p-1.5 sm:p-2 rounded-xl sm:rounded-2xl border border-zinc-900">
                       {[
-                        { id: 'diario', label: 'Diário Pessoal', icon: BookOpen },
+                        { id: 'diario', label: 'Diário Pessoal', icon: FileText },
                         { id: 'checklist', label: 'Checklist', icon: Check },
                         { id: 'espiritualidade', label: 'Espiritualidade', icon: Sparkles },
-                        { id: 'alteregos', label: 'Alter Egos', icon: Sliders },
+                        { id: 'leitura', label: 'Leitura', icon: BookOpen },
                         { id: 'saude', label: 'Saúde', icon: Heart },
                         { id: 'agenda', label: 'Google Agenda', icon: CalendarDays },
                       ].map((tb) => {
@@ -2562,14 +3033,14 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                             key={tb.id}
                             type="button"
                             onClick={() => setActiveTopic(tb.id as any)}
-                            className={`flex flex-col items-center justify-center p-3 rounded-2xl transition-all font-sans ${
+                            className={`flex flex-col items-center justify-center p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all font-sans ${
                               isActive
                                 ? 'bg-orange-500 text-white font-extrabold shadow-lg shadow-orange-500/20 border border-orange-400/40 scale-[1.02]'
                                 : 'bg-zinc-900/80 hover:bg-zinc-850 text-zinc-400 hover:text-white border border-zinc-800/80'
                             }`}
                           >
-                            <Icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-orange-400'}`} />
-                            <span className="text-[11px] font-bold mt-1.5 text-center leading-tight">
+                            <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${isActive ? 'text-white' : 'text-orange-400'}`} />
+                            <span className="text-[10px] sm:text-[11px] font-bold mt-1 sm:mt-1.5 text-center leading-tight">
                               {tb.label}
                             </span>
                           </button>
@@ -2580,24 +3051,83 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                     {/* Topic Content Container (Scrollable) */}
                     <div className="flex-1 overflow-y-auto min-h-0 pr-1 space-y-3 scrollbar-thin">
                       {activeTopic === 'diario' ? (
-                        /* DIARIO TOPIC */
-                        <div className="space-y-2 flex-1 flex flex-col">
-                          <div className="flex justify-between items-center">
-                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-                              Como foi seu dia?
-                            </span>
-                            <span className="text-[9px] text-gray-500 font-mono">
-                              {journalText.length} caracteres
-                            </span>
+                        /* DIARIO TOPIC (COM ALTER EGO DOMINANTE) */
+                        <div className="space-y-3 flex-1 flex flex-col min-h-0">
+                          {/* Alter Ego Dominante do Dia */}
+                          <div className="bg-zinc-950/40 border border-zinc-900 rounded-xl p-2.5 sm:p-3 space-y-2 shrink-0">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <span className="text-[10px] text-gray-300 font-bold uppercase tracking-wider block">
+                                  Alter Ego Dominante do Dia
+                                </span>
+                                <span className="text-[9px] text-zinc-500 block">
+                                  Quem prevaleceu hoje?
+                                </span>
+                              </div>
+                              {alterEgoWinner && (
+                                <button
+                                  type="button"
+                                  onClick={() => setAlterEgoWinner(null)}
+                                  className="text-[9px] text-zinc-500 hover:text-zinc-300 underline"
+                                >
+                                  Limpar
+                                </button>
+                              )}
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setAlterEgoWinner(prev => prev === 'Alfredo' ? null : 'Alfredo')}
+                                className={`py-2 px-3 rounded-xl border text-center transition-all flex items-center justify-center gap-2 ${
+                                  alterEgoWinner === 'Alfredo'
+                                    ? 'bg-orange-500/15 border-orange-500/50 text-orange-400 shadow-[0_2px_10px_rgba(249,115,22,0.15)] font-bold'
+                                    : 'bg-zinc-950/60 border-zinc-900 text-gray-500 hover:text-gray-300 hover:border-zinc-800'
+                                }`}
+                              >
+                                <CheckCircle className="h-4 w-4 text-orange-500 shrink-0" />
+                                <div className="text-left">
+                                  <span className="text-[11px] block font-bold leading-tight">Alfredo</span>
+                                  <span className="text-[8px] text-zinc-500 block font-normal">Disciplina & Foco</span>
+                                </div>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => setAlterEgoWinner(prev => prev === 'Beto' ? null : 'Beto')}
+                                className={`py-2 px-3 rounded-xl border text-center transition-all flex items-center justify-center gap-2 ${
+                                  alterEgoWinner === 'Beto'
+                                    ? 'bg-rose-500/15 border-rose-500/50 text-rose-400 shadow-[0_2px_10px_rgba(244,63,94,0.15)] font-bold'
+                                    : 'bg-zinc-950/60 border-zinc-900 text-gray-500 hover:text-gray-300 hover:border-zinc-800'
+                                }`}
+                              >
+                                <AlertCircle className="h-4 w-4 text-rose-500 shrink-0" />
+                                <div className="text-left">
+                                  <span className="text-[11px] block font-bold leading-tight">Beto</span>
+                                  <span className="text-[8px] text-zinc-500 block font-normal">Impulso & Procrastinação</span>
+                                </div>
+                              </button>
+                            </div>
                           </div>
-                          <TagInputWithMention
-                            value={journalText}
-                            onChange={setJournalText}
-                            rows={12}
-                            className="flex-1 h-full min-h-[260px] sm:min-h-[320px] lg:min-h-[380px]"
-                            openTagManagerModal={() => setIsTagModalOpen(true)}
-                            placeholder="Escreva aqui como foi o seu dia, suas vitórias, lições aprendidas e sentimentos... Use @ para invocar tags ou @# para criar."
-                          />
+
+                          <div className="flex-1 flex flex-col min-h-0 space-y-1.5">
+                            <div className="flex justify-between items-center">
+                              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                                Como foi seu dia?
+                              </span>
+                              <span className="text-[9px] text-gray-500 font-mono">
+                                {journalText.length} caracteres
+                              </span>
+                            </div>
+                            <TagInputWithMention
+                              value={journalText}
+                              onChange={setJournalText}
+                              rows={10}
+                              className="flex-1 h-full min-h-[180px] sm:min-h-[240px] lg:min-h-[300px]"
+                              openTagManagerModal={() => setIsTagModalOpen(true)}
+                              placeholder="Escreva aqui como foi o seu dia, suas vitórias, lições aprendidas e sentimentos... Use @ para invocar tags ou @# para criar."
+                            />
+                          </div>
                         </div>
                       ) : activeTopic === 'checklist' ? (
                         /* CHECKLIST TOPIC */
@@ -2860,64 +3390,592 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                             )}
                           </div>
                         </div>
-                      ) : activeTopic === 'alteregos' ? (
-                        /* ALTER EGOS TOPIC */
-                        <div className="space-y-3.5 flex-1 flex flex-col">
-                          <div>
-                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">
-                              Alter Ego Dominante do Dia
-                            </span>
-                            <p className="text-[9px] text-zinc-500 mt-0.5 leading-relaxed">
-                              Selecione qual lado prevaleceu no dia de hoje: Disciplina/Foco (Alfredo) ou Impulso/Procrastinação (Beto).
-                            </p>
+                      ) : activeTopic === 'leitura' ? (
+                        /* LEITURA TOPIC (LIVRO ATUAL, BÍBLIA & HISTÓRICO) */
+                        <div className="space-y-3 flex-1 flex flex-col min-h-0">
+                          {/* Leitura Subtopic Navigation */}
+                          <div className="flex items-center gap-1.5 bg-zinc-950 p-1 rounded-xl border border-zinc-900 shrink-0">
+                            {[
+                              { id: 'livro', label: 'Livro Atual', icon: BookOpen },
+                              { id: 'biblia', label: 'Leitura da Bíblia', icon: Book },
+                              { id: 'historico', label: 'Histórico de Livros', icon: CalendarDays },
+                            ].map((sub) => {
+                              const SubIcon = sub.icon;
+                              const isSubActive = activeSubtopicLeitura === sub.id;
+                              return (
+                                <button
+                                  key={sub.id}
+                                  type="button"
+                                  onClick={() => setActiveSubtopicLeitura(sub.id as any)}
+                                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-bold transition-all ${
+                                    isSubActive
+                                      ? 'bg-zinc-800 text-white shadow-sm border border-zinc-700/60'
+                                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60'
+                                  }`}
+                                >
+                                  <SubIcon className={`h-3.5 w-3.5 ${isSubActive ? 'text-orange-500' : 'text-zinc-500'}`} />
+                                  <span className="truncate">{sub.label}</span>
+                                </button>
+                              );
+                            })}
                           </div>
 
-                          <div className="grid grid-cols-2 gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setAlterEgoWinner('Alfredo')}
-                              className={`py-2.5 px-3 rounded-xl border text-center transition-all flex items-center justify-center gap-2 ${
-                                alterEgoWinner === 'Alfredo'
-                                  ? 'bg-orange-500/10 border-orange-500/40 text-orange-400 shadow-[0_2px_10px_rgba(249,115,22,0.1)] font-bold'
-                                  : 'bg-zinc-950/60 border-zinc-900 text-gray-500 hover:text-gray-300'
-                              }`}
-                            >
-                              <CheckCircle className="h-4 w-4 text-orange-500" />
-                              <div className="text-left">
-                                <span className="text-[11px] block">Alfredo</span>
-                                <span className="text-[8px] text-zinc-500 block font-normal">Disciplina</span>
+                          {/* SUBTOPIC 1: LIVRO ATUAL */}
+                          {activeSubtopicLeitura === 'livro' && (
+                            <div className="space-y-3 flex-1 overflow-y-auto pr-1 scrollbar-thin">
+                              {bookTracker?.bookName ? (
+                                <div className="bg-zinc-950/60 border border-zinc-900 rounded-xl p-3.5 space-y-3">
+                                  {/* Book Header info */}
+                                  <div className="flex items-start justify-between gap-2 border-b border-zinc-900 pb-3">
+                                    <div className="min-w-0 flex-1">
+                                      <span className="text-[9px] font-bold text-orange-400 uppercase tracking-wider block">
+                                        Lendo Atualmente
+                                      </span>
+                                      <h4 className="text-sm font-bold text-white truncate mt-0.5">
+                                        {bookTracker.bookName}
+                                      </h4>
+                                      <p className="text-[10px] text-zinc-500 mt-0.5">
+                                        Prazo estimado: {bookTracker.deadlineDays || 7} dias
+                                      </p>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => setShowBookConfig(true)}
+                                      className="p-1.5 text-zinc-400 hover:text-white bg-zinc-900 hover:bg-zinc-800 rounded-lg border border-zinc-800 text-xs transition-colors shrink-0"
+                                      title="Editar metas do livro"
+                                    >
+                                      <Settings className="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
+
+                                  {/* Progress bar */}
+                                  <div className="space-y-1.5">
+                                    <div className="flex justify-between items-center text-xs">
+                                      <span className="text-zinc-400">Progresso Geral</span>
+                                      <span className="font-mono font-bold text-white">
+                                        {bookMetrics.read} / {bookMetrics.total} págs ({bookMetrics.progressPercent}%)
+                                      </span>
+                                    </div>
+                                    <div className="w-full bg-zinc-900 h-2 rounded-full overflow-hidden border border-zinc-800/80">
+                                      <div
+                                        className="bg-gradient-to-r from-orange-500 to-amber-500 h-full rounded-full transition-all duration-300"
+                                        style={{ width: `${bookMetrics.progressPercent}%` }}
+                                      />
+                                    </div>
+                                  </div>
+
+                                  {/* Daily target info & streak */}
+                                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                    <div className="bg-zinc-900/60 p-2 rounded-lg border border-zinc-800/60 text-center">
+                                      <span className="text-[9px] text-zinc-500 uppercase font-bold block">Meta Diária</span>
+                                      <span className="text-xs font-mono font-bold text-orange-400">
+                                        {bookMetrics.dailyTarget} págs/dia
+                                      </span>
+                                    </div>
+                                    <div className="bg-zinc-900/60 p-2 rounded-lg border border-zinc-800/60 text-center">
+                                      <span className="text-[9px] text-zinc-500 uppercase font-bold block">Restantes</span>
+                                      <span className="text-xs font-mono font-bold text-white">
+                                        {bookMetrics.remainingPages} págs ({bookMetrics.remainingDays}d)
+                                      </span>
+                                    </div>
+                                    <div className="bg-zinc-900/60 p-2 rounded-lg border border-zinc-800/60 text-center col-span-2 sm:col-span-1">
+                                      <span className="text-[9px] text-zinc-500 uppercase font-bold flex items-center justify-center gap-1">
+                                        <Flame className="h-3 w-3 text-orange-500" /> Sequência
+                                      </span>
+                                      <span className="text-xs font-mono font-bold text-orange-400">
+                                        {bookStreak} {bookStreak === 1 ? 'dia' : 'dias'}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  {/* Log reading form */}
+                                  <form onSubmit={handleLogBookReading} className="flex gap-2 items-center pt-1">
+                                    <div className="relative flex-1">
+                                      <input
+                                        type="number"
+                                        min="1"
+                                        max={bookMetrics.remainingPages || 999}
+                                        value={pagesLoggedToday}
+                                        onChange={(e) => setPagesLoggedToday(e.target.value)}
+                                        placeholder="Qtd de páginas lidas hoje..."
+                                        className="w-full bg-zinc-900 border border-zinc-800 rounded-lg py-1.5 px-3 text-xs text-white focus:outline-none focus:border-orange-500/50"
+                                      />
+                                    </div>
+                                    <button
+                                      type="submit"
+                                      disabled={!pagesLoggedToday}
+                                      className="bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1 transition-colors shrink-0"
+                                    >
+                                      <Plus className="h-3.5 w-3.5" /> Registrar
+                                    </button>
+                                  </form>
+
+                                  {/* 28-day Heatmap */}
+                                  <div className="space-y-1.5 pt-1">
+                                    <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block">
+                                      Consistência de Leitura (Últimos 28 dias)
+                                    </span>
+                                    <div className="grid grid-cols-7 sm:grid-cols-14 gap-1 p-2 bg-zinc-900/40 rounded-lg border border-zinc-800/40">
+                                      {bookHeatmap.map((day, idx) => (
+                                        <div
+                                          key={idx}
+                                          title={`${day.date}: ${day.totalRead} págs lidas (Meta: ${day.target})`}
+                                          className={`h-4 rounded-sm flex items-center justify-center text-[7px] font-mono transition-colors ${
+                                            day.level === 2
+                                              ? 'bg-orange-500 text-black font-bold'
+                                              : day.level === 1
+                                              ? 'bg-orange-500/40 text-white'
+                                              : 'bg-zinc-800/50 text-zinc-600'
+                                          }`}
+                                        >
+                                          {day.dayOfMonth}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  {/* Quick Action buttons */}
+                                  <div className="flex gap-2 pt-1 border-t border-zinc-900">
+                                    <button
+                                      type="button"
+                                      onClick={handlePauseActiveBook}
+                                      className="flex-1 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 text-xs font-bold rounded-lg transition-colors border border-zinc-800"
+                                    >
+                                      Pausar Leitura
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={handleCompleteActiveBook}
+                                      className="flex-1 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 text-xs font-bold rounded-lg transition-colors border border-emerald-500/30 flex items-center justify-center gap-1"
+                                    >
+                                      <CheckCircle className="h-3.5 w-3.5" /> Concluir Livro (+100 XP)
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                /* No active book banner / configure */
+                                <div className="bg-zinc-950/60 border border-zinc-900 rounded-xl p-5 text-center space-y-3">
+                                  <BookOpen className="h-8 w-8 text-orange-500/70 mx-auto" />
+                                  <div>
+                                    <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                                      Nenhum livro em andamento
+                                    </h4>
+                                    <p className="text-[10px] text-zinc-500 mt-1 max-w-sm mx-auto">
+                                      Cadastre o livro que você está lendo para acompanhar o progresso diário, bater metas e acumular XP.
+                                    </p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setBookFormName('');
+                                      setBookFormTotalPages(250);
+                                      setBookFormDeadline(7);
+                                      setBookFormPagesRead(0);
+                                      setShowBookConfig(true);
+                                    }}
+                                    className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs px-4 py-2 rounded-lg inline-flex items-center gap-1.5 transition-colors shadow-lg shadow-orange-500/10"
+                                  >
+                                    <Plus className="h-3.5 w-3.5" /> Cadastrar Livro Atual
+                                  </button>
+                                </div>
+                              )}
+
+                              {/* Book Config Modal / Inline Form */}
+                              {showBookConfig && (
+                                <form onSubmit={handleSaveBookConfig} className="bg-zinc-950 border border-orange-500/30 rounded-xl p-3.5 space-y-3">
+                                  <div className="flex justify-between items-center border-b border-zinc-900 pb-2">
+                                    <span className="text-xs font-bold text-orange-400 uppercase tracking-wider">
+                                      {bookTracker?.bookName ? 'Editar Livro Atual' : 'Novo Livro'}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => setShowBookConfig(false)}
+                                      className="text-zinc-500 hover:text-white p-1"
+                                    >
+                                      <X className="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
+
+                                  <div className="space-y-2.5">
+                                    <div>
+                                      <label className="text-[9px] font-bold text-zinc-400 uppercase block mb-1">
+                                        Título do Livro
+                                      </label>
+                                      <input
+                                        type="text"
+                                        required
+                                        value={bookFormName}
+                                        onChange={(e) => setBookFormName(e.target.value)}
+                                        placeholder="Ex: Hábitos Atômicos"
+                                        className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-orange-500/50"
+                                      />
+                                    </div>
+
+                                    <div className="grid grid-cols-3 gap-2">
+                                      <div>
+                                        <label className="text-[9px] font-bold text-zinc-400 uppercase block mb-1">
+                                          Total Págs
+                                        </label>
+                                        <input
+                                          type="number"
+                                          min="1"
+                                          required
+                                          value={bookFormTotalPages}
+                                          onChange={(e) => setBookFormTotalPages(Number(e.target.value))}
+                                          className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono"
+                                        />
+                                      </div>
+
+                                      <div>
+                                        <label className="text-[9px] font-bold text-zinc-400 uppercase block mb-1">
+                                          Prazo (Dias)
+                                        </label>
+                                        <input
+                                          type="number"
+                                          min="1"
+                                          required
+                                          value={bookFormDeadline}
+                                          onChange={(e) => setBookFormDeadline(Number(e.target.value))}
+                                          className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono"
+                                        />
+                                      </div>
+
+                                      <div>
+                                        <label className="text-[9px] font-bold text-zinc-400 uppercase block mb-1">
+                                          Já Lidas
+                                        </label>
+                                        <input
+                                          type="number"
+                                          min="0"
+                                          value={bookFormPagesRead}
+                                          onChange={(e) => setBookFormPagesRead(Number(e.target.value))}
+                                          className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono"
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex gap-2 pt-2 border-t border-zinc-900">
+                                    <button
+                                      type="button"
+                                      onClick={() => setShowBookConfig(false)}
+                                      className="flex-1 py-1.5 bg-zinc-900 text-zinc-400 text-xs font-bold rounded-lg"
+                                    >
+                                      Cancelar
+                                    </button>
+                                    <button
+                                      type="submit"
+                                      className="flex-1 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-lg flex items-center justify-center gap-1"
+                                    >
+                                      <Save className="h-3.5 w-3.5" /> Salvar Livro
+                                    </button>
+                                  </div>
+                                </form>
+                              )}
+                            </div>
+                          )}
+
+                          {/* SUBTOPIC 2: LEITURA DA BÍBLIA */}
+                          {activeSubtopicLeitura === 'biblia' && (
+                            <div className="space-y-3 flex-1 overflow-y-auto pr-1 scrollbar-thin">
+                              <div className="bg-zinc-950/60 border border-zinc-900 rounded-xl p-3.5 space-y-3">
+                                {/* Bible Header */}
+                                <div className="flex items-start justify-between gap-2 border-b border-zinc-900 pb-3">
+                                  <div>
+                                    <span className="text-[9px] font-bold text-amber-400 uppercase tracking-wider block">
+                                      Plano de Leitura Bíblica
+                                    </span>
+                                    <h4 className="text-sm font-bold text-white mt-0.5">
+                                      {bibleTracker?.vezesNoAno ? `${bibleTracker.vezesNoAno}x no Ano` : 'Capítulos Diários'}
+                                    </h4>
+                                    <p className="text-[10px] text-zinc-500 mt-0.5">
+                                      Total de 1.189 capítulos por leitura completa ({daysRemainingInYear} dias restantes no ano)
+                                    </p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowBibleConfig(true)}
+                                    className="p-1.5 text-zinc-400 hover:text-white bg-zinc-900 hover:bg-zinc-800 rounded-lg border border-zinc-800 text-xs transition-colors shrink-0"
+                                    title="Editar plano da Bíblia"
+                                  >
+                                    <Settings className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+
+                                {/* Progress bar */}
+                                <div className="space-y-1.5">
+                                  <div className="flex justify-between items-center text-xs">
+                                    <span className="text-zinc-400">Progresso Geral</span>
+                                    <span className="font-mono font-bold text-white">
+                                      {bibleMetrics.jaLidos} / {bibleMetrics.totalToRead} caps ({bibleMetrics.progressPercent}%)
+                                    </span>
+                                  </div>
+                                  <div className="w-full bg-zinc-900 h-2 rounded-full overflow-hidden border border-zinc-800/80">
+                                    <div
+                                      className="bg-gradient-to-r from-amber-500 to-orange-500 h-full rounded-full transition-all duration-300"
+                                      style={{ width: `${bibleMetrics.progressPercent}%` }}
+                                    />
+                                  </div>
+                                </div>
+
+                                {/* Daily target info & streak */}
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                  <div className="bg-zinc-900/60 p-2 rounded-lg border border-zinc-800/60 text-center">
+                                    <span className="text-[9px] text-zinc-500 uppercase font-bold block">Meta Adaptada</span>
+                                    <span className="text-xs font-mono font-bold text-amber-400">
+                                      {bibleMetrics.adaptedDailyTarget} caps/dia
+                                    </span>
+                                  </div>
+                                  <div className="bg-zinc-900/60 p-2 rounded-lg border border-zinc-800/60 text-center">
+                                    <span className="text-[9px] text-zinc-500 uppercase font-bold block">Lidos Hoje</span>
+                                    <span className="text-xs font-mono font-bold text-white">
+                                      {bibleMetrics.readToday} caps
+                                    </span>
+                                  </div>
+                                  <div className="bg-zinc-900/60 p-2 rounded-lg border border-zinc-800/60 text-center col-span-2 sm:col-span-1">
+                                    <span className="text-[9px] text-zinc-500 uppercase font-bold flex items-center justify-center gap-1">
+                                      <Flame className="h-3 w-3 text-amber-500" /> Sequência
+                                    </span>
+                                    <span className="text-xs font-mono font-bold text-amber-400">
+                                      {bibleStreak} {bibleStreak === 1 ? 'dia' : 'dias'}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Log bible reading form */}
+                                <form onSubmit={handleLogBibleReading} className="flex gap-2 items-center pt-1">
+                                  <div className="relative flex-1">
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      value={chaptersLoggedToday}
+                                      onChange={(e) => setChaptersLoggedToday(e.target.value)}
+                                      placeholder="Capítulos lidos hoje..."
+                                      className="w-full bg-zinc-900 border border-zinc-800 rounded-lg py-1.5 px-3 text-xs text-white focus:outline-none focus:border-amber-500/50"
+                                    />
+                                  </div>
+                                  <button
+                                    type="submit"
+                                    disabled={!chaptersLoggedToday}
+                                    className="bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-black font-bold text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1 transition-colors shrink-0"
+                                  >
+                                    <Plus className="h-3.5 w-3.5" /> Registrar
+                                  </button>
+                                </form>
+
+                                {/* 28-day Heatmap */}
+                                <div className="space-y-1.5 pt-1">
+                                  <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block">
+                                    Consistência de Leitura Bíblica (Últimos 28 dias)
+                                  </span>
+                                  <div className="grid grid-cols-7 sm:grid-cols-14 gap-1 p-2 bg-zinc-900/40 rounded-lg border border-zinc-800/40">
+                                    {bibleHeatmap.map((day, idx) => (
+                                      <div
+                                        key={idx}
+                                        title={`${day.date}: ${day.totalRead} caps lidos (Meta: ${day.target})`}
+                                        className={`h-4 rounded-sm flex items-center justify-center text-[7px] font-mono transition-colors ${
+                                          day.level === 2
+                                            ? 'bg-amber-500 text-black font-bold'
+                                            : day.level === 1
+                                            ? 'bg-amber-500/40 text-white'
+                                            : 'bg-zinc-800/50 text-zinc-600'
+                                        }`}
+                                      >
+                                        {day.dayOfMonth}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
                               </div>
-                            </button>
 
-                            <button
-                              type="button"
-                              onClick={() => setAlterEgoWinner('Beto')}
-                              className={`py-2.5 px-3 rounded-xl border text-center transition-all flex items-center justify-center gap-2 ${
-                                alterEgoWinner === 'Beto'
-                                  ? 'bg-rose-500/10 border-rose-500/40 text-rose-400 shadow-[0_2px_10px_rgba(244,63,94,0.1)] font-bold'
-                                  : 'bg-zinc-950/60 border-zinc-900 text-gray-500 hover:text-gray-300'
-                              }`}
-                            >
-                              <AlertCircle className="h-4 w-4 text-rose-500" />
-                              <div className="text-left">
-                                <span className="text-[11px] block">Beto</span>
-                                <span className="text-[8px] text-zinc-500 block font-normal">Impulso</span>
+                              {/* Bible Config Dialog */}
+                              {showBibleConfig && (
+                                <form onSubmit={handleSaveBibleConfig} className="bg-zinc-950 border border-amber-500/30 rounded-xl p-3.5 space-y-3">
+                                  <div className="flex justify-between items-center border-b border-zinc-900 pb-2">
+                                    <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">
+                                      Configurar Plano da Bíblia
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => setShowBibleConfig(false)}
+                                      className="text-zinc-500 hover:text-white p-1"
+                                    >
+                                      <X className="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
+
+                                  <div className="space-y-3">
+                                    <div>
+                                      <label className="text-[9px] font-bold text-zinc-400 uppercase block mb-1">
+                                        Modo do Plano
+                                      </label>
+                                      <div className="grid grid-cols-2 gap-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => setBibleFormMode('vezes')}
+                                          className={`py-1.5 text-xs font-bold rounded-lg border transition-all ${
+                                            bibleFormMode === 'vezes'
+                                              ? 'bg-amber-500/20 border-amber-500 text-amber-400'
+                                              : 'bg-zinc-900 border-zinc-800 text-zinc-400'
+                                          }`}
+                                        >
+                                          Vezes no Ano
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => setBibleFormMode('capitulos')}
+                                          className={`py-1.5 text-xs font-bold rounded-lg border transition-all ${
+                                            bibleFormMode === 'capitulos'
+                                              ? 'bg-amber-500/20 border-amber-500 text-amber-400'
+                                              : 'bg-zinc-900 border-zinc-800 text-zinc-400'
+                                          }`}
+                                        >
+                                          Capítulos / Dia
+                                        </button>
+                                      </div>
+                                    </div>
+
+                                    {bibleFormMode === 'vezes' ? (
+                                      <div>
+                                        <label className="text-[9px] font-bold text-zinc-400 uppercase block mb-1">
+                                          Quantas vezes ler a Bíblia no ano?
+                                        </label>
+                                        <input
+                                          type="number"
+                                          min="1"
+                                          max="10"
+                                          value={bibleFormVezes}
+                                          onChange={(e) => setBibleFormVezes(Number(e.target.value))}
+                                          className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white font-mono"
+                                        />
+                                      </div>
+                                    ) : (
+                                      <div>
+                                        <label className="text-[9px] font-bold text-zinc-400 uppercase block mb-1">
+                                          Capítulos por dia
+                                        </label>
+                                        <input
+                                          type="number"
+                                          min="1"
+                                          max="50"
+                                          value={bibleFormCapitulos}
+                                          onChange={(e) => setBibleFormCapitulos(Number(e.target.value))}
+                                          className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white font-mono"
+                                        />
+                                      </div>
+                                    )}
+
+                                    <div>
+                                      <label className="text-[9px] font-bold text-zinc-400 uppercase block mb-1">
+                                        Capítulos já lidos anteriormente
+                                      </label>
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        value={bibleFormJaLidos}
+                                        onChange={(e) => setBibleFormJaLidos(Number(e.target.value))}
+                                        className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white font-mono"
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div className="flex gap-2 pt-2 border-t border-zinc-900">
+                                    <button
+                                      type="button"
+                                      onClick={() => setShowBibleConfig(false)}
+                                      className="flex-1 py-1.5 bg-zinc-900 text-zinc-400 text-xs font-bold rounded-lg"
+                                    >
+                                      Cancelar
+                                    </button>
+                                    <button
+                                      type="submit"
+                                      className="flex-1 py-1.5 bg-amber-500 hover:bg-amber-600 text-black text-xs font-bold rounded-lg"
+                                    >
+                                      Salvar Plano
+                                    </button>
+                                  </div>
+                                </form>
+                              )}
+                            </div>
+                          )}
+
+                          {/* SUBTOPIC 3: HISTÓRICO DE LIVROS */}
+                          {activeSubtopicLeitura === 'historico' && (
+                            <div className="space-y-2 flex-1 overflow-y-auto pr-1 scrollbar-thin">
+                              <div className="flex justify-between items-center px-1">
+                                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                                  Histórico de Leituras
+                                </span>
+                                <span className="text-[10px] text-orange-400 font-mono font-bold">
+                                  {actualBooks.length} {actualBooks.length === 1 ? 'livro' : 'livros'}
+                                </span>
                               </div>
-                            </button>
-                          </div>
 
-                          <div className="flex-1 flex flex-col">
-                            <label className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-1 block">
-                              Reflexão Comportamental (Registro Diário)
-                            </label>
-                            <textarea
-                              value={alterEgoText}
-                              onChange={(e) => setAlterEgoText(e.target.value)}
-                              onKeyDown={(e) => handleAutoListKeyDown(e, alterEgoText, setAlterEgoText)}
-                              placeholder="Onde Alfredo foi forte hoje? Em qual momento o Beto tentou tomar o controle?"
-                              className="w-full flex-1 min-h-[100px] bg-zinc-950/40 border border-zinc-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-none font-sans leading-relaxed"
-                            />
-                          </div>
+                              {actualBooks.length === 0 ? (
+                                <div className="bg-zinc-950/40 border border-zinc-900 rounded-xl p-8 text-center space-y-2">
+                                  <CalendarDays className="h-6 w-6 text-zinc-600 mx-auto" />
+                                  <p className="text-xs text-zinc-500">
+                                    Nenhum livro registrado no histórico anual.
+                                  </p>
+                                </div>
+                              ) : (
+                                <div className="space-y-2">
+                                  {actualBooks.map((bk) => {
+                                    const isCompleted = bk.status === 'lido' || bk.pagesRead >= bk.totalPages;
+                                    const isCurrent = bookTracker?.bookName && bk.title.trim().toLowerCase() === bookTracker.bookName.trim().toLowerCase();
+                                    return (
+                                      <div
+                                        key={bk.id}
+                                        className="bg-zinc-950/40 border border-zinc-900 rounded-xl p-3 flex items-start justify-between gap-3 hover:border-zinc-800 transition-colors"
+                                      >
+                                        <div className="min-w-0 flex-1 space-y-1">
+                                          <div className="flex items-center gap-2 flex-wrap">
+                                            <h5 className="text-xs font-bold text-white truncate">
+                                              {bk.title}
+                                            </h5>
+                                            <span
+                                              className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
+                                                isCompleted
+                                                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                                  : bk.status === 'dropado'
+                                                  ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                                                  : 'bg-orange-500/10 text-orange-400 border border-orange-500/20'
+                                              }`}
+                                            >
+                                              {isCompleted ? 'Concluído' : bk.status === 'dropado' ? 'Pausado' : 'Em Leitura'}
+                                            </span>
+                                            {isCurrent && (
+                                              <span className="text-[8px] bg-orange-500 text-white font-bold px-1.5 py-0.2 rounded-full uppercase">
+                                                Atual
+                                              </span>
+                                            )}
+                                          </div>
+
+                                          <div className="flex items-center gap-3 text-[10px] text-zinc-500 font-mono flex-wrap">
+                                            <span>{bk.pagesRead} / {bk.totalPages} págs</span>
+                                            {bk.readingInterval && (
+                                              <span className="text-zinc-400">{bk.readingInterval}</span>
+                                            )}
+                                          </div>
+                                        </div>
+
+                                        {!isCompleted && !isCurrent && (
+                                          <button
+                                            type="button"
+                                            onClick={() => handleResumeBookFromHistory(bk)}
+                                            className="px-2.5 py-1 bg-zinc-900 hover:bg-orange-500 hover:text-white text-orange-400 text-xs font-bold rounded-lg border border-zinc-800 hover:border-orange-500 transition-all flex items-center gap-1 shrink-0"
+                                            title="Tornar este o livro atual"
+                                          >
+                                            <Play className="h-3 w-3" /> Continuar
+                                          </button>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       ) : activeTopic === 'saude' ? (
                         /* SAÚDE TOPIC */
