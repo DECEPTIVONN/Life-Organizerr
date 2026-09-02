@@ -3049,7 +3049,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                     </div>
 
                     {/* Topic Content Container (Scrollable) */}
-                    <div className="flex-1 overflow-y-auto min-h-0 pr-1 space-y-3 scrollbar-thin">
+                    <div className="flex-1 overflow-y-auto min-h-0 pr-1 space-y-3 scrollbar-thin flex flex-col">
                       {activeTopic === 'diario' ? (
                         /* DIARIO TOPIC (COM ALTER EGO DOMINANTE) */
                         <div className="space-y-3 flex-1 flex flex-col min-h-0">
@@ -3132,7 +3132,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                       ) : activeTopic === 'checklist' ? (
                         /* CHECKLIST TOPIC */
                         <div className="space-y-3 flex-1 flex flex-col">
-                          <div className="flex justify-between items-center">
+                          <div className="flex justify-between items-center shrink-0">
                             <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
                               Tarefas Inegociáveis deste Dia
                             </span>
@@ -3142,7 +3142,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                           </div>
 
                           {/* Quick Add Task Form */}
-                          <form onSubmit={handleAddDayTask} className="flex gap-2">
+                          <form onSubmit={handleAddDayTask} className="flex gap-2 shrink-0">
                             <input
                               type="text"
                               value={newDayTaskText}
@@ -3152,14 +3152,14 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                             />
                             <button
                               type="submit"
-                              className="bg-zinc-900 hover:bg-zinc-800 text-orange-500 border border-zinc-800 rounded-lg px-3 py-1.5 transition-colors font-bold text-xs"
+                              className="bg-zinc-900 hover:bg-zinc-800 text-orange-500 border border-zinc-800 rounded-lg px-3 py-1.5 transition-colors font-bold text-xs shrink-0"
                             >
                               Adicionar
                             </button>
                           </form>
 
                           {/* Checklist Items list */}
-                          <div className="flex-1 overflow-y-auto min-h-[260px] sm:min-h-[320px] lg:min-h-[380px] max-h-[500px] space-y-1.5 pr-1 scrollbar-thin">
+                          <div className="space-y-1.5 pb-2">
                             {dayChecklist.length === 0 ? (
                               <div className="text-center py-8 border border-dashed border-zinc-900 rounded-xl animate-pulse">
                                 <p className="text-[11px] text-zinc-500">Nenhuma tarefa para este dia.</p>
@@ -3422,7 +3422,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
 
                           {/* SUBTOPIC 1: LIVRO ATUAL */}
                           {activeSubtopicLeitura === 'livro' && (
-                            <div className="space-y-3 flex-1 overflow-y-auto pr-1 scrollbar-thin">
+                            <div className="space-y-3 pb-2">
                               {bookTracker?.bookName ? (
                                 <div className="bg-zinc-950/60 border border-zinc-900 rounded-xl p-3.5 space-y-3">
                                   {/* Book Header info */}
@@ -3677,7 +3677,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
 
                           {/* SUBTOPIC 2: LEITURA DA BÍBLIA */}
                           {activeSubtopicLeitura === 'biblia' && (
-                            <div className="space-y-3 flex-1 overflow-y-auto pr-1 scrollbar-thin">
+                            <div className="space-y-3 pb-2">
                               <div className="bg-zinc-950/60 border border-zinc-900 rounded-xl p-3.5 space-y-3">
                                 {/* Bible Header */}
                                 <div className="flex items-start justify-between gap-2 border-b border-zinc-900 pb-3">
@@ -3901,7 +3901,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
 
                           {/* SUBTOPIC 3: HISTÓRICO DE LIVROS */}
                           {activeSubtopicLeitura === 'historico' && (
-                            <div className="space-y-2 flex-1 overflow-y-auto pr-1 scrollbar-thin">
+                            <div className="space-y-2 pb-2">
                               <div className="flex justify-between items-center px-1">
                                 <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
                                   Histórico de Leituras
@@ -3979,7 +3979,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                         </div>
                       ) : activeTopic === 'saude' ? (
                         /* SAÚDE TOPIC */
-                        <div className="space-y-4 flex-1 flex flex-col overflow-y-auto max-h-[350px] pr-1 scrollbar-thin">
+                        <div className="space-y-4 pb-2">
                           {/* Sleep Section */}
                           <div className="bg-zinc-950/40 border border-zinc-900 rounded-xl p-3.5 space-y-3">
                             <div className="flex items-center gap-2 border-b border-zinc-900 pb-2">
@@ -4131,7 +4131,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                         </div>
                       ) : (
                         /* AGENDA / GOOGLE CALENDAR TOPIC */
-                        <div className="space-y-4 flex-1 flex flex-col overflow-y-auto max-h-[350px] pr-1 scrollbar-thin">
+                        <div className="space-y-4 pb-2">
                           {!googleToken ? (
                             <div className="flex-1 flex flex-col items-center justify-center text-center p-6 bg-zinc-950/40 border border-zinc-900 rounded-xl space-y-4 min-h-[220px]">
                               <CalendarDays className="h-10 w-10 text-zinc-600" />
