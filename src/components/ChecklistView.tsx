@@ -48,6 +48,7 @@ import RoutineView from './RoutineView';
 import HabitsTrackerView from './HabitsTrackerView';
 import { syncBookWithYearlyBooks, calculateReadingInterval, formatDateBR } from '../utils/bookUtils';
 import { cleanupExpiredGridRoutine, cleanupExpiredRoutineItems, isPastWeek, getWeekMondayStr } from '../utils/routineUtils';
+import { addDeletedTaskIdForDate } from '../utils/taskStorage';
 
 interface ChecklistViewProps {
   dailyTasks: DailyTask[];
@@ -1054,6 +1055,9 @@ export default function ChecklistView({
   const handleDeleteTask = (id: string, completed: boolean, xpReward: number) => {
     if (completed) {
       addXp(-xpReward);
+    }
+    if (selectedDate === todayStr) {
+      addDeletedTaskIdForDate(todayStr, id);
     }
     if (id.startsWith('grid-')) {
       const gridKey = id.replace('grid-', '');

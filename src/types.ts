@@ -95,6 +95,7 @@ export interface CalendarNote {
   prayerText?: string;
   isDailyRecord?: boolean;
   checklist?: DailyTask[];
+  deletedTaskIds?: string[];
   alterEgoWinner?: 'Alfredo' | 'Beto' | null;
   alterEgoText?: string;
   sleepBedTime?: string;

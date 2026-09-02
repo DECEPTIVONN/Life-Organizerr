@@ -44,6 +44,7 @@ import WaterTracker from './WaterTracker';
 import { CalendarNote, DailyTask, MonthlyReview, WeeklyReview, YearlyBook, SubTask, Goal, FinanceEntry } from '../types';
 import { calculateReadingInterval, formatDateBR } from '../utils/bookUtils';
 import { handleAutoListKeyDown, formatTimeInput, moveCursorToEnd } from '../utils/listUtils';
+import { getDeletedTaskIdsForDate, addDeletedTaskIdForDate } from '../utils/taskStorage';
 
 interface AnuaisViewProps {
   notes: CalendarNote[];
@@ -673,7 +674,14 @@ export default function AnuaisView({
 
   // Build the dynamic checklist for the daily workspace view
   const buildDailyChecklist = (dateStr: string) => {
-    const list = dailyTasks.filter((t: any) => t.isRecurring !== false || !t.createdDate || t.createdDate === dateStr);
+    const d = new Date();
+    const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const isPastDate = dateStr < todayStr;
+    const deletedIds = !isPastDate ? getDeletedTaskIdsForDate(dateStr) : [];
+
+    const list = dailyTasks
+      .filter((t: any) => t.isRecurring !== false || !t.createdDate || t.createdDate === dateStr)
+      .filter((t: any) => !deletedIds.includes(t.id));
     
     // Merge routine tasks
     if (routine) {
@@ -684,6 +692,7 @@ export default function AnuaisView({
         
         const routineTasksForDay = routine
           .filter((item: any) => item.dayOfWeek === dayOfWeek || item.isEveryDay)
+          .filter((item: any) => !deletedIds.includes(`routine-${item.id}`))
           .sort((a: any, b: any) => a.time.localeCompare(b.time))
           .map((item: any) => ({
             id: `routine-${item.id}`,
@@ -710,7 +719,7 @@ export default function AnuaisView({
         Object.entries(gridRoutine).forEach(([key, block]: [string, any]) => {
           if (key.endsWith(`-${gridDayId}`) && block && block.text) {
             const blockId = `grid-${key}`;
-            if (!list.some(t => t.id === blockId)) {
+            if (!deletedIds.includes(blockId) && !list.some(t => t.id === blockId)) {
               list.push({
                 id: blockId,
                 text: `[Bloco às ${block.startTime || '08:00'}] ${block.text}`,
@@ -728,7 +737,7 @@ export default function AnuaisView({
     }
 
     // Add Leitura task if bookTracker is configured
-    if (bookTracker && bookTracker.bookName) {
+    if (bookTracker && bookTracker.bookName && !deletedIds.includes('task-leitura')) {
       const total = bookTracker.totalPages || 250;
       const read = bookTracker.pagesRead || 0;
       const remainingPages = Math.max(0, total - read);
@@ -747,7 +756,7 @@ export default function AnuaisView({
     }
 
     // Add Bíblia task if bibleTracker is configured
-    if (bibleTracker && bibleTracker.capitulosPorDia) {
+    if (bibleTracker && bibleTracker.capitulosPorDia && !deletedIds.includes('task-biblia')) {
       list.push({
         id: 'task-biblia',
         text: `Ler ${bibleTracker.capitulosPorDia} cap. da Bíblia`,
@@ -781,15 +790,47 @@ export default function AnuaisView({
       setAlterEgoWinner(existing.alterEgoWinner || null);
       setAlterEgoText(existing.alterEgoText || '');
 
+      const d = new Date();
+      const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const isPastDate = dateStr < todayStr;
+
       const baseChecklist = buildDailyChecklist(dateStr);
       if (!existing.checklist) {
         setDayChecklist(baseChecklist);
+      } else if (isPastDate) {
+        // Non-retroactivity: past days keep checklist intact as saved
+        setDayChecklist(existing.checklist);
       } else {
-        const merged = baseChecklist.map(bt => {
-          const matched = existing.checklist!.find(t => t.id === bt.id);
-          return matched ? { ...bt, completed: matched.completed, subtasks: matched.subtasks } : bt;
+        const deletedIds = new Set([
+          ...(existing.deletedTaskIds || []),
+          ...getDeletedTaskIdsForDate(dateStr)
+        ]);
+        const currentDailyTaskIds = new Set(dailyTasks.map(t => t.id));
+        const validExistingChecklist = existing.checklist.filter(t => {
+          if (deletedIds.has(t.id)) return false;
+          const isSpecial = t.id.startsWith('routine-') || 
+                            t.id.startsWith('grid-') || 
+                            t.id === 'task-leitura' || 
+                            t.id === 'task-biblia' || 
+                            t.id.startsWith('task-custom-') ||
+                            t.id.startsWith('dt-day-');
+          if (!isSpecial) {
+            return currentDailyTaskIds.has(t.id);
+          }
+          return true;
         });
-        const customOnly = existing.checklist.filter(t => !baseChecklist.some(bt => bt.id === t.id));
+
+        const existingMap = new Map<string, DailyTask>(validExistingChecklist.map(t => [t.id, t]));
+        const merged = baseChecklist
+          .filter(bt => !deletedIds.has(bt.id))
+          .map(bt => {
+            const matched = existingMap.get(bt.id);
+            return matched ? { ...bt, completed: matched.completed, subtasks: matched.subtasks } : bt;
+          });
+        const customOnly = validExistingChecklist.filter(t => 
+          !baseChecklist.some(bt => bt.id === t.id) &&
+          !deletedIds.has(t.id)
+        );
         setDayChecklist([...merged, ...customOnly]);
       }
     } else {
@@ -837,6 +878,7 @@ export default function AnuaisView({
         decreesText: finalDecrees,
         prayerText: finalPrayer,
         checklist: dayChecklist,
+        deletedTaskIds: idx !== -1 ? (prev[idx].deletedTaskIds || (selectedDateStr ? getDeletedTaskIdsForDate(selectedDateStr) : [])) : (selectedDateStr ? getDeletedTaskIdsForDate(selectedDateStr) : []),
         alterEgoWinner,
         alterEgoText,
         sleepBedTime,
@@ -885,6 +927,7 @@ export default function AnuaisView({
           decreesText: finalDecrees,
           prayerText: finalPrayer,
           checklist: dayChecklist,
+          deletedTaskIds: idx !== -1 ? prev[idx].deletedTaskIds : (selectedDateStr ? getDeletedTaskIdsForDate(selectedDateStr) : []),
           alterEgoWinner,
           alterEgoText,
           sleepBedTime,
@@ -925,10 +968,25 @@ export default function AnuaisView({
     waterLiters
   ]);
 
-  const saveChecklistToNotes = (updatedChecklist: DailyTask[]) => {
+  const saveChecklistToNotes = (updatedChecklist: DailyTask[], deletedTaskId?: string) => {
     if (!selectedDateStr) return;
+    const d = new Date();
+    const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    if (selectedDateStr === todayStr && setDailyTasks) {
+      setDailyTasks(updatedChecklist.filter(t => 
+        !t.id.startsWith('grid-') && 
+        !t.id.startsWith('routine-') && 
+        t.id !== 'task-leitura' && 
+        t.id !== 'task-biblia'
+      ));
+    }
     setNotes(prev => {
       const idx = prev.findIndex(n => n.date === selectedDateStr);
+      const currentDeleted = (idx !== -1 && prev[idx].deletedTaskIds) ? prev[idx].deletedTaskIds! : (selectedDateStr ? getDeletedTaskIdsForDate(selectedDateStr) : []);
+      const newDeleted = deletedTaskId && !currentDeleted.includes(deletedTaskId)
+        ? [...currentDeleted, deletedTaskId]
+        : currentDeleted;
+
       const finalGratitude = gratitudeText.trim() ? gratitudeText : templateGratitude;
       const finalDecrees = decreesText.trim() ? decreesText : templateDecrees;
       const finalPrayer = prayerText.trim() ? prayerText : templatePrayer;
@@ -943,6 +1001,7 @@ export default function AnuaisView({
         decreesText: finalDecrees,
         prayerText: finalPrayer,
         checklist: updatedChecklist,
+        deletedTaskIds: newDeleted,
         alterEgoWinner,
         alterEgoText,
         sleepBedTime,
@@ -998,9 +1057,17 @@ export default function AnuaisView({
   };
 
   const handleDeleteCustomDayTask = (id: string) => {
+    if (selectedDateStr) {
+      addDeletedTaskIdForDate(selectedDateStr, id);
+    }
+    const d = new Date();
+    const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    if (selectedDateStr === todayStr && setDailyTasks) {
+      setDailyTasks(prev => prev.filter(t => t.id !== id));
+    }
     setDayChecklist(prev => {
       const updated = prev.filter(t => t.id !== id);
-      saveChecklistToNotes(updated);
+      saveChecklistToNotes(updated, id);
       return updated;
     });
   };

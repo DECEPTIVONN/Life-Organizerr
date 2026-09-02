@@ -2715,14 +2715,28 @@ export default function App() {
     setCalendarNotes(prevNotes => {
       const existingIdx = prevNotes.findIndex(n => n.date === todayStr);
       if (existingIdx !== -1) {
-        if (JSON.stringify(prevNotes[existingIdx].checklist) === JSON.stringify(dailyTasks)) {
+        const existingRecord = prevNotes[existingIdx];
+        const existingChecklist = existingRecord.checklist || [];
+        
+        // Retain non-daily task items (routine, grid, book reading, custom day tasks)
+        // Any standard daily task that is no longer in dailyTasks is excluded (was deleted by user)
+        const retainedNonDaily = existingChecklist.filter(t => 
+          t.id.startsWith('routine-') || 
+          t.id.startsWith('grid-') || 
+          t.id === 'task-leitura' || 
+          t.id === 'task-biblia' || 
+          t.id.startsWith('dt-day-')
+        );
+        
+        const mergedChecklist = [...dailyTasks, ...retainedNonDaily];
+        if (JSON.stringify(existingRecord.checklist) === JSON.stringify(mergedChecklist)) {
           return prevNotes;
         }
         const updated = [...prevNotes];
         updated[existingIdx] = {
-          ...updated[existingIdx],
+          ...existingRecord,
           isDailyRecord: true,
-          checklist: dailyTasks
+          checklist: mergedChecklist
         };
         return updated;
       } else {

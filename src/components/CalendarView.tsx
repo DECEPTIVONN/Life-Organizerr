@@ -53,6 +53,7 @@ import { CalendarNote, DailyTask, SubTask, MonthlyReview, BookTracker, BibleTrac
 import { saveGoogleOAuthTokens, clearGoogleOAuthSession, refreshGoogleAccessToken, getValidGoogleAccessToken } from '../utils/googleToken';
 import { handleAutoListKeyDown, formatTimeInput, moveCursorToEnd } from '../utils/listUtils';
 import { calculateReadingInterval, syncBookWithYearlyBooks } from '../utils/bookUtils';
+import { getDeletedTaskIdsForDate, addDeletedTaskIdForDate } from '../utils/taskStorage';
 // @ts-ignore
 import classicalLightEngraving from '../assets/images/classical_light_engraving_1784335041654.jpg';
 
@@ -174,7 +175,18 @@ export default function CalendarView({
   // Helper to construct/update a day's checklist incorporating dailyTasks (morning, general, night) 
   // as well as the virtual Leitura and Bíblia tasks.
   const getFullDailyTasks = (): DailyTask[] => {
-    const list = dailyTasks.filter(t => t.isRecurring !== false || !t.createdDate || t.createdDate === selectedDateStr);
+    const todayStr = getTodayDateStr();
+    const isPastDate = selectedDateStr ? selectedDateStr < todayStr : false;
+    const deletedIds = (selectedDateStr && !isPastDate)
+      ? Array.from(new Set([
+          ...(activeRecord?.deletedTaskIds || []),
+          ...getDeletedTaskIdsForDate(selectedDateStr)
+        ]))
+      : [];
+
+    const list = dailyTasks
+      .filter(t => t.isRecurring !== false || !t.createdDate || t.createdDate === selectedDateStr)
+      .filter(t => !deletedIds.includes(t.id));
     
     // Add weekly routine tasks for the selected day of the week
     if (selectedDateStr && routine) {
@@ -185,6 +197,7 @@ export default function CalendarView({
         
         const routineTasksForDay = routine
           .filter(item => item.dayOfWeek === dayOfWeek || item.isEveryDay)
+          .filter(item => !deletedIds.includes(`routine-${item.id}`))
           .sort((a, b) => a.time.localeCompare(b.time))
           .map(item => ({
             id: `routine-${item.id}`,
@@ -212,7 +225,7 @@ export default function CalendarView({
         Object.entries(gridRoutine).forEach(([key, block]: [string, any]) => {
           if (key.endsWith(`-${gridDayId}`) && block && block.text) {
             const blockId = `grid-${key}`;
-            if (!list.some(t => t.id === blockId)) {
+            if (!deletedIds.includes(blockId) && !list.some(t => t.id === blockId)) {
               list.push({
                 id: blockId,
                 text: `[Bloco às ${block.startTime || '08:00'}] ${block.text}`,
@@ -230,7 +243,7 @@ export default function CalendarView({
     }
     
     // Add Leitura task if bookTracker is configured
-    if (bookTracker && bookTracker.bookName) {
+    if (bookTracker && bookTracker.bookName && !deletedIds.includes('task-leitura')) {
       const total = bookTracker.totalPages || 250;
       const read = bookTracker.pagesRead || 0;
       const remainingPages = Math.max(0, total - read);
@@ -262,7 +275,7 @@ export default function CalendarView({
     }
 
     // Add Bíblia task if bibleTracker is configured
-    if (bibleTracker) {
+    if (bibleTracker && !deletedIds.includes('task-biblia')) {
       const vezes = bibleTracker.vezesNoAno || 1;
       const jaLidos = bibleTracker.capitulosJaLidos || 0;
       const totalToRead = BIBLE_TOTAL_CHAPTERS * vezes;
@@ -1836,28 +1849,68 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
       setNoteReminderTime(activeRecord.reminderTime || '');
       
       const fullTasks = getFullDailyTasks();
-      let initialChecklist = [];
+      const todayStr = getTodayDateStr();
+      const isPastDate = selectedDateStr ? selectedDateStr < todayStr : false;
+      let initialChecklist: DailyTask[] = [];
       
       if (!activeRecord.checklist) {
         initialChecklist = fullTasks.map(t => ({ ...t, completed: false }));
+      } else if (isPastDate) {
+        // NON-RETROACTIVITY: Historical checklists from past days are preserved exactly as saved
+        initialChecklist = activeRecord.checklist;
       } else {
-        // Map over fullTasks, keeping completion state of existing tasks
-        const mergedBaseTasks = fullTasks.map(ft => {
-          const existing = activeRecord.checklist!.find(t => t.id === ft.id);
-          if (existing) {
-            return {
-              ...ft,
-              completed: existing.completed,
-              subtasks: existing.subtasks
-            };
+        // Current day (and future):
+        // 1. Gather all task IDs explicitly marked as deleted for this date
+        const deletedIds = new Set([
+          ...(activeRecord.deletedTaskIds || []),
+          ...(selectedDateStr ? getDeletedTaskIdsForDate(selectedDateStr) : [])
+        ]);
+
+        // 2. Currently active daily tasks set
+        const currentDailyTaskIds = new Set(dailyTasks.map(t => t.id));
+
+        // 3. Filter existing checklist:
+        // Exclude any task in deletedIds
+        // And if it was a standard daily task (not routine/grid/leitura/biblia/dt-day-),
+        // verify that it still exists in dailyTasks. If it's not in dailyTasks, it was deleted!
+        const validExistingChecklist = activeRecord.checklist.filter(t => {
+          if (deletedIds.has(t.id)) return false;
+          const isSpecial = t.id.startsWith('routine-') || 
+                            t.id.startsWith('grid-') || 
+                            t.id === 'task-leitura' || 
+                            t.id === 'task-biblia' || 
+                            t.id.startsWith('dt-day-');
+          if (!isSpecial) {
+            return currentDailyTaskIds.has(t.id);
           }
-          return { ...ft, completed: false };
+          return true;
         });
+
+        // 4. Map over fullTasks (active base tasks not deleted), keeping completion status
+        const existingMap = new Map<string, DailyTask>(validExistingChecklist.map(t => [t.id, t]));
         
-        // Keep any custom tasks created for this day in CalendarView (which won't be in fullTasks)
+        const mergedBaseTasks = fullTasks
+          .filter(ft => !deletedIds.has(ft.id))
+          .map(ft => {
+            const existing = existingMap.get(ft.id);
+            if (existing) {
+              return {
+                ...ft,
+                completed: existing.completed,
+                subtasks: existing.subtasks
+              };
+            }
+            return { ...ft, completed: false };
+          });
+
+        // 5. Keep custom day tasks (e.g. dt-day-xxx) created specifically for this day
         const fullTaskIds = new Set(fullTasks.map(t => t.id));
-        const customTasks = activeRecord.checklist.filter(t => !fullTaskIds.has(t.id));
-        
+        const customTasks = validExistingChecklist.filter(t => 
+          !fullTaskIds.has(t.id) && 
+          (t.id.startsWith('dt-day-') || t.createdDate === selectedDateStr) &&
+          !deletedIds.has(t.id)
+        );
+
         initialChecklist = [...mergedBaseTasks, ...customTasks];
       }
       setDayChecklist(initialChecklist);
@@ -2158,6 +2211,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
           decreesText: finalDecrees,
           prayerText: finalPrayer,
           checklist: dayChecklist,
+          deletedTaskIds: prev[idx].deletedTaskIds || (selectedDateStr ? getDeletedTaskIdsForDate(selectedDateStr) : []),
           alterEgoWinner: alterEgoWinner,
           alterEgoText: alterEgoText,
           sleepBedTime: sleepBedTime,
@@ -2184,6 +2238,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
           decreesText: finalDecrees,
           prayerText: finalPrayer,
           checklist: dayChecklist,
+          deletedTaskIds: selectedDateStr ? getDeletedTaskIdsForDate(selectedDateStr) : [],
           alterEgoWinner: alterEgoWinner,
           alterEgoText: alterEgoText,
           sleepBedTime: sleepBedTime,
@@ -2226,6 +2281,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
           decreesText: finalDecrees,
           prayerText: finalPrayer,
           checklist: dayChecklist,
+          deletedTaskIds: idx !== -1 ? prev[idx].deletedTaskIds : (selectedDateStr ? getDeletedTaskIdsForDate(selectedDateStr) : []),
           alterEgoWinner,
           alterEgoText,
           sleepBedTime,
@@ -2268,18 +2324,30 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
     noteReminderTime
   ]);
 
-  const saveChecklistToNotes = (updatedChecklist: DailyTask[]) => {
+  const saveChecklistToNotes = (updatedChecklist: DailyTask[], deletedTaskId?: string) => {
     if (!selectedDateStr) return;
-    if (selectedDateStr === getTodayDateStr() && setDailyTasks) {
-      setDailyTasks(updatedChecklist);
+    const todayStr = getTodayDateStr();
+    if (selectedDateStr === todayStr && setDailyTasks) {
+      setDailyTasks(updatedChecklist.filter(t => 
+        !t.id.startsWith('grid-') && 
+        !t.id.startsWith('routine-') && 
+        t.id !== 'task-leitura' && 
+        t.id !== 'task-biblia'
+      ));
     }
     setNotes(prev => {
       const idx = prev.findIndex(n => n.date === selectedDateStr);
       if (idx !== -1) {
+        const currentDeleted = prev[idx].deletedTaskIds || [];
+        const newDeleted = deletedTaskId && !currentDeleted.includes(deletedTaskId)
+          ? [...currentDeleted, deletedTaskId]
+          : currentDeleted;
+
         const updated = [...prev];
         updated[idx] = {
           ...updated[idx],
           checklist: updatedChecklist,
+          deletedTaskIds: newDeleted,
           isDailyRecord: true
         };
         return updated;
@@ -2298,6 +2366,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
           decreesText: finalDecrees,
           prayerText: finalPrayer,
           checklist: updatedChecklist,
+          deletedTaskIds: deletedTaskId ? [deletedTaskId] : (selectedDateStr ? getDeletedTaskIdsForDate(selectedDateStr) : []),
           alterEgoWinner: alterEgoWinner,
           alterEgoText: alterEgoText,
           sleepBedTime: sleepBedTime,
@@ -2384,9 +2453,18 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
     if (completed) {
       addXp(-10);
     }
+    const todayStr = getTodayDateStr();
+    if (selectedDateStr) {
+      addDeletedTaskIdForDate(selectedDateStr, id);
+    }
+    if (selectedDateStr === todayStr) {
+      if (setDailyTasks) {
+        setDailyTasks(prev => prev.filter(t => t.id !== id));
+      }
+    }
     setDayChecklist(prev => {
       const updated = prev.filter(t => t.id !== id);
-      saveChecklistToNotes(updated);
+      saveChecklistToNotes(updated, id);
       return updated;
     });
   };
