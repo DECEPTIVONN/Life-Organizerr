@@ -69,6 +69,7 @@ interface SidebarProps {
   onAddReminder?: (reminder: QuickReminder) => void;
   onOpenStreakHub?: () => void;
   onOpenRankingModal?: () => void;
+  mobileNavbarMode?: 'fixed' | 'flexible';
 }
 
 interface SearchResult {
@@ -99,7 +100,8 @@ export default function Sidebar({
   currentUser,
   onAddReminder,
   onOpenStreakHub,
-  onOpenRankingModal
+  onOpenRankingModal,
+  mobileNavbarMode = 'fixed'
 }: SidebarProps) {
   
   // Animation/HUD state
@@ -110,6 +112,11 @@ export default function Sidebar({
   const [searchFilter, setSearchFilter] = useState<string>('todos');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
+
+  // Mobile navbar visibility (fixed vs flexible on scroll down / up)
+  const [isMobileNavHidden, setIsMobileNavHidden] = useState(false);
+  const lastScrollYRef = useRef(0);
+  const navScrollTouchStartYRef = useRef<number | null>(null);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -365,6 +372,11 @@ export default function Sidebar({
     };
   }, [isDraggingScrollTrack]);
 
+  // Reset navbar visibility when tab changes, menus open, or when switching to fixed mode
+  useEffect(() => {
+    setIsMobileNavHidden(false);
+  }, [activeTab, mobileMenuOpen, radialMenuOpen, mobileNavbarMode]);
+
   useEffect(() => {
     const handleScroll = () => {
       const scrollTop = window.scrollY || document.documentElement.scrollTop;
@@ -375,10 +387,62 @@ export default function Sidebar({
       } else {
         setScrollProgress(0);
       }
+
+      if (mobileNavbarMode === 'flexible') {
+        if (scrollTop <= 25) {
+          setIsMobileNavHidden(false);
+          lastScrollYRef.current = scrollTop;
+          return;
+        }
+
+        const diff = scrollTop - lastScrollYRef.current;
+        if (Math.abs(diff) > 8) {
+          if (diff > 0 && scrollTop > 40) {
+            // Scrolling down -> hide navbar
+            setIsMobileNavHidden(true);
+          } else if (diff < 0) {
+            // Scrolling up -> show navbar
+            setIsMobileNavHidden(false);
+          }
+          lastScrollYRef.current = scrollTop;
+        }
+      }
+    };
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches && e.touches[0]) {
+        navScrollTouchStartYRef.current = e.touches[0].clientY;
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (mobileNavbarMode !== 'flexible') return;
+      if (navScrollTouchStartYRef.current === null || !e.touches || !e.touches[0]) return;
+      
+      const currentY = e.touches[0].clientY;
+      const diffY = currentY - navScrollTouchStartYRef.current;
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+
+      if (scrollTop <= 25) {
+        setIsMobileNavHidden(false);
+        return;
+      }
+
+      if (diffY < -12 && scrollTop > 30) {
+        // Dragging finger up (content scrolls down) -> hide navbar
+        setIsMobileNavHidden(true);
+        navScrollTouchStartYRef.current = currentY;
+      } else if (diffY > 12) {
+        // Dragging finger down (content scrolls up) -> show navbar
+        setIsMobileNavHidden(false);
+        navScrollTouchStartYRef.current = currentY;
+      }
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     window.addEventListener('resize', handleScroll, { passive: true });
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchmove', handleTouchMove, { passive: true });
 
     // Recalculate on DOM updates (e.g. content loading or tab switching)
     const observer = new ResizeObserver(() => {
@@ -393,9 +457,11 @@ export default function Sidebar({
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleScroll);
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchmove', handleTouchMove);
       observer.disconnect();
     };
-  }, [activeTab]);
+  }, [activeTab, mobileNavbarMode]);
 
   // Listen to PWA install prompt
   useEffect(() => {
@@ -876,8 +942,14 @@ export default function Sidebar({
         )}
       </AnimatePresence>
 
-      {/* 3. MOBILE CURVED FUTURISTIC BOTTOM NAV BAR */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 h-[92px] pointer-events-none z-40">
+      {/* 3. MOBILE CURVED FUTURISTIC BOTTOM NAV BAR (Fixed or Flexible on scroll) */}
+      <div 
+        className={`lg:hidden fixed bottom-0 left-0 right-0 h-[92px] pointer-events-none z-40 transition-transform duration-300 ease-in-out ${
+          isMobileNavHidden && mobileNavbarMode === 'flexible' && !mobileMenuOpen && !radialMenuOpen
+            ? 'translate-y-[120%]'
+            : 'translate-y-0'
+        }`}
+      >
 
         {/* SVG background with neon glowing stroke and dark filled area */}
         <div className="absolute inset-0 pointer-events-auto">

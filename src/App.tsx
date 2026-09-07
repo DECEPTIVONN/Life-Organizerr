@@ -213,6 +213,11 @@ export default function App() {
     return localStorage.getItem('mbc_mobile_slide_transition') !== 'false';
   });
 
+  // Mobile Navbar Mode ('fixed' vs 'flexible')
+  const [mobileNavbarMode, setMobileNavbarMode] = useState<'fixed' | 'flexible'>(() => {
+    return (localStorage.getItem('mbc_mobile_navbar_mode') as 'fixed' | 'flexible') || 'fixed';
+  });
+
   const [activeThemePreset, setActiveThemePreset] = useState<string>(() => {
     return localStorage.getItem('mbc_theme_preset') || 'default';
   });
@@ -3524,6 +3529,8 @@ export default function App() {
             setShowDateSelector={setShowChecklistDateSelector}
             mobileSlideTransition={mobileSlideTransition}
             setMobileSlideTransition={setMobileSlideTransition}
+            mobileNavbarMode={mobileNavbarMode}
+            setMobileNavbarMode={setMobileNavbarMode}
             setAccountDeactivated={setAccountDeactivated}
             onLogout={handleLogout}
             syncKey={syncKey}
@@ -3706,6 +3713,7 @@ export default function App() {
         onAddReminder={(newRem) => setReminders(prev => [newRem, ...prev])}
         onOpenStreakHub={() => setIsStreakHubOpen(true)}
         onOpenRankingModal={() => setIsRankingModalOpen(true)}
+        mobileNavbarMode={mobileNavbarMode}
       />
 
       {/* 2. Main Workspace Area (responsive margin/padding for the fixed desktop HUD and mobile header) */}

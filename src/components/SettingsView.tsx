@@ -92,6 +92,10 @@ interface SettingsViewProps {
   mobileSlideTransition?: boolean;
   setMobileSlideTransition?: (enabled: boolean) => void;
 
+  // Mobile Navbar Mode (Fixed vs Flexible)
+  mobileNavbarMode?: 'fixed' | 'flexible';
+  setMobileNavbarMode?: (mode: 'fixed' | 'flexible') => void;
+
   // Theme Color Customization
   activeThemePreset?: string;
   setActiveThemePreset?: (preset: string) => void;
@@ -186,6 +190,8 @@ export default function SettingsView({
   setShowDateSelector,
   mobileSlideTransition = true,
   setMobileSlideTransition,
+  mobileNavbarMode = 'fixed',
+  setMobileNavbarMode,
   setAccountDeactivated,
   onLogout,
   syncKey,
@@ -849,7 +855,7 @@ export default function SettingsView({
     {
       id: 'exibicao',
       title: 'Acessibilidade, exibição e PWA',
-      desc: 'Gerencie o comportamento de tela cheia automática, instalação nativa PWA e exibição geral do Planner.',
+      desc: 'Gerencie tela cheia, navbar mobile (fixa ou flexível), animações e exibição geral do Planner.',
       icon: Maximize,
       screen: 'exibicao' as SettingsScreen
     }
@@ -2599,6 +2605,63 @@ export default function SettingsView({
               >
                 {mobileSlideTransition ? 'Habilitado' : 'Desabilitado'}
               </button>
+            </div>
+
+            {/* Comportamento da Navbar Mobile (Fixa vs Flexível) */}
+            <div className="p-4 bg-zinc-950 border border-zinc-900 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="space-y-0.5 flex-1 pr-2">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-xs font-bold text-zinc-200">Comportamento da Navbar Mobile</h4>
+                  <span className={`text-[8px] font-bold px-2 py-0.5 rounded-full font-mono uppercase border ${
+                    mobileNavbarMode === 'flexible'
+                      ? 'text-orange-400 bg-orange-500/10 border-orange-500/20'
+                      : 'text-zinc-400 bg-zinc-800/40 border-zinc-700/40'
+                  }`}>
+                    {mobileNavbarMode === 'flexible' ? 'Flexível' : 'Fixa'}
+                  </span>
+                </div>
+                <p className="text-[10px] text-zinc-500 font-mono leading-normal">
+                  {mobileNavbarMode === 'flexible'
+                    ? 'Flexível: Ao deslizar para baixo, a barra inferior fica oculta para maior área útil; ao deslizar para cima, ela reaparece.'
+                    : 'Fixa: A barra inferior de navegação permanece sempre fixa e visível na base da tela.'}
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5 self-start sm:self-center bg-zinc-900/80 p-1 rounded-xl border border-zinc-800 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (setMobileNavbarMode) {
+                      setMobileNavbarMode('fixed');
+                      localStorage.setItem('mbc_mobile_navbar_mode', 'fixed');
+                      addXp(10);
+                    }
+                  }}
+                  className={`px-3.5 py-1.5 rounded-lg text-[9px] font-mono font-bold uppercase transition-all cursor-pointer ${
+                    mobileNavbarMode === 'fixed'
+                      ? 'bg-orange-500 text-white shadow-[0_0_12px_rgba(249,115,22,0.4)]'
+                      : 'text-zinc-400 hover:text-zinc-200'
+                  }`}
+                >
+                  Fixa
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (setMobileNavbarMode) {
+                      setMobileNavbarMode('flexible');
+                      localStorage.setItem('mbc_mobile_navbar_mode', 'flexible');
+                      addXp(10);
+                    }
+                  }}
+                  className={`px-3.5 py-1.5 rounded-lg text-[9px] font-mono font-bold uppercase transition-all cursor-pointer ${
+                    mobileNavbarMode === 'flexible'
+                      ? 'bg-orange-500 text-white shadow-[0_0_12px_rgba(249,115,22,0.4)]'
+                      : 'text-zinc-400 hover:text-zinc-200'
+                  }`}
+                >
+                  Flexível
+                </button>
+              </div>
             </div>
 
             {/* Esquema de Cores e Personalização */}
