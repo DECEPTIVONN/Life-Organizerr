@@ -284,39 +284,32 @@ export default function NotesView({ notes, setNotes, addXp, freeEditMode = false
         </div>
       </div>
 
-      {/* Control Actions / Search and Filter Tabs */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-        {/* Toggle between Active and Archived */}
-        <div className="flex bg-zinc-950 p-1 rounded-xl border border-zinc-900/60 w-fit">
-          <button
-            onClick={() => {
-              setViewMode('active');
-              setSelectedTag(null);
-            }}
-            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              viewMode === 'active' 
-                ? 'bg-orange-500 text-white' 
-                : 'text-zinc-500 hover:text-zinc-300'
-            }`}
-          >
-            Ativas
-          </button>
-          <button
-            onClick={() => {
-              setViewMode('archived');
-              setSelectedTag(null);
-            }}
-            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-              viewMode === 'archived' 
-                ? 'bg-orange-500 text-white' 
-                : 'text-zinc-500 hover:text-zinc-300'
-            }`}
-          >
-            <Archive className="h-3.5 w-3.5" />
-            Arquivadas
-          </button>
-        </div>
+      {/* INTERNAL NAVBAR (Banco de Notas: Ativas vs Arquivadas) */}
+      <nav className="internal-nav w-full max-w-2xl" aria-label="Navegação Interna de Notas">
+        <button
+          type="button"
+          onClick={() => {
+            setViewMode('active');
+            setSelectedTag(null);
+          }}
+          className={`internal-nav-btn ${viewMode === 'active' ? 'active' : ''}`}
+        >
+          <span>Notas Ativas</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setViewMode('archived');
+            setSelectedTag(null);
+          }}
+          className={`internal-nav-btn ${viewMode === 'archived' ? 'active' : ''}`}
+        >
+          <span>Arquivadas</span>
+        </button>
+      </nav>
 
+      {/* Control Actions / Search */}
+      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         {/* Search Box */}
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />

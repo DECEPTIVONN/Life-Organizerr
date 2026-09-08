@@ -580,51 +580,39 @@ export default function RemindersView({
         </div>
       </div>
 
-      {/* 2. STATS & FILTER TABS */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-zinc-900/60 border border-zinc-800/70 rounded-2xl p-3 backdrop-blur-md">
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+      {/* 2. STATS & FILTER TABS (INTERNAL NAVBAR) */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <nav className="internal-nav w-full sm:w-auto flex-1 max-w-2xl mb-0" aria-label="Navegação de Lembretes">
           <button
+            type="button"
             onClick={() => setFilterMode('active')}
-            className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-              filterMode === 'active'
-                ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20'
-                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
-            }`}
+            className={`internal-nav-btn ${filterMode === 'active' ? 'active' : ''}`}
           >
-            <Clock className="h-3.5 w-3.5" />
             <span>Ativos ({activeCount})</span>
           </button>
 
           <button
+            type="button"
             onClick={() => setFilterMode('completed')}
-            className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-              filterMode === 'completed'
-                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20'
-                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
-            }`}
+            className={`internal-nav-btn ${filterMode === 'completed' ? 'active' : ''}`}
           >
-            <CheckCircle2 className="h-3.5 w-3.5" />
             <span>Concluídos ({completedCount})</span>
           </button>
 
           <button
+            type="button"
             onClick={() => setFilterMode('all')}
-            className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-              filterMode === 'all'
-                ? 'bg-zinc-800 text-white border border-zinc-700'
-                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
-            }`}
+            className={`internal-nav-btn ${filterMode === 'all' ? 'active' : ''}`}
           >
-            <Layers className="h-3.5 w-3.5" />
             <span>Todos ({reminders.length})</span>
           </button>
-        </div>
+        </nav>
 
-        <div className="text-xs text-zinc-400 font-mono flex items-center gap-3">
+        <div className="text-xs text-zinc-400 font-mono flex items-center gap-3 self-end sm:self-center">
           <button
             type="button"
             onClick={playReminderChime}
-            className="flex items-center gap-1.5 text-amber-400 hover:text-amber-300 font-bold bg-amber-500/10 hover:bg-amber-500/20 px-2.5 py-1 rounded-lg border border-amber-500/20 transition-all cursor-pointer"
+            className="flex items-center gap-1.5 text-amber-400 hover:text-amber-300 font-bold bg-amber-500/10 hover:bg-amber-500/20 px-3 py-2 rounded-lg border border-amber-500/20 transition-all cursor-pointer"
             title="Testar sinal sonoro de notificação"
           >
             <Volume2 className="h-3.5 w-3.5 text-amber-400 animate-pulse" />

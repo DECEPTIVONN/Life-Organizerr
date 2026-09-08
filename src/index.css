@@ -1,11 +1,11 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Outfit:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Rajdhani:wght@500;600;700;800&display=swap');
 @import "tailwindcss";
-
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Outfit:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
 @theme {
   --font-sans: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Outfit", "Space Grotesk", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-rajdhani: "Rajdhani", sans-serif;
 
   --color-zinc-750: #313135;
   --color-zinc-850: #1e1e21;
@@ -122,61 +122,70 @@ input[type=number] {
 }
 
 /* ====================================
-   TRONUS INTERNAL NAVBAR & SECTION TITLES
+   INTERNAL NAVIGATION (DYNAMIC USER THEME)
    ==================================== */
 
+:root {
+  --theme-primary-rgb: 249, 115, 22;
+  --theme-nav-border: rgba(249, 115, 22, 0.3);
+  --theme-nav-hover: rgba(249, 115, 22, 0.12);
+  --theme-nav-active-bg: linear-gradient(135deg, var(--theme-orange-400, #fb923c), var(--theme-orange-600, #ea580c));
+  --theme-nav-glow: 0 4px 15px rgba(249, 115, 22, 0.4);
+}
+
 .internal-nav {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 28px;
-  background: rgba(12, 12, 15, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(249, 115, 22, 0.25);
-  border-radius: 16px;
-  padding: 6px;
-  max-width: 1000px;
-  margin-left: auto;
-  margin-right: auto;
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5), 0 0 20px rgba(249, 115, 22, 0.05);
-  overflow-x: auto;
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    margin-bottom: 20px;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--theme-nav-border, rgba(249, 115, 22, 0.3));
+    border-radius: 8px;
+    padding: 6px;
+    flex-wrap: wrap;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 1000px;
 }
 
 .internal-nav-btn {
-  flex: 1;
-  min-width: 110px;
-  padding: 10px 16px;
-  background: transparent;
-  border: 1px solid transparent;
-  color: #9ca3af;
-  font-family: var(--font-sans);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-  cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  white-space: nowrap;
+    flex: 1;
+    min-width: 90px;
+    padding: 10px 14px;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    white-space: nowrap;
 }
 
 .internal-nav-btn:hover {
-  color: #f3f4f6;
-  background: rgba(249, 115, 22, 0.08);
-  border-color: rgba(249, 115, 22, 0.18);
+    color: #fff;
+    background: var(--theme-nav-hover, rgba(249, 115, 22, 0.12));
 }
 
 .internal-nav-btn.active {
-  background: linear-gradient(135deg, #f97316, #ea580c);
-  color: #ffffff;
-  font-weight: 700;
-  border-color: #fb923c;
-  box-shadow: 0 4px 18px rgba(249, 115, 22, 0.35);
+    background: var(--theme-nav-active-bg, linear-gradient(135deg, #f97316, #ea580c));
+    color: #fff;
+    box-shadow: var(--theme-nav-glow, 0 4px 15px rgba(249, 115, 22, 0.4));
+}
+
+.internal-nav-btn .nav-icon,
+.internal-nav-btn svg {
+    display: none;
 }
 
 /* ====================================

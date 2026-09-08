@@ -1789,52 +1789,40 @@ export default function ChecklistView({
       </div>
 
       {/* Tabs Selector for Missões Diárias vs Rotina Diária vs Rotina Semanal vs Hábitos */}
-      <div className="flex items-center bg-zinc-900/30 p-1.5 rounded-2xl max-w-2xl backdrop-blur-md shadow-lg border border-zinc-800/40">
+      <nav className="internal-nav w-full max-w-3xl" aria-label="Navegação Interna de Missões Diárias">
         <button
+          type="button"
           onClick={() => setActiveTab('checklist')}
-          className={`flex-1 px-3 sm:px-4 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 sm:gap-2 ${
-            activeTab === 'checklist'
-              ? 'bg-gradient-to-r from-orange-600 to-orange-500 text-white shadow-[0_4px_20px_rgba(249,115,22,0.35)] scale-[1.02]'
-              : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/30'
-          }`}
+          className={`internal-nav-btn ${activeTab === 'checklist' ? 'active' : ''}`}
         >
-          <List className={`h-4 w-4 transition-transform ${activeTab === 'checklist' ? 'scale-110' : ''}`} />
-          <span className="truncate">Missões Diárias</span>
+          <span className="nav-icon"><List className="h-4 w-4" /></span>
+          <span>Missões Diárias</span>
         </button>
         <button
+          type="button"
           onClick={() => setActiveTab('rotina')}
-          className={`flex-1 px-3 sm:px-4 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 sm:gap-2 ${
-            activeTab === 'rotina'
-              ? 'bg-gradient-to-r from-orange-600 to-orange-500 text-white shadow-[0_4px_20px_rgba(249,115,22,0.35)] scale-[1.02]'
-              : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/30'
-          }`}
+          className={`internal-nav-btn ${activeTab === 'rotina' ? 'active' : ''}`}
         >
-          <Clock className={`h-4 w-4 transition-transform ${activeTab === 'rotina' ? 'scale-110' : ''}`} />
-          <span className="truncate">Rotina Diária</span>
+          <span className="nav-icon"><Clock className="h-4 w-4" /></span>
+          <span>Rotina Diária</span>
         </button>
         <button
+          type="button"
           onClick={() => setActiveTab('rotina-semanal')}
-          className={`flex-1 px-3 sm:px-4 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 sm:gap-2 ${
-            activeTab === 'rotina-semanal'
-              ? 'bg-gradient-to-r from-orange-600 to-orange-500 text-white shadow-[0_4px_20px_rgba(249,115,22,0.35)] scale-[1.02]'
-              : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/30'
-          }`}
+          className={`internal-nav-btn ${activeTab === 'rotina-semanal' ? 'active' : ''}`}
         >
-          <Calendar className={`h-4 w-4 transition-transform ${activeTab === 'rotina-semanal' ? 'scale-110' : ''}`} />
-          <span className="truncate">Rotina Semanal</span>
+          <span className="nav-icon"><Calendar className="h-4 w-4" /></span>
+          <span>Rotina Semanal</span>
         </button>
         <button
+          type="button"
           onClick={() => setActiveTab('habitos')}
-          className={`flex-1 px-3 sm:px-4 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 sm:gap-2 ${
-            activeTab === 'habitos'
-              ? 'bg-gradient-to-r from-orange-600 to-orange-500 text-white shadow-[0_4px_20px_rgba(249,115,22,0.35)] scale-[1.02]'
-              : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/30'
-          }`}
+          className={`internal-nav-btn ${activeTab === 'habitos' ? 'active' : ''}`}
         >
-          <Zap className={`h-4 w-4 transition-transform ${activeTab === 'habitos' ? 'scale-110' : ''}`} />
-          <span className="truncate">Hábitos</span>
+          <span className="nav-icon"><Zap className="h-4 w-4" /></span>
+          <span>Hábitos</span>
         </button>
-      </div>
+      </nav>
 
       {activeTab === 'checklist' ? (
         <>

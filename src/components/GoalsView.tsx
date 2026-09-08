@@ -602,53 +602,8 @@ export default function GoalsView({
           </p>
         </div>
 
-        {/* Tab selector and general buttons */}
+        {/* General Action buttons */}
         <div className="flex items-center gap-2 self-start md:self-auto">
-          {!selectedArea && (
-            <div className="flex bg-zinc-900/80 p-1 rounded-xl">
-              <button
-                onClick={() => setViewMode('areas')}
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                  viewMode === 'areas' 
-                    ? 'bg-orange-500 text-white shadow-md' 
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                Áreas da Vida
-              </button>
-              <button
-                onClick={() => setViewMode('all')}
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                  viewMode === 'all' 
-                    ? 'bg-orange-500 text-white shadow-md' 
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                Visão Geral (Todas)
-              </button>
-              <button
-                onClick={() => setViewMode('leitura')}
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                  viewMode === 'leitura' 
-                    ? 'bg-orange-500 text-white shadow-md' 
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                Metas de Leitura
-              </button>
-              <button
-                onClick={() => setViewMode('timeline')}
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                  viewMode === 'timeline' 
-                    ? 'bg-orange-500 text-white shadow-md' 
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                Timeline de Ação
-              </button>
-            </div>
-          )}
-
           {goals.some(g => g.isRecurring) && (
             <button
               type="button"
@@ -679,6 +634,40 @@ export default function GoalsView({
           </button>
         </div>
       </div>
+
+      {/* Internal Navigation Tabs (Áreas, Geral, Leitura, Timeline) */}
+      {!selectedArea && (
+        <nav className="internal-nav" aria-label="Navegação Interna de Metas">
+          <button
+            type="button"
+            onClick={() => setViewMode('areas')}
+            className={`internal-nav-btn ${viewMode === 'areas' ? 'active' : ''}`}
+          >
+            <span>Áreas da Vida</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('all')}
+            className={`internal-nav-btn ${viewMode === 'all' ? 'active' : ''}`}
+          >
+            <span>Visão Geral (Todas)</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('leitura')}
+            className={`internal-nav-btn ${viewMode === 'leitura' ? 'active' : ''}`}
+          >
+            <span>Metas de Leitura</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('timeline')}
+            className={`internal-nav-btn ${viewMode === 'timeline' ? 'active' : ''}`}
+          >
+            <span>Timeline de Ação</span>
+          </button>
+        </nav>
+      )}
 
       {/* Goal creation Form */}
       <AnimatePresence>

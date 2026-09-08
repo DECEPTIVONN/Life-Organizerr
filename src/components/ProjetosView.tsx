@@ -2036,62 +2036,40 @@ export default function ProjetosView({
             </div>
           </div>
 
-          {/* CENTERED COMPACT VIEW SWITCHER NAVBAR */}
-          <div className="flex items-center justify-center w-full py-1">
-            <div className="inline-flex items-center gap-1.5 bg-zinc-950/90 backdrop-blur-xl border border-zinc-800/80 rounded-2xl p-1.5 shadow-xl shadow-black/40 overflow-x-auto max-w-full">
-              <button
-                type="button"
-                onClick={() => setActiveViewMode('quadro')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                  activeViewMode === 'quadro'
-                    ? 'bg-orange-500 text-white shadow-md shadow-orange-500/25 ring-1 ring-orange-400/40'
-                    : 'text-zinc-400 hover:text-white hover:bg-zinc-900/80'
-                }`}
-              >
-                <LayoutGrid className="h-4 w-4" />
-                <span>Kanban</span>
-              </button>
+          {/* INTERNAL NAVBAR (Interface individual do projeto: Kanban, Tabela, Cronograma, Painel) */}
+          <nav className="internal-nav w-full max-w-3xl" aria-label="Navegação do Projeto">
+            <button
+              type="button"
+              onClick={() => setActiveViewMode('quadro')}
+              className={`internal-nav-btn ${activeViewMode === 'quadro' ? 'active' : ''}`}
+            >
+              <span>Kanban</span>
+            </button>
 
-              <button
-                type="button"
-                onClick={() => setActiveViewMode('tabela')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                  activeViewMode === 'tabela'
-                    ? 'bg-orange-500 text-white shadow-md shadow-orange-500/25 ring-1 ring-orange-400/40'
-                    : 'text-zinc-400 hover:text-white hover:bg-zinc-900/80'
-                }`}
-              >
-                <Table className="h-4 w-4" />
-                <span>Tabela</span>
-              </button>
+            <button
+              type="button"
+              onClick={() => setActiveViewMode('tabela')}
+              className={`internal-nav-btn ${activeViewMode === 'tabela' ? 'active' : ''}`}
+            >
+              <span>Tabela</span>
+            </button>
 
-              <button
-                type="button"
-                onClick={() => setActiveViewMode('cronograma')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                  activeViewMode === 'cronograma'
-                    ? 'bg-orange-500 text-white shadow-md shadow-orange-500/25 ring-1 ring-orange-400/40'
-                    : 'text-zinc-400 hover:text-white hover:bg-zinc-900/80'
-                }`}
-              >
-                <CalendarDays className="h-4 w-4" />
-                <span>Cronograma</span>
-              </button>
+            <button
+              type="button"
+              onClick={() => setActiveViewMode('cronograma')}
+              className={`internal-nav-btn ${activeViewMode === 'cronograma' ? 'active' : ''}`}
+            >
+              <span>Cronograma</span>
+            </button>
 
-              <button
-                type="button"
-                onClick={() => setActiveViewMode('painel')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                  activeViewMode === 'painel'
-                    ? 'bg-orange-500 text-white shadow-md shadow-orange-500/25 ring-1 ring-orange-400/40'
-                    : 'text-zinc-400 hover:text-white hover:bg-zinc-900/80'
-                }`}
-              >
-                <BarChart3 className="h-4 w-4" />
-                <span>Painel</span>
-              </button>
-            </div>
-          </div>
+            <button
+              type="button"
+              onClick={() => setActiveViewMode('painel')}
+              className={`internal-nav-btn ${activeViewMode === 'painel' ? 'active' : ''}`}
+            >
+              <span>Painel</span>
+            </button>
+          </nav>
 
           {/* 1. KANBAN BOARD CONTAINER (Horizontal Scrollable Column Layout with Expanded Widths) */}
           {activeViewMode === 'quadro' && (

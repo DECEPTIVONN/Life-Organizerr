@@ -150,6 +150,7 @@ export function generateThemeShades(hex: string) {
 
 export function applyThemeColor(primaryHex: string) {
   if (typeof document === 'undefined') return;
+  const { r, g, b } = hexToRgb(primaryHex);
   const shades = generateThemeShades(primaryHex);
   const root = document.documentElement;
 
@@ -168,6 +169,12 @@ export function applyThemeColor(primaryHex: string) {
   root.style.setProperty('--accent-color', shades['500']);
   root.style.setProperty('--accent-glow', shades.glow);
   root.style.setProperty('--accent-glow-subtle', shades.glowSubtle);
+
+  root.style.setProperty('--theme-primary-rgb', `${r}, ${g}, ${b}`);
+  root.style.setProperty('--theme-nav-border', `rgba(${r}, ${g}, ${b}, 0.3)`);
+  root.style.setProperty('--theme-nav-hover', `rgba(${r}, ${g}, ${b}, 0.12)`);
+  root.style.setProperty('--theme-nav-active-bg', `linear-gradient(135deg, ${shades['400']}, ${shades['600']})`);
+  root.style.setProperty('--theme-nav-glow', `0 4px 15px rgba(${r}, ${g}, ${b}, 0.4)`);
 }
 
 // Auto-apply saved theme on initial script load if in browser
