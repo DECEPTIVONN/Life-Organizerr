@@ -326,36 +326,37 @@ export default function NotesView({ notes, setNotes, addXp, freeEditMode = false
       {/* Quick Tag Row Filter */}
       {allTags.length > 0 && (
         <div className="space-y-2">
-          <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block">Tags de Estudo</span>
-          <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto pb-1">
-            <button
-              onClick={() => setSelectedTag(null)}
-              className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase transition-all ${
-                !selectedTag ? 'bg-orange-500 text-white' : 'bg-zinc-900/60 text-gray-500 hover:text-gray-300 border border-zinc-800/40'
-              }`}
-            >
-              Todas
-            </button>
-            {allTags.map(tag => (
-              <div key={tag} className="flex items-center gap-1 bg-zinc-900/40 border border-zinc-800/30 rounded-lg p-0.5 group">
-                <button
-                  onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
-                  className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase transition-all flex items-center gap-1 ${
-                    selectedTag === tag ? 'bg-orange-500 text-white' : 'text-gray-400 hover:text-gray-200'
-                  }`}
-                >
-                  <Tag className="h-2.5 w-2.5" />
-                  {tag}
-                </button>
-                <button
-                  onClick={(e) => handleDeleteTagFromAllNotes(tag, e)}
-                  className="text-zinc-600 hover:text-red-500 p-1 rounded-md transition-colors"
-                  title={`Excluir tag "${tag}" de todas as notas`}
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            ))}
+          <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block">Filtro por Tags</span>
+          <div className="flex flex-wrap gap-1.5 items-center">
+            <nav className="internal-nav-secondary max-w-full" aria-label="Filtro de Tags de Estudo">
+              <button
+                type="button"
+                onClick={() => setSelectedTag(null)}
+                className={`internal-nav-secondary-btn ${!selectedTag ? 'active' : ''}`}
+              >
+                <span>Todas</span>
+              </button>
+              {allTags.map(tag => (
+                <div key={tag} className="inline-flex items-center group relative">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
+                    className={`internal-nav-secondary-btn ${selectedTag === tag ? 'active' : ''}`}
+                  >
+                    <Tag className="h-3 w-3 opacity-75" />
+                    <span>{tag}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => handleDeleteTagFromAllNotes(tag, e)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity text-zinc-500 hover:text-rose-400 p-1 rounded ml-[-6px] mr-1 cursor-pointer"
+                    title={`Excluir tag "${tag}" de todas as notas`}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </nav>
           </div>
         </div>
       )}

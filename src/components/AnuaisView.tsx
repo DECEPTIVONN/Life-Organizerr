@@ -35,12 +35,20 @@ import {
   Pause,
   Play,
   Folder,
-  Clipboard
+  Clipboard,
+  Bell
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import TagManagementModal from './TagManagementModal';
 import TagInputWithMention from './TagInputWithMention';
 import WaterTracker from './WaterTracker';
+import { ReviewReminderModal } from './ReviewReminderModal';
+import { 
+  getReviewRemindersSettings, 
+  getWeeklyReviewDayLabel, 
+  getMonthlyReviewTimingLabel, 
+  ReviewRemindersSettings 
+} from '../utils/reviewReminderUtils';
 import { CalendarNote, DailyTask, MonthlyReview, WeeklyReview, YearlyBook, SubTask, Goal, FinanceEntry } from '../types';
 import { calculateReadingInterval, formatDateBR } from '../utils/bookUtils';
 import { handleAutoListKeyDown, formatTimeInput, moveCursorToEnd } from '../utils/listUtils';
@@ -325,6 +333,23 @@ export default function AnuaisView({
   useEffect(() => {
     localStorage.setItem('mbc_is_weekly_reviews_open', String(isWeeklyReviewsOpen));
   }, [isWeeklyReviewsOpen]);
+
+  // Review reminders configuration state
+  const [reviewReminderSettings, setReviewReminderSettings] = useState<ReviewRemindersSettings>(() => getReviewRemindersSettings());
+  const [isReviewReminderModalOpen, setIsReviewReminderModalOpen] = useState(false);
+  const [reminderModalTab, setReminderModalTab] = useState<'weekly' | 'monthly' | 'all'>('weekly');
+
+  useEffect(() => {
+    const handleRemindersUpdate = () => {
+      setReviewReminderSettings(getReviewRemindersSettings());
+    };
+    window.addEventListener('mbc_review_reminders_changed', handleRemindersUpdate);
+    window.addEventListener('storage', handleRemindersUpdate);
+    return () => {
+      window.removeEventListener('mbc_review_reminders_changed', handleRemindersUpdate);
+      window.removeEventListener('storage', handleRemindersUpdate);
+    };
+  }, []);
 
   const [isAddingYear, setIsAddingYear] = useState(false);
   const [newYearInput, setNewYearInput] = useState('');
@@ -1936,8 +1961,24 @@ export default function AnuaisView({
                             )}
                           </h2>
                         </div>
-                        <div className="flex items-center gap-3 shrink-0">
-                          <span className="text-[9px] text-zinc-600 font-mono hidden sm:inline-block">
+                        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                          {reviewReminderSettings.monthly.enabled && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setReminderModalTab('monthly');
+                                setIsReviewReminderModalOpen(true);
+                              }}
+                              className="px-2.5 py-1 bg-zinc-900/80 hover:bg-orange-500/20 border border-zinc-800 hover:border-orange-500/40 text-zinc-300 hover:text-orange-400 rounded-lg text-[10px] font-mono flex items-center gap-1.5 transition-all cursor-pointer"
+                              title="Definir dia para ser lembrado de preencher a Review Mensal"
+                            >
+                              <Bell className="h-3 w-3 text-orange-400" />
+                              <span className="hidden sm:inline">Lembrete:</span>
+                              <span>{getMonthlyReviewTimingLabel(reviewReminderSettings.monthly)} ({reviewReminderSettings.monthly.time})</span>
+                            </button>
+                          )}
+                          <span className="text-[9px] text-zinc-600 font-mono hidden md:inline-block">
                             Auto-salvamento ativo
                           </span>
                           <div className="p-1.5 bg-zinc-900/60 border border-zinc-850 rounded-xl group-hover:bg-zinc-800 transition-colors">
@@ -2339,7 +2380,25 @@ export default function AnuaisView({
                   <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block">
                     Reviews Semanais ({months[selectedMonthIndex]})
                   </span>
-                  <ChevronDown className={`h-4 w-4 text-zinc-500 group-hover:text-white transition-transform duration-200 ${isWeeklyReviewsOpen ? 'transform rotate-0' : 'transform -rotate-90'}`} />
+                  <div className="flex items-center gap-2">
+                    {reviewReminderSettings.weekly.enabled && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setReminderModalTab('weekly');
+                          setIsReviewReminderModalOpen(true);
+                        }}
+                        className="px-2.5 py-1 bg-zinc-900/80 hover:bg-orange-500/20 border border-zinc-800 hover:border-orange-500/40 text-zinc-300 hover:text-orange-400 rounded-lg text-[10px] font-mono flex items-center gap-1.5 transition-all cursor-pointer"
+                        title="Definir dia para ser lembrado de preencher a Review Semanal"
+                      >
+                        <Bell className="h-3 w-3 text-orange-400" />
+                        <span className="hidden sm:inline">Lembrete:</span>
+                        <span>{getWeeklyReviewDayLabel(reviewReminderSettings.weekly.dayOfWeek)} ({reviewReminderSettings.weekly.time})</span>
+                      </button>
+                    )}
+                    <ChevronDown className={`h-4 w-4 text-zinc-500 group-hover:text-white transition-transform duration-200 ${isWeeklyReviewsOpen ? 'transform rotate-0' : 'transform -rotate-90'}`} />
+                  </div>
                 </div>
 
                 <AnimatePresence initial={false}>
@@ -3597,6 +3656,12 @@ export default function AnuaisView({
         isOpen={isTagModalOpen}
         onClose={() => setIsTagModalOpen(false)}
         allCalendarNotes={notes}
+      />
+      {/* Review Reminder Configuration Modal */}
+      <ReviewReminderModal
+        isOpen={isReviewReminderModalOpen}
+        onClose={() => setIsReviewReminderModalOpen(false)}
+        initialTab={reminderModalTab}
       />
     </div>
   );

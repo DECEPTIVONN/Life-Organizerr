@@ -1958,28 +1958,27 @@ export default function Sidebar({
               </div>
 
               {/* Filters list */}
-              <div className="px-4 py-2 bg-zinc-950 border-b border-zinc-900 flex gap-2 overflow-x-auto scrollbar-none">
-                {[
-                  { id: 'todos', label: 'Todos' },
-                  { id: 'tarefas', label: 'Checklist' },
-                  { id: 'rotina', label: 'Rotinas' },
-                  { id: 'metas', label: 'Metas' },
-                  { id: 'notas', label: 'Notas' },
-                  { id: 'documentos', label: 'Documentos' },
-                  { id: 'calendario', label: 'Calendário / Fé' }
-                ].map((f) => (
-                  <button
-                    key={f.id}
-                    onClick={() => setSearchFilter(f.id)}
-                    className={`px-3 py-1 rounded-full text-[10px] font-bold border whitespace-nowrap transition-all ${
-                      searchFilter === f.id
-                        ? 'bg-orange-500/10 border-orange-500/40 text-orange-400 shadow-[0_0_8px_rgba(249,115,22,0.1)]'
-                        : 'bg-zinc-900 border-zinc-800/80 text-gray-400 hover:text-white'
-                    }`}
-                  >
-                    {f.label}
-                  </button>
-                ))}
+              <div className="px-4 py-2 bg-zinc-950 border-b border-zinc-900 flex items-center overflow-x-auto scrollbar-none">
+                <nav className="internal-nav-secondary max-w-full flex-nowrap" aria-label="Filtros de Pesquisa">
+                  {[
+                    { id: 'todos', label: 'Todos' },
+                    { id: 'tarefas', label: 'Checklist' },
+                    { id: 'rotina', label: 'Rotinas' },
+                    { id: 'metas', label: 'Metas' },
+                    { id: 'notas', label: 'Notas' },
+                    { id: 'documentos', label: 'Documentos' },
+                    { id: 'calendario', label: 'Calendário / Fé' }
+                  ].map((f) => (
+                    <button
+                      type="button"
+                      key={f.id}
+                      onClick={() => setSearchFilter(f.id)}
+                      className={`internal-nav-secondary-btn ${searchFilter === f.id ? 'active' : ''}`}
+                    >
+                      <span>{f.label}</span>
+                    </button>
+                  ))}
+                </nav>
               </div>
 
               {/* Search Results lists */}

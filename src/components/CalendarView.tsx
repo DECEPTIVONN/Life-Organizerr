@@ -49,6 +49,13 @@ import { motion, AnimatePresence } from 'motion/react';
 import TagManagementModal from './TagManagementModal';
 import TagInputWithMention from './TagInputWithMention';
 import WaterTracker from './WaterTracker';
+import { ReviewReminderModal } from './ReviewReminderModal';
+import { 
+  getReviewRemindersSettings, 
+  ReviewRemindersSettings, 
+  isTodayWeeklyReviewDay, 
+  isTodayMonthlyReviewDay 
+} from '../utils/reviewReminderUtils';
 import { CalendarNote, DailyTask, SubTask, MonthlyReview, BookTracker, BibleTracker, RoutineItem, WeeklyReview, FutureEvent, YearlyBook } from '../types';
 import { saveGoogleOAuthTokens, clearGoogleOAuthSession, refreshGoogleAccessToken, getValidGoogleAccessToken } from '../utils/googleToken';
 import { handleAutoListKeyDown, formatTimeInput, moveCursorToEnd } from '../utils/listUtils';
@@ -1627,6 +1634,23 @@ export default function CalendarView({
     };
   };
 
+  // --- Review Reminders Settings State ---
+  const [reviewReminders, setReviewReminders] = useState<ReviewRemindersSettings>(() => getReviewRemindersSettings());
+  const [isReviewReminderModalOpen, setIsReviewReminderModalOpen] = useState(false);
+  const [reminderModalTab, setReminderModalTab] = useState<'weekly' | 'monthly' | 'all'>('weekly');
+
+  useEffect(() => {
+    const handleRemindersUpdate = () => {
+      setReviewReminders(getReviewRemindersSettings());
+    };
+    window.addEventListener('mbc_review_reminders_changed', handleRemindersUpdate);
+    window.addEventListener('storage', handleRemindersUpdate);
+    return () => {
+      window.removeEventListener('mbc_review_reminders_changed', handleRemindersUpdate);
+      window.removeEventListener('storage', handleRemindersUpdate);
+    };
+  }, []);
+
   // --- Weekly Review (Review Semanal) States ---
   const [isWeeklyReviewOpen, setIsWeeklyReviewOpen] = useState(false);
   const [reviewWeekYear, setReviewWeekYear] = useState(new Date().getFullYear());
@@ -2815,18 +2839,37 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
           {/* Monthly / Weekly Review Actions */}
           <button
             onClick={handleOpenReview}
-            className="flex items-center gap-1.5 px-3 py-2 bg-zinc-950 hover:bg-zinc-900 text-xs text-orange-500 hover:text-orange-400 font-bold rounded-xl border border-orange-500/10 hover:border-orange-500/30 transition-all"
+            className="flex items-center gap-1.5 px-3 py-2 bg-zinc-950 hover:bg-zinc-900 text-xs text-orange-500 hover:text-orange-400 font-bold rounded-xl border border-orange-500/10 hover:border-orange-500/30 transition-all relative"
+            title="Abrir Módulo de Avaliação e Review Mensal"
           >
             <Compass className="h-3.5 w-3.5 text-orange-500" />
             <span className="hidden sm:inline">Review Mensal</span>
+            {isTodayMonthlyReviewDay(reviewReminders, new Date()) && (
+              <span className="w-2 h-2 rounded-full bg-orange-400 animate-ping absolute -top-0.5 -right-0.5" />
+            )}
           </button>
 
           <button
             onClick={handleOpenWeeklyReview}
-            className="flex items-center gap-1.5 px-3 py-2 bg-zinc-950 hover:bg-zinc-900 text-xs text-orange-500 hover:text-orange-400 font-bold rounded-xl border border-orange-500/10 hover:border-orange-500/30 transition-all"
+            className="flex items-center gap-1.5 px-3 py-2 bg-zinc-950 hover:bg-zinc-900 text-xs text-orange-500 hover:text-orange-400 font-bold rounded-xl border border-orange-500/10 hover:border-orange-500/30 transition-all relative"
+            title="Abrir Módulo de Avaliação e Review Semanal"
           >
             <CalendarDays className="h-3.5 w-3.5 text-orange-500" />
             <span className="hidden sm:inline">Review Semanal</span>
+            {isTodayWeeklyReviewDay(reviewReminders, new Date()) && (
+              <span className="w-2 h-2 rounded-full bg-orange-400 animate-ping absolute -top-0.5 -right-0.5" />
+            )}
+          </button>
+
+          <button
+            onClick={() => {
+              setReminderModalTab('all');
+              setIsReviewReminderModalOpen(true);
+            }}
+            className="p-2 bg-zinc-950 hover:bg-zinc-900 text-zinc-400 hover:text-orange-400 rounded-xl border border-zinc-900 hover:border-orange-500/30 transition-all"
+            title="Configurar dia do lembrete de reviews (Semanal e Mensal)"
+          >
+            <Bell className="h-3.5 w-3.5 text-orange-500" />
           </button>
         </div>
       </div>
@@ -5108,13 +5151,27 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                   </button>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setIsWeeklyReviewOpen(false)}
-                  className="p-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-xl border border-zinc-800 transition-colors"
-                >
-                  <X className="h-4 w-4" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setReminderModalTab('weekly');
+                      setIsReviewReminderModalOpen(true);
+                    }}
+                    className="p-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-orange-400 rounded-xl border border-zinc-800 transition-colors"
+                    title="Configurar dia do lembrete da Review Semanal"
+                  >
+                    <Bell className="h-4 w-4" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsWeeklyReviewOpen(false)}
+                    className="p-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-xl border border-zinc-800 transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
 
               {/* Modal Body (Dual Column Scrollable) */}
@@ -5481,12 +5538,26 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                   </button>
                 </div>
 
-                <button
-                  onClick={() => setIsReviewOpen(false)}
-                  className="p-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-xl border border-zinc-800 transition-colors"
-                >
-                  <X className="h-4 w-4" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setReminderModalTab('monthly');
+                      setIsReviewReminderModalOpen(true);
+                    }}
+                    className="p-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-orange-400 rounded-xl border border-zinc-800 transition-colors"
+                    title="Configurar dia do lembrete da Review Mensal"
+                  >
+                    <Bell className="h-4 w-4" />
+                  </button>
+
+                  <button
+                    onClick={() => setIsReviewOpen(false)}
+                    className="p-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-xl border border-zinc-800 transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
 
               {/* Modal Body (Dual Column Scrollable) */}
@@ -5847,6 +5918,13 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
         isOpen={isTagModalOpen}
         onClose={() => setIsTagModalOpen(false)}
         allCalendarNotes={notes}
+      />
+
+      {/* Review Reminder Configuration Modal */}
+      <ReviewReminderModal
+        isOpen={isReviewReminderModalOpen}
+        onClose={() => setIsReviewReminderModalOpen(false)}
+        initialTab={reminderModalTab}
       />
     </div>
   );

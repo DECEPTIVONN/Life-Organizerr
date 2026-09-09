@@ -652,9 +652,10 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
         </div>
 
         <div className="flex items-center gap-2.5 self-start md:self-auto flex-wrap">
-          {/* View Toggle */}
-          <div className="flex items-center bg-zinc-950 p-1 rounded-xl">
+          {/* View Toggle - Mobile (mantido compacto) */}
+          <div className="flex md:hidden items-center bg-zinc-950 p-1 rounded-xl">
             <button
+              type="button"
               onClick={() => setViewMode('lista')}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 ${
                 viewMode === 'lista'
@@ -666,6 +667,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
               Lista
             </button>
             <button
+              type="button"
               onClick={() => setViewMode('quadro')}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 ${
                 viewMode === 'quadro'
@@ -677,6 +679,26 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
               Quadro
             </button>
           </div>
+
+          {/* View Toggle - Desktop (Internal Nav Secundária) */}
+          <nav className="hidden md:inline-flex internal-nav-secondary" aria-label="Visualização da Rotina Semanal">
+            <button
+              type="button"
+              onClick={() => setViewMode('lista')}
+              className={`internal-nav-secondary-btn ${viewMode === 'lista' ? 'active' : ''}`}
+            >
+              <List className="h-3.5 w-3.5" />
+              <span>Lista</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('quadro')}
+              className={`internal-nav-secondary-btn ${viewMode === 'quadro' ? 'active' : ''}`}
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+              <span>Quadro</span>
+            </button>
+          </nav>
 
           <button
             onClick={handleOpenReview}

@@ -989,67 +989,65 @@ export default function InvestmentsPlanner({
 
   return (
     <div className="space-y-6">
-      {/* Tab select bar between Portfolio, Reserve and Retirement */}
-      <div className="flex items-center gap-2 bg-zinc-950 p-1.5 rounded-xl border border-zinc-900 w-fit flex-wrap">
-        <button
-          onClick={() => {
-            setActiveSubSection('portfolio');
-            if (addXp) addXp(5);
-          }}
-          className={`px-4 py-2 rounded-lg text-xs font-extrabold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
-            activeSubSection === 'portfolio'
-              ? 'bg-amber-500 text-black shadow-[0_2px_12px_rgba(245,158,11,0.3)]'
-              : 'text-zinc-400 hover:text-white'
-          }`}
-        >
-          <PieChart className="h-4 w-4" />
-          Portfólio & Ativos
-        </button>
+      {/* Secondary Internal Nav in Investimentos */}
+      <div className="flex justify-center mb-6">
+        <nav className="internal-nav-secondary w-full max-w-3xl" aria-label="Navegação Secundária de Investimentos">
+          <button
+            type="button"
+            onClick={() => {
+              setActiveSubSection('portfolio');
+              if (addXp) addXp(5);
+            }}
+            className={`internal-nav-secondary-btn flex-1 ${
+              activeSubSection === 'portfolio' ? 'active' : ''
+            }`}
+          >
+            <PieChart className="h-3.5 w-3.5" />
+            <span>Portfólio & Ativos</span>
+          </button>
 
-        <button
-          onClick={() => {
-            setActiveSubSection('evolucao');
-            if (addXp) addXp(5);
-          }}
-          className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
-            activeSubSection === 'evolucao'
-              ? 'bg-amber-500 text-black shadow-[0_2px_12px_rgba(245,158,11,0.3)]'
-              : 'text-zinc-500 hover:text-zinc-300'
-          }`}
-        >
-          <BarChart2 className="h-4 w-4 text-cyan-400" />
-          Evolução Patrimonial
-        </button>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveSubSection('evolucao');
+              if (addXp) addXp(5);
+            }}
+            className={`internal-nav-secondary-btn flex-1 ${
+              activeSubSection === 'evolucao' ? 'active' : ''
+            }`}
+          >
+            <BarChart2 className="h-3.5 w-3.5" />
+            <span>Evolução Patrimonial</span>
+          </button>
 
-        <button
-          onClick={() => {
-            setActiveSubSection('reserva');
-            if (addXp) addXp(5);
-          }}
-          className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
-            activeSubSection === 'reserva'
-              ? 'bg-zinc-800 text-white shadow-[0_2px_8px_rgba(0,0,0,0.4)]'
-              : 'text-zinc-500 hover:text-zinc-300'
-          }`}
-        >
-          <PiggyBank className="h-4 w-4 text-orange-500" />
-          Reserva de Emergência
-        </button>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveSubSection('reserva');
+              if (addXp) addXp(5);
+            }}
+            className={`internal-nav-secondary-btn flex-1 ${
+              activeSubSection === 'reserva' ? 'active' : ''
+            }`}
+          >
+            <PiggyBank className="h-3.5 w-3.5" />
+            <span>Reserva de Emergência</span>
+          </button>
 
-        <button
-          onClick={() => {
-            setActiveSubSection('aposentadoria');
-            if (addXp) addXp(5);
-          }}
-          className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
-            activeSubSection === 'aposentadoria'
-              ? 'bg-zinc-800 text-white shadow-[0_2px_8px_rgba(0,0,0,0.4)]'
-              : 'text-zinc-500 hover:text-zinc-300'
-          }`}
-        >
-          <Calculator className="h-4 w-4 text-amber-500" />
-          Planejamento de Aposentadoria
-        </button>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveSubSection('aposentadoria');
+              if (addXp) addXp(5);
+            }}
+            className={`internal-nav-secondary-btn flex-1 ${
+              activeSubSection === 'aposentadoria' ? 'active' : ''
+            }`}
+          >
+            <Calculator className="h-3.5 w-3.5" />
+            <span>Planejamento de Aposentadoria</span>
+          </button>
+        </nav>
       </div>
 
       {/* ========================================================================= */}

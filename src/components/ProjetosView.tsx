@@ -1774,21 +1774,22 @@ export default function ProjetosView({
               )}
             </div>
 
-            {/* Category Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 no-scrollbar">
-              {CATEGORIES.map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => setHubCategory(cat)}
-                  className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all shrink-0 cursor-pointer ${
-                    hubCategory === cat
-                      ? 'bg-orange-500/20 text-orange-400 border border-orange-500/40'
-                      : 'bg-zinc-900/80 text-zinc-400 border border-zinc-800/60 hover:text-white hover:bg-zinc-800'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
+            {/* Category Pills (Internal Nav Secundária de Projetos) */}
+            <div className="overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-none">
+              <nav className="internal-nav-secondary max-w-full flex-nowrap sm:flex-wrap" aria-label="Filtro de Categorias de Projetos">
+                {CATEGORIES.map(cat => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setHubCategory(cat)}
+                    className={`internal-nav-secondary-btn ${
+                      hubCategory === cat ? 'active' : ''
+                    }`}
+                  >
+                    <span>{cat}</span>
+                  </button>
+                ))}
+              </nav>
             </div>
           </div>
 

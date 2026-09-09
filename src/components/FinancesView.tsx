@@ -1534,55 +1534,63 @@ export default function FinancesView({
             <div className="section-title-subtitle">Lançamentos, Visão Mensal, Anual e Matriz Consolidada</div>
           </div>
 
-          {/* FILTERS BAR (Ref: Cod Purple style) */}
-          <div className="filters-bar">
-            {/* View Switcher Filters */}
-            <button
-              onClick={() => setExtratoSubView('mensal')}
-              className={`filter-btn ${extratoSubView === 'mensal' ? 'active' : ''}`}
-            >
-              <Calendar className="h-3.5 w-3.5" />
-              <span>VISÃO MENSAL</span>
-            </button>
+          {/* Secondary Internal Nav / Filters in Extrato */}
+          <div className="flex justify-center mb-6">
+            <nav className="internal-nav-secondary" aria-label="Navegação Secundária do Extrato">
+              {/* View Switcher Filters */}
+              <button
+                type="button"
+                onClick={() => setExtratoSubView('mensal')}
+                className={`internal-nav-secondary-btn ${extratoSubView === 'mensal' ? 'active' : ''}`}
+              >
+                <Calendar className="h-3.5 w-3.5" />
+                <span>Visão Mensal</span>
+              </button>
 
-            <button
-              onClick={() => setExtratoSubView('anual')}
-              className={`filter-btn ${extratoSubView === 'anual' ? 'active' : ''}`}
-            >
-              <BarChart3 className="h-3.5 w-3.5" />
-              <span>VISÃO ANUAL</span>
-            </button>
+              <button
+                type="button"
+                onClick={() => setExtratoSubView('anual')}
+                className={`internal-nav-secondary-btn ${extratoSubView === 'anual' ? 'active' : ''}`}
+              >
+                <BarChart3 className="h-3.5 w-3.5" />
+                <span>Visão Anual</span>
+              </button>
 
-            <div className="h-6 w-px bg-zinc-800 self-center hidden sm:block mx-1" />
+              <div className="h-4 w-px bg-zinc-700/60 self-center hidden sm:block mx-1" />
 
-            {/* Category / Type Filters */}
-            <button
-              onClick={() => setExtratoTypeFilter('all')}
-              className={`filter-btn ${extratoTypeFilter === 'all' ? 'active' : ''}`}
-            >
-              <span>TODOS</span>
-            </button>
-            <button
-              onClick={() => setExtratoTypeFilter('income')}
-              className={`filter-btn ${extratoTypeFilter === 'income' ? 'active' : ''}`}
-            >
-              <TrendingUp className="h-3.5 w-3.5 text-emerald-400" />
-              <span>RECEITAS</span>
-            </button>
-            <button
-              onClick={() => setExtratoTypeFilter('expense')}
-              className={`filter-btn ${extratoTypeFilter === 'expense' ? 'active' : ''}`}
-            >
-              <TrendingDown className="h-3.5 w-3.5 text-rose-400" />
-              <span>DESPESAS</span>
-            </button>
-            <button
-              onClick={() => setExtratoTypeFilter('investment')}
-              className={`filter-btn ${extratoTypeFilter === 'investment' ? 'active' : ''}`}
-            >
-              <PiggyBank className="h-3.5 w-3.5 text-amber-400" />
-              <span>INVESTIMENTOS</span>
-            </button>
+              {/* Category / Type Filters */}
+              <button
+                type="button"
+                onClick={() => setExtratoTypeFilter('all')}
+                className={`internal-nav-secondary-btn ${extratoTypeFilter === 'all' ? 'active' : ''}`}
+              >
+                <span>Todos</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setExtratoTypeFilter('income')}
+                className={`internal-nav-secondary-btn ${extratoTypeFilter === 'income' ? 'active' : ''}`}
+              >
+                <TrendingUp className="h-3.5 w-3.5" />
+                <span>Receitas</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setExtratoTypeFilter('expense')}
+                className={`internal-nav-secondary-btn ${extratoTypeFilter === 'expense' ? 'active' : ''}`}
+              >
+                <TrendingDown className="h-3.5 w-3.5" />
+                <span>Despesas</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setExtratoTypeFilter('investment')}
+                className={`internal-nav-secondary-btn ${extratoTypeFilter === 'investment' ? 'active' : ''}`}
+              >
+                <PiggyBank className="h-3.5 w-3.5" />
+                <span>Investimentos</span>
+              </button>
+            </nav>
           </div>
 
           {/* Transaction Entry Form Trigger Bar */}

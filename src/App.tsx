@@ -50,6 +50,18 @@ import {
   clearAllMutations
 } from './lib/indexedDbQueue';
 import { OfflineNotificationBanner } from './components/OfflineNotificationBanner';
+import { ReviewReminderBanner } from './components/ReviewReminderBanner';
+import { ReviewReminderModal } from './components/ReviewReminderModal';
+import { 
+  getReviewRemindersSettings, 
+  isTodayWeeklyReviewDay, 
+  isTodayMonthlyReviewDay,
+  hasCompletedWeeklyReview,
+  hasCompletedMonthlyReview,
+  getTargetReviewMonthAndYear,
+  getWeekNumber
+} from './utils/reviewReminderUtils';
+import { normalizeCardIconName } from './utils/cardIconUtils';
 import { sendSystemNotification, syncAlarmsToServiceWorker } from './lib/notificationHelper';
 
 import { DEFAULT_VISION_BOARD_CARDS } from './components/VisionBoard';
@@ -1189,19 +1201,29 @@ export default function App() {
   }, [areaImages]);
 
   const defaultCustomCards = [
-    { id: 'card-1', emoji: '☠️', title: 'PODER', imageUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=600&auto=format&fit=crop' },
-    { id: 'card-2', emoji: '💪', title: 'FORCE', imageUrl: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=600&auto=format&fit=crop' },
-    { id: 'card-3', emoji: '⛰️', title: 'DISCIPLINE', imageUrl: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?q=80&w=600&auto=format&fit=crop' },
-    { id: 'card-4', emoji: '🧠', title: 'STRATEGY', imageUrl: 'https://images.unsplash.com/photo-1529699211952-734e80c4d42b?q=80&w=600&auto=format&fit=crop' },
-    { id: 'card-5', emoji: '🕊️', title: 'PEACE', imageUrl: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=600&auto=format&fit=crop' },
-    { id: 'card-6', emoji: '🤑', title: 'Prosperidade', imageUrl: 'https://images.unsplash.com/photo-1618042164219-62c820f10723?q=80&w=600&auto=format&fit=crop' }
+    { id: 'card-1', icon: 'Flame', emoji: 'Flame', title: 'PODER', imageUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=600&auto=format&fit=crop' },
+    { id: 'card-2', icon: 'Dumbbell', emoji: 'Dumbbell', title: 'FORCE', imageUrl: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=600&auto=format&fit=crop' },
+    { id: 'card-3', icon: 'Mountain', emoji: 'Mountain', title: 'DISCIPLINE', imageUrl: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?q=80&w=600&auto=format&fit=crop' },
+    { id: 'card-4', icon: 'Brain', emoji: 'Brain', title: 'STRATEGY', imageUrl: 'https://images.unsplash.com/photo-1529699211952-734e80c4d42b?q=80&w=600&auto=format&fit=crop' },
+    { id: 'card-5', icon: 'Feather', emoji: 'Feather', title: 'PEACE', imageUrl: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=600&auto=format&fit=crop' },
+    { id: 'card-6', icon: 'TrendingUp', emoji: 'TrendingUp', title: 'Prosperidade', imageUrl: 'https://images.unsplash.com/photo-1618042164219-62c820f10723?q=80&w=600&auto=format&fit=crop' }
   ];
 
   const [customCards, setCustomCards] = useState<any[]>(() => {
     try {
       const saved = localStorage.getItem('dashboard_custom_cards');
       if (saved) {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((c: any) => {
+            const iconName = c.icon || normalizeCardIconName(c.emoji);
+            return {
+              ...c,
+              icon: iconName,
+              emoji: iconName
+            };
+          });
+        }
       }
     } catch (e) {
       console.error("Failed to parse custom cards", e);
@@ -1479,6 +1501,9 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('mbc_is_weekly_reviews_open', String(isWeeklyReviewsOpen));
   }, [isWeeklyReviewsOpen]);
+
+  const [isAppReminderModalOpen, setIsAppReminderModalOpen] = useState<boolean>(false);
+  const [appReminderModalTab, setAppReminderModalTab] = useState<'weekly' | 'monthly' | 'all'>('all');
 
   const [userBio, setUserBio] = useState<string>(() => {
     return localStorage.getItem('mbc_userBio') || 'Construindo um império de disciplina diária. Foco na jornada e maestria contínua.';
@@ -1916,13 +1941,47 @@ export default function App() {
           });
         }
       }
+
+      // 7. Weekly Review Notification Trigger
+      const reviewSettings = getReviewRemindersSettings();
+      if (reviewSettings.weekly.enabled && isTodayWeeklyReviewDay(reviewSettings, now)) {
+        if (reviewSettings.weekly.time === currentHHMM) {
+          const key = `weeklyreview-${todayDateStr}-${currentHHMM}`;
+          if (!notifiedKeysRef.current.has(key)) {
+            notifiedKeysRef.current.add(key);
+            if (!hasCompletedWeeklyReview(weeklyReviews, getWeekNumber(now), now.getFullYear())) {
+              sendSystemNotification('⏰ Hora da Review Semanal!', {
+                body: 'Hoje é o seu dia agendado para a Review Semanal. Registre suas vitórias, aprendizados e planeje seu próximo ciclo!',
+                tag: 'weekly-review-reminder'
+              });
+            }
+          }
+        }
+      }
+
+      // 8. Monthly Review Notification Trigger
+      if (reviewSettings.monthly.enabled && isTodayMonthlyReviewDay(reviewSettings, now)) {
+        if (reviewSettings.monthly.time === currentHHMM) {
+          const key = `monthlyreview-${todayDateStr}-${currentHHMM}`;
+          if (!notifiedKeysRef.current.has(key)) {
+            notifiedKeysRef.current.add(key);
+            const targetMonthInfo = getTargetReviewMonthAndYear(reviewSettings, now);
+            if (!hasCompletedMonthlyReview(monthlyReviews, targetMonthInfo.month, targetMonthInfo.year)) {
+              sendSystemNotification('🌟 Hora da Review Mensal!', {
+                body: 'Hoje é o seu dia agendado para a Review Mensal. Faça o balanço do mês e renove suas metas!',
+                tag: 'monthly-review-reminder'
+              });
+            }
+          }
+        }
+      }
     };
 
     const interval = setInterval(checkNotifications, 30000);
     checkNotifications();
 
     return () => clearInterval(interval);
-  }, [routine, notes, calendarNotes, dailyTasks]);
+  }, [routine, notes, calendarNotes, dailyTasks, weeklyReviews, monthlyReviews]);
 
   // Initial load & Realtime / Periodic Sync from Cloud (Firestore + Supabase + CrossTab)
   useEffect(() => {
@@ -3736,6 +3795,26 @@ export default function App() {
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
+          {/* Review Reminder Banner (triggered on configured review days if pending) */}
+          <div className="mb-6">
+            <ReviewReminderBanner
+              weeklyReviews={weeklyReviews}
+              monthlyReviews={monthlyReviews}
+              onOpenWeeklyReview={() => {
+                setActiveTab('anuais');
+                setIsWeeklyReviewsOpen(true);
+              }}
+              onOpenMonthlyReview={() => {
+                setActiveTab('anuais');
+                setIsMonthlyReviewOpen(true);
+              }}
+              onConfigureReminders={(tab) => {
+                setAppReminderModalTab(tab);
+                setIsAppReminderModalOpen(true);
+              }}
+            />
+          </div>
+
           <AnimatePresence mode="popLayout" custom={slideDirection} initial={false}>
             <motion.div
               key={activeTab}
@@ -3916,6 +3995,13 @@ export default function App() {
         level={level}
         userName={userName}
         addXp={addXp}
+      />
+
+      {/* Central de Configuração de Lembretes de Reviews */}
+      <ReviewReminderModal
+        isOpen={isAppReminderModalOpen}
+        onClose={() => setIsAppReminderModalOpen(false)}
+        initialTab={appReminderModalTab}
       />
     </div>
   );

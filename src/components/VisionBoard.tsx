@@ -856,33 +856,29 @@ export function VisionBoard({
 
       {/* Area filter tabs (Only on overall vision board) */}
       {!currentArea && (
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 custom-scrollbar">
-          <button
-            onClick={() => setFilterArea('Todas')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-              filterArea === 'Todas'
-                ? 'bg-orange-500 text-white shadow-md'
-                : 'bg-zinc-900/80 text-zinc-400 hover:text-white border border-zinc-800/60'
-            }`}
-          >
-            Todas ({cards.length})
-          </button>
-          {lifeAreas.map(area => {
-            const areaCount = cards.filter(c => c.area === area).length;
-            return (
-              <button
-                key={area}
-                onClick={() => setFilterArea(area)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                  filterArea === area
-                    ? 'bg-orange-500 text-white shadow-md'
-                    : 'bg-zinc-900/80 text-zinc-400 hover:text-white border border-zinc-800/60'
-                }`}
-              >
-                {area} ({areaCount})
-              </button>
-            );
-          })}
+        <div className="flex items-center justify-start sm:justify-center overflow-x-auto pb-2 scrollbar-none">
+          <nav className="internal-nav-secondary max-w-full flex-nowrap sm:flex-wrap" aria-label="Filtros de Área do Vision Board">
+            <button
+              type="button"
+              onClick={() => setFilterArea('Todas')}
+              className={`internal-nav-secondary-btn ${filterArea === 'Todas' ? 'active' : ''}`}
+            >
+              <span>Todas ({cards.length})</span>
+            </button>
+            {lifeAreas.map(area => {
+              const areaCount = cards.filter(c => c.area === area).length;
+              return (
+                <button
+                  type="button"
+                  key={area}
+                  onClick={() => setFilterArea(area)}
+                  className={`internal-nav-secondary-btn ${filterArea === area ? 'active' : ''}`}
+                >
+                  <span>{area} ({areaCount})</span>
+                </button>
+              );
+            })}
+          </nav>
         </div>
       )}
 

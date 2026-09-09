@@ -43,6 +43,15 @@ import {
 } from 'lucide-react';
 import { subscribeToMutationQueue, processMutationQueue, clearAllMutations, QueueStatus } from '../lib/indexedDbQueue';
 import { isPlatformAuthenticatorAvailable, verifyBiometric } from '../utils/biometricAuth';
+import { Calendar } from 'lucide-react';
+import { ReviewReminderModal } from './ReviewReminderModal';
+import { 
+  getReviewRemindersSettings, 
+  saveReviewRemindersSettings, 
+  getWeeklyReviewDayLabel, 
+  getMonthlyReviewTimingLabel, 
+  ReviewRemindersSettings 
+} from '../utils/reviewReminderUtils';
 import defaultLockBg from '../assets/images/1271888.jpg';
 import ColorSchemeModal from './ColorSchemeModal';
 import { THEME_PRESETS, applyThemeColor } from '../utils/themeColors';
@@ -367,6 +376,23 @@ export default function SettingsView({
     }
     setLocalDailyWorkspaceReminderTime(nextVal);
   };
+
+  // Review Reminders state (Semanal & Mensal)
+  const [reviewReminders, setReviewReminders] = useState<ReviewRemindersSettings>(() => getReviewRemindersSettings());
+  const [isReviewReminderModalOpen, setIsReviewReminderModalOpen] = useState(false);
+  const [reminderModalTab, setReminderModalTab] = useState<'weekly' | 'monthly' | 'all'>('all');
+
+  useEffect(() => {
+    const handleRemindersUpdate = () => {
+      setReviewReminders(getReviewRemindersSettings());
+    };
+    window.addEventListener('mbc_review_reminders_changed', handleRemindersUpdate);
+    window.addEventListener('storage', handleRemindersUpdate);
+    return () => {
+      window.removeEventListener('mbc_review_reminders_changed', handleRemindersUpdate);
+      window.removeEventListener('storage', handleRemindersUpdate);
+    };
+  }, []);
 
   // Install trigger (PWA)
   const [pwaPrompt, setPwaPrompt] = useState<any>(null);
@@ -2404,6 +2430,215 @@ export default function SettingsView({
                 )}
               </div>
 
+              {/* Lembretes de Reviews Periódicas (Semanal & Mensal) */}
+              <div className="p-4 bg-zinc-950 border border-orange-500/30 rounded-2xl space-y-4">
+                <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
+                  <div>
+                    <h4 className="text-xs font-bold text-orange-400 flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-orange-400" />
+                      Lembretes de Review (Semanal & Mensal)
+                    </h4>
+                    <p className="text-[9px] text-zinc-400 font-mono mt-0.5">
+                      Defina os dias da semana e do mês para fechar seus ciclos de avaliação e aprendizado.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setReminderModalTab('all');
+                      setIsReviewReminderModalOpen(true);
+                    }}
+                    className="px-3 py-1.5 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-xl text-[10px] font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Sliders className="h-3 w-3" />
+                    Personalizar
+                  </button>
+                </div>
+
+                {/* Sub-item: Review Semanal */}
+                <div className="p-3.5 bg-zinc-900/40 border border-zinc-850 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-bold text-zinc-200 block">
+                        Review Semanal
+                      </span>
+                      <span className="text-[10px] text-zinc-500 font-mono">
+                        Lembrar toda {getWeeklyReviewDayLabel(reviewReminders.weekly.dayOfWeek)} às {reviewReminders.weekly.time}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated: ReviewRemindersSettings = {
+                          ...reviewReminders,
+                          weekly: { ...reviewReminders.weekly, enabled: !reviewReminders.weekly.enabled }
+                        };
+                        setReviewReminders(updated);
+                        saveReviewRemindersSettings(updated);
+                      }}
+                      className={`w-9 h-5 rounded-full p-0.5 transition-all cursor-pointer ${reviewReminders.weekly.enabled ? 'bg-orange-500' : 'bg-zinc-800'}`}
+                    >
+                      <div className={`w-4 h-4 rounded-full bg-white transition-all ${reviewReminders.weekly.enabled ? 'translate-x-4' : 'translate-x-0'}`} />
+                    </button>
+                  </div>
+
+                  {reviewReminders.weekly.enabled && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-zinc-800/80">
+                      <div>
+                        <label className="text-[9px] text-zinc-400 font-mono uppercase block mb-1">
+                          Dia da Semana:
+                        </label>
+                        <select
+                          value={reviewReminders.weekly.dayOfWeek}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value, 10);
+                            const updated: ReviewRemindersSettings = {
+                              ...reviewReminders,
+                              weekly: { ...reviewReminders.weekly, dayOfWeek: val }
+                            };
+                            setReviewReminders(updated);
+                            saveReviewRemindersSettings(updated);
+                          }}
+                          className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-orange-500"
+                        >
+                          <option value={0}>Domingo (Fechamento da semana)</option>
+                          <option value={6}>Sábado (Balanço de fim de semana)</option>
+                          <option value={1}>Segunda-feira (Primeiro dia da próxima semana)</option>
+                          <option value={5}>Sexta-feira (Encerramento dos dias úteis)</option>
+                          <option value={4}>Quinta-feira</option>
+                          <option value={3}>Quarta-feira</option>
+                          <option value={2}>Terça-feira</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="text-[9px] text-zinc-400 font-mono uppercase block mb-1">
+                          Horário:
+                        </label>
+                        <input
+                          type="time"
+                          value={reviewReminders.weekly.time}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const updated: ReviewRemindersSettings = {
+                              ...reviewReminders,
+                              weekly: { ...reviewReminders.weekly, time: val }
+                            };
+                            setReviewReminders(updated);
+                            saveReviewRemindersSettings(updated);
+                          }}
+                          className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-orange-500"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Sub-item: Review Mensal */}
+                <div className="p-3.5 bg-zinc-900/40 border border-zinc-850 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-bold text-zinc-200 block">
+                        Review Mensal
+                      </span>
+                      <span className="text-[10px] text-zinc-500 font-mono">
+                        Lembrar no {getMonthlyReviewTimingLabel(reviewReminders.monthly)} às {reviewReminders.monthly.time}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated: ReviewRemindersSettings = {
+                          ...reviewReminders,
+                          monthly: { ...reviewReminders.monthly, enabled: !reviewReminders.monthly.enabled }
+                        };
+                        setReviewReminders(updated);
+                        saveReviewRemindersSettings(updated);
+                      }}
+                      className={`w-9 h-5 rounded-full p-0.5 transition-all cursor-pointer ${reviewReminders.monthly.enabled ? 'bg-orange-500' : 'bg-zinc-800'}`}
+                    >
+                      <div className={`w-4 h-4 rounded-full bg-white transition-all ${reviewReminders.monthly.enabled ? 'translate-x-4' : 'translate-x-0'}`} />
+                    </button>
+                  </div>
+
+                  {reviewReminders.monthly.enabled && (
+                    <div className="space-y-2 pt-2 border-t border-zinc-800/80">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[9px] text-zinc-400 font-mono uppercase block mb-1">
+                            Regra do Mês:
+                          </label>
+                          <select
+                            value={reviewReminders.monthly.timingType}
+                            onChange={(e) => {
+                              const val = e.target.value as any;
+                              const updated: ReviewRemindersSettings = {
+                                ...reviewReminders,
+                                monthly: { ...reviewReminders.monthly, timingType: val }
+                              };
+                              setReviewReminders(updated);
+                              saveReviewRemindersSettings(updated);
+                            }}
+                            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-orange-500"
+                          >
+                            <option value="last_day">Último dia do mês atual (ex: 28, 30, 31)</option>
+                            <option value="first_day_next">Primeiro dia do próximo mês (dia 1º)</option>
+                            <option value="specific_day">Dia fixo específico</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="text-[9px] text-zinc-400 font-mono uppercase block mb-1">
+                            Horário:
+                          </label>
+                          <input
+                            type="time"
+                            value={reviewReminders.monthly.time}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              const updated: ReviewRemindersSettings = {
+                                ...reviewReminders,
+                                monthly: { ...reviewReminders.monthly, time: val }
+                              };
+                              setReviewReminders(updated);
+                              saveReviewRemindersSettings(updated);
+                            }}
+                            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-orange-500"
+                          />
+                        </div>
+                      </div>
+
+                      {reviewReminders.monthly.timingType === 'specific_day' && (
+                        <div className="pt-1 flex items-center justify-between gap-3 bg-zinc-950/60 p-2.5 rounded-lg border border-zinc-850">
+                          <span className="text-[10px] text-zinc-400 font-mono">
+                            Número do Dia do Mês:
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              min="1"
+                              max="31"
+                              value={reviewReminders.monthly.dayOfMonth}
+                              onChange={(e) => {
+                                const val = Math.max(1, Math.min(31, parseInt(e.target.value, 10) || 30));
+                                const updated: ReviewRemindersSettings = {
+                                  ...reviewReminders,
+                                  monthly: { ...reviewReminders.monthly, dayOfMonth: val }
+                                };
+                                setReviewReminders(updated);
+                                saveReviewRemindersSettings(updated);
+                              }}
+                              className="w-16 bg-zinc-900 border border-zinc-750 text-white font-mono text-xs px-2 py-1 rounded text-center"
+                            />
+                            <span className="text-[10px] text-zinc-500 font-mono">(ex: dia 30, dia 28)</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Habits alert */}
               <div className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-900 rounded-2xl">
                 <div>
@@ -3453,6 +3688,13 @@ export default function SettingsView({
           }
           addXp(15);
         }}
+      />
+
+      {/* Review Reminder Modal */}
+      <ReviewReminderModal
+        isOpen={isReviewReminderModalOpen}
+        onClose={() => setIsReviewReminderModalOpen(false)}
+        initialTab={reminderModalTab}
       />
 
     </div>

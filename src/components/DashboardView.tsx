@@ -31,10 +31,24 @@ import {
   Edit2,
   CalendarDays,
   Upload,
-  Clipboard
+  Clipboard,
+  Heart,
+  Coins,
+  Users,
+  Palette,
+  Dumbbell,
+  Briefcase,
+  Folder,
+  Tag
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Goal, DailyTask, FinanceEntry, Habit, RoutineItem } from '../types';
+import { Goal, DailyTask, FinanceEntry, Habit, RoutineItem, CustomCard } from '../types';
+import { 
+  getCardIconComponent, 
+  AVAILABLE_CARD_ICONS, 
+  normalizeCardIconName, 
+  CARD_ICON_MAP 
+} from '../utils/cardIconUtils';
 
 function compressImageFile(file: File): Promise<string> {
   return new Promise((resolve) => {
@@ -72,6 +86,49 @@ function compressImageFile(file: File): Promise<string> {
   });
 }
 
+const GOAL_AREA_CONFIG: Record<string, { icon: React.ComponentType<{ className?: string }>; badgeClass: string; textColor: string }> = {
+  'Saúde': { icon: Heart, badgeClass: 'bg-rose-500/10 border-rose-500/25 text-rose-400', textColor: 'text-rose-400' },
+  'Financeiro': { icon: Coins, badgeClass: 'bg-amber-500/10 border-amber-500/25 text-amber-400', textColor: 'text-amber-400' },
+  'Social': { icon: Users, badgeClass: 'bg-blue-500/10 border-blue-500/25 text-blue-400', textColor: 'text-blue-400' },
+  'Hobbies': { icon: Palette, badgeClass: 'bg-purple-500/10 border-purple-500/25 text-purple-400', textColor: 'text-purple-400' },
+  'Espiritualidade': { icon: Sparkles, badgeClass: 'bg-amber-500/10 border-amber-500/25 text-amber-400', textColor: 'text-amber-400' },
+  'Físico': { icon: Dumbbell, badgeClass: 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400', textColor: 'text-emerald-400' },
+  'Carreira': { icon: Briefcase, badgeClass: 'bg-cyan-500/10 border-cyan-500/25 text-cyan-400', textColor: 'text-cyan-400' },
+  'Outros': { icon: Folder, badgeClass: 'bg-orange-500/10 border-orange-500/25 text-orange-400', textColor: 'text-orange-400' }
+};
+
+function getGoalArea(goal: Goal): string {
+  if (goal.area) return goal.area;
+  const title = goal.title.toLowerCase();
+  if (title.includes('salário') || title.includes('freela') || title.includes('faturar') || title.includes('dinheiro') || title.includes('financeiro') || title.includes('reserva')) {
+    return 'Financeiro';
+  }
+  if (title.includes('livro') || title.includes('ler') || title.includes('hobby') || title.includes('backlog') || title.includes('jogo')) {
+    return 'Hobbies';
+  }
+  if (title.includes('academia') || title.includes('treino') || title.includes('físico') || title.includes('correr') || title.includes('desafio físico')) {
+    return 'Físico';
+  }
+  if (title.includes('desenvolvimento') || title.includes('estudo') || title.includes('carreira') || title.includes('trabalho') || title.includes('full stack')) {
+    return 'Carreira';
+  }
+  if (title.includes('meditar') || title.includes('mente') || title.includes('saúde') || title.includes('comer') || title.includes('gordura')) {
+    return 'Saúde';
+  }
+  if (title.includes('relacionamento') || title.includes('social') || title.includes('amigo') || title.includes('namorad')) {
+    return 'Social';
+  }
+  if (title.includes('oração') || title.includes('decreto') || title.includes('espiritualidade') || title.includes('alma')) {
+    return 'Espiritualidade';
+  }
+  return 'Outros';
+}
+
+function getGoalIconConfig(goal: Goal) {
+  const area = getGoalArea(goal);
+  return GOAL_AREA_CONFIG[area] || { icon: Target, badgeClass: 'bg-orange-500/10 border-orange-500/25 text-orange-400', textColor: 'text-orange-400' };
+}
+
 interface DashboardViewProps {
   userName: string;
   setUserName: (name: string) => void;
@@ -90,8 +147,8 @@ interface DashboardViewProps {
   habits: Habit[];
   setHabits: React.Dispatch<React.SetStateAction<Habit[]>>;
   routine: RoutineItem[];
-  customCards?: any[];
-  setCustomCards?: React.Dispatch<React.SetStateAction<any[]>>;
+  customCards?: CustomCard[];
+  setCustomCards?: React.Dispatch<React.SetStateAction<CustomCard[]>>;
   isChecklistOpen?: boolean;
   setIsChecklistOpen?: (open: boolean) => void;
   isHabitsOpen?: boolean;
@@ -137,11 +194,21 @@ export default function DashboardView({
   const [seederApplied, setSeederApplied] = useState(false);
 
   // States for up to 8 customizable cards
-  const [localCustomCards, setLocalCustomCards] = useState<any[]>(() => {
+  const [localCustomCards, setLocalCustomCards] = useState<CustomCard[]>(() => {
     const saved = localStorage.getItem('dashboard_custom_cards');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((c: any) => {
+            const iconName = c.icon || normalizeCardIconName(c.emoji);
+            return {
+              ...c,
+              icon: iconName,
+              emoji: iconName
+            };
+          });
+        }
       } catch (e) {
         console.error(e);
       }
@@ -149,37 +216,43 @@ export default function DashboardView({
     return [
       {
         id: 'card-1',
-        emoji: '☠️',
+        icon: 'Flame',
+        emoji: 'Flame',
         title: 'PODER',
         imageUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=600&auto=format&fit=crop'
       },
       {
         id: 'card-2',
-        emoji: '💪',
+        icon: 'Dumbbell',
+        emoji: 'Dumbbell',
         title: 'FORCE',
         imageUrl: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=600&auto=format&fit=crop'
       },
       {
         id: 'card-3',
-        emoji: '⛰️',
+        icon: 'Mountain',
+        emoji: 'Mountain',
         title: 'DISCIPLINE',
         imageUrl: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?q=80&w=600&auto=format&fit=crop'
       },
       {
         id: 'card-4',
-        emoji: '🧠',
+        icon: 'Brain',
+        emoji: 'Brain',
         title: 'STRATEGY',
         imageUrl: 'https://images.unsplash.com/photo-1529699211952-734e80c4d42b?q=80&w=600&auto=format&fit=crop'
       },
       {
         id: 'card-5',
-        emoji: '🕊️',
+        icon: 'Feather',
+        emoji: 'Feather',
         title: 'PEACE',
         imageUrl: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=600&auto=format&fit=crop'
       },
       {
         id: 'card-6',
-        emoji: '🤑',
+        icon: 'TrendingUp',
+        emoji: 'TrendingUp',
         title: 'Prosperidade',
         imageUrl: 'https://images.unsplash.com/photo-1618042164219-62c820f10723?q=80&w=600&auto=format&fit=crop'
       }
@@ -195,9 +268,9 @@ export default function DashboardView({
     }
   };
 
-  const [editingCard, setEditingCard] = useState<any | null>(null);
+  const [editingCard, setEditingCard] = useState<CustomCard | null>(null);
   const [editTitle, setEditTitle] = useState('');
-  const [editEmoji, setEditEmoji] = useState('');
+  const [editIcon, setEditIcon] = useState('Flame');
   const [editImageUrl, setEditImageUrl] = useState('');
 
   useEffect(() => {
@@ -216,21 +289,23 @@ export default function DashboardView({
     { name: 'Universo (Estrelas)', url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=600&auto=format&fit=crop' }
   ];
 
-  const startEditing = (card: any) => {
+  const startEditing = (card: CustomCard) => {
     setEditingCard(card);
     setEditTitle(card.title);
-    setEditEmoji(card.emoji);
+    setEditIcon(card.icon || normalizeCardIconName(card.emoji));
     setEditImageUrl(card.imageUrl);
   };
 
   const saveEditedCard = () => {
     if (!editingCard) return;
+    const resolvedIcon = editIcon || 'Sparkles';
     setCustomCards(prev => prev.map(c => {
       if (c.id === editingCard.id) {
         return {
           ...c,
           title: editTitle.trim() || 'Sem Título',
-          emoji: editEmoji.trim() || '✨',
+          icon: resolvedIcon,
+          emoji: resolvedIcon,
           imageUrl: editImageUrl.trim() || 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=600&auto=format&fit=crop'
         };
       }
@@ -308,9 +383,10 @@ export default function DashboardView({
   const addNewCard = () => {
     if (customCards.length >= 8) return;
     const newId = `card-${Date.now()}`;
-    const newCard = {
+    const newCard: CustomCard = {
       id: newId,
-      emoji: '⭐',
+      icon: 'Target',
+      emoji: 'Target',
       title: 'NOVA PÁGINA',
       imageUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=600&auto=format&fit=crop'
     };
@@ -318,7 +394,7 @@ export default function DashboardView({
     // Immediately open edit modal for the new card
     setEditingCard(newCard);
     setEditTitle(newCard.title);
-    setEditEmoji(newCard.emoji);
+    setEditIcon('Target');
     setEditImageUrl(newCard.imageUrl);
   };
 
@@ -787,12 +863,16 @@ export default function DashboardView({
                 <Edit2 className="h-3 w-3" />
               </div>
 
-              {/* Title & Emoji at the bottom */}
+              {/* Title & Lucide Icon at the bottom */}
               <div className="absolute bottom-3 left-3 right-3">
-                <span className="text-xs font-black text-white tracking-wider uppercase drop-shadow flex items-center gap-1.5 font-display">
-                  <span className="text-sm">{card.emoji}</span>
-                  <span>{card.title}</span>
-                </span>
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-black/60 border border-orange-500/30 backdrop-blur-md flex items-center justify-center text-orange-400 shrink-0 shadow-sm group-hover:border-orange-500/60 group-hover:bg-orange-500/15 group-hover:text-orange-300 transition-all">
+                    {React.createElement(getCardIconComponent(card.icon || card.emoji), { className: "h-3.5 w-3.5" })}
+                  </div>
+                  <span className="text-xs font-black text-white tracking-wider uppercase drop-shadow truncate font-display">
+                    {card.title}
+                  </span>
+                </div>
               </div>
             </motion.div>
           ))}
@@ -1093,27 +1173,56 @@ export default function DashboardView({
               </div>
 
               <div className="space-y-4">
-                <div className="grid grid-cols-4 gap-3">
-                  <div className="col-span-1 space-y-1">
-                    <label className="text-[9px] text-zinc-500 font-extrabold uppercase tracking-wider block">Emoji</label>
-                    <input
-                      type="text"
-                      value={editEmoji}
-                      onChange={(e) => setEditEmoji(e.target.value)}
-                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-2 py-2 text-white font-bold text-center focus:outline-none focus:border-orange-500"
-                      maxLength={4}
-                    />
+                <div className="flex items-end gap-3">
+                  <div className="space-y-1 shrink-0">
+                    <label className="text-[9px] text-zinc-500 font-extrabold uppercase tracking-wider block">Ícone</label>
+                    <div className="w-11 h-11 rounded-xl bg-zinc-900 border border-orange-500/40 text-orange-400 flex items-center justify-center shadow-[0_0_12px_rgba(249,115,22,0.15)]">
+                      {React.createElement(getCardIconComponent(editIcon), { className: "h-5 w-5" })}
+                    </div>
                   </div>
-                  <div className="col-span-3 space-y-1">
+                  <div className="flex-1 space-y-1">
                     <label className="text-[9px] text-zinc-500 font-extrabold uppercase tracking-wider block">Título / Texto</label>
                     <input
                       type="text"
                       value={editTitle}
                       onChange={(e) => setEditTitle(e.target.value)}
-                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white font-bold focus:outline-none focus:border-orange-500"
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2.5 text-xs text-white font-bold focus:outline-none focus:border-orange-500"
                       placeholder="Ex: PODER"
                       maxLength={20}
                     />
+                  </div>
+                </div>
+
+                {/* Seleção de Ícone Lucide */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[9px] text-zinc-500 font-extrabold uppercase tracking-wider block">
+                      Escolha o Ícone (Padrão do Sistema)
+                    </label>
+                    <span className="text-[9px] text-orange-400/90 font-bold uppercase tracking-wider">
+                      {AVAILABLE_CARD_ICONS.find(i => i.name.toLowerCase() === editIcon.toLowerCase())?.label || editIcon}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-5 sm:grid-cols-10 gap-1.5 p-2 bg-zinc-900/70 rounded-2xl border border-zinc-850 max-h-36 overflow-y-auto custom-scrollbar">
+                    {AVAILABLE_CARD_ICONS.map((item) => {
+                      const IconComp = item.icon;
+                      const isSelected = editIcon.toLowerCase() === item.name.toLowerCase() || (CARD_ICON_MAP[editIcon] && CARD_ICON_MAP[editIcon] === item.icon);
+                      return (
+                        <button
+                          key={item.name}
+                          type="button"
+                          onClick={() => setEditIcon(item.name)}
+                          title={item.label}
+                          className={`p-2 rounded-xl flex items-center justify-center transition-all ${
+                            isSelected
+                              ? 'bg-orange-500 text-black shadow-[0_0_12px_rgba(249,115,22,0.4)] scale-105'
+                              : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+                          }`}
+                        >
+                          <IconComp className="h-4 w-4" />
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -1473,8 +1582,9 @@ export default function DashboardView({
                                 </span>
                               </span>
                               
-                              <span className="text-[9px] text-zinc-500 font-bold block mt-0.5">
-                                🏷️ {habit.category} • {habit.frequency}
+                              <span className="text-[9px] text-zinc-500 font-bold flex items-center gap-1 mt-0.5">
+                                <Tag className="h-2.5 w-2.5 text-zinc-500 shrink-0" />
+                                <span>{habit.category} • {habit.frequency}</span>
                               </span>
                             </div>
                           </div>
@@ -1564,22 +1674,41 @@ export default function DashboardView({
                     Confira suas principais metas planejadas e complete ações estruturadas para subir de nível.
                   </p>
 
-                  <div className="space-y-4 max-h-[220px] overflow-y-auto pr-1">
+                  <div className="space-y-2.5 max-h-[240px] overflow-y-auto pr-1">
                     {goals.filter(g => !g.completed).slice(0, 3).map(goal => {
                       const goalProgress = Math.round((goal.actionsDone / goal.actionsTotal) * 100);
+                      const config = getGoalIconConfig(goal);
+                      const GoalIcon = config.icon;
+
                       return (
-                        <div key={goal.id} className="space-y-1.5 text-xs">
-                          <div className="flex justify-between items-center">
-                            <span className="font-extrabold text-white truncate max-w-[280px] block" title={goal.title}>
-                              🎯 {goal.title}
-                            </span>
-                            <span className="text-zinc-500 text-[10px] font-mono">
+                        <div 
+                          key={goal.id} 
+                          onClick={() => setActiveTab('metas')}
+                          className="p-3 rounded-2xl bg-zinc-950/40 border border-zinc-850/70 hover:border-orange-500/40 hover:bg-zinc-900/30 transition-all space-y-2 cursor-pointer group select-none"
+                        >
+                          <div className="flex justify-between items-center gap-3">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 border ${config.badgeClass} group-hover:scale-105 transition-transform`}>
+                                <GoalIcon className="h-3.5 w-3.5" />
+                              </div>
+                              <div className="truncate">
+                                <span className="font-extrabold text-white truncate block text-xs group-hover:text-orange-300 transition-colors" title={goal.title}>
+                                  {goal.title}
+                                </span>
+                                {goal.area && (
+                                  <span className={`text-[8.5px] font-bold uppercase tracking-wider block ${config.textColor}`}>
+                                    {goal.area}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <span className="text-zinc-500 text-[10px] font-mono shrink-0">
                               <strong className="text-zinc-300">{goal.actionsDone}/{goal.actionsTotal} ações</strong> ({goalProgress}%)
                             </span>
                           </div>
                           
                           {/* Progress bar */}
-                          <div className="w-full bg-zinc-950/60 border border-zinc-900 rounded-full h-1.5 overflow-hidden">
+                          <div className="w-full bg-zinc-950/80 border border-zinc-900 rounded-full h-1.5 overflow-hidden">
                             <div 
                               className="bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.3)] h-full rounded-full transition-all duration-500"
                               style={{ width: `${goalProgress}%` }}
@@ -1590,13 +1719,16 @@ export default function DashboardView({
                     })}
 
                     {goals.filter(g => !g.completed).length === 0 && (
-                      <div className="py-8 text-center text-zinc-500 border border-dashed border-zinc-850 rounded-xl bg-zinc-950/20">
-                        <p className="text-xs">Nenhuma meta ativa cadastrada no momento.</p>
+                      <div className="py-8 text-center text-zinc-500 border border-dashed border-zinc-850 rounded-2xl bg-zinc-950/20">
+                        <div className="w-9 h-9 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-400 flex items-center justify-center mx-auto mb-2.5">
+                          <Target className="h-4 w-4" />
+                        </div>
+                        <p className="text-xs font-medium">Nenhuma meta ativa cadastrada no momento.</p>
                         <button 
                           onClick={() => setActiveTab('metas')}
-                          className="mt-2 text-xs text-orange-400 font-extrabold hover:underline"
+                          className="mt-2.5 inline-flex items-center gap-1.5 text-xs text-orange-400 font-extrabold hover:text-orange-300 transition-colors"
                         >
-                          Planejar primeira meta agora
+                          Planejar primeira meta agora <ArrowRight className="h-3 w-3" />
                         </button>
                       </div>
                     )}

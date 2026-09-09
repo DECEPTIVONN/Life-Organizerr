@@ -189,6 +189,76 @@ input[type=number] {
 }
 
 /* ====================================
+   SECONDARY & ADAPTED INTERNAL NAVIGATION
+   (Sub-tabs, filters & contextual toolbars)
+   ==================================== */
+
+.internal-nav-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--theme-nav-border, rgba(249, 115, 22, 0.28));
+    border-radius: 8px;
+    padding: 4px;
+    flex-wrap: wrap;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.internal-nav-secondary-btn {
+    padding: 6px 12px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: rgba(255, 255, 255, 0.7);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    white-space: nowrap;
+    line-height: 1.2;
+}
+
+.internal-nav-secondary-btn:hover {
+    color: #fff;
+    background: var(--theme-nav-hover, rgba(249, 115, 22, 0.14));
+    border-color: rgba(249, 115, 22, 0.2);
+}
+
+.internal-nav-secondary-btn.active {
+    background: var(--theme-nav-active-bg, linear-gradient(135deg, #f97316, #ea580c));
+    color: #fff !important;
+    font-weight: 700;
+    box-shadow: var(--theme-nav-glow, 0 3px 12px rgba(249, 115, 22, 0.4));
+    border-color: transparent;
+}
+
+.internal-nav-secondary-btn svg {
+    opacity: 0.85;
+    transition: all 0.2s ease;
+}
+
+.internal-nav-secondary-btn:hover svg {
+    opacity: 1;
+}
+
+.internal-nav-secondary-btn.active svg {
+    opacity: 1;
+    color: #fff !important;
+}
+
+/* ====================================
    SECTION TITLE WITH GLOW & SUBTLE ACCENT
    ==================================== */
 
@@ -250,54 +320,76 @@ input[type=number] {
 }
 
 /* ====================================
-   FILTERS BAR
+   FILTERS BAR (ADAPTED INTERNAL NAV STYLE)
    ==================================== */
 
 .filters-bar {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 28px;
+  display: inline-flex;
+  gap: 4px;
+  margin-bottom: 24px;
   flex-wrap: wrap;
   justify-content: center;
-  padding: 12px 18px;
-  background: rgba(12, 12, 15, 0.6);
-  border: 1px solid rgba(249, 115, 22, 0.2);
-  border-radius: 14px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  align-items: center;
+  padding: 4px;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--theme-nav-border, rgba(249, 115, 22, 0.28));
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
   position: relative;
-  overflow: hidden;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .filter-btn {
   position: relative;
-  padding: 8px 18px;
-  background: rgba(18, 18, 22, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #9ca3af;
-  font-family: var(--font-sans);
-  font-size: 11.5px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
   cursor: pointer;
   transition: all 0.2s ease;
-  border-radius: 10px;
-  display: flex;
+  border-radius: 6px;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
+  white-space: nowrap;
+  line-height: 1.2;
 }
 
 .filter-btn:hover {
-  color: #f3f4f6;
-  border-color: rgba(249, 115, 22, 0.4);
-  background: rgba(249, 115, 22, 0.1);
-  transform: translateY(-1px);
+  color: #fff;
+  background: var(--theme-nav-hover, rgba(249, 115, 22, 0.14));
+  border-color: rgba(249, 115, 22, 0.2);
 }
 
 .filter-btn.active {
-  background: rgba(249, 115, 22, 0.18);
-  border-color: #f97316;
-  color: #fb923c;
+  background: var(--theme-nav-active-bg, linear-gradient(135deg, #f97316, #ea580c));
+  color: #fff !important;
   font-weight: 700;
-  box-shadow: 0 2px 12px rgba(249, 115, 22, 0.2);
+  box-shadow: var(--theme-nav-glow, 0 3px 12px rgba(249, 115, 22, 0.4));
+  border-color: transparent;
+}
+
+.filter-btn svg {
+  opacity: 0.85;
+  transition: all 0.2s ease;
+}
+
+.filter-btn:hover svg {
+  opacity: 1;
+}
+
+.filter-btn.active svg,
+.filter-btn.active .lucide {
+  opacity: 1;
+  color: #fff !important;
 }
 

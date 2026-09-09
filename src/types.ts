@@ -343,3 +343,11 @@ export interface Project {
   updatedAt: string;
 }
 
+export interface CustomCard {
+  id: string;
+  title: string;
+  imageUrl: string;
+  icon?: string;
+  emoji?: string;
+}
+

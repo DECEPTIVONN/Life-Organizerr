@@ -245,20 +245,21 @@ export default function DocumentsView({ documents, setDocuments, addXp }: Docume
             </div>
 
             {/* Quick Categories Filter */}
-            <div className="flex items-center gap-1 overflow-x-auto w-full md:w-auto py-1 scrollbar-none">
-              {categories.map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all flex-shrink-0 ${
-                    selectedCategory === cat
-                      ? 'bg-orange-500 text-white'
-                      : 'bg-zinc-950 text-gray-500 hover:text-gray-300'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
+            <div className="flex items-center overflow-x-auto w-full md:w-auto py-1 scrollbar-none">
+              <nav className="internal-nav-secondary max-w-full flex-nowrap" aria-label="Filtro de Categorias de Documentos">
+                {categories.map(cat => (
+                  <button
+                    type="button"
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`internal-nav-secondary-btn ${
+                      selectedCategory === cat ? 'active' : ''
+                    }`}
+                  >
+                    <span>{cat}</span>
+                  </button>
+                ))}
+              </nav>
             </div>
           </div>
 
