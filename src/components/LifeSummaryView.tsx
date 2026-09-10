@@ -28,7 +28,12 @@ import {
   Search,
   Mail,
   Info,
-  X
+  X,
+  BicepsFlexed,
+  Footprints,
+  HeartPulse,
+  Scale,
+  Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Goal, BookTracker, BibleTracker, TimelineGoal } from '../types';
@@ -1061,6 +1066,25 @@ const getActivityIcon = (key: string) => {
   }
 };
 
+const getAreaCheckColor = (key: string) => {
+  switch (key) {
+    case 'mind':
+      return 'bg-blue-500 border-blue-500 text-zinc-950';
+    case 'body':
+      return 'bg-emerald-500 border-emerald-500 text-zinc-950';
+    case 'spirituality':
+      return 'bg-amber-500 border-amber-500 text-zinc-950';
+    case 'social':
+      return 'bg-pink-500 border-pink-500 text-zinc-950';
+    case 'finances':
+      return 'bg-yellow-500 border-yellow-500 text-zinc-950';
+    case 'entertainment':
+      return 'bg-purple-500 border-purple-500 text-zinc-950';
+    default:
+      return 'bg-orange-500 border-orange-500 text-zinc-950';
+  }
+};
+
 function LifeAreaStandardTopics({ areaKey, state, onChange, triggerReward }: LifeAreaStandardTopicsProps) {
   const areaData = state[areaKey];
   const reasonsGrid = areaData?.reasonsGrid || [];
@@ -1178,8 +1202,9 @@ function LifeAreaStandardTopics({ areaKey, state, onChange, triggerReward }: Lif
               <div className="inline-block px-2.5 py-0.5 bg-zinc-900 border border-zinc-800 rounded text-[9px] font-bold text-zinc-400 uppercase tracking-wider">
                 {item.label}
               </div>
-              <div className={`flex items-center gap-3 p-3 bg-zinc-900/60 border rounded-xl hover:border-zinc-700/60 transition-all ${item.checked ? 'border-orange-500/20' : 'border-zinc-800'}`}>
+              <div className={`flex items-center gap-3 p-3 bg-zinc-900/60 border rounded-xl hover:border-zinc-700/60 transition-all ${item.checked ? 'border-zinc-700/80 shadow-sm' : 'border-zinc-800'}`}>
                 <button
+                  type="button"
                   onClick={() => {
                     const updatedGrid = [...reasonsGrid];
                     const nextCheck = !item.checked;
@@ -1187,8 +1212,8 @@ function LifeAreaStandardTopics({ areaKey, state, onChange, triggerReward }: Lif
                     if (nextCheck) triggerReward(10, `Impacto ${item.label} ativado!`);
                     handleAreaChange('reasonsGrid', updatedGrid);
                   }}
-                  className={`w-4.5 h-4.5 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${
-                    item.checked ? 'bg-orange-500 border-orange-500 text-zinc-950' : 'border-zinc-700 bg-zinc-950/50'
+                  className={`w-4.5 h-4.5 rounded border flex items-center justify-center flex-shrink-0 transition-colors cursor-pointer ${
+                    item.checked ? getAreaCheckColor(areaKey) : 'border-zinc-700 hover:border-zinc-600 bg-zinc-950/50'
                   }`}
                 >
                   {item.checked && <Check className="h-3 w-3 stroke-[3px]" />}
@@ -1605,7 +1630,7 @@ const VERTENTES_METADATA = {
     borderColor: 'border-emerald-500/20',
     fields: [
       { key: 'saude', label: 'Saúde e Disposição', icon: Dumbbell, desc: 'Sua vitalidade, energia física e ausência de dores.' },
-      { key: 'vitalidade', label: 'Energia e Resistência', icon: ThumbsUp, desc: 'Disposição para o trabalho e treinos intensos diários.' },
+      { key: 'vitalidade', label: 'Energia e Resistência', icon: HeartPulse, desc: 'Disposição para o trabalho e treinos intensos diários.' },
       { key: 'estetica', label: 'Autoimagem e Shape', icon: Award, desc: 'Seu nível de satisfação com a força e estética do corpo.' }
     ]
   },
@@ -2437,11 +2462,6 @@ export default function LifeSummaryView({
                 <ChevronLeft className="h-4 w-4" />
                 Voltar ao Resumo
               </button>
-
-              <div className="flex items-center gap-2">
-                <span className="text-[9px] font-mono text-zinc-500 uppercase font-bold">PÁGINA INTERATIVA</span>
-                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-ping" />
-              </div>
             </div>
 
             {/* Custom Worksheet Content Based on Active Area */}
@@ -2543,17 +2563,6 @@ export default function LifeSummaryView({
                       Ocultar 3 propriedades
                     </button>
                   </div>
-                </div>
-
-                {/* Breadcrumbs */}
-                <div className="flex items-center gap-1.5 text-[10px] font-mono text-gray-500 uppercase tracking-wider px-1 pt-2">
-                  <span>🏛️ 'Vi'</span>
-                  <span>/</span>
-                  <span>⏳ — LIFE IN RESUME</span>
-                  <span>/</span>
-                  <span>📁 Areas of life</span>
-                  <span>/</span>
-                  <span className="text-[#9f6e49] font-bold">🟧 — Spirit</span>
                 </div>
 
                 {/* Centered Serif Header */}
@@ -2994,17 +3003,6 @@ export default function LifeSummaryView({
                   </div>
                 </div>
 
-                {/* Breadcrumbs */}
-                <div className="flex items-center gap-1.5 text-[10px] font-mono text-gray-500 uppercase tracking-wider px-1">
-                  <span>📁 'Vi'</span>
-                  <span>/</span>
-                  <span>⌛ — LIFE IN RESUME</span>
-                  <span>/</span>
-                  <span>📁 Areas of life</span>
-                  <span>/</span>
-                  <span className="text-emerald-400 font-bold">📄 — Body</span>
-                </div>
-
                 {/* Custom Header Title */}
                 <div className="text-center py-6 border-y border-zinc-900/80 my-2">
                   <h1 className="text-xl font-black text-white uppercase tracking-[0.25em] font-sans">
@@ -3034,18 +3032,26 @@ export default function LifeSummaryView({
                           </thead>
                           <tbody>
                             {[
-                              { key: 'arms', label: '🦾 Braços' },
-                              { key: 'legs', label: '🦵 Pernas' },
-                              { key: 'stamina', label: '🏃‍♂️ Resistência' },
-                              { key: 'fat', label: '🐷 Gordura' },
-                              { key: 'strength', label: '🫵 Força' }
+                              { key: 'arms', label: 'Braços', icon: BicepsFlexed },
+                              { key: 'legs', label: 'Pernas', icon: Footprints },
+                              { key: 'stamina', label: 'Resistência', icon: HeartPulse },
+                              { key: 'fat', label: 'Gordura', icon: Scale },
+                              { key: 'strength', label: 'Força', icon: Zap }
                             ].map((attr) => {
                               const ratingVal = state.body.ratings[attr.key as keyof typeof state.body.ratings] || 1;
                               const perceptionVal = state.body.perceptions?.[attr.key as keyof typeof state.body.ratings] || 'Ruim';
+                              const AttrIcon = attr.icon;
                               
                               return (
-                                <tr key={attr.key} className="border-b border-zinc-900 hover:bg-zinc-900/10 transition-colors">
-                                  <td className="py-3 font-bold text-zinc-300">{attr.label}</td>
+                                <tr key={attr.key} className="border-b border-zinc-900 hover:bg-zinc-900/20 transition-colors">
+                                  <td className="py-3 font-bold text-zinc-300">
+                                    <div className="flex items-center gap-2.5">
+                                      <div className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                                        <AttrIcon className="h-3.5 w-3.5" />
+                                      </div>
+                                      <span className="font-medium text-xs text-zinc-200">{attr.label}</span>
+                                    </div>
+                                  </td>
                                   <td className="py-3">
                                     <div className="flex gap-0.5">
                                       {[1, 2, 3, 4, 5].map((star) => (
@@ -3129,11 +3135,11 @@ export default function LifeSummaryView({
 
                 {/* Callout Prompt Banner */}
                 <div className="bg-emerald-500/5 border border-emerald-500/10 p-4 rounded-xl flex items-center gap-3.5 text-zinc-300 text-xs">
-                  <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg">
-                    <Check className="h-4 w-4 stroke-[3px]" />
+                  <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg shrink-0">
+                    <Sparkles className="h-4 w-4" />
                   </div>
                   <p className="font-sans">
-                    Respondas as perguntas e reflita sobre como seu corpo pode trazer a melhor versão de você a tona:
+                    Responda às perguntas e reflita sobre como seu corpo pode trazer a melhor versão de você à tona:
                   </p>
                 </div>
 
@@ -3146,8 +3152,8 @@ export default function LifeSummaryView({
                       Como você se sente atualmente sobre sua saúde e situação corporal?
                     </h4>
                     <div className="bg-zinc-950/40 border border-zinc-900 rounded-2xl p-4 flex gap-3 items-start hover:border-zinc-800 transition-colors">
-                      <div className="mt-1 w-4.5 h-4.5 rounded border border-zinc-800 bg-zinc-950 flex items-center justify-center text-emerald-400 flex-shrink-0">
-                        <Check className="h-3 w-3 stroke-[3px]" />
+                      <div className="mt-0.5 p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                        <HeartPulse className="h-4 w-4" />
                       </div>
                       <div className="flex-1">
                         <textarea
@@ -3179,8 +3185,8 @@ export default function LifeSummaryView({
                         />
                       </div>
                       <div className="md:col-span-8 bg-zinc-950/40 border border-zinc-900 rounded-2xl p-4 flex gap-3 items-start hover:border-zinc-800 transition-colors">
-                        <div className="mt-1 w-4.5 h-4.5 rounded border border-zinc-800 bg-zinc-950 flex items-center justify-center text-emerald-400 flex-shrink-0">
-                          <Check className="h-3 w-3 stroke-[3px]" />
+                        <div className="mt-0.5 p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                          <Target className="h-4 w-4" />
                         </div>
                         <div className="flex-1">
                           <textarea
@@ -3205,8 +3211,8 @@ export default function LifeSummaryView({
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                       <div className="md:col-span-8 bg-zinc-950/40 border border-zinc-900 rounded-2xl p-4 flex gap-3 items-start hover:border-zinc-800 transition-colors">
-                        <div className="mt-1 w-4.5 h-4.5 rounded border border-zinc-800 bg-zinc-950 flex items-center justify-center text-emerald-400 flex-shrink-0">
-                          <Check className="h-3 w-3 stroke-[3px]" />
+                        <div className="mt-0.5 p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                          <Dumbbell className="h-4 w-4" />
                         </div>
                         <div className="flex-1">
                           <textarea
@@ -3437,21 +3443,10 @@ export default function LifeSummaryView({
             {activeArea === 'mind' && (
               <div className="space-y-8 font-sans pb-12">
                 
-                {/* Notion-style Page Header with icon and breadcrumbs */}
+                {/* Notion-style Page Header with icon and title */}
                 <div className="space-y-4">
-                  {/* Breadcrumbs */}
-                  <div className="flex flex-wrap items-center gap-1.5 text-[#8a8b91] text-[10px] font-mono tracking-wide uppercase">
-                    <span>🏛️ 'Vi'</span>
-                    <span className="text-zinc-800">/</span>
-                    <span>⏳ — LIFE IN RESUME</span>
-                    <span className="text-zinc-800">/</span>
-                    <span>📁 Areas of life</span>
-                    <span className="text-zinc-800">/</span>
-                    <span className="text-zinc-300">🧠 — Mynd</span>
-                  </div>
-
                   {/* Notion Page Icon and Title */}
-                  <div className="flex flex-col items-center justify-center space-y-4 pt-4">
+                  <div className="flex flex-col items-center justify-center space-y-4 pt-2">
                     <div className="w-14 h-14 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center justify-center text-blue-400 shadow-[0_0_20px_rgba(59,130,246,0.15)] transition-all hover:scale-105">
                       <Brain className="h-7 w-7" />
                     </div>
@@ -3694,16 +3689,36 @@ export default function LifeSummaryView({
                     {state.mind.intellectualGoals.map((goal, idx) => (
                       <div 
                         key={goal.id} 
-                        className="bg-[#12131a]/70 border border-zinc-900 rounded-2xl p-5 space-y-4 shadow-xl flex flex-col justify-between"
+                        className={`bg-[#12131a]/70 border ${goal.checked ? 'border-blue-500/40 bg-blue-500/[0.03]' : 'border-zinc-900'} rounded-2xl p-5 space-y-4 shadow-xl flex flex-col justify-between transition-all`}
                       >
                         <div className="space-y-4">
                           {/* Goal Column Title Header */}
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                              {/* Blue circle bullet icon */}
-                              <div className="w-5 h-5 rounded-full bg-blue-500/10 border border-blue-500/20 text-[10px] text-blue-400 flex items-center justify-center font-bold font-mono shrink-0 shadow-inner">
-                                {idx + 1}
-                              </div>
+                              {/* Goal Checkbox / Bullet button */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const nextChecked = !goal.checked;
+                                  const updated = state.mind.intellectualGoals.map(g => 
+                                    g.id === goal.id ? { ...g, checked: nextChecked } : g
+                                  );
+                                  if (nextChecked) triggerReward(15, `Objetivo Intelectual Concluído: ${goal.label}!`);
+                                  handleStateChange({ ...state, mind: { ...state.mind, intellectualGoals: updated } });
+                                }}
+                                className={`w-5 h-5 rounded-lg border flex items-center justify-center font-bold font-mono shrink-0 shadow-inner transition-all cursor-pointer ${
+                                  goal.checked
+                                    ? 'bg-blue-500 border-blue-500 text-zinc-950 shadow-[0_0_12px_rgba(59,130,246,0.4)]'
+                                    : 'border-blue-500/30 hover:border-blue-400 bg-blue-500/10 text-blue-400'
+                                }`}
+                                title={goal.checked ? 'Objetivo concluído (clique para reabrir)' : 'Marcar objetivo como concluído'}
+                              >
+                                {goal.checked ? (
+                                  <Check className="h-3 w-3 stroke-[3]" />
+                                ) : (
+                                  <span className="text-[10px]">{idx + 1}</span>
+                                )}
+                              </button>
                               <input
                                 type="text"
                                 value={goal.label}
@@ -3711,7 +3726,7 @@ export default function LifeSummaryView({
                                   const updated = state.mind.intellectualGoals.map(g => g.id === goal.id ? { ...g, label: e.target.value } : g);
                                   handleStateChange({ ...state, mind: { ...state.mind, intellectualGoals: updated } });
                                 }}
-                                className="flex-1 bg-transparent border-none text-xs font-black text-white focus:outline-none focus:ring-0 p-0 font-sans tracking-wide truncate focus:bg-zinc-900/40 rounded px-1 py-0.5"
+                                className={`flex-1 bg-transparent border-none text-xs font-black text-white focus:outline-none focus:ring-0 p-0 font-sans tracking-wide truncate focus:bg-zinc-900/40 rounded px-1 py-0.5 ${goal.checked ? 'line-through text-zinc-400' : ''}`}
                                 placeholder="Título do objetivo..."
                               />
                             </div>
@@ -3754,12 +3769,15 @@ export default function LifeSummaryView({
                             {(goal.actions || []).map((action) => (
                               <div 
                                 key={action.id} 
-                                className="flex items-center gap-2.5 group p-1.5 rounded-xl hover:bg-zinc-950/50 border border-transparent hover:border-zinc-900/40 transition-all"
+                                className={`flex items-center gap-2.5 group p-1.5 rounded-xl border transition-all ${
+                                  action.checked
+                                    ? 'bg-zinc-950/60 border-zinc-900/60'
+                                    : 'hover:bg-zinc-950/50 border-transparent hover:border-zinc-900/40'
+                                }`}
                               >
-                                <input
-                                  type="checkbox"
-                                  checked={action.checked}
-                                  onChange={() => {
+                                <button
+                                  type="button"
+                                  onClick={() => {
                                     const updated = state.mind.intellectualGoals.map(g => {
                                       if (g.id === goal.id) {
                                         const updatedActions = (g.actions || []).map(act => {
@@ -3776,8 +3794,15 @@ export default function LifeSummaryView({
                                     });
                                     handleStateChange({ ...state, mind: { ...state.mind, intellectualGoals: updated } });
                                   }}
-                                  className="h-3.5 w-3.5 rounded border-zinc-800 bg-zinc-950 text-blue-500 focus:ring-0 focus:ring-offset-0 transition-colors cursor-pointer shrink-0"
-                                />
+                                  className={`w-4.5 h-4.5 rounded-lg border flex items-center justify-center shrink-0 transition-all cursor-pointer ${
+                                    action.checked
+                                      ? 'bg-blue-500 border-blue-500 text-zinc-950 shadow-[0_0_8px_rgba(59,130,246,0.35)]'
+                                      : 'border-zinc-700 hover:border-blue-500/80 bg-zinc-950 text-transparent'
+                                  }`}
+                                  title={action.checked ? 'Marcar como pendente' : 'Marcar como concluída'}
+                                >
+                                  {action.checked && <Check className="h-3 w-3 stroke-[3]" />}
+                                </button>
                                 <input
                                   type="text"
                                   value={action.label}
@@ -3791,7 +3816,7 @@ export default function LifeSummaryView({
                                     });
                                     handleStateChange({ ...state, mind: { ...state.mind, intellectualGoals: updated } });
                                   }}
-                                  className={`flex-1 bg-transparent border-none text-[11px] focus:outline-none focus:ring-0 p-0 font-sans text-zinc-300 focus:bg-zinc-900/40 rounded px-1 py-0.5 ${action.checked ? 'line-through text-zinc-600' : ''}`}
+                                  className={`flex-1 bg-transparent border-none text-[11px] focus:outline-none focus:ring-0 p-0 font-sans text-zinc-300 focus:bg-zinc-900/40 rounded px-1 py-0.5 ${action.checked ? 'line-through text-zinc-500' : ''}`}
                                   placeholder="Descrição da ação..."
                                 />
                                 <button
@@ -4227,17 +4252,6 @@ export default function LifeSummaryView({
                       Ocultar 3 propriedades
                     </button>
                   </div>
-                </div>
-
-                {/* Breadcrumbs */}
-                <div className="flex items-center gap-1.5 text-[10px] font-mono text-gray-500 uppercase tracking-wider px-1 pt-2">
-                  <span>🏛️ 'Vi'</span>
-                  <span>/</span>
-                  <span>⏳ — LIFE IN RESUME</span>
-                  <span>/</span>
-                  <span>📁 Areas of life</span>
-                  <span>/</span>
-                  <span className="text-pink-400 font-bold">👥 — Social Life</span>
                 </div>
 
                 {/* Centered Serif Header */}
