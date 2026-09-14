@@ -680,55 +680,66 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
             </button>
           </div>
 
-          {/* View Toggle - Desktop (Internal Nav Secundária) */}
-          <nav className="hidden md:inline-flex internal-nav-secondary" aria-label="Visualização da Rotina Semanal">
-            <button
-              type="button"
-              onClick={() => setViewMode('lista')}
-              className={`internal-nav-secondary-btn ${viewMode === 'lista' ? 'active' : ''}`}
-            >
-              <List className="h-3.5 w-3.5" />
-              <span>Lista</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('quadro')}
-              className={`internal-nav-secondary-btn ${viewMode === 'quadro' ? 'active' : ''}`}
-            >
-              <LayoutGrid className="h-3.5 w-3.5" />
-              <span>Quadro</span>
-            </button>
-          </nav>
+          {/* View Toggle - Desktop (Internal Nav Secundária, apenas no desktop) */}
+          <div className="hidden md:block">
+            <nav className="internal-nav-secondary" aria-label="Visualização da Rotina Semanal">
+              <button
+                type="button"
+                onClick={() => setViewMode('lista')}
+                className={`internal-nav-secondary-btn ${viewMode === 'lista' ? 'active' : ''}`}
+              >
+                <List className="h-3.5 w-3.5" />
+                <span>Lista</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('quadro')}
+                className={`internal-nav-secondary-btn ${viewMode === 'quadro' ? 'active' : ''}`}
+              >
+                <LayoutGrid className="h-3.5 w-3.5" />
+                <span>Quadro</span>
+              </button>
+            </nav>
+          </div>
 
           <button
+            type="button"
             onClick={handleOpenReview}
             className="flex items-center gap-1.5 px-3 py-2 bg-zinc-900 hover:bg-zinc-850 text-xs text-orange-500 hover:text-orange-400 font-bold rounded-lg border border-orange-500/20 hover:border-orange-500/40 transition-colors shadow-[0_0_10px_rgba(249,115,22,0.05)] h-[38px]"
+            title="Review Mensal"
           >
             <Compass className="h-3.5 w-3.5 text-orange-500 animate-pulse" />
-            Review Mensal
+            Mês
           </button>
 
           <button
+            type="button"
             onClick={handleOpenWeeklyReview}
             className="flex items-center gap-1.5 px-3 py-2 bg-zinc-900 hover:bg-zinc-850 text-xs text-orange-500 hover:text-orange-400 font-bold rounded-lg border border-orange-500/20 hover:border-orange-500/40 transition-colors shadow-[0_0_10px_rgba(249,115,22,0.05)] h-[38px]"
+            title="Review Semanal"
           >
             <CalendarDays className="h-3.5 w-3.5 text-orange-500 animate-pulse" />
-            Review Semanal
+            Semana
           </button>
 
           <button
+            type="button"
             onClick={() => setIsAdding(!isAdding)}
-            className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-[0_4px_12px_rgba(249,115,22,0.3)] transition-colors h-[38px]"
+            className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs px-3 py-2 rounded-lg flex items-center justify-center shadow-[0_4px_12px_rgba(249,115,22,0.3)] transition-all h-[38px] w-[38px]"
+            title={isAdding ? 'Fechar formulário' : 'Adicionar Atividade'}
+            aria-label={isAdding ? 'Fechar formulário' : 'Adicionar Atividade'}
           >
-            {isAdding ? 'Fechar' : 'Adicionar Atividade'}
+            <Plus className={`h-4 w-4 transition-transform duration-200 ${isAdding ? 'rotate-45' : ''}`} />
           </button>
 
           <button
             type="button"
             onClick={() => setShowClearModal(true)}
-            className="text-xs font-semibold text-red-400 bg-red-400/5 hover:bg-red-400/10 border border-red-500/10 px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 h-[38px]"
+            className="text-xs font-semibold text-red-400 bg-red-400/5 hover:bg-red-400/10 border border-red-500/10 px-3 py-2 rounded-lg transition-all flex items-center justify-center h-[38px] w-[38px]"
+            title="Limpar rotina"
+            aria-label="Limpar rotina"
           >
-            <Trash2 className="h-3.5 w-3.5" /> Limpar
+            <Trash2 className="h-4 w-4" />
           </button>
         </div>
       </div>

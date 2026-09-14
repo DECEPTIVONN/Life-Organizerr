@@ -209,6 +209,18 @@ input[type=number] {
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
+.internal-nav-secondary.hidden,
+.hidden.internal-nav-secondary {
+    display: none !important;
+}
+
+@media (min-width: 768px) {
+    .md\:inline-flex.internal-nav-secondary,
+    .internal-nav-secondary.md\:inline-flex {
+        display: inline-flex !important;
+    }
+}
+
 .internal-nav-secondary-btn {
     padding: 6px 12px;
     background: transparent;

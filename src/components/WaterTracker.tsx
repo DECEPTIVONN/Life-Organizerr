@@ -10,7 +10,8 @@ import {
   Zap,
   SlidersHorizontal,
   Edit3,
-  Check
+  Check,
+  GlassWater
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -156,7 +157,8 @@ export default function WaterTracker({
       <div className="space-y-1.5 bg-zinc-950/70 border border-zinc-900 rounded-xl p-3">
         <div className="flex items-center justify-between">
           <span className="text-[10px] font-mono font-bold text-zinc-400 flex items-center gap-1.5">
-            <span>🥤</span> COPOS REGISTRADOS (250ml cada)
+            <GlassWater className="w-3.5 h-3.5 text-cyan-400" />
+            <span>COPOS REGISTRADOS (250ml cada)</span>
           </span>
           <span className="text-[9px] font-mono text-cyan-400 font-bold">
             {filledCupsCount} de {totalCups} copos
@@ -200,7 +202,7 @@ export default function WaterTracker({
           title="Desfazer / Remover 250ml"
         >
           <Minus className="w-3.5 h-3.5 text-rose-400" />
-          <span>-250ml</span>
+          <span>250ml</span>
         </button>
 
         <button
@@ -210,7 +212,7 @@ export default function WaterTracker({
           title="Adicionar copo pequeno de 200ml"
         >
           <Plus className="w-3.5 h-3.5 text-cyan-400" />
-          <span>+200ml</span>
+          <span>200ml</span>
         </button>
 
         <button
@@ -220,7 +222,7 @@ export default function WaterTracker({
           title="Adicionar copo padrão de 250ml"
         >
           <Plus className="w-3.5 h-3.5 text-cyan-400" />
-          <span>+250ml</span>
+          <span>250ml</span>
         </button>
 
         <button
@@ -230,7 +232,7 @@ export default function WaterTracker({
           title="Adicionar garrafinha de 500ml"
         >
           <Plus className="w-3.5 h-3.5 text-blue-400" />
-          <span>+500ml</span>
+          <span>500ml</span>
         </button>
 
         <button
@@ -240,7 +242,7 @@ export default function WaterTracker({
           title="Adicionar garrafa / jarra de 1.0 Litro"
         >
           <Plus className="w-3.5 h-3.5 text-indigo-400" />
-          <span>+1.0 L</span>
+          <span>1.0 L</span>
         </button>
       </div>
 
@@ -248,15 +250,38 @@ export default function WaterTracker({
       <div className="pt-1 border-t border-zinc-850/60 flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="flex-1 w-full flex items-center gap-3">
           <SlidersHorizontal className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
-          <input
-            type="range"
-            min="0"
-            max="6"
-            step="0.05"
-            value={currentLiters}
-            onChange={(e) => handleDirectSet(parseFloat(e.target.value))}
-            className="w-full accent-cyan-400 bg-zinc-950 rounded-lg h-2 cursor-pointer"
-          />
+          
+          <div className="relative flex-1 w-full bg-zinc-950/80 rounded-full h-3 p-0.5 border border-zinc-800/80 shadow-inner group">
+            {/* Filled bar in identical style to the top progress bar */}
+            <div className="h-full rounded-full overflow-hidden w-full relative pointer-events-none">
+              <div
+                className={`h-full rounded-full transition-all duration-150 ${
+                  currentLiters >= targetLiters && targetLiters > 0
+                    ? 'bg-gradient-to-r from-cyan-400 via-sky-400 to-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.5)]'
+                    : 'bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                }`}
+                style={{ width: `${Math.min(100, Math.max(0, (currentLiters / 5.0) * 100))}%` }}
+              />
+            </div>
+
+            {/* Glowing Handle / Thumb Indicator */}
+            <div 
+              className="absolute top-1/2 -translate-y-1/2 -ml-1.5 w-3 h-3 rounded-full bg-white border border-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.9)] pointer-events-none transition-transform group-hover:scale-125 z-10"
+              style={{ left: `${Math.min(99, Math.max(1, (currentLiters / 5.0) * 100))}%` }}
+            />
+
+            {/* Native slider on top (transparent) for smooth dragging, clicking, touch & accessibility */}
+            <input
+              type="range"
+              min="0"
+              max="5"
+              step="0.05"
+              value={currentLiters}
+              onChange={(e) => handleDirectSet(parseFloat(e.target.value))}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+              title={`Ajustar valor exato: ${currentLiters.toFixed(2)} L`}
+            />
+          </div>
         </div>
 
         {/* Custom Edit / Reset Controls */}
@@ -271,7 +296,7 @@ export default function WaterTracker({
                 value={customInputValue}
                 onChange={(e) => setCustomInputValue(e.target.value)}
                 autoFocus
-                className="w-16 bg-zinc-950 border border-cyan-500/50 rounded-lg px-2 py-1 text-xs text-cyan-300 font-mono font-bold focus:outline-none"
+                className="w-16 bg-zinc-950 border border-cyan-500/50 rounded-lg px-2 py-1 text-xs text-cyan-300 font-mono font-bold focus:outline-none focus:ring-1 focus:ring-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.2)]"
               />
               <span className="text-[10px] text-zinc-400 font-mono">L</span>
               <button
@@ -279,7 +304,7 @@ export default function WaterTracker({
                 className="p-1 bg-cyan-500 text-black rounded-lg hover:bg-cyan-400 transition-colors"
                 title="Confirmar"
               >
-                <Check className="w-3.5 h-3.5" />
+                <Check className="w-3.5 h-3.5 stroke-[3]" />
               </button>
               <button
                 type="button"
@@ -297,10 +322,10 @@ export default function WaterTracker({
                 setCustomInputValue(currentLiters.toFixed(2));
                 setIsEditingCustom(true);
               }}
-              className="px-2 py-1 rounded-lg bg-zinc-950 hover:bg-zinc-900 border border-zinc-850 text-zinc-400 hover:text-white text-[10px] font-mono flex items-center gap-1 transition-colors"
+              className="px-2.5 py-1.5 rounded-lg bg-zinc-950 hover:bg-zinc-900 border border-zinc-800 hover:border-cyan-500/40 text-zinc-400 hover:text-cyan-300 text-[10px] font-mono flex items-center gap-1.5 transition-colors shadow-sm"
               title="Digitar valor exato"
             >
-              <Edit3 className="w-3 h-3 text-zinc-500" />
+              <Edit3 className="w-3 h-3 text-cyan-400" />
               <span>Digitar exato</span>
             </button>
           )}

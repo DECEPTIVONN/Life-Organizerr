@@ -2840,10 +2840,10 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
           <button
             onClick={handleOpenReview}
             className="flex items-center gap-1.5 px-3 py-2 bg-zinc-950 hover:bg-zinc-900 text-xs text-orange-500 hover:text-orange-400 font-bold rounded-xl border border-orange-500/10 hover:border-orange-500/30 transition-all relative"
-            title="Abrir Módulo de Avaliação e Review Mensal"
+            title="Mês"
           >
             <Compass className="h-3.5 w-3.5 text-orange-500" />
-            <span className="hidden sm:inline">Review Mensal</span>
+            <span className="hidden sm:inline">Mês</span>
             {isTodayMonthlyReviewDay(reviewReminders, new Date()) && (
               <span className="w-2 h-2 rounded-full bg-orange-400 animate-ping absolute -top-0.5 -right-0.5" />
             )}
@@ -2852,10 +2852,10 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
           <button
             onClick={handleOpenWeeklyReview}
             className="flex items-center gap-1.5 px-3 py-2 bg-zinc-950 hover:bg-zinc-900 text-xs text-orange-500 hover:text-orange-400 font-bold rounded-xl border border-orange-500/10 hover:border-orange-500/30 transition-all relative"
-            title="Abrir Módulo de Avaliação e Review Semanal"
+            title="Semana"
           >
             <CalendarDays className="h-3.5 w-3.5 text-orange-500" />
-            <span className="hidden sm:inline">Review Semanal</span>
+            <span className="hidden sm:inline">Semana</span>
             {isTodayWeeklyReviewDay(reviewReminders, new Date()) && (
               <span className="w-2 h-2 rounded-full bg-orange-400 animate-ping absolute -top-0.5 -right-0.5" />
             )}
