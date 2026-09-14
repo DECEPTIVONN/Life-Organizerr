@@ -159,6 +159,7 @@ interface DashboardViewProps {
   setIsFinancesOpen?: (open: boolean) => void;
   onOpenStreakHub?: () => void;
   onOpenRankingModal?: () => void;
+  cardGlowEnabled?: boolean;
 }
 
 export default function DashboardView({
@@ -189,7 +190,8 @@ export default function DashboardView({
   isFinancesOpen: propIsFinancesOpen,
   setIsFinancesOpen: propSetIsFinancesOpen,
   onOpenStreakHub,
-  onOpenRankingModal
+  onOpenRankingModal,
+  cardGlowEnabled = true
 }: DashboardViewProps) {
   const [seederApplied, setSeederApplied] = useState(false);
 
@@ -675,7 +677,9 @@ export default function DashboardView({
         <motion.div 
           id="metric-streak-card"
           onClick={onOpenStreakHub}
-          className="relative overflow-hidden bg-[#0a0a0c]/90 p-5 rounded-2xl border border-zinc-850 hover:border-orange-500/40 transition-all flex flex-col justify-between cursor-pointer group min-h-[140px]"
+          className={`relative overflow-hidden bg-[#0a0a0c]/90 p-5 rounded-2xl border border-zinc-850 hover:border-orange-500/40 transition-all flex flex-col justify-between cursor-pointer group min-h-[140px] ${
+            cardGlowEnabled ? 'card-glow-orange' : ''
+          }`}
           whileHover={{ y: -2 }}
         >
           {/* Background Image & Dark Gradient Overlay */}
@@ -693,7 +697,9 @@ export default function DashboardView({
               <span className="text-[10px] text-gray-300 group-hover:text-orange-300 font-extrabold tracking-widest uppercase transition-colors drop-shadow">
                 Frequência
               </span>
-              <div className="p-1.5 bg-orange-500/20 border border-orange-500/30 rounded-xl backdrop-blur-md">
+              <div className={`p-1.5 bg-orange-500/20 border border-orange-500/30 rounded-xl backdrop-blur-md ${
+                cardGlowEnabled ? 'shadow-[0_0_12px_rgba(249,115,22,0.35)]' : ''
+              }`}>
                 <Flame className="h-5 w-5 text-orange-500 fill-orange-500/20 animate-pulse" />
               </div>
             </div>
@@ -710,7 +716,9 @@ export default function DashboardView({
         {/* XP Total Card */}
         <motion.div 
           id="metric-xp-card"
-          className="relative overflow-hidden bg-[#0a0a0c]/90 p-5 rounded-2xl border border-zinc-850 hover:border-amber-500/40 transition-all flex flex-col justify-between group min-h-[140px]"
+          className={`relative overflow-hidden bg-[#0a0a0c]/90 p-5 rounded-2xl border border-zinc-850 hover:border-amber-500/40 transition-all flex flex-col justify-between group min-h-[140px] ${
+            cardGlowEnabled ? 'card-glow-amber' : ''
+          }`}
           whileHover={{ y: -2 }}
         >
           {/* Background Image & Dark Gradient Overlay */}
@@ -726,7 +734,9 @@ export default function DashboardView({
           <div className="relative z-10 flex flex-col justify-between h-full">
             <div className="flex items-center justify-between">
               <span className="text-[10px] text-gray-300 font-extrabold tracking-widest uppercase drop-shadow">XP Acumulado</span>
-              <div className="p-1.5 bg-amber-500/20 border border-amber-500/30 rounded-xl backdrop-blur-md">
+              <div className={`p-1.5 bg-amber-500/20 border border-amber-500/30 rounded-xl backdrop-blur-md ${
+                cardGlowEnabled ? 'shadow-[0_0_12px_rgba(245,158,11,0.35)]' : ''
+              }`}>
                 <Zap className="h-5 w-5 text-amber-400 fill-amber-400/20" />
               </div>
             </div>
@@ -748,7 +758,9 @@ export default function DashboardView({
         {/* Checklist Completeness Card */}
         <motion.div 
           id="metric-goals-card"
-          className="relative overflow-hidden bg-[#0a0a0c]/90 p-5 rounded-2xl border border-zinc-850 hover:border-emerald-500/40 transition-all flex flex-col justify-between group min-h-[140px]"
+          className={`relative overflow-hidden bg-[#0a0a0c]/90 p-5 rounded-2xl border border-zinc-850 hover:border-emerald-500/40 transition-all flex flex-col justify-between group min-h-[140px] ${
+            cardGlowEnabled ? 'card-glow-emerald' : ''
+          }`}
           whileHover={{ y: -2 }}
         >
           {/* Background Image & Dark Gradient Overlay */}
@@ -764,7 +776,9 @@ export default function DashboardView({
           <div className="relative z-10 flex flex-col justify-between h-full">
             <div className="flex items-center justify-between">
               <span className="text-[10px] text-gray-300 font-extrabold tracking-widest uppercase drop-shadow">Checklist de Hoje</span>
-              <div className="p-1.5 bg-emerald-500/20 border border-emerald-500/30 rounded-xl backdrop-blur-md">
+              <div className={`p-1.5 bg-emerald-500/20 border border-emerald-500/30 rounded-xl backdrop-blur-md ${
+                cardGlowEnabled ? 'shadow-[0_0_12px_rgba(16,185,129,0.35)]' : ''
+              }`}>
                 <CheckSquare className="h-5 w-5 text-emerald-400" />
               </div>
             </div>
@@ -786,7 +800,9 @@ export default function DashboardView({
         {/* Saldo Financeiro Card */}
         <motion.div 
           id="metric-badges-card"
-          className="relative overflow-hidden bg-[#0a0a0c]/90 p-5 rounded-2xl border border-zinc-850 hover:border-cyan-500/40 transition-all flex flex-col justify-between group min-h-[140px]"
+          className={`relative overflow-hidden bg-[#0a0a0c]/90 p-5 rounded-2xl border border-zinc-850 hover:border-cyan-500/40 transition-all flex flex-col justify-between group min-h-[140px] ${
+            cardGlowEnabled ? 'card-glow-cyan' : ''
+          }`}
           whileHover={{ y: -2 }}
         >
           {/* Background Image & Dark Gradient Overlay */}
@@ -802,7 +818,9 @@ export default function DashboardView({
           <div className="relative z-10 flex flex-col justify-between h-full">
             <div className="flex items-center justify-between">
               <span className="text-[10px] text-gray-300 font-extrabold tracking-widest uppercase drop-shadow">Saldo de Caixa</span>
-              <div className="p-1.5 bg-cyan-500/20 border border-cyan-500/30 rounded-xl backdrop-blur-md">
+              <div className={`p-1.5 bg-cyan-500/20 border border-cyan-500/30 rounded-xl backdrop-blur-md ${
+                cardGlowEnabled ? 'shadow-[0_0_12px_rgba(6,182,212,0.35)]' : ''
+              }`}>
                 <Wallet className="h-5 w-5 text-cyan-400" />
               </div>
             </div>

@@ -20,13 +20,15 @@ interface WaterTrackerProps {
   onChange: (val: number) => void;
   targetLiters?: number;
   onAddXp?: (amount: number) => void;
+  cardGlowEnabled?: boolean;
 }
 
 export default function WaterTracker({
   waterLiters,
   onChange,
   targetLiters = 3.0,
-  onAddXp
+  onAddXp,
+  cardGlowEnabled = true
 }: WaterTrackerProps) {
   const [isEditingCustom, setIsEditingCustom] = useState(false);
   const [customInputValue, setCustomInputValue] = useState(waterLiters.toFixed(2));
@@ -74,15 +76,23 @@ export default function WaterTracker({
   const filledCupsCount = Math.min(totalCups, Math.floor((currentLiters / 0.25) + 0.05));
 
   return (
-    <div className="bg-[#09090d] border border-cyan-500/20 rounded-2xl p-4 sm:p-5 space-y-4 shadow-[0_4px_24px_rgba(6,182,212,0.06)] relative overflow-hidden transition-all">
+    <div className={`bg-[#09090d] border border-cyan-500/20 rounded-2xl p-4 sm:p-5 space-y-4 relative overflow-hidden transition-all ${
+      cardGlowEnabled ? 'card-glow-cyan' : ''
+    }`}>
       {/* Subtle background glow */}
-      <div className="absolute -top-16 -right-16 w-36 h-36 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none" />
-      <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-blue-600/10 rounded-full blur-2xl pointer-events-none" />
+      {cardGlowEnabled && (
+        <>
+          <div className="absolute -top-16 -right-16 w-36 h-36 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none" />
+          <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-blue-600/10 rounded-full blur-2xl pointer-events-none" />
+        </>
+      )}
 
       {/* Header: Title & Numeric Metrics */}
       <div className="flex items-center justify-between border-b border-zinc-850/80 pb-3">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center shadow-[0_0_12px_rgba(6,182,212,0.25)]">
+          <div className={`w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center ${
+            cardGlowEnabled ? 'shadow-[0_0_12px_rgba(6,182,212,0.25)]' : ''
+          }`}>
             <Droplets className="w-4 h-4 text-cyan-400 animate-pulse" />
           </div>
           <div>

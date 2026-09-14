@@ -230,6 +230,11 @@ export default function App() {
     return (localStorage.getItem('mbc_mobile_navbar_mode') as 'fixed' | 'flexible') || 'fixed';
   });
 
+  // Card Glow Effect (matches water tracker effect, toggleable)
+  const [cardGlowEnabled, setCardGlowEnabled] = useState<boolean>(() => {
+    return localStorage.getItem('mbc_card_glow_enabled') !== 'false';
+  });
+
   const [activeThemePreset, setActiveThemePreset] = useState<string>(() => {
     return localStorage.getItem('mbc_theme_preset') || 'default';
   });
@@ -3245,6 +3250,7 @@ export default function App() {
             setIsGoalsOpen={setDashboardGoalsOpen}
             isFinancesOpen={dashboardFinancesOpen}
             setIsFinancesOpen={setDashboardFinancesOpen}
+            cardGlowEnabled={cardGlowEnabled}
           />
         );
       case 'classificacao':
@@ -3443,6 +3449,7 @@ export default function App() {
             freeEditMode={freeEditMode}
             masterTemplates={masterTemplates}
             setMasterTemplates={setMasterTemplates}
+            cardGlowEnabled={cardGlowEnabled}
           />
         );
       case 'anuais':
@@ -3590,6 +3597,8 @@ export default function App() {
             setMobileSlideTransition={setMobileSlideTransition}
             mobileNavbarMode={mobileNavbarMode}
             setMobileNavbarMode={setMobileNavbarMode}
+            cardGlowEnabled={cardGlowEnabled}
+            setCardGlowEnabled={setCardGlowEnabled}
             setAccountDeactivated={setAccountDeactivated}
             onLogout={handleLogout}
             syncKey={syncKey}

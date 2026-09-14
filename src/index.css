@@ -405,3 +405,24 @@ input[type=number] {
   color: #fff !important;
 }
 
+/* Global Card Glow Effect (matches WaterTracker glow, toggleable in Settings) */
+.card-glow-theme {
+  box-shadow: 0 0 16px var(--accent-glow, rgba(249, 115, 22, 0.25)), 0 4px 24px var(--accent-glow-subtle, rgba(249, 115, 22, 0.08)) !important;
+}
+
+.card-glow-cyan {
+  box-shadow: 0 0 16px rgba(6, 182, 212, 0.25), 0 4px 24px rgba(6, 182, 212, 0.08) !important;
+}
+
+.card-glow-orange {
+  box-shadow: 0 0 16px rgba(249, 115, 22, 0.25), 0 4px 24px rgba(249, 115, 22, 0.08) !important;
+}
+
+.card-glow-amber {
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.25), 0 4px 24px rgba(245, 158, 11, 0.08) !important;
+}
+
+.card-glow-emerald {
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.25), 0 4px 24px rgba(16, 185, 129, 0.08) !important;
+}
+

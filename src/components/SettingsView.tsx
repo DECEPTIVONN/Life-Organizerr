@@ -105,6 +105,10 @@ interface SettingsViewProps {
   mobileNavbarMode?: 'fixed' | 'flexible';
   setMobileNavbarMode?: (mode: 'fixed' | 'flexible') => void;
 
+  // Card Glow Effect
+  cardGlowEnabled?: boolean;
+  setCardGlowEnabled?: (enabled: boolean) => void;
+
   // Theme Color Customization
   activeThemePreset?: string;
   setActiveThemePreset?: (preset: string) => void;
@@ -201,6 +205,8 @@ export default function SettingsView({
   setMobileSlideTransition,
   mobileNavbarMode = 'fixed',
   setMobileNavbarMode,
+  cardGlowEnabled = true,
+  setCardGlowEnabled,
   setAccountDeactivated,
   onLogout,
   syncKey,
@@ -2804,6 +2810,41 @@ export default function SettingsView({
                 }`}
               >
                 {showDateSelector ? 'Habilitado' : 'Desabilitado'}
+              </button>
+            </div>
+
+            {/* Toggle Card Glow Effect */}
+            <div className="p-4 bg-zinc-950 border border-zinc-900 rounded-2xl flex items-center justify-between">
+              <div className="space-y-0.5 flex-1 pr-4">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-xs font-bold text-zinc-200">Efeito Glow nos Cards</h4>
+                  {cardGlowEnabled && (
+                    <span className="text-[8px] font-bold text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-full font-mono uppercase">
+                      Ativo
+                    </span>
+                  )}
+                </div>
+                <p className="text-[10px] text-zinc-500 font-mono leading-normal">
+                  Iluminação sutil e brilho estético nos cards e métricas principais do sistema (como no consumo de água).
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (setCardGlowEnabled) {
+                    const updated = !cardGlowEnabled;
+                    setCardGlowEnabled(updated);
+                    localStorage.setItem('mbc_card_glow_enabled', String(updated));
+                    addXp(10);
+                  }
+                }}
+                className={`px-3 py-1.5 rounded-lg text-[9px] font-mono font-bold uppercase transition-all ${
+                  cardGlowEnabled 
+                    ? 'bg-orange-500/15 text-orange-400 border border-orange-500/20' 
+                    : 'bg-zinc-900 border border-zinc-800 text-zinc-500'
+                }`}
+              >
+                {cardGlowEnabled ? 'Habilitado' : 'Desabilitado'}
               </button>
             </div>
 

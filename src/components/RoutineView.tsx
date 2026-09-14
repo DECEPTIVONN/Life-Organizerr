@@ -652,55 +652,25 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
         </div>
 
         <div className="flex items-center gap-2.5 self-start md:self-auto flex-wrap">
-          {/* View Toggle - Mobile (mantido compacto) */}
-          <div className="flex md:hidden items-center bg-zinc-950 p-1 rounded-xl">
+          {/* View Toggle - Unificado e responsivo (sem duplicação no mobile) */}
+          <nav className="internal-nav-secondary" aria-label="Visualização da Rotina Semanal">
             <button
               type="button"
               onClick={() => setViewMode('lista')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 ${
-                viewMode === 'lista'
-                  ? 'bg-orange-500 text-white shadow-[0_4px_10px_rgba(249,115,22,0.25)]'
-                  : 'text-zinc-500 hover:text-zinc-350'
-              }`}
+              className={`internal-nav-secondary-btn ${viewMode === 'lista' ? 'active' : ''}`}
             >
               <List className="h-3.5 w-3.5" />
-              Lista
+              <span>Lista</span>
             </button>
             <button
               type="button"
               onClick={() => setViewMode('quadro')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 ${
-                viewMode === 'quadro'
-                  ? 'bg-orange-500 text-white shadow-[0_4px_10px_rgba(249,115,22,0.25)]'
-                  : 'text-zinc-500 hover:text-zinc-300'
-              }`}
+              className={`internal-nav-secondary-btn ${viewMode === 'quadro' ? 'active' : ''}`}
             >
               <LayoutGrid className="h-3.5 w-3.5" />
-              Quadro
+              <span>Quadro</span>
             </button>
-          </div>
-
-          {/* View Toggle - Desktop (Internal Nav Secundária, apenas no desktop) */}
-          <div className="hidden md:block">
-            <nav className="internal-nav-secondary" aria-label="Visualização da Rotina Semanal">
-              <button
-                type="button"
-                onClick={() => setViewMode('lista')}
-                className={`internal-nav-secondary-btn ${viewMode === 'lista' ? 'active' : ''}`}
-              >
-                <List className="h-3.5 w-3.5" />
-                <span>Lista</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode('quadro')}
-                className={`internal-nav-secondary-btn ${viewMode === 'quadro' ? 'active' : ''}`}
-              >
-                <LayoutGrid className="h-3.5 w-3.5" />
-                <span>Quadro</span>
-              </button>
-            </nav>
-          </div>
+          </nav>
 
           <button
             type="button"

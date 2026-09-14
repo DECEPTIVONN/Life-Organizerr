@@ -93,6 +93,7 @@ interface CalendarViewProps {
   freeEditMode?: boolean;
   masterTemplates?: { gratitude: string; decrees: string; prayer: string };
   setMasterTemplates?: React.Dispatch<React.SetStateAction<{ gratitude: string; decrees: string; prayer: string }>>;
+  cardGlowEnabled?: boolean;
 }
 
 const DEFAULT_GRATITUDE_TEMPLATE = `Sou profundamente grato(a) hoje por:
@@ -175,7 +176,8 @@ export default function CalendarView({
   setUserEmail,
   freeEditMode = false,
   masterTemplates,
-  setMasterTemplates
+  setMasterTemplates,
+  cardGlowEnabled = true
 }: CalendarViewProps) {
   const BIBLE_TOTAL_CHAPTERS = 1189;
 
@@ -4248,6 +4250,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                             waterLiters={waterLiters} 
                             onChange={setWaterLiters} 
                             onAddXp={addXp} 
+                            cardGlowEnabled={cardGlowEnabled}
                           />
                         </div>
                       ) : (
