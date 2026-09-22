@@ -48,7 +48,7 @@ import RoutineView from './RoutineView';
 import HabitsTrackerView from './HabitsTrackerView';
 import { syncBookWithYearlyBooks, calculateReadingInterval, formatDateBR } from '../utils/bookUtils';
 import { cleanupExpiredGridRoutine, cleanupExpiredRoutineItems, isPastWeek, getWeekMondayStr } from '../utils/routineUtils';
-import { addDeletedTaskIdForDate } from '../utils/taskStorage';
+import { addDeletedTaskIdForDate, getDeletedTaskIdsForDate } from '../utils/taskStorage';
 
 interface ChecklistViewProps {
   dailyTasks: DailyTask[];
@@ -302,15 +302,20 @@ export default function ChecklistView({
 
   // Active tasks for selectedDate: Merges dailyTasks with GridRoutine and Routine items
   const activeTasks = useMemo(() => {
+    const note = calendarNotes?.find(n => n.date === selectedDate);
+    const deletedIds = new Set([
+      ...(note?.deletedTaskIds || []),
+      ...getDeletedTaskIdsForDate(selectedDate)
+    ]);
+
     let baseList: DailyTask[] = [];
     if (selectedDate === todayStr) {
-      baseList = dailyTasks.filter(t => t.isRecurring !== false || !t.createdDate || t.createdDate === todayStr);
+      baseList = dailyTasks.filter(t => (t.isRecurring !== false || !t.createdDate || t.createdDate === todayStr) && !deletedIds.has(t.id));
     } else {
-      const note = calendarNotes?.find(n => n.date === selectedDate);
       if (note && note.checklist && note.checklist.length > 0) {
-        baseList = note.checklist.filter(t => t.isRecurring !== false || !t.createdDate || t.createdDate === selectedDate);
+        baseList = note.checklist.filter(t => (t.isRecurring !== false || !t.createdDate || t.createdDate === selectedDate) && !deletedIds.has(t.id));
       } else {
-        baseList = dailyTasks.filter(t => t.isRecurring !== false || !t.createdDate || t.createdDate === selectedDate).map(t => ({
+        baseList = dailyTasks.filter(t => (t.isRecurring !== false || !t.createdDate || t.createdDate === selectedDate) && !deletedIds.has(t.id)).map(t => ({
           ...t,
           completed: false,
           subtasks: t.subtasks?.map(s => ({ ...s, completed: false }))
@@ -358,6 +363,7 @@ export default function ChecklistView({
         }
 
         const taskId = `grid-${key}`;
+        if (deletedIds.has(taskId)) return;
         const existing = existingById.get(taskId);
         const startTime = block.startTime || blockHour;
         const period = getTimePeriodFromHour(startTime);
@@ -411,6 +417,7 @@ export default function ChecklistView({
         }
 
         const taskId = `routine-${item.id}`;
+        if (deletedIds.has(taskId)) return;
         const existing = existingById.get(taskId);
         const period = getTimePeriodFromHour(item.time);
 
@@ -447,13 +454,15 @@ export default function ChecklistView({
     // Merge baseList (excluding any dynamic tasks that will be replaced) with dynamicRoutineTasks
     const finalTasks: DailyTask[] = [];
     baseList.forEach(t => {
-      if (!t.id.startsWith('grid-') && !t.id.startsWith('routine-')) {
+      if (!t.id.startsWith('grid-') && !t.id.startsWith('routine-') && !deletedIds.has(t.id)) {
         finalTasks.push(t);
       }
     });
 
     dynamicRoutineTasks.forEach(dt => {
-      finalTasks.push(dt);
+      if (!deletedIds.has(dt.id)) {
+        finalTasks.push(dt);
+      }
     });
 
     return finalTasks;
@@ -515,19 +524,34 @@ export default function ChecklistView({
     }
   }, [todayStr, setDailyTasks, setBibleTracker, lastDailyResetDate, setLastDailyResetDate, gridRoutine, propRoutine, propSetRoutine]);
 
-  const updateActiveTasks = (updater: (prev: DailyTask[]) => DailyTask[]) => {
+  const updateActiveTasks = (updater: (prev: DailyTask[]) => DailyTask[], deletedTaskId?: string) => {
     if (selectedDate === todayStr) {
       setDailyTasks(prev => {
         const currentMap = new Map<string, DailyTask>(prev.map(t => [t.id, t]));
         activeTasks.forEach(at => {
-          if (!currentMap.has(at.id)) {
+          if (
+            !currentMap.has(at.id) &&
+            !at.id.startsWith('grid-') &&
+            !at.id.startsWith('routine-') &&
+            !at.id.startsWith('dt-day-') &&
+            at.id !== 'task-leitura' &&
+            at.id !== 'task-biblia'
+          ) {
             currentMap.set(at.id, at);
           }
         });
         const combined = Array.from(currentMap.values());
-        return updater(combined);
+        const updated = updater(combined);
+        return updated.filter(t => 
+          !t.id.startsWith('grid-') && 
+          !t.id.startsWith('routine-') && 
+          !t.id.startsWith('dt-day-') &&
+          t.id !== 'task-leitura' && 
+          t.id !== 'task-biblia'
+        );
       });
-    } else if (setCalendarNotes) {
+    }
+    if (setCalendarNotes) {
       setCalendarNotes(prevNotes => {
         const existingIdx = prevNotes.findIndex(n => n.date === selectedDate);
         const currentList = existingIdx !== -1 && prevNotes[existingIdx].checklist && prevNotes[existingIdx].checklist.length > 0
@@ -537,11 +561,16 @@ export default function ChecklistView({
         const newTasks = updater(currentList);
         
         if (existingIdx !== -1) {
+          const currentDeleted = prevNotes[existingIdx].deletedTaskIds || [];
+          const newDeleted = deletedTaskId && !currentDeleted.includes(deletedTaskId)
+            ? [...currentDeleted, deletedTaskId]
+            : currentDeleted;
           const updated = [...prevNotes];
           updated[existingIdx] = {
             ...updated[existingIdx],
             isDailyRecord: true,
-            checklist: newTasks
+            checklist: newTasks,
+            deletedTaskIds: newDeleted
           };
           return updated;
         } else {
@@ -554,7 +583,8 @@ export default function ChecklistView({
               note: '',
               tags: ['Checklist'],
               isDailyRecord: true,
-              checklist: newTasks
+              checklist: newTasks,
+              deletedTaskIds: deletedTaskId ? [deletedTaskId] : (selectedDate ? getDeletedTaskIdsForDate(selectedDate) : [])
             }
           ];
         }
@@ -1056,8 +1086,8 @@ export default function ChecklistView({
     if (completed) {
       addXp(-xpReward);
     }
-    if (selectedDate === todayStr) {
-      addDeletedTaskIdForDate(todayStr, id);
+    if (selectedDate) {
+      addDeletedTaskIdForDate(selectedDate, id);
     }
     if (id.startsWith('grid-')) {
       const gridKey = id.replace('grid-', '');
@@ -1068,7 +1098,7 @@ export default function ChecklistView({
       const routineId = id.replace('routine-', '');
       propSetRoutine(prev => prev.filter(r => r.id !== routineId));
     }
-    updateActiveTasks(prev => prev.filter(t => t.id !== id));
+    updateActiveTasks(prev => prev.filter(t => t.id !== id), id);
   };
 
   // Helper Handlers for Editing Task Modal

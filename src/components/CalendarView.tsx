@@ -2357,6 +2357,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
       setDailyTasks(updatedChecklist.filter(t => 
         !t.id.startsWith('grid-') && 
         !t.id.startsWith('routine-') && 
+        !t.id.startsWith('dt-day-') &&
         t.id !== 'task-leitura' && 
         t.id !== 'task-biblia'
       ));
@@ -2990,7 +2991,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
               setSelectedDateStr(null);
               setIsEditingTemplates(false);
             }}
-            className="fixed inset-0 z-[9999] bg-[#040405]/95 backdrop-blur-md flex items-center justify-center p-1.5 sm:p-4 md:p-6 overflow-y-auto cursor-pointer"
+            className="fixed inset-0 z-[9999] bg-[#040405]/95 backdrop-blur-md flex items-center justify-center p-1.5 sm:p-4 md:p-0 overflow-y-auto cursor-pointer"
           >
             <motion.div
               onClick={(e) => e.stopPropagation()}
@@ -2998,7 +2999,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="cursor-default bg-[#0a0a0c] border border-zinc-800 rounded-2xl sm:rounded-3xl w-full max-w-6xl h-[94dvh] sm:h-[90vh] max-h-[94dvh] sm:max-h-[90vh] my-auto flex flex-col overflow-hidden shadow-2xl shadow-orange-500/5 text-left"
+              className="cursor-default bg-[#0a0a0c] border border-zinc-800 rounded-2xl sm:rounded-3xl md:rounded-none md:border-0 w-full max-w-6xl md:max-w-none h-[94dvh] sm:h-[90vh] md:h-full max-h-[94dvh] sm:max-h-[90vh] md:max-h-none my-auto md:my-0 flex flex-col overflow-hidden shadow-2xl shadow-orange-500/5 text-left"
             >
               <div ref={panelRef} className="flex flex-col h-full overflow-hidden min-h-0">
           
@@ -3010,7 +3011,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.98 }}
-                className="p-4 sm:p-5 flex flex-col h-full overflow-hidden min-h-0 space-y-3"
+                className="p-4 sm:p-5 md:p-6 lg:p-8 flex flex-col h-full overflow-hidden min-h-0 space-y-3 md:space-y-4 max-w-5xl md:w-full md:mx-auto"
               >
                 <div className="shrink-0 flex justify-between items-center border-b border-zinc-800 pb-3">
                   <div>
@@ -3090,30 +3091,30 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="p-4 sm:p-5 flex flex-col h-full overflow-hidden min-h-0 space-y-3"
+                className="p-4 sm:p-5 md:p-6 lg:p-8 flex flex-col h-full overflow-hidden min-h-0 space-y-3 md:space-y-4 max-w-7xl md:w-full md:mx-auto"
               >
                 {/* Panel Header */}
-                <div className="shrink-0 flex justify-between items-start border-b border-zinc-800 pb-3">
+                <div className="shrink-0 flex justify-between items-start border-b border-zinc-800 pb-3 md:pb-4">
                   <div>
-                    <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+                    <h3 className="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">
                       Meu Dia
                     </h3>
-                    <p className="text-[10px] text-orange-500 font-mono font-bold mt-0.5 capitalize">
+                    <p className="text-[10px] sm:text-xs text-orange-500 font-mono font-bold mt-0.5 capitalize">
                       {selectedDateStr ? formatLongDate(selectedDateStr) : 'Selecione uma data'}
                     </p>
                   </div>
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
                     <button
                       onClick={() => setIsTagModalOpen(true)}
-                      className="px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 text-orange-400 border border-orange-500/30 text-[10px] font-bold rounded-lg flex items-center gap-1 transition-colors"
+                      className="px-2.5 py-1 md:px-3 md:py-1.5 bg-zinc-900 hover:bg-zinc-800 text-orange-400 border border-orange-500/30 text-[10px] sm:text-xs font-bold rounded-lg flex items-center gap-1.5 transition-colors"
                       title="Abrir Central de Tags (@)"
                     >
-                      <Folder className="h-3 w-3" /> Tags
+                      <Folder className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Tags
                     </button>
                     {activeRecord && (
                       <button
                         onClick={handleDeleteRecord}
-                        className="p-1.5 hover:bg-zinc-900 text-zinc-500 hover:text-red-500 rounded-lg transition-colors"
+                        className="p-1.5 md:p-2 hover:bg-zinc-900 text-zinc-500 hover:text-red-500 rounded-lg transition-colors"
                         title="Apagar este dia"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -3121,10 +3122,10 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                     )}
                     <button
                       onClick={() => setSelectedDateStr(null)}
-                      className="p-1.5 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-lg transition-colors"
+                      className="p-1.5 md:p-2 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-lg transition-colors"
                       title="Fechar"
                     >
-                      <X className="h-4 w-4" />
+                      <X className="h-4 w-4 md:h-5 md:w-5" />
                     </button>
                   </div>
                 </div>
@@ -3174,9 +3175,29 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                     {/* Topic Content Container (Scrollable) */}
                     <div className="flex-1 overflow-y-auto min-h-0 pr-1 space-y-3 scrollbar-thin flex flex-col">
                       {activeTopic === 'diario' ? (
-                        /* DIARIO TOPIC (COM ALTER EGO DOMINANTE) */
-                        <div className="space-y-3 flex-1 flex flex-col min-h-0">
-                          {/* Alter Ego Dominante do Dia */}
+                        /* DIARIO TOPIC (COM ALTER EGO DOMINANTE ABAIXO DE COMO FOI O SEU DIA) */
+                        <div className="space-y-4 flex-1 flex flex-col min-h-0">
+                          {/* Campo Como foi seu dia? */}
+                          <div className="flex-1 flex flex-col min-h-0 space-y-1.5">
+                            <div className="flex justify-between items-center">
+                              <span className="text-[10px] sm:text-xs text-gray-300 font-bold uppercase tracking-wider">
+                                Como foi o seu dia?
+                              </span>
+                              <span className="text-[9px] text-gray-500 font-mono">
+                                {journalText.length} caracteres
+                              </span>
+                            </div>
+                            <TagInputWithMention
+                              value={journalText}
+                              onChange={setJournalText}
+                              rows={10}
+                              className="flex-1 h-full min-h-[180px] sm:min-h-[240px] md:min-h-[320px] lg:min-h-[400px]"
+                              openTagManagerModal={() => setIsTagModalOpen(true)}
+                              placeholder="Escreva aqui como foi o seu dia, suas vitórias, lições aprendidas e sentimentos... Use @ para invocar tags ou @# para criar."
+                            />
+                          </div>
+
+                          {/* Alter Ego Dominante do Dia (Abaixo de Como foi o seu dia?) */}
                           <div className="bg-zinc-950/40 border border-zinc-900 rounded-xl p-2.5 sm:p-3 space-y-2 shrink-0">
                             <div className="flex justify-between items-center">
                               <div>
@@ -3231,25 +3252,6 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                 </div>
                               </button>
                             </div>
-                          </div>
-
-                          <div className="flex-1 flex flex-col min-h-0 space-y-1.5">
-                            <div className="flex justify-between items-center">
-                              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-                                Como foi seu dia?
-                              </span>
-                              <span className="text-[9px] text-gray-500 font-mono">
-                                {journalText.length} caracteres
-                              </span>
-                            </div>
-                            <TagInputWithMention
-                              value={journalText}
-                              onChange={setJournalText}
-                              rows={10}
-                              className="flex-1 h-full min-h-[180px] sm:min-h-[240px] lg:min-h-[300px]"
-                              openTagManagerModal={() => setIsTagModalOpen(true)}
-                              placeholder="Escreva aqui como foi o seu dia, suas vitórias, lições aprendidas e sentimentos... Use @ para invocar tags ou @# para criar."
-                            />
                           </div>
                         </div>
                       ) : activeTopic === 'checklist' ? (

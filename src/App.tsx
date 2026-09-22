@@ -67,6 +67,7 @@ import { sendSystemNotification, syncAlarmsToServiceWorker } from './lib/notific
 import { DEFAULT_VISION_BOARD_CARDS } from './components/VisionBoard';
 import { BankAccount, CreditCardItem, DebtItem, BudgetLimit } from './components/FinancesView';
 import { cleanupExpiredGridRoutine, cleanupExpiredRoutineItems } from './utils/routineUtils';
+import { getDeletedTaskIdsForDate } from './utils/taskStorage';
 
 // Types
 import { 
@@ -2786,18 +2787,26 @@ export default function App() {
       if (existingIdx !== -1) {
         const existingRecord = prevNotes[existingIdx];
         const existingChecklist = existingRecord.checklist || [];
+        const deletedIds = new Set([
+          ...(existingRecord.deletedTaskIds || []),
+          ...getDeletedTaskIdsForDate(todayStr)
+        ]);
         
         // Retain non-daily task items (routine, grid, book reading, custom day tasks)
         // Any standard daily task that is no longer in dailyTasks is excluded (was deleted by user)
+        const currentDailyIds = new Set(dailyTasks.map(t => t.id));
         const retainedNonDaily = existingChecklist.filter(t => 
-          t.id.startsWith('routine-') || 
+          (t.id.startsWith('routine-') || 
           t.id.startsWith('grid-') || 
           t.id === 'task-leitura' || 
           t.id === 'task-biblia' || 
-          t.id.startsWith('dt-day-')
+          t.id.startsWith('dt-day-')) &&
+          !currentDailyIds.has(t.id) &&
+          !deletedIds.has(t.id)
         );
         
-        const mergedChecklist = [...dailyTasks, ...retainedNonDaily];
+        const cleanDaily = dailyTasks.filter(t => !deletedIds.has(t.id));
+        const mergedChecklist = [...cleanDaily, ...retainedNonDaily];
         if (JSON.stringify(existingRecord.checklist) === JSON.stringify(mergedChecklist)) {
           return prevNotes;
         }
@@ -2809,6 +2818,8 @@ export default function App() {
         };
         return updated;
       } else {
+        const deletedIds = new Set(getDeletedTaskIdsForDate(todayStr));
+        const cleanDaily = dailyTasks.filter(t => !deletedIds.has(t.id));
         return [
           ...prevNotes,
           {
@@ -2817,7 +2828,8 @@ export default function App() {
             title: `Registro Diário (${todayStr})`,
             content: '',
             isDailyRecord: true,
-            checklist: dailyTasks
+            checklist: cleanDaily,
+            deletedTaskIds: Array.from(deletedIds)
           }
         ];
       }
