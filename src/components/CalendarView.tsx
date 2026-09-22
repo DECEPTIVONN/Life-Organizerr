@@ -2991,15 +2991,15 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
               setSelectedDateStr(null);
               setIsEditingTemplates(false);
             }}
-            className="fixed inset-0 z-[9999] bg-[#040405]/95 backdrop-blur-md flex items-center justify-center p-1.5 sm:p-4 md:p-0 overflow-y-auto cursor-pointer"
+            className="fixed inset-0 z-[9999] bg-[#040405] backdrop-blur-md flex flex-col p-0 overflow-hidden cursor-pointer"
           >
             <motion.div
               onClick={(e) => e.stopPropagation()}
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="cursor-default bg-[#0a0a0c] border border-zinc-800 rounded-2xl sm:rounded-3xl md:rounded-none md:border-0 w-full max-w-6xl md:max-w-none h-[94dvh] sm:h-[90vh] md:h-full max-h-[94dvh] sm:max-h-[90vh] md:max-h-none my-auto md:my-0 flex flex-col overflow-hidden shadow-2xl shadow-orange-500/5 text-left"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="cursor-default bg-[#0a0a0c] w-full h-full min-h-[100dvh] max-h-[100dvh] rounded-none border-0 m-0 p-0 flex flex-col overflow-hidden text-left"
             >
               <div ref={panelRef} className="flex flex-col h-full overflow-hidden min-h-0">
           
@@ -3091,7 +3091,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="p-4 sm:p-5 md:p-6 lg:p-8 flex flex-col h-full overflow-hidden min-h-0 space-y-3 md:space-y-4 max-w-7xl md:w-full md:mx-auto"
+                className="p-3 sm:p-5 md:p-6 lg:p-8 flex flex-col h-full overflow-hidden min-h-0 space-y-3 md:space-y-4 w-full max-w-7xl md:mx-auto"
               >
                 {/* Panel Header */}
                 <div className="shrink-0 flex justify-between items-start border-b border-zinc-800 pb-3 md:pb-4">
@@ -4513,31 +4513,104 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                       )}
                     </div>
 
-                    {/* Pinned Bottom Save Area */}
-                    <div className="shrink-0 pt-3 border-t border-zinc-800 bg-[#0a0a0c] flex items-center justify-between z-10 sticky bottom-0">
-                      <span className="text-[10px] text-gray-500 font-mono">
+                    {/* Pinned Bottom Navigation & Save Area */}
+                    <div className="shrink-0 pt-2.5 pb-2 sm:pb-3 border-t border-zinc-800 bg-[#0a0a0c] flex items-center justify-between gap-2 z-10 sticky bottom-0">
+                      {/* Left: Tab Navigation Buttons */}
+                      <div className="flex items-center gap-1.5 sm:gap-2">
+                        {/* Voltar button: Available on checklist, espiritualidade, leitura, saude, agenda */}
+                        {activeTopic !== 'diario' && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const tabOrder: Array<'diario' | 'checklist' | 'espiritualidade' | 'leitura' | 'saude' | 'agenda'> = [
+                                'diario',
+                                'checklist',
+                                'espiritualidade',
+                                'leitura',
+                                'saude',
+                                'agenda'
+                              ];
+                              const currIdx = tabOrder.indexOf(activeTopic);
+                              if (currIdx > 0) {
+                                setActiveTopic(tabOrder[currIdx - 1]);
+                              }
+                            }}
+                            className="bg-zinc-900 hover:bg-zinc-800 active:scale-95 text-zinc-300 hover:text-white font-medium text-xs px-2.5 sm:px-3 py-1.5 rounded-lg flex items-center gap-1 transition-all border border-zinc-800"
+                            title="Voltar para a aba anterior"
+                          >
+                            <ChevronLeft className="h-3.5 w-3.5" />
+                            <span>Voltar</span>
+                          </button>
+                        )}
+
+                        {/* Próximo button: Available on diario, checklist, espiritualidade, leitura, saude */}
+                        {activeTopic !== 'agenda' && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const tabOrder: Array<'diario' | 'checklist' | 'espiritualidade' | 'leitura' | 'saude' | 'agenda'> = [
+                                'diario',
+                                'checklist',
+                                'espiritualidade',
+                                'leitura',
+                                'saude',
+                                'agenda'
+                              ];
+                              const currIdx = tabOrder.indexOf(activeTopic);
+                              if (currIdx !== -1 && currIdx < tabOrder.length - 1) {
+                                setActiveTopic(tabOrder[currIdx + 1]);
+                              }
+                            }}
+                            className="bg-orange-500/15 hover:bg-orange-500/25 active:scale-95 text-orange-400 hover:text-orange-300 font-semibold text-xs px-2.5 sm:px-3 py-1.5 rounded-lg flex items-center gap-1 transition-all border border-orange-500/30"
+                            title="Ir para a próxima aba"
+                          >
+                            <span>Próximo</span>
+                            <ChevronRight className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+
+                        {/* Finalizar button: Available on agenda (fechar a interface) */}
+                        {activeTopic === 'agenda' && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleSaveCurrentRecord();
+                              setSelectedDateStr(null);
+                            }}
+                            className="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-xs px-3 sm:px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all shadow-md shadow-emerald-600/20"
+                            title="Finalizar e fechar Meu Dia"
+                          >
+                            <CheckCircle className="h-3.5 w-3.5" />
+                            <span>Finalizar</span>
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Right: Saving Indicator & Salvar Alterações Button */}
+                      <div className="flex items-center gap-2 sm:gap-3">
                         {savingStatus === 'saving' && (
-                          <span className="text-orange-400 flex items-center gap-1">
+                          <span className="text-[10px] sm:text-xs text-orange-400 flex items-center gap-1 font-mono">
                             <span className="animate-ping h-1.5 w-1.5 rounded-full bg-orange-400 inline-block"></span>
-                            Salvando no banco...
+                            <span className="hidden xs:inline">Salvando...</span>
                           </span>
                         )}
                         {savingStatus === 'saved' && (
-                          <span className="text-green-500 flex items-center gap-1 font-bold">
-                            <Check className="h-3 w-3" /> Alterações salvas!
+                          <span className="text-[10px] sm:text-xs text-green-500 flex items-center gap-1 font-mono font-bold">
+                            <Check className="h-3 w-3" />
+                            <span className="hidden xs:inline">Salvo!</span>
                           </span>
                         )}
-                        {savingStatus === 'idle' && (
-                          <span className="text-zinc-600">Edição em tempo real</span>
-                        )}
-                      </span>
 
-                      <button
-                        onClick={handleSaveCurrentRecord}
-                        className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 transition-colors shadow-lg shadow-orange-500/10"
-                      >
-                        <Save className="h-3.5 w-3.5" /> Salvar Alterações
-                      </button>
+                        <button
+                          onClick={handleSaveCurrentRecord}
+                          className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg flex items-center gap-1.5 transition-colors shadow-lg shadow-orange-500/10 shrink-0"
+                          title="Salvar alterações deste dia"
+                        >
+                          <Save className="h-3.5 w-3.5" />
+                          <span className="hidden sm:inline">Salvar Alterações</span>
+                          <span className="sm:hidden">Salvar</span>
+                        </button>
+                      </div>
                     </div>
 
                   </div>

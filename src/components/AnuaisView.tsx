@@ -2668,15 +2668,15 @@ export default function AnuaisView({
         {selectedDateStr && (
           <div 
             onClick={() => setSelectedDateStr(null)}
-            className="fixed inset-0 z-[9999] bg-[#040405]/95 backdrop-blur-md flex items-center justify-center p-4 md:p-6 overflow-hidden cursor-pointer"
+            className="fixed inset-0 z-[9999] bg-[#040405] backdrop-blur-md flex flex-col p-0 overflow-hidden cursor-pointer"
           >
             <motion.div
               onClick={(e) => e.stopPropagation()}
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="cursor-default bg-[#0a0a0c] border border-zinc-800 rounded-3xl w-full max-w-6xl h-full max-h-[92vh] sm:max-h-[90vh] my-auto flex flex-col overflow-hidden shadow-2xl shadow-orange-500/5 text-left"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="cursor-default bg-[#0a0a0c] w-full h-full min-h-[100dvh] max-h-[100dvh] rounded-none border-0 m-0 p-0 flex flex-col overflow-hidden text-left"
             >
               {/* Header */}
               <div className="shrink-0 p-4 sm:p-5 border-b border-zinc-850 flex items-center justify-between bg-zinc-950/40">
