@@ -550,7 +550,7 @@ export default function DailyMissionsView({
       case 'monthly':
         return 'Todo mês';
       default:
-        return 'Adicionar recorrência';
+        return 'Nenhuma';
     }
   };
 
@@ -837,16 +837,14 @@ export default function DailyMissionsView({
           );
         })}
 
-        {/* Quick button to open Settings & configure visible tags */}
+        {/* Quick button to open Settings & Options */}
         <button
           type="button"
           onClick={() => setIsSettingsModalOpen(true)}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium text-zinc-400 hover:text-white bg-zinc-900/70 hover:bg-zinc-800 border border-zinc-800 transition-all shrink-0 ml-auto"
-          title="Configurar atalhos de tags na barra"
+          className="p-1.5 rounded-full text-zinc-400 hover:text-white bg-zinc-900/70 hover:bg-zinc-800 border border-zinc-800 transition-all shrink-0 ml-auto flex items-center justify-center"
+          title="Opções de missões"
         >
-          <TagIcon className="w-3 h-3 text-zinc-400" />
-          <span className="text-[11px] font-medium hidden sm:inline">Tags</span>
-          <Settings className="w-3 h-3 text-zinc-500" />
+          <Settings className="w-3.5 h-3.5 text-zinc-400" />
         </button>
       </div>
 
@@ -949,8 +947,8 @@ export default function DailyMissionsView({
                           </span>
                         ) : null}
 
-                        {/* Recurrence badge */}
-                        {(task.recurrence && task.recurrence !== 'none') || task.isRecurring ? (
+                        {/* Recurrence badge - only show when explicitly recurring */}
+                        {task.recurrence && task.recurrence !== 'none' ? (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-800/80 border border-zinc-700/60 text-[11px] text-zinc-400 font-medium">
                             <Repeat className="w-3 h-3 text-zinc-400" />
                             <span>{getRecurrenceText(task.recurrence)}</span>

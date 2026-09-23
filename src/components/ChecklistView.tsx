@@ -226,6 +226,17 @@ export default function ChecklistView({
   const activeTab = propActiveTab !== undefined ? propActiveTab : localActiveTab;
   const setActiveTab = propSetActiveTab !== undefined ? propSetActiveTab : setLocalActiveTab;
 
+  // Rotina Diária: Mobile & responsive day view state
+  const [routineViewMode, setRoutineViewMode] = useState<'dia' | 'grade'>('dia');
+  const [routineSelectedDay, setRoutineSelectedDay] = useState<number>(() => {
+    const day = new Date().getDay();
+    return day === 0 ? 7 : day;
+  });
+  const currentDayOfWeek = useMemo(() => {
+    const day = new Date().getDay();
+    return day === 0 ? 7 : day;
+  }, []);
+
   const HOURS = [
     '05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00',
     '13:00', '14:00', '15:00', '16:00', '17:00', '18:00',
@@ -2496,11 +2507,39 @@ export default function ChecklistView({
                 <p className="text-xs text-zinc-400 mt-1">Organize seus blocos de tempo para máxima produtividade ao longo do dia.</p>
               </div>
               
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                {/* View Switcher: Visão do Dia (ideal no mobile) vs Grade Semanal */}
+                <div className="flex items-center bg-zinc-900/90 border border-zinc-800 p-1 rounded-xl text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setRoutineViewMode('dia')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-all ${
+                      routineViewMode === 'dia'
+                        ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20'
+                        : 'text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>Visão do Dia</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRoutineViewMode('grade')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-all ${
+                      routineViewMode === 'grade'
+                        ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20'
+                        : 'text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    <LayoutGrid className="w-3.5 h-3.5" />
+                    <span>Grade Semanal</span>
+                  </button>
+                </div>
+
                 <button
                   type="button"
                   onClick={() => setShowClearModal(true)}
-                  className="text-xs font-semibold text-red-400 bg-red-400/5 hover:bg-red-400/10 border border-red-500/10 px-4 py-2 rounded-xl transition-all flex items-center gap-1.5"
+                  className="text-xs font-semibold text-red-400 bg-red-400/5 hover:bg-red-400/10 border border-red-500/10 px-3 py-2 rounded-xl transition-all flex items-center gap-1.5"
                 >
                   <Trash2 className="h-3.5 w-3.5" /> Limpar
                 </button>
@@ -2511,10 +2550,10 @@ export default function ChecklistView({
                     setCellColor('Rotina');
                     setCellStartTime('08:00');
                     setCellEndTime('09:00');
-                    setCellSelectedDays([1]);
+                    setCellSelectedDays([routineSelectedDay]);
                     setIsAddingBlock(true);
                   }}
-                  className="bg-orange-500 hover:bg-orange-600 active:scale-95 text-white font-bold text-xs px-4.5 py-2.5 rounded-xl transition-all flex items-center gap-2 shadow-[0_4px_20px_rgba(249,115,22,0.25)]"
+                  className="bg-orange-500 hover:bg-orange-600 active:scale-95 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all flex items-center gap-2 shadow-[0_4px_20px_rgba(249,115,22,0.25)]"
                 >
                   <Plus className="h-4 w-4" /> Novo Bloco
                 </button>
@@ -2550,89 +2589,253 @@ export default function ChecklistView({
               </div>
             </div>
 
-            {/* Weekly Routine Grid Table */}
-            <div className="overflow-x-auto rounded-2xl border border-zinc-900 bg-zinc-950/40 scrollbar-none shadow-inner">
-              <table className="w-full border-collapse text-left min-w-[900px]">
-                <thead>
-                  <tr className="bg-zinc-900/20 border-b border-zinc-900 text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
-                    <th className="p-3.5 text-center border-r border-zinc-900 w-24">Hora</th>
-                    {DAYS.map((day, idx) => (
-                      <th key={day.id} className="p-3.5 border-r border-zinc-900">
-                        <div className="flex items-baseline gap-1.5">
-                          <span>{day.name}</span>
-                          <span className="text-[10px] font-mono text-zinc-500 font-normal">{currentWeekDates[idx]}</span>
+            {/* View Mode: Dia (Mobile First) vs Grade Semanal */}
+            {routineViewMode === 'dia' ? (
+              <div className="space-y-4">
+                {/* Day Selector Carousel / Pills */}
+                <div className="flex items-center justify-between gap-1.5 p-1.5 bg-zinc-900/60 rounded-2xl border border-zinc-900">
+                  <button
+                    type="button"
+                    onClick={() => setRoutineSelectedDay(prev => (prev === 1 ? 7 : prev - 1))}
+                    className="p-2 text-zinc-400 hover:text-white rounded-xl hover:bg-zinc-800 transition-colors shrink-0"
+                    title="Dia anterior"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+
+                  <div className="flex items-center gap-1.5 flex-1 justify-between overflow-x-auto scrollbar-none px-1">
+                    {DAYS.map((day, idx) => {
+                      const isSelected = routineSelectedDay === day.id;
+                      const isTodayDay = currentDayOfWeek === day.id;
+                      return (
+                        <button
+                          key={day.id}
+                          type="button"
+                          onClick={() => setRoutineSelectedDay(day.id)}
+                          className={`flex flex-col items-center justify-center py-2 px-2.5 sm:px-4 rounded-xl transition-all min-w-[46px] sm:min-w-[60px] flex-1 ${
+                            isSelected
+                              ? 'bg-orange-500 text-white font-bold shadow-[0_2px_12px_rgba(249,115,22,0.35)] scale-[1.02]'
+                              : 'bg-zinc-950/70 text-zinc-400 hover:text-zinc-200 border border-zinc-800/80 hover:bg-zinc-900'
+                          }`}
+                        >
+                          <span className="text-[10px] font-semibold uppercase tracking-wider">
+                            {day.name.slice(0, 3)}
+                          </span>
+                          <span className="text-xs sm:text-sm font-bold mt-0.5 font-mono">
+                            {currentWeekDates[idx]}
+                          </span>
+                          {isTodayDay && (
+                            <span className={`w-1.5 h-1.5 rounded-full mt-1 ${isSelected ? 'bg-white' : 'bg-orange-500'}`} />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setRoutineSelectedDay(prev => (prev === 7 ? 1 : prev + 1))}
+                    className="p-2 text-zinc-400 hover:text-white rounded-xl hover:bg-zinc-800 transition-colors shrink-0"
+                    title="Próximo dia"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Day Info Header */}
+                <div className="flex items-center justify-between px-2 py-1 text-xs text-zinc-400">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-white text-sm">
+                      {DAYS.find(d => d.id === routineSelectedDay)?.name}
+                    </span>
+                    <span className="font-mono text-zinc-500">
+                      Dia {currentWeekDates[routineSelectedDay - 1]}
+                    </span>
+                    {routineSelectedDay === currentDayOfWeek && (
+                      <span className="text-[10px] font-bold bg-orange-500/15 border border-orange-500/30 text-orange-400 px-2 py-0.5 rounded-full">
+                        Hoje
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingCell(null);
+                      setCellText('');
+                      setCellColor('Rotina');
+                      setCellStartTime('08:00');
+                      setCellEndTime('09:00');
+                      setCellSelectedDays([routineSelectedDay]);
+                      setIsAddingBlock(true);
+                    }}
+                    className="text-xs font-semibold text-orange-400 hover:text-orange-300 flex items-center gap-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Adicionar Bloco
+                  </button>
+                </div>
+
+                {/* Vertical Schedule Timeline for Mobile & Compact Screens */}
+                <div className="space-y-2 rounded-2xl border border-zinc-900 bg-zinc-950/70 p-3 sm:p-4">
+                  {HOURS.map((hour) => {
+                    const cellInfo = getCellBlockInfo(hour, routineSelectedDay);
+
+                    if (cellInfo.type === 'start') {
+                      const block = cellInfo.block;
+                      const colorClasses = getBlockColorClasses(block.color || 'gray');
+                      const displayEndTime = block.endTime || getNextHour(hour);
+
+                      return (
+                        <div
+                          key={hour}
+                          onClick={() => handleOpenEditModal(hour, routineSelectedDay, block, cellInfo.key)}
+                          className={`p-3.5 rounded-xl border flex flex-col justify-between transition-all hover:brightness-110 cursor-pointer shadow-md active:scale-[0.99] select-none ${colorClasses}`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="space-y-1">
+                              <div className="font-bold text-sm text-white tracking-wide leading-snug">
+                                {block.text}
+                              </div>
+                              {block.subtasks && block.subtasks.length > 0 && (
+                                <div className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold bg-black/40 px-2 py-0.5 rounded-full text-orange-300">
+                                  <ListTodo className="h-3 w-3" />
+                                  {block.subtasks.filter((s: SubTask) => s.completed).length}/{block.subtasks.length} etapas
+                                </div>
+                              )}
+                            </div>
+                            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-black/40 border border-white/10 uppercase tracking-wide text-zinc-300 shrink-0">
+                              {block.color || 'Rotina'}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between mt-3 pt-2 border-t border-white/10 text-xs font-mono opacity-90">
+                            <span className="flex items-center gap-1.5">
+                              <Clock className="w-3.5 h-3.5" />
+                              {hour} - {displayEndTime}
+                            </span>
+                            <span className="text-[11px] font-sans text-orange-200 underline opacity-90">
+                              Editar
+                            </span>
+                          </div>
                         </div>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-900 text-xs">
-                  {HOURS.map((hour) => (
-                    <tr key={hour} className="group/row">
-                      <td className="p-3 text-center font-mono font-bold text-zinc-500 border-r border-zinc-900 bg-zinc-950/80 select-none">
-                        {hour}
-                      </td>
-                      {[1, 2, 3, 4, 5, 6, 7].map((dayId) => {
-                        const cellInfo = getCellBlockInfo(hour, dayId);
+                      );
+                    }
 
-                        if (cellInfo.type === 'start') {
-                          const block = cellInfo.block;
-                          const colorClasses = getBlockColorClasses(block.color || 'gray');
-                          const rowSpan = cellInfo.rowSpan;
-                          const displayEndTime = block.endTime || getNextHour(hour);
+                    if (cellInfo.type === 'covered') {
+                      return null;
+                    }
 
-                          return (
-                            <td 
-                              key={dayId} 
-                              rowSpan={rowSpan}
-                              className="p-1 border-r border-zinc-900 align-top"
-                            >
-                              <div 
-                                onClick={() => handleOpenEditModal(hour, dayId, block, cellInfo.key)}
-                                className={`h-full p-2.5 rounded-none border flex flex-col justify-between transition-all hover:brightness-110 cursor-pointer shadow-md active:scale-[0.99] select-none ${colorClasses}`}
-                                style={{ minHeight: `${rowSpan * 42}px` }}
-                              >
-                                <div className="space-y-1">
-                                  <div className="font-bold text-xs leading-snug tracking-wide line-clamp-2">
-                                    {block.text}
-                                  </div>
-                                  {block.subtasks && block.subtasks.length > 0 && (
-                                    <div className="inline-flex items-center gap-1 text-[9px] font-mono font-bold bg-black/30 px-1.5 py-0.5 rounded text-orange-300">
-                                      <ListTodo className="h-2.5 w-2.5" />
-                                      {block.subtasks.filter((s: SubTask) => s.completed).length}/{block.subtasks.length}
+                    // Empty hour slot
+                    return (
+                      <div
+                        key={hour}
+                        onClick={() => handleOpenCreateModal(hour, routineSelectedDay)}
+                        className="flex items-center gap-3 py-1 px-1 rounded-xl group hover:bg-zinc-900/40 transition-colors cursor-pointer"
+                      >
+                        <span className="w-12 text-center font-mono text-xs font-semibold text-zinc-500 shrink-0 select-none">
+                          {hour}
+                        </span>
+                        <div className="flex-1 h-9 rounded-xl border border-dashed border-zinc-900 hover:border-zinc-700 bg-zinc-950/40 hover:bg-zinc-900/30 flex items-center justify-between px-3 text-zinc-600 hover:text-zinc-300 transition-all">
+                          <span className="text-xs text-zinc-500 group-hover:text-zinc-400">
+                            Horário livre
+                          </span>
+                          <span className="text-[11px] font-medium text-orange-500/80 group-hover:text-orange-400 flex items-center gap-1 opacity-70 group-hover:opacity-100">
+                            <Plus className="w-3 h-3" /> Adicionar
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              /* Weekly Routine Grid Table (with mobile scroll reminder) */
+              <div className="space-y-2">
+                <div className="text-[11px] text-zinc-500 text-right sm:hidden">
+                  ← Deslize horizontalmente para ver todos os dias →
+                </div>
+                <div className="overflow-x-auto rounded-2xl border border-zinc-900 bg-zinc-950/40 scrollbar-none shadow-inner">
+                  <table className="w-full border-collapse text-left min-w-[900px]">
+                    <thead>
+                      <tr className="bg-zinc-900/20 border-b border-zinc-900 text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
+                        <th className="p-3.5 text-center border-r border-zinc-900 w-24">Hora</th>
+                        {DAYS.map((day, idx) => (
+                          <th key={day.id} className="p-3.5 border-r border-zinc-900">
+                            <div className="flex items-baseline gap-1.5">
+                              <span>{day.name}</span>
+                              <span className="text-[10px] font-mono text-zinc-500 font-normal">{currentWeekDates[idx]}</span>
+                            </div>
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-900 text-xs">
+                      {HOURS.map((hour) => (
+                        <tr key={hour} className="group/row">
+                          <td className="p-3 text-center font-mono font-bold text-zinc-500 border-r border-zinc-900 bg-zinc-950/80 select-none">
+                            {hour}
+                          </td>
+                          {[1, 2, 3, 4, 5, 6, 7].map((dayId) => {
+                            const cellInfo = getCellBlockInfo(hour, dayId);
+
+                            if (cellInfo.type === 'start') {
+                              const block = cellInfo.block;
+                              const colorClasses = getBlockColorClasses(block.color || 'gray');
+                              const rowSpan = cellInfo.rowSpan;
+                              const displayEndTime = block.endTime || getNextHour(hour);
+
+                              return (
+                                <td 
+                                  key={dayId} 
+                                  rowSpan={rowSpan}
+                                  className="p-1 border-r border-zinc-900 align-top"
+                                >
+                                  <div 
+                                    onClick={() => handleOpenEditModal(hour, dayId, block, cellInfo.key)}
+                                    className={`h-full p-2.5 rounded-none border flex flex-col justify-between transition-all hover:brightness-110 cursor-pointer shadow-md active:scale-[0.99] select-none ${colorClasses}`}
+                                    style={{ minHeight: `${rowSpan * 42}px` }}
+                                  >
+                                    <div className="space-y-1">
+                                      <div className="font-bold text-xs leading-snug tracking-wide line-clamp-2">
+                                        {block.text}
+                                      </div>
+                                      {block.subtasks && block.subtasks.length > 0 && (
+                                        <div className="inline-flex items-center gap-1 text-[9px] font-mono font-bold bg-black/30 px-1.5 py-0.5 rounded text-orange-300">
+                                          <ListTodo className="h-2.5 w-2.5" />
+                                          {block.subtasks.filter((s: SubTask) => s.completed).length}/{block.subtasks.length}
+                                        </div>
+                                      )}
                                     </div>
-                                  )}
-                                </div>
-                                <div className="font-mono text-[9px] opacity-70 mt-1">
-                                  {hour} - {displayEndTime}
-                                </div>
-                              </div>
-                            </td>
-                          );
-                        } else if (cellInfo.type === 'covered') {
-                          return null;
-                        } else {
-                          // empty cell
-                          return (
-                            <td 
-                              key={dayId} 
-                              className="p-1 border-r border-zinc-900 group-hover/row:bg-zinc-900/5 transition-colors cursor-pointer"
-                              onClick={() => handleOpenCreateModal(hour, dayId)}
-                            >
-                              <div className="h-10 rounded-none border border-dashed border-transparent hover:border-zinc-800 hover:bg-zinc-900/20 flex items-center justify-center transition-all group">
-                                <span className="opacity-0 group-hover:opacity-100 text-[10px] font-bold text-orange-500 flex items-center gap-1">
-                                  <Plus className="h-3 w-3" /> Adicionar
-                                </span>
-                              </div>
-                            </td>
-                          );
-                        }
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                                    <div className="font-mono text-[9px] opacity-70 mt-1">
+                                      {hour} - {displayEndTime}
+                                    </div>
+                                  </div>
+                                </td>
+                              );
+                            } else if (cellInfo.type === 'covered') {
+                              return null;
+                            } else {
+                              // empty cell
+                              return (
+                                <td 
+                                  key={dayId} 
+                                  className="p-1 border-r border-zinc-900 group-hover/row:bg-zinc-900/5 transition-colors cursor-pointer"
+                                  onClick={() => handleOpenCreateModal(hour, dayId)}
+                                >
+                                  <div className="h-10 rounded-none border border-dashed border-transparent hover:border-zinc-800 hover:bg-zinc-900/20 flex items-center justify-center transition-all group">
+                                    <span className="opacity-0 group-hover:opacity-100 text-[10px] font-bold text-orange-500 flex items-center gap-1">
+                                      <Plus className="h-3 w-3" /> Adicionar
+                                    </span>
+                                  </div>
+                                </td>
+                              );
+                            }
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Time Block creation/editing modal */}
