@@ -2551,8 +2551,8 @@ export default function ChecklistView({
               </div>
             </div>
 
-            {/* Category Legends */}
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-2.5 text-xs text-zinc-400">
+            {/* Category Legends (Hidden on mobile) */}
+            <div className="hidden md:flex flex-wrap items-center gap-x-5 gap-y-2.5 text-xs text-zinc-400">
               <span className="font-bold text-zinc-500 uppercase tracking-wider text-[10px] mr-1">Categorias:</span>
               <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full bg-indigo-500" />
