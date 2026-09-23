@@ -636,24 +636,15 @@ export default function DailyMissionsView({
           </button>
         </div>
 
-        {/* Right icons: Drawer/Archive & Settings */}
+        {/* Right icons: Visão Geral & Trackers */}
         <div className="flex items-center gap-1.5">
           <button
             type="button"
             onClick={() => setIsArchiveDrawerOpen(true)}
             className="p-2 bg-zinc-900/80 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-xl border border-zinc-800 transition-colors"
-            title="Gaveta de Tags e Histórico"
+            title="Visão Geral & Trackers"
           >
-            <Archive className="w-4 h-4" />
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setIsSettingsModalOpen(true)}
-            className="p-2 bg-zinc-900/80 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-xl border border-zinc-800 transition-colors"
-            title="Opções da Rotina"
-          >
-            <Settings className="w-4 h-4" />
+            <Archive className="w-4 h-4 text-amber-400" />
           </button>
         </div>
       </div>
@@ -968,19 +959,25 @@ export default function DailyMissionsView({
 
                         {/* Time slot badge */}
                         {task.timeSlot === 'manha' || task.period === 'manha' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-800/80 border border-zinc-700/60 text-[11px] text-amber-400 font-medium">
+                          <span
+                            className="inline-flex items-center justify-center p-1 rounded-full bg-zinc-800/80 border border-zinc-700/60 text-amber-400"
+                            title="Manhã"
+                          >
                             <Sun className="w-3 h-3" />
-                            <span>Manhã</span>
                           </span>
                         ) : task.timeSlot === 'tarde' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-800/80 border border-zinc-700/60 text-[11px] text-sky-400 font-medium">
+                          <span
+                            className="inline-flex items-center justify-center p-1 rounded-full bg-zinc-800/80 border border-zinc-700/60 text-sky-400"
+                            title="Tarde"
+                          >
                             <Sunset className="w-3 h-3" />
-                            <span>Tarde</span>
                           </span>
                         ) : task.timeSlot === 'noite' || task.period === 'noite' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-800/80 border border-zinc-700/60 text-[11px] text-indigo-400 font-medium">
+                          <span
+                            className="inline-flex items-center justify-center p-1 rounded-full bg-zinc-800/80 border border-zinc-700/60 text-indigo-400"
+                            title="Noite"
+                          >
                             <Moon className="w-3 h-3" />
-                            <span>Noite</span>
                           </span>
                         ) : task.reminderTime ? (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-800/80 border border-zinc-700/60 text-[11px] text-zinc-300 font-medium">
@@ -1116,22 +1113,22 @@ export default function DailyMissionsView({
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 30 }}
-              className="w-full h-full sm:h-auto sm:max-h-[94vh] md:w-[98vw] md:max-w-[1600px] lg:max-w-[1750px] bg-[#18181b] border border-zinc-800 rounded-none sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+              className="w-full h-full sm:h-auto sm:max-h-[94vh] md:w-[98vw] md:max-w-[1600px] lg:max-w-[1750px] bg-black border border-zinc-800 rounded-none sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col"
             >
               {/* Top Navigation Bar: ✕  Nova tarefa  Salvar */}
-              <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800/80 bg-zinc-900/60">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-900 bg-black">
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
                     onClick={() => setIsTaskModalOpen(false)}
-                    className="p-1.5 text-zinc-400 hover:text-white rounded-xl hover:bg-zinc-800 transition-colors"
+                    className="p-1.5 text-zinc-400 hover:text-white rounded-xl hover:bg-zinc-900 transition-colors"
                   >
                     <X className="w-5 h-5" />
                   </button>
                   <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">
                     {editingTask ? 'Editar Tarefa' : 'Nova Tarefa'}
                   </h3>
-                  <span className="hidden md:inline-block text-[11px] text-zinc-500 font-medium px-2 py-0.5 rounded-md bg-zinc-900 border border-zinc-800">
+                  <span className="hidden md:inline-block text-[11px] text-zinc-500 font-medium px-2 py-0.5 rounded-md bg-zinc-950 border border-zinc-900">
                     ESC para fechar
                   </span>
                 </div>
@@ -1162,7 +1159,7 @@ export default function DailyMissionsView({
               </div>
 
               {/* Scrollable Form Body - Full Width Grid on Desktop */}
-              <div className="p-5 sm:p-6 lg:p-8 overflow-y-auto flex-1">
+              <div className="p-5 sm:p-6 lg:p-8 overflow-y-auto flex-1 bg-black">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
                   {/* Left Column: Title, Description, Date, Subtasks */}
                   <div className="lg:col-span-7 xl:col-span-7 space-y-5">
@@ -1177,7 +1174,7 @@ export default function DailyMissionsView({
                         onChange={e => setFormTitle(e.target.value)}
                         placeholder="O que você precisa realizar?"
                         autoFocus
-                        className="w-full bg-zinc-900/60 border border-zinc-800 rounded-2xl px-4 py-3 text-base sm:text-lg font-bold text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-700 transition-colors"
+                        className="w-full bg-zinc-950 border border-zinc-900 rounded-2xl px-4 py-3 text-base sm:text-lg font-bold text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-700 transition-colors"
                         maxLength={120}
                       />
                     </div>
@@ -1192,7 +1189,7 @@ export default function DailyMissionsView({
                         onChange={e => setFormDescription(e.target.value)}
                         placeholder="Adicione detalhes, observações ou links úteis..."
                         rows={3}
-                        className="w-full bg-zinc-900/60 border border-zinc-800 rounded-2xl px-4 py-3 text-xs sm:text-sm text-zinc-300 placeholder-zinc-500 focus:outline-none focus:border-zinc-700 resize-none transition-colors"
+                        className="w-full bg-zinc-950 border border-zinc-900 rounded-2xl px-4 py-3 text-xs sm:text-sm text-zinc-300 placeholder-zinc-500 focus:outline-none focus:border-zinc-700 resize-none transition-colors"
                       />
                     </div>
 
@@ -1212,7 +1209,7 @@ export default function DailyMissionsView({
                           className={`px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all ${
                             !formHasNoDate && formDates.length === 1 && formDates[0] === todayStr
                               ? 'bg-orange-500/15 border-orange-500/40 text-orange-400'
-                              : 'bg-zinc-900/80 border-zinc-800 text-zinc-400 hover:text-white'
+                              : 'bg-zinc-950 border-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-800'
                           }`}
                         >
                           Hoje
@@ -1230,7 +1227,7 @@ export default function DailyMissionsView({
                           className={`px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all ${
                             !formHasNoDate && formDates.length === 1 && formDates[0] !== todayStr && getDateHeaderLabel(formDates[0]) === 'Amanhã'
                               ? 'bg-orange-500/15 border-orange-500/40 text-orange-400'
-                              : 'bg-zinc-900/80 border-zinc-800 text-zinc-400 hover:text-white'
+                              : 'bg-zinc-950 border-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-800'
                           }`}
                         >
                           Amanhã
@@ -1242,8 +1239,8 @@ export default function DailyMissionsView({
                           onClick={handleOpenDatePicker}
                           className={`px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all flex items-center gap-2 ${
                             !formHasNoDate
-                              ? 'bg-zinc-800 border-zinc-700 text-white'
-                              : 'bg-zinc-900/80 border-zinc-800 text-zinc-400 hover:text-white'
+                              ? 'bg-zinc-900 border-zinc-800 text-white'
+                              : 'bg-zinc-950 border-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-800'
                           }`}
                         >
                           <Calendar className="w-3.5 h-3.5 text-zinc-400" />
@@ -1259,8 +1256,8 @@ export default function DailyMissionsView({
                           }}
                           className={`px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1.5 ${
                             formHasNoDate
-                              ? 'bg-zinc-800 border-zinc-700 text-white'
-                              : 'bg-zinc-900/80 border-zinc-800 text-zinc-400 hover:text-white'
+                              ? 'bg-zinc-900 border-zinc-800 text-white'
+                              : 'bg-zinc-950 border-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-800'
                           }`}
                         >
                           <span className="font-mono text-sm leading-none">∞</span>
@@ -1289,12 +1286,12 @@ export default function DailyMissionsView({
                             }
                           }}
                           placeholder="Adicionar subtarefa e pressionar Enter..."
-                          className="flex-1 bg-zinc-900/60 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-700 transition-colors"
+                          className="flex-1 bg-zinc-950 border border-zinc-900 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-700 transition-colors"
                         />
                         <button
                           type="button"
                           onClick={handleAddSubtaskToForm}
-                          className="px-3.5 py-2.5 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-xl transition-colors shrink-0 flex items-center gap-1.5 text-xs font-semibold"
+                          className="px-3.5 py-2.5 bg-zinc-950 border border-zinc-900 hover:bg-zinc-900 text-zinc-300 hover:text-white rounded-xl transition-colors shrink-0 flex items-center gap-1.5 text-xs font-semibold"
                         >
                           <Plus className="w-4 h-4" />
                           <span className="hidden sm:inline">Adicionar</span>
@@ -1303,11 +1300,11 @@ export default function DailyMissionsView({
 
                       {/* Added subtasks list */}
                       {formSubtasks.length > 0 && (
-                        <div className="space-y-1.5 bg-zinc-900/40 p-2.5 rounded-2xl border border-zinc-800/60 max-h-56 overflow-y-auto">
+                        <div className="space-y-1.5 bg-zinc-950/80 p-2.5 rounded-2xl border border-zinc-900 max-h-56 overflow-y-auto">
                           {formSubtasks.map(st => (
                             <div
                               key={st.id}
-                              className="flex items-center justify-between gap-2 px-3 py-2 bg-zinc-900/80 rounded-xl hover:bg-zinc-900 transition-colors"
+                              className="flex items-center justify-between gap-2 px-3 py-2 bg-black/90 border border-zinc-900/60 rounded-xl hover:border-zinc-800 transition-colors"
                             >
                               <button
                                 type="button"
@@ -1334,7 +1331,7 @@ export default function DailyMissionsView({
                               <button
                                 type="button"
                                 onClick={() => handleRemoveFormSubtask(st.id)}
-                                className="p-1 text-zinc-500 hover:text-rose-400 rounded-lg hover:bg-zinc-800 transition-colors"
+                                className="p-1 text-zinc-500 hover:text-rose-400 rounded-lg hover:bg-zinc-900 transition-colors"
                               >
                                 <X className="w-3.5 h-3.5" />
                               </button>
@@ -1346,7 +1343,7 @@ export default function DailyMissionsView({
                   </div>
 
                   {/* Right Column: Time, Priority, Tags, Reminders, Recurrence */}
-                  <div className="lg:col-span-5 xl:col-span-5 space-y-5 border-t lg:border-t-0 lg:border-l border-zinc-800/80 lg:pl-8 pt-5 lg:pt-0">
+                  <div className="lg:col-span-5 xl:col-span-5 space-y-5 border-t lg:border-t-0 lg:border-l border-zinc-900 lg:pl-8 pt-5 lg:pt-0">
                     {/* HORÁRIO Section */}
                     <div>
                       <label className="text-[10px] font-bold text-zinc-400 tracking-wider uppercase block mb-1.5">
@@ -1354,9 +1351,17 @@ export default function DailyMissionsView({
                       </label>
                       <div className="flex items-center gap-2 flex-wrap">
                         {formTimeSlot && (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-800 border border-zinc-700 text-xs text-white font-semibold shadow-sm">
-                            <Bell className="w-3.5 h-3.5 text-amber-400" />
-                            <span>{getTimeSlotLabel(formTimeSlot, formCustomTime)}</span>
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-950 border border-zinc-850 text-xs text-white font-semibold shadow-sm">
+                            {formTimeSlot === 'manha' ? (
+                              <Sun className="w-4 h-4 text-amber-400" />
+                            ) : formTimeSlot === 'tarde' ? (
+                              <Sunset className="w-4 h-4 text-sky-400" />
+                            ) : formTimeSlot === 'noite' ? (
+                              <Moon className="w-4 h-4 text-indigo-400" />
+                            ) : (
+                              <Clock className="w-3.5 h-3.5 text-zinc-400" />
+                            )}
+                            {formTimeSlot === 'custom' && <span>{formCustomTime || 'Horário'}</span>}
                             <button
                               type="button"
                               onClick={() => {
@@ -1364,6 +1369,7 @@ export default function DailyMissionsView({
                                 setFormCustomTime('');
                               }}
                               className="ml-1 text-zinc-400 hover:text-white"
+                              title="Remover horário"
                             >
                               <X className="w-3 h-3" />
                             </button>
@@ -1375,37 +1381,40 @@ export default function DailyMissionsView({
                             <button
                               type="button"
                               onClick={() => setIsCustomTimeModalOpen(true)}
-                              className="px-3 py-1.5 rounded-full text-xs font-semibold bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition-all flex items-center gap-1.5"
+                              className="px-3 py-1.5 rounded-full text-xs font-semibold bg-zinc-950 border border-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-800 transition-all flex items-center gap-1.5"
                             >
                               <Clock className="w-3.5 h-3.5" />
-                              <span>Hora Exata</span>
+                              <span>Hora</span>
                             </button>
 
                             <button
                               type="button"
                               onClick={() => setFormTimeSlot('manha')}
-                              className="px-3 py-1.5 rounded-full text-xs font-semibold bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition-all flex items-center gap-1.5"
+                              className="p-2 sm:px-2.5 rounded-full text-xs font-semibold bg-zinc-950 border border-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-800 transition-all flex items-center justify-center"
+                              title="Manhã"
+                              aria-label="Manhã"
                             >
-                              <Sun className="w-3.5 h-3.5 text-amber-400" />
-                              <span>Manhã</span>
+                              <Sun className="w-4 h-4 text-amber-400" />
                             </button>
 
                             <button
                               type="button"
                               onClick={() => setFormTimeSlot('tarde')}
-                              className="px-3 py-1.5 rounded-full text-xs font-semibold bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition-all flex items-center gap-1.5"
+                              className="p-2 sm:px-2.5 rounded-full text-xs font-semibold bg-zinc-950 border border-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-800 transition-all flex items-center justify-center"
+                              title="Tarde"
+                              aria-label="Tarde"
                             >
-                              <Sunset className="w-3.5 h-3.5 text-sky-400" />
-                              <span>Tarde</span>
+                              <Sunset className="w-4 h-4 text-sky-400" />
                             </button>
 
                             <button
                               type="button"
                               onClick={() => setFormTimeSlot('noite')}
-                              className="px-3 py-1.5 rounded-full text-xs font-semibold bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition-all flex items-center gap-1.5"
+                              className="p-2 sm:px-2.5 rounded-full text-xs font-semibold bg-zinc-950 border border-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-800 transition-all flex items-center justify-center"
+                              title="Noite"
+                              aria-label="Noite"
                             >
-                              <Moon className="w-3.5 h-3.5 text-indigo-400" />
-                              <span>Noite</span>
+                              <Moon className="w-4 h-4 text-indigo-400" />
                             </button>
                           </>
                         )}
@@ -1432,7 +1441,7 @@ export default function DailyMissionsView({
                               className={`py-2 px-2.5 rounded-xl border text-center transition-all flex items-center justify-center gap-1.5 text-xs font-semibold ${
                                 isSel
                                   ? p.activeClass
-                                  : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+                                  : 'bg-zinc-950 border-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-800'
                               }`}
                             >
                               <span className={`w-2 h-2 rounded-full ${p.dot} shrink-0`} />
@@ -1458,8 +1467,8 @@ export default function DailyMissionsView({
                               onClick={() => handleToggleTagInForm(tag.name)}
                               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
                                 isSel
-                                  ? 'bg-zinc-800 border-zinc-700 text-white shadow-sm'
-                                  : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+                                  ? 'bg-zinc-900 border-zinc-700 text-white shadow-sm'
+                                  : 'bg-zinc-950 border-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-800'
                               }`}
                             >
                               <span
@@ -1474,7 +1483,7 @@ export default function DailyMissionsView({
                         <button
                           type="button"
                           onClick={() => setIsNewTagModalOpen(true)}
-                          className="w-8 h-8 rounded-full bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-400 hover:text-white flex items-center justify-center transition-colors"
+                          className="w-8 h-8 rounded-full bg-zinc-950 border border-zinc-900 hover:border-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center transition-colors"
                           title="Nova tag"
                         >
                           <Plus className="w-4 h-4" />
@@ -1494,8 +1503,8 @@ export default function DailyMissionsView({
                           onClick={() => setFormReminderHour(prev => !prev)}
                           className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all flex items-center gap-1.5 ${
                             formReminderHour
-                              ? 'bg-zinc-800 border-zinc-700 text-white'
-                              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+                              ? 'bg-zinc-900 border-zinc-700 text-white'
+                              : 'bg-zinc-950 border-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-800'
                           }`}
                         >
                           <Clock className="w-3.5 h-3.5" />
@@ -1508,8 +1517,8 @@ export default function DailyMissionsView({
                           onClick={() => setFormReminderDate(prev => !prev)}
                           className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all flex items-center gap-1.5 ${
                             formReminderDate
-                              ? 'bg-zinc-800 border-zinc-700 text-white'
-                              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+                              ? 'bg-zinc-900 border-zinc-700 text-white'
+                              : 'bg-zinc-950 border-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-800'
                           }`}
                         >
                           <Calendar className="w-3.5 h-3.5" />
@@ -1519,29 +1528,31 @@ export default function DailyMissionsView({
                       </div>
                     </div>
 
-                    {/* RECORRÊNCIA Section */}
-                    <div>
-                      <label className="text-[10px] font-bold text-zinc-400 tracking-wider uppercase block mb-1.5">
-                        RECORRÊNCIA
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => setIsRecurrenceModalOpen(true)}
-                        className="px-3.5 py-2 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-white text-xs font-semibold flex items-center gap-2 transition-colors w-full justify-between"
-                      >
-                        <div className="flex items-center gap-2">
-                          <Repeat className="w-3.5 h-3.5 text-zinc-400" />
-                          <span>{getRecurrenceText(formRecurrence)}</span>
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-zinc-500" />
-                      </button>
-                    </div>
+                    {/* RECORRÊNCIA Section - Only displayed when editing the task */}
+                    {editingTask && (
+                      <div>
+                        <label className="text-[10px] font-bold text-zinc-400 tracking-wider uppercase block mb-1.5">
+                          RECORRÊNCIA
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setIsRecurrenceModalOpen(true)}
+                          className="px-3.5 py-2 rounded-xl bg-zinc-950 border border-zinc-900 hover:border-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold flex items-center gap-2 transition-colors w-full justify-between"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Repeat className="w-3.5 h-3.5 text-zinc-400" />
+                            <span>{getRecurrenceText(formRecurrence)}</span>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-zinc-500" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
 
               {/* Bottom Footer Bar */}
-              <div className="flex items-center justify-between px-5 py-3.5 border-t border-zinc-800/80 bg-zinc-900/60">
+              <div className="flex items-center justify-between px-5 py-3.5 border-t border-zinc-900 bg-black">
                 <div>
                   {editingTask && (
                     <button
@@ -1561,7 +1572,7 @@ export default function DailyMissionsView({
                   <button
                     type="button"
                     onClick={() => setIsTaskModalOpen(false)}
-                    className="px-4 py-2 rounded-xl text-xs font-semibold text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                    className="px-4 py-2 rounded-xl text-xs font-semibold text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors"
                   >
                     Cancelar
                   </button>
@@ -1594,7 +1605,7 @@ export default function DailyMissionsView({
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-sm bg-[#18181b] border border-zinc-800 rounded-2xl p-4 shadow-2xl space-y-4"
+              className="w-full max-w-sm bg-black border border-zinc-800 rounded-2xl p-4 shadow-2xl space-y-4"
             >
               {/* Header: < Setembro 2026 > */}
               <div className="flex items-center justify-between">
@@ -1711,7 +1722,7 @@ export default function DailyMissionsView({
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 30 }}
-              className="w-full sm:max-w-sm bg-[#18181b] border border-zinc-800 rounded-t-3xl sm:rounded-2xl p-4 shadow-2xl space-y-3"
+              className="w-full sm:max-w-sm bg-black border border-zinc-800 rounded-t-3xl sm:rounded-2xl p-4 shadow-2xl space-y-3"
             >
               <h4 className="text-xs font-bold text-zinc-400 tracking-wider uppercase mb-3">
                 RECORRÊNCIA
@@ -1764,7 +1775,7 @@ export default function DailyMissionsView({
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 30 }}
-              className="w-full sm:max-w-sm bg-[#18181b] border border-zinc-800 rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl space-y-4"
+              className="w-full sm:max-w-sm bg-black border border-zinc-800 rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl space-y-4"
             >
               <h4 className="text-base font-bold text-white">Nova tag</h4>
 
@@ -1825,7 +1836,7 @@ export default function DailyMissionsView({
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-xs bg-[#18181b] border border-zinc-800 rounded-2xl p-4 shadow-2xl space-y-3"
+              className="w-full max-w-xs bg-black border border-zinc-800 rounded-2xl p-4 shadow-2xl space-y-3"
             >
               <h4 className="text-sm font-bold text-white">Definir Horário</h4>
               <input
@@ -1874,9 +1885,9 @@ export default function DailyMissionsView({
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-md bg-[#18181b] border border-zinc-800 rounded-2xl p-5 shadow-2xl space-y-4"
+              className="w-full max-w-md bg-black border border-zinc-800 rounded-2xl p-5 shadow-2xl space-y-4"
             >
-              <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+              <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
                 <div className="flex items-center gap-2">
                   <Archive className="w-5 h-5 text-amber-400" />
                   <h3 className="text-sm font-bold text-white">Visão Geral & Trackers</h3>
@@ -1884,7 +1895,7 @@ export default function DailyMissionsView({
                 <button
                   type="button"
                   onClick={() => setIsArchiveDrawerOpen(false)}
-                  className="p-1 text-zinc-400 hover:text-white"
+                  className="p-1 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-900 transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -1902,7 +1913,7 @@ export default function DailyMissionsView({
                       setIsArchiveDrawerOpen(false);
                       if (onOpenTrackers) onOpenTrackers();
                     }}
-                    className="p-3 bg-zinc-900/90 border border-zinc-800 hover:border-zinc-700 rounded-xl text-left transition-colors flex items-center gap-2.5"
+                    className="p-3 bg-zinc-950 border border-zinc-900 hover:border-zinc-800 rounded-xl text-left transition-colors flex items-center gap-2.5"
                   >
                     <BookOpen className="w-4 h-4 text-orange-400" />
                     <div>
@@ -1919,7 +1930,7 @@ export default function DailyMissionsView({
                       setIsArchiveDrawerOpen(false);
                       if (onOpenTrackers) onOpenTrackers();
                     }}
-                    className="p-3 bg-zinc-900/90 border border-zinc-800 hover:border-zinc-700 rounded-xl text-left transition-colors flex items-center gap-2.5"
+                    className="p-3 bg-zinc-950 border border-zinc-900 hover:border-zinc-800 rounded-xl text-left transition-colors flex items-center gap-2.5"
                   >
                     <Book className="w-4 h-4 text-amber-400" />
                     <div>
@@ -1941,13 +1952,13 @@ export default function DailyMissionsView({
                       setIsArchiveDrawerOpen(false);
                       setShowCompletedRoutinesModal(true);
                     }}
-                    className="w-full py-2.5 px-3 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 rounded-xl text-xs font-semibold text-zinc-300 flex items-center justify-between transition-colors"
+                    className="w-full py-2.5 px-3 bg-zinc-950 border border-zinc-900 hover:bg-zinc-900 rounded-xl text-xs font-semibold text-zinc-300 flex items-center justify-between transition-colors"
                   >
                     <div className="flex items-center gap-2">
                       <History className="w-4 h-4 text-amber-400" />
                       <span>Rotinas Concluídas no Dia</span>
                     </div>
-                    <span className="text-[10px] bg-zinc-800 px-2 py-0.5 rounded-full font-mono">
+                    <span className="text-[10px] bg-zinc-900 px-2 py-0.5 rounded-full font-mono text-zinc-300">
                       {completedRoutineTasks.length}
                     </span>
                   </button>
@@ -1975,7 +1986,7 @@ export default function DailyMissionsView({
                   {allTags.map(t => (
                     <span
                       key={t.id}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-xs text-zinc-300"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-zinc-950 border border-zinc-900 text-xs text-zinc-300"
                     >
                       <span className="w-2 h-2 rounded-full" style={{ backgroundColor: t.color }} />
                       <span className="capitalize">{t.name}</span>
@@ -2002,9 +2013,9 @@ export default function DailyMissionsView({
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-md bg-[#18181b] border border-zinc-800 rounded-2xl p-5 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto"
+              className="w-full max-w-md bg-black border border-zinc-800 rounded-2xl p-5 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto"
             >
-              <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+              <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
                 <div className="flex items-center gap-2">
                   <Settings className="w-5 h-5 text-zinc-300" />
                   <h3 className="text-sm font-bold text-white">Opções de Missões</h3>
@@ -2012,14 +2023,14 @@ export default function DailyMissionsView({
                 <button
                   type="button"
                   onClick={() => setIsSettingsModalOpen(false)}
-                  className="p-1 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition-colors"
+                  className="p-1 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-900 transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              {/* Tag Shortcuts Configuration Section (User requested: tags should not always be displayed as shortcuts) */}
-              <div className="bg-zinc-900/70 border border-zinc-800 rounded-xl p-3.5 space-y-3">
+              {/* Tag Shortcuts Configuration Section */}
+              <div className="bg-zinc-950 border border-zinc-900 rounded-xl p-3.5 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <TagIcon className="w-4 h-4 text-amber-400" />
@@ -2032,7 +2043,7 @@ export default function DailyMissionsView({
                     type="button"
                     onClick={() => handleToggleTagShortcuts(!showTagShortcuts)}
                     className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer ${
-                      showTagShortcuts ? 'bg-amber-500' : 'bg-zinc-700'
+                      showTagShortcuts ? 'bg-amber-500' : 'bg-zinc-800'
                     }`}
                   >
                     <span
@@ -2050,7 +2061,7 @@ export default function DailyMissionsView({
                 </p>
 
                 {showTagShortcuts && (
-                  <div className="space-y-2 pt-2 border-t border-zinc-800/80">
+                  <div className="space-y-2 pt-2 border-t border-zinc-900">
                     <div className="flex items-center justify-between text-[11px]">
                       <span className="text-zinc-400 font-medium">
                         {visibleTagShortcuts.length} de {displayTags.length} visíveis
@@ -2083,7 +2094,7 @@ export default function DailyMissionsView({
                           return (
                             <label
                               key={tag.name}
-                              className="flex items-center justify-between p-2 rounded-lg bg-zinc-950/60 border border-zinc-800/60 hover:border-zinc-700 cursor-pointer transition-colors"
+                              className="flex items-center justify-between p-2 rounded-lg bg-black border border-zinc-900 hover:border-zinc-800 cursor-pointer transition-colors"
                             >
                               <div className="flex items-center gap-2.5">
                                 <span
@@ -2117,7 +2128,7 @@ export default function DailyMissionsView({
                       setIsSettingsModalOpen(false);
                       handleResetForNewDay();
                     }}
-                    className="w-full p-3 text-left rounded-xl bg-zinc-900 border border-zinc-800 hover:bg-zinc-800/80 text-zinc-200 hover:text-white transition-colors flex items-center justify-between"
+                    className="w-full p-3 text-left rounded-xl bg-zinc-950 border border-zinc-900 hover:bg-zinc-900 text-zinc-200 hover:text-white transition-colors flex items-center justify-between"
                   >
                     <span>Redefinir checklist deste dia</span>
                     <Repeat className="w-4 h-4 text-zinc-400" />
@@ -2130,7 +2141,7 @@ export default function DailyMissionsView({
                     setIsSettingsModalOpen(false);
                     if (onOpenTrackers) onOpenTrackers();
                   }}
-                  className="w-full p-3 text-left rounded-xl bg-zinc-900 border border-zinc-800 hover:bg-zinc-800/80 text-zinc-200 hover:text-white transition-colors flex items-center justify-between"
+                  className="w-full p-3 text-left rounded-xl bg-zinc-950 border border-zinc-900 hover:bg-zinc-900 text-zinc-200 hover:text-white transition-colors flex items-center justify-between"
                 >
                   <span>Abrir Leitura Semanal & Bíblia</span>
                   <BookOpen className="w-4 h-4 text-orange-400" />
