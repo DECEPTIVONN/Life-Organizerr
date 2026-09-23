@@ -46,9 +46,11 @@ import { motion, AnimatePresence } from 'motion/react';
 import { DailyTask, SubTask, BookTracker, BibleTracker, RoutineItem, YearlyBook, WeeklyReview, MonthlyReview, CalendarNote, Habit } from '../types';
 import RoutineView from './RoutineView';
 import HabitsTrackerView from './HabitsTrackerView';
+import DailyMissionsView from './DailyMissionsView';
 import { syncBookWithYearlyBooks, calculateReadingInterval, formatDateBR } from '../utils/bookUtils';
 import { cleanupExpiredGridRoutine, cleanupExpiredRoutineItems, isPastWeek, getWeekMondayStr } from '../utils/routineUtils';
 import { addDeletedTaskIdForDate, getDeletedTaskIdsForDate } from '../utils/taskStorage';
+import { isTaskScheduledForDate } from '../utils/taskDateUtils';
 
 interface ChecklistViewProps {
   dailyTasks: DailyTask[];
@@ -310,12 +312,12 @@ export default function ChecklistView({
 
     let baseList: DailyTask[] = [];
     if (selectedDate === todayStr) {
-      baseList = dailyTasks.filter(t => (t.isRecurring !== false || !t.createdDate || t.createdDate === todayStr) && !deletedIds.has(t.id));
+      baseList = dailyTasks.filter(t => isTaskScheduledForDate(t, todayStr) && !deletedIds.has(t.id));
     } else {
       if (note && note.checklist && note.checklist.length > 0) {
-        baseList = note.checklist.filter(t => (t.isRecurring !== false || !t.createdDate || t.createdDate === selectedDate) && !deletedIds.has(t.id));
+        baseList = note.checklist.filter(t => isTaskScheduledForDate(t, selectedDate) && !deletedIds.has(t.id));
       } else {
-        baseList = dailyTasks.filter(t => (t.isRecurring !== false || !t.createdDate || t.createdDate === selectedDate) && !deletedIds.has(t.id)).map(t => ({
+        baseList = dailyTasks.filter(t => isTaskScheduledForDate(t, selectedDate) && !deletedIds.has(t.id)).map(t => ({
           ...t,
           completed: false,
           subtasks: t.subtasks?.map(s => ({ ...s, completed: false }))
@@ -432,7 +434,7 @@ export default function ChecklistView({
 
         const isCompleted = existing
           ? existing.completed
-          : (item.completedDays ? item.completedDays.includes(dayOfWeekSun0) : item.completed);
+          : false;
 
         dynamicRoutineTasks.push({
           id: taskId,
@@ -508,7 +510,7 @@ export default function ChecklistView({
       // Automatic day reset: uncheck recurring tasks and reset today's chapter trackers
       setDailyTasks(prev =>
         prev
-          .filter(t => t.isRecurring !== false || !t.createdDate || t.createdDate === currentToday)
+          .filter(t => isTaskScheduledForDate(t, currentToday))
           .map(t => ({
             ...t,
             completed: false,
@@ -1856,538 +1858,51 @@ export default function ChecklistView({
 
       {activeTab === 'checklist' ? (
         <>
-          {/* Date Selector Header Bar */}
-          {showDateSelector && (
-            <div className="flex flex-wrap items-center justify-between gap-3 bg-[#111115] border border-zinc-800/80 rounded-2xl p-3.5 shadow-md">
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const d = parseLocalDate(selectedDate);
-                    d.setDate(d.getDate() - 1);
-                    const prevStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                    setSelectedDate(prevStr);
-                  }}
-                  className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-xl border border-zinc-800 transition-all flex items-center gap-1 text-xs font-bold"
-                  title="Dia Anterior"
-                >
-                  <ChevronLeft className="h-4 w-4 text-orange-500" />
-                  <span className="hidden sm:inline">Dia Anterior</span>
-                </button>
+          <DailyMissionsView
+            dailyTasks={dailyTasks}
+            activeTasks={activeTasks}
+            updateActiveTasks={updateActiveTasks}
+            selectedDate={selectedDate}
+            setSelectedDate={setSelectedDate}
+            todayStr={todayStr}
+            isToday={isToday}
+            addXp={addXp}
+            handleToggleTask={handleToggleTask}
+            handleToggleSubtask={handleToggleSubtask}
+            handleDeleteTask={handleDeleteTask}
+            calendarNotes={calendarNotes}
+            streak={streak}
+            onOpenStreakHub={onOpenStreakHub}
+            bookTracker={bookTracker}
+            bibleTracker={bibleTracker}
+            completedRoutineTasks={completedRoutineTasks}
+            setShowCompletedRoutinesModal={setShowCompletedRoutinesModal}
+            handleResetForNewDay={handleResetForNewDay}
+            onOpenTrackers={() => {
+              setBookOpen(true);
+              setBibleOpen(true);
+            }}
+          />
 
-                <div className="relative flex items-center">
-                  <input
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
-                    className="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs font-mono font-bold text-white focus:outline-none focus:border-orange-500/50 cursor-pointer"
-                  />
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    const d = parseLocalDate(selectedDate);
-                    d.setDate(d.getDate() + 1);
-                    const nextStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                    setSelectedDate(nextStr);
-                  }}
-                  className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-xl border border-zinc-800 transition-all flex items-center gap-1 text-xs font-bold"
-                  title="Próximo Dia"
-                >
-                  <span className="hidden sm:inline">Próximo Dia</span>
-                  <ChevronRight className="h-4 w-4 text-orange-500" />
-                </button>
-
-                {!isToday && (
-                  <button
-                    type="button"
-                    onClick={() => setSelectedDate(todayStr)}
-                    className="px-3 py-1.5 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
-                  >
-                    <Calendar className="h-3.5 w-3.5" /> Ir para Hoje
-                  </button>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2 text-xs">
-                {isToday ? (
-                  <span className="px-3 py-1 bg-orange-500/10 border border-orange-500/20 text-orange-400 font-mono font-bold rounded-lg uppercase text-[10px] flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-orange-500 animate-pulse" />
-                    HOJE ({formatDateBR(selectedDate)})
-                  </span>
-                ) : selectedDate < todayStr ? (
-                  <span className="px-3 py-1 bg-blue-500/10 border border-blue-500/20 text-blue-400 font-mono font-bold rounded-lg uppercase text-[10px] flex items-center gap-1.5">
-                    <Clock className="h-3 w-3" /> HISTÓRICO SALVO ({formatDateBR(selectedDate)})
-                  </span>
-                ) : (
-                  <span className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono font-bold rounded-lg uppercase text-[10px] flex items-center gap-1.5">
-                    <Sparkles className="h-3 w-3" /> PLANEJAMENTO ({formatDateBR(selectedDate)})
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
-
-      {/* 3. Daily Progress Panel */}
-      <div className="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-orange-500/10 rounded-xl border border-orange-500/20">
-            <CheckSquare className="h-6 w-6 text-orange-500" />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-white">Progresso Diário</h3>
-            <p className="text-[11px] text-gray-500 mt-0.5">
-              {completedTasks} de {totalTasks} tarefas completas
-            </p>
-          </div>
-        </div>
-        <div className="text-right">
-          <span className="text-2xl font-black text-white font-mono">
-            {totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0}%
+      {/* 4. Trackers de Leitura & Fé (Leitura Semanal e Bíblia) */}
+      <div className="space-y-4 pt-4 border-t border-zinc-900/60">
+        <div className="flex items-center justify-between px-1">
+          <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">
+            Trackers de Leitura & Fé
           </span>
-          <span className="text-[10px] text-gray-500 font-mono block mt-0.5">
-            {completedTasks === totalTasks && totalTasks > 0 ? 'Tudo concluído!' : 'Em andamento'}
-          </span>
-        </div>
-      </div>
-
-      {/* 4. Active Tasks Groupings - Collapsible Accordions for Manhã, Noite, and Geral */}
-      <div className="space-y-4">
-        
-        {/* Accordions Header controls */}
-        <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
-          <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-            Rotinas e Checklist Diário
-          </h2>
-          <div className="flex items-center gap-2">
-            {(isToday && completedRoutineTasks.length > 0) && (
-              <button
-                type="button"
-                onClick={() => setShowCompletedRoutinesModal(true)}
-                className="text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 p-2 rounded-lg transition-all cursor-pointer flex items-center justify-center"
-                title="Rotinas Concluídas"
-              >
-                <History className="h-4 w-4" />
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => setIsAdding(true)}
-              className="text-xs font-bold text-orange-500 hover:text-orange-400 flex items-center gap-1.5 transition-colors bg-orange-500/10 p-2 sm:px-3 sm:py-1.5 rounded-lg border border-orange-500/20 cursor-pointer"
-              title="Adicionar Tarefa"
-            >
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Adicionar Tarefa</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Modal: Adicionar Nova Tarefa */}
-        <AnimatePresence>
-          {isAdding && (
-            <div 
-              onClick={() => setIsAdding(false)}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm cursor-pointer"
-            >
-              <motion.div
-                onClick={(e) => e.stopPropagation()}
-                initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                className="cursor-default bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-lg md:max-w-2xl lg:max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
-              >
-                {/* Header */}
-                <div className="p-4 sm:p-5 border-b border-zinc-800/80 flex items-center justify-between bg-zinc-900/40">
-                  <div className="flex items-center gap-2.5">
-                    <div className="p-2 bg-orange-500/10 rounded-xl border border-orange-500/20">
-                      <Plus className="h-4 sm:h-5 w-4 sm:w-5 text-orange-500" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm sm:text-base font-bold text-white tracking-tight">Nova Tarefa Diária</h3>
-                      <p className="text-[10px] sm:text-xs text-zinc-400">Configure a tarefa, período do dia, pilar de organização e lembretes</p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsAdding(false)}
-                    className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition-colors"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
-
-                {/* Form Body */}
-                <form onSubmit={handleAddTask} className="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1">
-                  {/* Nome da Tarefa */}
-                  <div>
-                    <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1">
-                      Nome da Tarefa <span className="text-orange-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={newTaskText}
-                      onChange={(e) => setNewTaskText(e.target.value)}
-                      placeholder="Ex: Treinar na academia, Beber 3L de água, Estudar React..."
-                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-orange-500/60 transition-colors"
-                      maxLength={60}
-                      required
-                    />
-                  </div>
-
-                  {/* Desktop 2-column grid for Período do Dia and Pilar de Organização */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Período do Dia */}
-                    <div>
-                      <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1.5">
-                        Período do Dia
-                      </label>
-                      <div className="grid grid-cols-3 gap-2">
-                        {[
-                          { id: 'geral', label: 'Geral', icon: Clock, desc: 'Dia todo', selectedClass: 'bg-sky-500/15 border-sky-500 text-sky-400 shadow-[0_0_12px_rgba(56,189,248,0.15)]', iconColor: 'text-sky-400' },
-                          { id: 'manha', label: 'Manhã', icon: Sun, desc: 'Matinal', selectedClass: 'bg-amber-500/15 border-amber-500 text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.15)]', iconColor: 'text-amber-400' },
-                          { id: 'noite', label: 'Noite', icon: Moon, desc: 'Noturno', selectedClass: 'bg-indigo-500/15 border-indigo-500 text-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.15)]', iconColor: 'text-indigo-400' }
-                        ].map((p) => {
-                          const IconComp = p.icon;
-                          const isSelected = newTaskPeriod === p.id;
-                          return (
-                            <button
-                              key={p.id}
-                              type="button"
-                              onClick={() => setNewTaskPeriod(p.id as any)}
-                              className={`p-2.5 rounded-xl border text-center transition-all flex flex-col items-center gap-1 ${
-                                isSelected
-                                  ? p.selectedClass
-                                  : 'bg-zinc-900 border-zinc-800/80 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
-                              }`}
-                            >
-                              <IconComp className={`h-4 w-4 ${isSelected ? p.iconColor : 'text-zinc-500'}`} />
-                              <span className="text-xs font-bold">{p.label}</span>
-                              <span className={`text-[9px] ${isSelected ? 'opacity-90' : 'text-zinc-500'} leading-none`}>{p.desc}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-
-                      {/* Tag Retroativo (Localizado na linha de Rotina/Lazer/Outro sob Geral, Manhã, Noite) */}
-                      <div className="mt-2">
-                        <button
-                          type="button"
-                          onClick={() => setNewTaskIsRetroactive(!newTaskIsRetroactive)}
-                          className={`w-full p-2.5 rounded-xl border text-left transition-all flex items-center justify-between cursor-pointer ${
-                            newTaskIsRetroactive
-                              ? 'bg-amber-500/15 border-amber-500 text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.15)]'
-                              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <Clock className={`h-4 w-4 ${newTaskIsRetroactive ? 'text-amber-400' : 'text-zinc-500'}`} />
-                            <div>
-                              <span className="text-xs font-bold block">Tag Retroativo</span>
-                              <span className={`text-[9.5px] block ${newTaskIsRetroactive ? 'opacity-80' : 'text-zinc-500'}`}>
-                                Marcar com tag retroativo
-                              </span>
-                            </div>
-                          </div>
-                          <div className={`h-4 w-4 rounded-md border flex items-center justify-center transition-colors ${newTaskIsRetroactive ? 'border-amber-400 bg-amber-500 text-zinc-950' : 'border-zinc-700 bg-zinc-950'}`}>
-                            {newTaskIsRetroactive && <Check className="h-3 w-3 stroke-[3]" />}
-                          </div>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Categoria / Pilar */}
-                    <div>
-                      <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1.5">
-                        Categoria
-                      </label>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        {[
-                          { id: 'Trabalho', label: 'Trabalho', sub: 'Foco & Projetos', selectedClass: 'bg-indigo-500/15 border-indigo-500 text-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.15)]' },
-                          { id: 'Exercício', label: 'Exercício', sub: 'Treino & Saúde', selectedClass: 'bg-emerald-500/15 border-emerald-500 text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.15)]' },
-                          { id: 'Estudo', label: 'Estudo', sub: 'Aprendizado & Leitura', selectedClass: 'bg-amber-500/15 border-amber-500 text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.15)]' },
-                          { id: 'Lazer', label: 'Lazer', sub: 'Descanso & Hobbies', selectedClass: 'bg-rose-500/15 border-rose-500 text-rose-400 shadow-[0_0_12px_rgba(244,63,94,0.15)]' },
-                          { id: 'Rotina', label: 'Rotina', sub: 'Hábitos & Cuidados', selectedClass: 'bg-violet-500/15 border-violet-500 text-violet-400 shadow-[0_0_12px_rgba(139,92,246,0.15)]' },
-                          { id: 'Outro', label: 'Outro', sub: 'Diversos & Geral', selectedClass: 'bg-zinc-500/15 border-zinc-500 text-zinc-300 shadow-[0_0_12px_rgba(113,113,122,0.15)]' }
-                        ].map((cat) => {
-                          const isSelected = newTaskCategory === cat.id;
-                          return (
-                            <button
-                              key={cat.id}
-                              type="button"
-                              onClick={() => setNewTaskCategory(cat.id)}
-                              className={`p-2.5 rounded-xl border text-left transition-all ${
-                                isSelected
-                                  ? cat.selectedClass
-                                  : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
-                              }`}
-                            >
-                              <div className="text-xs font-bold">
-                                <span>{cat.label}</span>
-                              </div>
-                              <span className={`text-[9.5px] block mt-0.5 ${isSelected ? 'opacity-80' : 'text-zinc-500'}`}>{cat.sub}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Desktop 2-column grid for Recorrência e Notificação */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Recorrência */}
-                    <div>
-                      <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1.5">
-                        Recorrência da Tarefa
-                      </label>
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setNewTaskIsRecurring(true)}
-                          className={`p-2.5 rounded-xl border text-left transition-all flex flex-col gap-1 ${
-                            newTaskIsRecurring
-                              ? 'bg-orange-500/15 border-orange-500/60 text-orange-400 shadow-[0_0_12px_rgba(249,115,22,0.15)]'
-                              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
-                          }`}
-                        >
-                          <div className="flex items-center gap-1.5 font-bold text-xs">
-                            <Clock className="h-3.5 w-3.5 text-orange-500" />
-                            <span>Todos os dias</span>
-                          </div>
-                          <span className="text-[10px] text-zinc-400 leading-tight">
-                            Diariamente (reseta a cada novo dia)
-                          </span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setNewTaskIsRecurring(false)}
-                          className={`p-2.5 rounded-xl border text-left transition-all flex flex-col gap-1 ${
-                            !newTaskIsRecurring
-                              ? 'bg-orange-500/15 border-orange-500/60 text-orange-400 shadow-[0_0_12px_rgba(249,115,22,0.15)]'
-                              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
-                          }`}
-                        >
-                          <div className="flex items-center gap-1.5 font-bold text-xs">
-                            <Calendar className="h-3.5 w-3.5 text-orange-500" />
-                            <span>Apenas no dia</span>
-                          </div>
-                          <span className="text-[10px] text-zinc-400 leading-tight">
-                            Disponível apenas na data selecionada
-                          </span>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Horário de Lembrete (Notificação) */}
-                    <div>
-                      <label className="text-[10px] text-gray-400 uppercase font-bold block mb-1.5 flex items-center justify-between">
-                        <span>Horário do Lembrete (Notificação)</span>
-                        {newTaskReminderTime && (
-                          <button
-                            type="button"
-                            onClick={() => setNewTaskReminderTime('')}
-                            className="text-[9px] text-zinc-500 hover:text-orange-400 lowercase font-mono"
-                          >
-                            remover
-                          </button>
-                        )}
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="time"
-                          value={newTaskReminderTime}
-                          onChange={(e) => setNewTaskReminderTime(e.target.value)}
-                          className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/60"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleTestNotification(newTaskText, newTaskReminderTime)}
-                          className="px-3 py-2 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 hover:text-orange-400 rounded-xl text-xs flex items-center gap-1.5 transition-all shrink-0 active:scale-95"
-                          title="Testar Notificação"
-                        >
-                          <Bell className="h-3.5 w-3.5 text-indigo-400" />
-                          <span>Notificações</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Etapas / Subtarefas (Opcional) */}
-                  <div className="border-t border-zinc-900 pt-3 space-y-2">
-                    <label className="text-[10px] text-gray-400 uppercase font-bold block">
-                      Etapas / Subtarefas (Opcional)
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={currentSubtaskText}
-                        onChange={(e) => setCurrentSubtaskText(e.target.value)}
-                        placeholder="Ex: Comprar suplemento, Preparar mochila..."
-                        className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/60"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            if (currentSubtaskText.trim()) {
-                              setNewTaskSubtasks([...newTaskSubtasks, currentSubtaskText.trim()]);
-                              setCurrentSubtaskText('');
-                            }
-                          }
-                        }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (currentSubtaskText.trim()) {
-                            setNewTaskSubtasks([...newTaskSubtasks, currentSubtaskText.trim()]);
-                            setCurrentSubtaskText('');
-                          }
-                        }}
-                        className="bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-orange-500 font-bold text-xs px-3.5 py-2 rounded-xl transition-colors shrink-0"
-                      >
-                        + Adicionar
-                      </button>
-                    </div>
-
-                    {newTaskSubtasks.length > 0 && (
-                      <div className="space-y-1.5 bg-zinc-900/40 p-2.5 rounded-xl border border-zinc-800/80 max-h-[120px] overflow-y-auto">
-                        {newTaskSubtasks.map((st, sidx) => (
-                          <div key={sidx} className="flex items-center justify-between bg-zinc-950 px-2.5 py-1.5 rounded-lg border border-zinc-800">
-                            <span className="text-[11px] text-gray-300 font-medium">{st}</span>
-                            <button
-                              type="button"
-                              onClick={() => setNewTaskSubtasks(newTaskSubtasks.filter((_, i) => i !== sidx))}
-                              className="text-zinc-500 hover:text-red-400 transition-colors text-[10px] font-bold"
-                            >
-                              Remover
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Footer Buttons */}
-                  <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-900">
-                    <button
-                      type="button"
-                      onClick={() => setIsAdding(false)}
-                      className="px-4 py-2 text-xs font-semibold text-zinc-400 hover:text-white transition-colors"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={!newTaskText.trim()}
-                      className="bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition-all shadow-[0_4px_15px_rgba(249,115,22,0.25)] flex items-center gap-1.5"
-                    >
-                      <Plus className="h-4 w-4" />
-                      <span>Criar Tarefa</span>
-                    </button>
-                  </div>
-                </form>
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
-
-        {/* ACCORDION 1: ROTINA MATINAL (Manhã) - Exibido apenas quando houver tarefas ativas ou no histórico */}
-        {displayMorningTasks.length > 0 && (
-          <div className="bg-[#0a0a0c]/40 border border-zinc-800/30 rounded-xl overflow-hidden">
-            <button 
-              onClick={() => setMorningOpen(!morningOpen)}
-              className="w-full p-4 flex items-center justify-between bg-zinc-900/20 hover:bg-zinc-900/40 transition-colors border-b border-zinc-800/30 text-left"
-            >
-              <div className="flex items-center gap-2.5">
-                <Sun className="h-4.5 w-4.5 text-amber-500" />
-                <span className="text-xs font-bold text-white tracking-wide">Rotina Matinal (Manhã)</span>
-                <span className="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full font-mono">
-                  {morningTasks.filter(t => t.completed).length}/{morningTasks.length}
-                </span>
-              </div>
-              {morningOpen ? <ChevronUp className="h-4 w-4 text-zinc-500" /> : <ChevronDown className="h-4 w-4 text-zinc-500" />}
-            </button>
-
-            <AnimatePresence initial={false}>
-              {morningOpen && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="overflow-hidden p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5"
-                >
-                  {displayMorningTasks.map(task => renderTaskRow(task))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        )}
-
-        {/* ACCORDION 2: MISSÕES */}
-        <div className="bg-[#0a0a0c]/40 border border-zinc-800/30 rounded-xl overflow-hidden">
-          <button 
-            onClick={() => setGeneralOpen(!generalOpen)}
-            className="w-full p-4 flex items-center justify-between bg-zinc-900/20 hover:bg-zinc-900/40 transition-colors border-b border-zinc-800/30 text-left"
+          <button
+            type="button"
+            onClick={() => {
+              setBookOpen(prev => !prev);
+              setBibleOpen(prev => !prev);
+            }}
+            className="text-xs text-orange-400 hover:text-orange-300 font-semibold"
           >
-            <div className="flex items-center gap-2.5">
-              <List className="h-4.5 w-4.5 text-orange-500" />
-              <span className="text-xs font-bold text-white tracking-wide">Missões</span>
-              <span className="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full font-mono">
-                {generalTasks.filter(t => t.completed).length}/{generalTasks.length}
-              </span>
-            </div>
-            {generalOpen ? <ChevronUp className="h-4 w-4 text-zinc-500" /> : <ChevronDown className="h-4 w-4 text-zinc-500" />}
+            {bookOpen || bibleOpen ? 'Ocultar Trackers' : 'Expandir Trackers'}
           </button>
-
-          <AnimatePresence initial={false}>
-            {generalOpen && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="overflow-hidden p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5"
-              >
-                {generalTasks.length === 0 ? (
-                  <p className="text-[11px] text-zinc-500 italic py-2 px-1 col-span-1 sm:col-span-2 lg:col-span-3">Nenhuma missão definida.</p>
-                ) : (
-                  generalTasks.map(task => renderTaskRow(task))
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
 
-        {/* ACCORDION 3: ROTINA NOTURNA (Noite) - Exibido apenas quando houver tarefas ativas ou no histórico */}
-        {displayNightTasks.length > 0 && (
-          <div className="bg-[#0a0a0c]/40 border border-zinc-800/30 rounded-xl overflow-hidden">
-            <button 
-              onClick={() => setNightOpen(!nightOpen)}
-              className="w-full p-4 flex items-center justify-between bg-zinc-900/20 hover:bg-zinc-900/40 transition-colors border-b border-zinc-800/30 text-left"
-            >
-              <div className="flex items-center gap-2.5">
-                <Moon className="h-4.5 w-4.5 text-indigo-400" />
-                <span className="text-xs font-bold text-white tracking-wide">Rotina Noturna (Noite)</span>
-                <span className="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full font-mono">
-                  {nightTasks.filter(t => t.completed).length}/{nightTasks.length}
-                </span>
-              </div>
-              {nightOpen ? <ChevronUp className="h-4 w-4 text-zinc-500" /> : <ChevronDown className="h-4 w-4 text-zinc-500" />}
-            </button>
 
-            <AnimatePresence initial={false}>
-              {nightOpen && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="overflow-hidden p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5"
-                >
-                  {displayNightTasks.map(task => renderTaskRow(task))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        )}
 
         {/* ACCORDION 4: LEITURA SEMANAL */}
         <div className="bg-[#0a0a0c]/40 border border-zinc-800/30 rounded-xl overflow-hidden">
