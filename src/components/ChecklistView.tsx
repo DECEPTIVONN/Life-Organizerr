@@ -2508,54 +2508,45 @@ export default function ChecklistView({
               </div>
               
               <div className="flex items-center gap-2.5 flex-wrap">
-                {/* View Switcher: Visão do Dia (ideal no mobile) vs Grade Semanal */}
-                <div className="flex items-center bg-zinc-900/90 border border-zinc-800 p-1 rounded-xl text-xs">
+                {/* View Switcher: Visão do Dia vs Grade Semanal (Apenas Ícones) */}
+                <div className="flex items-center bg-zinc-900/90 border border-zinc-800 p-1 rounded-xl">
                   <button
                     type="button"
                     onClick={() => setRoutineViewMode('dia')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-all ${
+                    className={`p-2 rounded-lg transition-all ${
                       routineViewMode === 'dia'
                         ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20'
                         : 'text-zinc-400 hover:text-white'
                     }`}
+                    title="Visão do Dia"
+                    aria-label="Visão do Dia"
                   >
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>Visão do Dia</span>
+                    <Clock className="w-4 h-4" />
                   </button>
                   <button
                     type="button"
                     onClick={() => setRoutineViewMode('grade')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-all ${
+                    className={`p-2 rounded-lg transition-all ${
                       routineViewMode === 'grade'
                         ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20'
                         : 'text-zinc-400 hover:text-white'
                     }`}
+                    title="Grade Semanal"
+                    aria-label="Grade Semanal"
                   >
-                    <LayoutGrid className="w-3.5 h-3.5" />
-                    <span>Grade Semanal</span>
+                    <LayoutGrid className="w-4 h-4" />
                   </button>
                 </div>
 
+                {/* Limpar (Apenas Ícone) */}
                 <button
                   type="button"
                   onClick={() => setShowClearModal(true)}
-                  className="text-xs font-semibold text-red-400 bg-red-400/5 hover:bg-red-400/10 border border-red-500/10 px-3 py-2 rounded-xl transition-all flex items-center gap-1.5"
+                  className="text-red-400 bg-red-400/5 hover:bg-red-400/10 border border-red-500/10 p-2 rounded-xl transition-all flex items-center justify-center"
+                  title="Limpar rotina"
+                  aria-label="Limpar rotina"
                 >
-                  <Trash2 className="h-3.5 w-3.5" /> Limpar
-                </button>
-                <button
-                  onClick={() => {
-                    setEditingCell(null);
-                    setCellText('');
-                    setCellColor('Rotina');
-                    setCellStartTime('08:00');
-                    setCellEndTime('09:00');
-                    setCellSelectedDays([routineSelectedDay]);
-                    setIsAddingBlock(true);
-                  }}
-                  className="bg-orange-500 hover:bg-orange-600 active:scale-95 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all flex items-center gap-2 shadow-[0_4px_20px_rgba(249,115,22,0.25)]"
-                >
-                  <Plus className="h-4 w-4" /> Novo Bloco
+                  <Trash2 className="h-4 w-4" />
                 </button>
               </div>
             </div>
@@ -2668,9 +2659,10 @@ export default function ChecklistView({
                       setCellSelectedDays([routineSelectedDay]);
                       setIsAddingBlock(true);
                     }}
-                    className="text-xs font-semibold text-orange-400 hover:text-orange-300 flex items-center gap-1"
+                    className="text-xs font-semibold text-orange-400 hover:text-white border border-orange-500 hover:bg-orange-500 px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 active:scale-95 shadow-sm"
                   >
-                    <Plus className="w-3.5 h-3.5" /> Adicionar Bloco
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Novo Bloco</span>
                   </button>
                 </div>
 

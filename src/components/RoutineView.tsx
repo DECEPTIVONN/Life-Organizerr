@@ -652,23 +652,25 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
         </div>
 
         <div className="flex items-center gap-2.5 self-start md:self-auto flex-wrap">
-          {/* View Toggle - Unificado e responsivo (sem duplicação no mobile) */}
+          {/* View Toggle - Unificado e responsivo (Apenas Ícones) */}
           <nav className="internal-nav-secondary" aria-label="Visualização da Rotina Semanal">
             <button
               type="button"
               onClick={() => setViewMode('lista')}
-              className={`internal-nav-secondary-btn ${viewMode === 'lista' ? 'active' : ''}`}
+              className={`internal-nav-secondary-btn px-2.5 py-1.5 ${viewMode === 'lista' ? 'active' : ''}`}
+              title="Visualização em Lista"
+              aria-label="Visualização em Lista"
             >
-              <List className="h-3.5 w-3.5" />
-              <span>Lista</span>
+              <List className="h-4 w-4" />
             </button>
             <button
               type="button"
               onClick={() => setViewMode('quadro')}
-              className={`internal-nav-secondary-btn ${viewMode === 'quadro' ? 'active' : ''}`}
+              className={`internal-nav-secondary-btn px-2.5 py-1.5 ${viewMode === 'quadro' ? 'active' : ''}`}
+              title="Visualização em Quadro"
+              aria-label="Visualização em Quadro"
             >
-              <LayoutGrid className="h-3.5 w-3.5" />
-              <span>Quadro</span>
+              <LayoutGrid className="h-4 w-4" />
             </button>
           </nav>
 
