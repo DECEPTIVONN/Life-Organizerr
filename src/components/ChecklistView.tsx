@@ -1697,10 +1697,14 @@ export default function ChecklistView({
                   e.stopPropagation();
                   setExpandedTasks(prev => ({ ...prev, [task.id]: !prev[task.id] }));
                 }}
-                className="flex items-center gap-1 bg-zinc-900/90 border border-zinc-800 hover:border-orange-500/50 text-zinc-300 hover:text-orange-400 px-2 py-1 rounded-lg text-[10px] font-mono transition-all"
-                title={isExpanded ? "Recolher etapas" : "Expandir etapas"}
+                className={`flex items-center justify-center p-1.5 rounded-lg border transition-all cursor-pointer ${
+                  isExpanded
+                    ? 'bg-zinc-800 text-orange-400 border-orange-500/40 shadow-xs'
+                    : 'bg-zinc-900/90 border-zinc-800 hover:border-orange-500/50 text-zinc-400 hover:text-white'
+                }`}
+                title={isExpanded ? "Recolher subtarefas" : "Abrir dropdown de subtarefas"}
+                aria-expanded={isExpanded}
               >
-                <span className="text-[10px] text-zinc-400 font-bold">{completedSubtasksCount}/{totalSubtasksCount}</span>
                 {isExpanded ? <ChevronUp className="h-3.5 w-3.5 text-orange-400" /> : <ChevronDown className="h-3.5 w-3.5 text-zinc-400" />}
               </button>
             )}
@@ -1819,15 +1823,14 @@ export default function ChecklistView({
           </p>
         </div>
 
-        {/* Combo Streak Indicator */}
+        {/* Streak Indicator */}
         <button
           onClick={onOpenStreakHub}
           className="flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/20 hover:border-orange-500/40 hover:bg-orange-500/20 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs text-orange-400 font-bold shrink-0 transition-all cursor-pointer group"
           title="Abrir Central de Ofensivas & Congelamento"
         >
           <Flame className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-orange-500 fill-orange-500/20 group-hover:scale-110 transition-transform" />
-          <span>{streak} {streak === 1 ? 'dia' : 'dias'} em combo</span>
-          <span className="text-[9px] bg-orange-500/20 text-orange-300 px-1.5 py-0.5 rounded font-mono">Hub</span>
+          <span>{streak} {streak === 1 ? 'dia' : 'dias'}</span>
         </button>
       </div>
 

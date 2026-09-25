@@ -420,7 +420,7 @@ export const StreakHubModal: React.FC<StreakHubModalProps> = ({
                         </div>
                         <h3 className="text-lg font-black text-white font-mono flex items-center justify-center sm:justify-start gap-2">
                           <Flame className="h-5 w-5 text-orange-500 fill-orange-500/20" />
-                          <span>{data.masterStreak} DIAS EM COMBO ININTERRUPTO</span>
+                          <span>{data.masterStreak} {data.masterStreak === 1 ? 'DIA' : 'DIAS'}</span>
                         </h3>
                         <p className="text-xs text-zinc-400">
                           Nível: <strong className="text-amber-400">{flameTier.tier}</strong> • Maior Sequência: <strong className="text-white">{data.bestMasterStreak} dias</strong>

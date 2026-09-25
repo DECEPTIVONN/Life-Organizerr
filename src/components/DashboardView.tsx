@@ -705,7 +705,7 @@ export default function DashboardView({
             </div>
             <div className="mt-4">
               <span className="text-4xl font-black text-white font-mono drop-shadow-md">{streak}</span>
-              <span className="text-xs text-gray-400 ml-2 font-bold uppercase font-mono">Dias em Combo</span>
+              <span className="text-xs text-gray-400 ml-2 font-bold uppercase font-mono">{streak === 1 ? 'Dia' : 'Dias'}</span>
               <p className="text-[11px] text-zinc-300 mt-1.5 italic font-medium drop-shadow-sm">
                 "A persistência é o caminho do êxito"
               </p>

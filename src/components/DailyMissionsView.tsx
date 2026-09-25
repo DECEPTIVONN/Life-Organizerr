@@ -4,7 +4,6 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
-  ChevronUp,
   Calendar,
   Check,
   Plus,
@@ -22,7 +21,8 @@ import {
   BookOpen,
   Book,
   History,
-  Tag as TagIcon
+  Tag as TagIcon,
+  Flame
 } from 'lucide-react';
 import { DailyTask, SubTask, BookTracker, BibleTracker, CalendarNote } from '../types';
 import { loadStoredTags, createNewTag, TagItem, COLOR_PALETTE } from '../utils/tagStore';
@@ -181,6 +181,44 @@ export default function DailyMissionsView({
     const saved = localStorage.getItem('mbc_show_tag_shortcuts');
     return saved !== null ? JSON.parse(saved) : false;
   });
+
+  // User setting: Show/hide tags on task cards (opcional exibir ou não as tags nos cards de cada tarefa)
+  const [showTagsOnCards, setShowTagsOnCards] = useState<boolean>(() => {
+    const saved = localStorage.getItem('mbc_show_tags_on_cards');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
+  const handleToggleShowTagsOnCards = (enabled: boolean) => {
+    setShowTagsOnCards(enabled);
+    localStorage.setItem('mbc_show_tags_on_cards', JSON.stringify(enabled));
+  };
+
+  // User setting: Show/hide priority on task cards (opcional exibir ou não a prioridade nos cards de cada tarefa)
+  const [showPriorityOnCards, setShowPriorityOnCards] = useState<boolean>(() => {
+    const saved = localStorage.getItem('mbc_show_priority_on_cards');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
+  const handleToggleShowPriorityOnCards = (enabled: boolean) => {
+    setShowPriorityOnCards(enabled);
+    localStorage.setItem('mbc_show_priority_on_cards', JSON.stringify(enabled));
+  };
+
+  // User setting: Show/hide shift / time on task cards (opcional exibir ou não turno/horário nos cards de cada tarefa)
+  const [showShiftTimeOnCards, setShowShiftTimeOnCards] = useState<boolean>(() => {
+    const saved = localStorage.getItem('mbc_show_shift_time_on_cards');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
+  const handleToggleShowShiftTimeOnCards = (enabled: boolean) => {
+    setShowShiftTimeOnCards(enabled);
+    localStorage.setItem('mbc_show_shift_time_on_cards', JSON.stringify(enabled));
+  };
+
+  const getTagColor = (tagName: string) => {
+    const found = allTags.find(t => t.name.toLowerCase() === tagName.toLowerCase());
+    return found?.color || '#f97316';
+  };
 
   const [visibleTagShortcuts, setVisibleTagShortcuts] = useState<string[]>(() => {
     const saved = localStorage.getItem('mbc_visible_tag_shortcuts');
@@ -636,8 +674,20 @@ export default function DailyMissionsView({
           </button>
         </div>
 
-        {/* Right icons: Visão Geral & Trackers */}
+        {/* Right icons: Ofensiva, Visão Geral & Trackers */}
         <div className="flex items-center gap-1.5">
+          {onOpenStreakHub && (
+            <button
+              type="button"
+              onClick={onOpenStreakHub}
+              className="flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/20 hover:border-orange-500/40 hover:bg-orange-500/20 px-2.5 py-1.5 rounded-xl text-xs text-orange-400 font-bold transition-all cursor-pointer group"
+              title="Abrir Central de Ofensivas"
+            >
+              <Flame className="w-3.5 h-3.5 text-orange-500 fill-orange-500/20 group-hover:scale-110 transition-transform" />
+              <span>{streak} {streak === 1 ? 'dia' : 'dias'}</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={() => setIsArchiveDrawerOpen(true)}
@@ -868,8 +918,6 @@ export default function DailyMissionsView({
         <div className="space-y-2.5">
           {filteredTasks.map(task => {
             const hasSubtasks = task.subtasks && task.subtasks.length > 0;
-            const completedSubCount = hasSubtasks ? task.subtasks!.filter(s => s.completed).length : 0;
-            const totalSubCount = hasSubtasks ? task.subtasks!.length : 0;
             const isExpanded = !!expandedTasks[task.id];
 
             // Priority dot
@@ -899,18 +947,17 @@ export default function DailyMissionsView({
 
                     {/* Content area */}
                     <div
-                      className="flex-1 min-w-0 cursor-pointer select-none"
-                      onClick={() => {
-                        if (hasSubtasks) {
-                          setExpandedTasks(prev => ({ ...prev, [task.id]: !prev[task.id] }));
-                        } else {
-                          handleOpenEditTask(task);
-                        }
-                      }}
+                      className="flex-1 min-w-0 select-none cursor-pointer"
+                      onClick={() => handleOpenEditTask(task)}
                     >
-                      <div className="flex items-center gap-2">
-                        {/* Priority dot */}
-                        <span className={`w-2 h-2 rounded-full ${pDotClass} shrink-0`} />
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {/* Priority dot (opcional pelas opções de missões) */}
+                        {showPriorityOnCards && (
+                          <span
+                            className={`w-2 h-2 rounded-full ${pDotClass} shrink-0`}
+                            title={`Prioridade: ${task.priority}`}
+                          />
+                        )}
                         <h4
                           className={`text-sm sm:text-base font-semibold tracking-tight leading-snug transition-all ${
                             task.completed ? 'line-through text-zinc-500' : 'text-white'
@@ -918,6 +965,32 @@ export default function DailyMissionsView({
                         >
                           {task.text}
                         </h4>
+
+                        {/* Ícones de manhã e noite na mesma linha do TÍTULO DA TAREFA (opcional pelas opções de missões) */}
+                        {showShiftTimeOnCards && (
+                          (task.timeSlot === 'manha' || task.period === 'manha') ? (
+                            <span
+                              className="inline-flex items-center justify-center p-1 rounded-full bg-zinc-800/80 border border-zinc-700/60 text-amber-400 shrink-0"
+                              title="Manhã"
+                            >
+                              <Sun className="w-3.5 h-3.5" />
+                            </span>
+                          ) : task.timeSlot === 'tarde' ? (
+                            <span
+                              className="inline-flex items-center justify-center p-1 rounded-full bg-zinc-800/80 border border-zinc-700/60 text-sky-400 shrink-0"
+                              title="Tarde"
+                            >
+                              <Sunset className="w-3.5 h-3.5" />
+                            </span>
+                          ) : (task.timeSlot === 'noite' || task.period === 'noite') ? (
+                            <span
+                              className="inline-flex items-center justify-center p-1 rounded-full bg-zinc-800/80 border border-zinc-700/60 text-indigo-400 shrink-0"
+                              title="Noite"
+                            >
+                              <Moon className="w-3.5 h-3.5" />
+                            </span>
+                          ) : null
+                        )}
                       </div>
 
                       {/* Description underneath */}
@@ -927,76 +1000,93 @@ export default function DailyMissionsView({
                         </p>
                       )}
 
-                      {/* Badges row */}
-                      <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                        {/* Tag badge */}
-                        {task.tags && task.tags.length > 0 ? (
-                          task.tags.map(tag => (
-                            <span
-                              key={tag}
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-800/80 border border-zinc-700/60 text-[11px] text-zinc-300 font-medium"
-                            >
-                              <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                              <span className="capitalize">{tag}</span>
-                            </span>
-                          ))
-                        ) : task.category ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-800/80 border border-zinc-700/60 text-[11px] text-zinc-400 font-medium">
-                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
-                            <span>{task.category}</span>
-                          </span>
-                        ) : null}
+                      {/* Badges row: tags (opcional), recorrência, hora personalizada e retroativo */}
+                      {(() => {
+                        const hasTags = showTagsOnCards && ((task.tags && task.tags.length > 0) || Boolean(task.category));
+                        const hasRecurrence = task.recurrence && task.recurrence !== 'none';
+                        const hasReminderTime = showShiftTimeOnCards && Boolean(task.reminderTime && task.timeSlot !== 'manha' && task.timeSlot !== 'tarde' && task.timeSlot !== 'noite' && task.period !== 'manha' && task.period !== 'noite');
+                        const hasRetroactive = Boolean(task.isRetroactive || task.completedRetroactively);
 
-                        {/* Recurrence badge - only show when explicitly recurring */}
-                        {task.recurrence && task.recurrence !== 'none' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-800/80 border border-zinc-700/60 text-[11px] text-zinc-400 font-medium">
-                            <Repeat className="w-3 h-3 text-zinc-400" />
-                            <span>{getRecurrenceText(task.recurrence)}</span>
-                          </span>
-                        ) : null}
+                        if (!hasTags && !hasRecurrence && !hasReminderTime && !hasRetroactive) return null;
 
-                        {/* Time slot badge */}
-                        {task.timeSlot === 'manha' || task.period === 'manha' ? (
-                          <span
-                            className="inline-flex items-center justify-center p-1 rounded-full bg-zinc-800/80 border border-zinc-700/60 text-amber-400"
-                            title="Manhã"
-                          >
-                            <Sun className="w-3 h-3" />
-                          </span>
-                        ) : task.timeSlot === 'tarde' ? (
-                          <span
-                            className="inline-flex items-center justify-center p-1 rounded-full bg-zinc-800/80 border border-zinc-700/60 text-sky-400"
-                            title="Tarde"
-                          >
-                            <Sunset className="w-3 h-3" />
-                          </span>
-                        ) : task.timeSlot === 'noite' || task.period === 'noite' ? (
-                          <span
-                            className="inline-flex items-center justify-center p-1 rounded-full bg-zinc-800/80 border border-zinc-700/60 text-indigo-400"
-                            title="Noite"
-                          >
-                            <Moon className="w-3 h-3" />
-                          </span>
-                        ) : task.reminderTime ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-800/80 border border-zinc-700/60 text-[11px] text-zinc-300 font-medium">
-                            <Clock className="w-3 h-3" />
-                            <span>{task.reminderTime}</span>
-                          </span>
-                        ) : null}
+                        return (
+                          <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                            {/* Tag badge (opcional pelas opções de missões) */}
+                            {hasTags && (
+                              task.tags && task.tags.length > 0 ? (
+                                task.tags.map(tag => (
+                                  <span
+                                    key={tag}
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-800/80 border border-zinc-700/60 text-[11px] text-zinc-300 font-medium"
+                                  >
+                                    <span
+                                      className="w-1.5 h-1.5 rounded-full shrink-0"
+                                      style={{ backgroundColor: getTagColor(tag) }}
+                                    />
+                                    <span className="capitalize">{tag}</span>
+                                  </span>
+                                ))
+                              ) : task.category ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-800/80 border border-zinc-700/60 text-[11px] text-zinc-400 font-medium">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
+                                  <span>{task.category}</span>
+                                </span>
+                              ) : null
+                            )}
 
-                        {/* Retroactive badge */}
-                        {(task.isRetroactive || task.completedRetroactively) && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-[10px] text-amber-400 font-bold uppercase">
-                            <Clock className="w-2.5 h-2.5" />
-                            Retroativo
-                          </span>
-                        )}
-                      </div>
+                            {/* Recurrence badge */}
+                            {hasRecurrence && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-800/80 border border-zinc-700/60 text-[11px] text-zinc-400 font-medium">
+                                <Repeat className="w-3 h-3 text-zinc-400" />
+                                <span>{getRecurrenceText(task.recurrence)}</span>
+                              </span>
+                            )}
+
+                            {/* Custom Reminder Time badge */}
+                            {hasReminderTime && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-800/80 border border-zinc-700/60 text-[11px] text-zinc-300 font-medium">
+                                <Clock className="w-3 h-3" />
+                                <span>{task.reminderTime}</span>
+                              </span>
+                            )}
+
+                            {/* Retroactive badge */}
+                            {hasRetroactive && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-[10px] text-amber-400 font-bold uppercase">
+                                <Clock className="w-2.5 h-2.5" />
+                                Retroativo
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
 
-                  {/* Right actions: Edit, Delete, Chevron */}
-                  <div className="flex items-center gap-1 shrink-0">
+                  {/* Right actions: Subtasks dropdown toggle + Edit + Delete */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {hasSubtasks && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setExpandedTasks(prev => ({ ...prev, [task.id]: !prev[task.id] }));
+                        }}
+                        className={`inline-flex items-center justify-center p-1.5 rounded-lg transition-all border cursor-pointer ${
+                          isExpanded
+                            ? 'bg-zinc-800 text-orange-400 border-orange-500/40 shadow-xs'
+                            : 'bg-zinc-900/90 text-zinc-400 border-zinc-700/60 hover:bg-zinc-800 hover:text-white'
+                        }`}
+                        title={isExpanded ? 'Recolher subtarefas' : 'Abrir dropdown de subtarefas'}
+                        aria-expanded={isExpanded}
+                      >
+                        <ChevronDown
+                          className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                            isExpanded ? 'rotate-180 text-orange-400' : 'text-zinc-400'
+                          }`}
+                        />
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => handleOpenEditTask(task)}
@@ -1013,71 +1103,61 @@ export default function DailyMissionsView({
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
-                    {hasSubtasks && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setExpandedTasks(prev => ({ ...prev, [task.id]: !prev[task.id] }))
-                        }
-                        className="p-1 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition-colors"
-                      >
-                        {isExpanded ? (
-                          <ChevronDown className="w-4 h-4" />
-                        ) : (
-                          <ChevronRight className="w-4 h-4" />
-                        )}
-                      </button>
-                    )}
                   </div>
                 </div>
 
-                {/* Subtasks Progress Line (when collapsed) */}
-                {hasSubtasks && !isExpanded && (
-                  <div className="mt-3 pt-2 border-t border-zinc-800/40 flex items-center justify-between gap-3">
-                    <div className="flex-1 h-1 bg-zinc-800 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-white transition-all rounded-full"
-                        style={{
-                          width: `${totalSubCount > 0 ? (completedSubCount / totalSubCount) * 100 : 0}%`
-                        }}
-                      />
-                    </div>
-                    <span className="text-[11px] font-medium text-zinc-400 shrink-0">
-                      {completedSubCount}/{totalSubCount}
-                    </span>
-                  </div>
-                )}
-
-                {/* Subtasks Expanded List (Image 3) */}
-                {hasSubtasks && isExpanded && (
-                  <div className="mt-3 pt-3 border-t border-zinc-800/60 pl-8 space-y-2">
-                    {task.subtasks!.map(st => (
-                      <div
-                        key={st.id}
-                        onClick={() => handleToggleSubtask(task.id, st.id)}
-                        className="flex items-center gap-2.5 cursor-pointer group/st py-0.5"
+                {/* Subtarefas em Dropdown: Todas na mesma linha, cada uma mantendo sua própria checkbox */}
+                {hasSubtasks && (
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.18, ease: 'easeInOut' }}
+                        className="overflow-hidden"
                       >
-                        <div
-                          className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all shrink-0 ${
-                            st.completed
-                              ? 'bg-white border-white text-zinc-950'
-                              : 'border-zinc-700 bg-transparent group-hover/st:border-zinc-500'
-                          }`}
-                        >
-                          {st.completed && <Check className="w-3 h-3 stroke-[3]" />}
+                        <div className="mt-3 pt-2.5 border-t border-zinc-800/50 flex flex-wrap items-center gap-x-4 gap-y-2">
+                          {task.subtasks!.map(st => (
+                            <div
+                              key={st.id}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleSubtask(task.id, st.id);
+                              }}
+                              className="inline-flex items-center gap-2 cursor-pointer group/st py-0.5 select-none hover:opacity-90 transition-opacity"
+                              title={st.completed ? 'Desmarcar subtarefa' : 'Concluir subtarefa'}
+                            >
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleSubtask(task.id, st.id);
+                                }}
+                                className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all shrink-0 cursor-pointer ${
+                                  st.completed
+                                    ? 'bg-white border-white text-zinc-950 shadow-xs'
+                                    : 'border-zinc-700 bg-zinc-900 group-hover/st:border-zinc-500'
+                                }`}
+                                aria-label={st.text}
+                              >
+                                {st.completed && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                              </button>
+                              <span
+                                className={`text-xs transition-colors whitespace-nowrap ${
+                                  st.completed
+                                    ? 'line-through text-zinc-500'
+                                    : 'text-zinc-300 group-hover/st:text-white'
+                                }`}
+                              >
+                                {st.text}
+                              </span>
+                            </div>
+                          ))}
                         </div>
-                        <span
-                          className={`text-xs transition-colors ${
-                            st.completed
-                              ? 'line-through text-zinc-500'
-                              : 'text-zinc-300 group-hover/st:text-white'
-                          }`}
-                        >
-                          {st.text}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 )}
               </motion.div>
             );
@@ -2025,6 +2105,102 @@ export default function DailyMissionsView({
                 >
                   <X className="w-5 h-5" />
                 </button>
+              </div>
+
+              {/* Tag Cards Configuration Section (Opcional exibir ou não as tags nos cards de cada tarefa) */}
+              <div className="bg-zinc-950 border border-zinc-900 rounded-xl p-3.5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <TagIcon className="w-4 h-4 text-orange-400" />
+                    <div>
+                      <span className="text-xs font-bold text-white block">Exibir Tags nos Cards</span>
+                      <span className="text-[10px] text-zinc-500">Mostrar tags em cada cartão de tarefa</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleShowTagsOnCards(!showTagsOnCards)}
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer ${
+                      showTagsOnCards ? 'bg-orange-500' : 'bg-zinc-800'
+                    }`}
+                    aria-label="Alternar exibição de tags nos cards"
+                  >
+                    <span
+                      className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                        showTagsOnCards ? 'translate-x-4.5' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+                <p className="text-[11px] text-zinc-400 leading-snug">
+                  {showTagsOnCards
+                    ? 'As tags das tarefas aparecem nos cards da lista.'
+                    : 'Tags ocultas nos cards para uma visualização mais limpa.'}
+                </p>
+              </div>
+
+              {/* Priority Cards Configuration Section (Opcional exibir ou não a prioridade nos cards de cada tarefa) */}
+              <div className="bg-zinc-950 border border-zinc-900 rounded-xl p-3.5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-3.5 h-3.5 rounded-full bg-rose-500 shrink-0" />
+                    <div>
+                      <span className="text-xs font-bold text-white block">Exibir Prioridade nos Cards</span>
+                      <span className="text-[10px] text-zinc-500">Mostrar ponto colorido de prioridade</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleShowPriorityOnCards(!showPriorityOnCards)}
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer ${
+                      showPriorityOnCards ? 'bg-orange-500' : 'bg-zinc-800'
+                    }`}
+                    aria-label="Alternar exibição de prioridade nos cards"
+                  >
+                    <span
+                      className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                        showPriorityOnCards ? 'translate-x-4.5' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+                <p className="text-[11px] text-zinc-400 leading-snug">
+                  {showPriorityOnCards
+                    ? 'O ponto colorido indicando a prioridade é exibido nos cards.'
+                    : 'Prioridade oculta nos cards para um visual mais minimalista.'}
+                </p>
+              </div>
+
+              {/* Turno / Horário Configuration Section (Opcional exibir ou não o turno/horário nos cards de cada tarefa) */}
+              <div className="bg-zinc-950 border border-zinc-900 rounded-xl p-3.5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sun className="w-4 h-4 text-amber-400" />
+                    <div>
+                      <span className="text-xs font-bold text-white block">Exibir Turno / Horário nos Cards</span>
+                      <span className="text-[10px] text-zinc-500">Mostrar ícones de período e horários</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleShowShiftTimeOnCards(!showShiftTimeOnCards)}
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer ${
+                      showShiftTimeOnCards ? 'bg-orange-500' : 'bg-zinc-800'
+                    }`}
+                    aria-label="Alternar exibição de turno e horário nos cards"
+                  >
+                    <span
+                      className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                        showShiftTimeOnCards ? 'translate-x-4.5' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+                <p className="text-[11px] text-zinc-400 leading-snug">
+                  {showShiftTimeOnCards
+                    ? 'Ícones de turno (manhã, tarde, noite) e horários aparecem nos cards.'
+                    : 'Turno e horários ocultos nos cards para uma visualização simplificada.'}
+                </p>
               </div>
 
               {/* Tag Shortcuts Configuration Section */}
