@@ -36,7 +36,8 @@ import {
   Play,
   Folder,
   Clipboard,
-  Bell
+  Bell,
+  LogOut
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import TagManagementModal from './TagManagementModal';
@@ -233,6 +234,7 @@ export default function AnuaisView({
   };
   const [viewMode, setViewMode] = useState<'lista' | 'galeria'>('lista');
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
+  const [showSaveExitConfirmModal, setShowSaveExitConfirmModal] = useState(false);
 
   // Year Overview Card View mode and custom background covers
   const [viewingDetail, setViewingDetail] = useState(false);
@@ -926,7 +928,7 @@ export default function AnuaisView({
     setTimeout(() => {
       setSavingStatus('saved');
       addXp(15);
-      setTimeout(() => setSelectedDateStr(null), 700);
+      setShowSaveExitConfirmModal(true);
     }, 500);
   };
 
@@ -2679,26 +2681,28 @@ export default function AnuaisView({
               className="cursor-default bg-[#0a0a0c] w-full h-full min-h-[100dvh] max-h-[100dvh] rounded-none border-0 m-0 p-0 flex flex-col overflow-hidden text-left"
             >
               {/* Header */}
-              <div className="shrink-0 p-4 sm:p-5 border-b border-zinc-850 flex items-center justify-between bg-zinc-950/40">
+              <div 
+                className="shrink-0 p-4 sm:p-5 border-b border-zinc-850 flex items-center justify-between bg-zinc-950/40"
+                style={{
+                  paddingTop: 'max(16px, env(safe-area-inset-top, 0px))',
+                  paddingLeft: 'max(16px, env(safe-area-inset-left, 0px))',
+                  paddingRight: 'max(16px, env(safe-area-inset-right, 0px))',
+                }}
+              >
                 <div>
-                  <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+                  <h3 className="text-sm font-extrabold text-white uppercase tracking-wider flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-orange-500 inline-block animate-pulse" />
                     Meu Dia
                   </h3>
                   <p className="text-[10.5px] text-orange-500 font-mono font-bold mt-0.5">
                     Data: {selectedDateStr.split('-').reverse().join('/')}
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setIsTagModalOpen(true)}
-                    className="px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 text-orange-400 border border-orange-500/30 text-[10px] font-bold rounded-lg flex items-center gap-1 transition-colors"
-                    title="Abrir Central de Tags (@)"
-                  >
-                    <Folder className="h-3 w-3" /> Tags
-                  </button>
+                <div className="flex items-center gap-2 mr-1">
                   <button
                     onClick={() => setSelectedDateStr(null)}
-                    className="p-1.5 hover:bg-zinc-900 text-zinc-400 hover:text-white rounded-lg transition-colors"
+                    className="p-2 sm:p-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 rounded-xl transition-all shadow-sm active:scale-95 flex items-center justify-center"
+                    title="Fechar Meu Dia"
                   >
                     <X className="h-4.5 w-4.5" />
                   </button>
@@ -2748,7 +2752,7 @@ export default function AnuaisView({
                       value={journalText}
                       onChange={setJournalText}
                       rows={10}
-                      openTagManagerModal={() => setIsTagModalOpen(true)}
+                      hideTagButtons={true}
                       placeholder="Relate detalhadamente como foi o seu dia, seus sentimentos, suas lutas e conquistas... Use @ para invocar tags ou @# para criar."
                     />
                   </div>
@@ -3085,11 +3089,18 @@ export default function AnuaisView({
               </div>
 
               {/* Save footer */}
-              <div className="shrink-0 p-4 bg-zinc-950 border-t border-zinc-850 flex items-center justify-end gap-2.5 sticky bottom-0 z-10">
+              <div 
+                className="shrink-0 p-4 bg-zinc-950 border-t border-zinc-850 flex items-center justify-end gap-3 sticky bottom-0 z-10"
+                style={{
+                  paddingBottom: 'max(16px, env(safe-area-inset-bottom, 0px))',
+                  paddingLeft: 'max(16px, env(safe-area-inset-left, 0px))',
+                  paddingRight: 'max(16px, env(safe-area-inset-right, 0px))',
+                }}
+              >
                 <button
                   type="button"
                   onClick={() => setSelectedDateStr(null)}
-                  className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-bold rounded-xl transition-all"
+                  className="px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs sm:text-sm font-bold rounded-xl transition-all"
                 >
                   Cancelar
                 </button>
@@ -3097,10 +3108,63 @@ export default function AnuaisView({
                   type="button"
                   onClick={handleSaveDailyRecord}
                   disabled={savingStatus === 'saving'}
-                  className="px-5 py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all shadow-lg shadow-orange-500/5"
+                  className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 active:scale-95 text-white text-xs sm:text-sm font-bold rounded-xl flex items-center gap-1.5 transition-all shadow-lg shadow-orange-500/20 mr-1"
                 >
-                  <Save className="h-3.5 w-3.5" />
+                  <Save className="h-4 w-4" />
                   <span>{savingStatus === 'saving' ? 'Salvando...' : savingStatus === 'saved' ? 'Salvo ✓' : 'Salvar Registro'}</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal de Confirmação ao Salvar: Sair de Meu Dia ou Continuar */}
+      <AnimatePresence>
+        {showSaveExitConfirmModal && (
+          <div 
+            className="fixed inset-0 z-[10002] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto cursor-default"
+            onClick={() => setShowSaveExitConfirmModal(false)}
+          >
+            <motion.div
+              onClick={(e) => e.stopPropagation()}
+              initial={{ scale: 0.92, opacity: 0, y: 16 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.92, opacity: 0, y: 16 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+              className="bg-[#0f0f13] border border-zinc-800/90 rounded-2xl p-6 sm:p-7 max-w-sm w-full shadow-2xl text-center space-y-5"
+            >
+              <div className="w-14 h-14 rounded-2xl bg-orange-500/15 border border-orange-500/30 flex items-center justify-center mx-auto text-orange-400 shadow-inner">
+                <CheckCircle2 className="h-7 w-7 text-orange-400" />
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="text-base sm:text-lg font-extrabold text-white tracking-wide">
+                  Meu Dia Salvo!
+                </h3>
+                <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed">
+                  As alterações deste dia foram salvas com sucesso. Deseja sair do Meu Dia ou continuar editando?
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowSaveExitConfirmModal(false)}
+                  className="flex-1 py-3 px-4 bg-zinc-900 hover:bg-zinc-850 active:scale-95 text-zinc-300 hover:text-white font-semibold text-xs sm:text-sm rounded-xl border border-zinc-800 transition-all flex items-center justify-center gap-2"
+                >
+                  Continuar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSaveExitConfirmModal(false);
+                    setSelectedDateStr(null);
+                  }}
+                  className="flex-1 py-3 px-4 bg-orange-500 hover:bg-orange-600 active:scale-95 text-white font-bold text-xs sm:text-sm rounded-xl transition-all shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sair
                 </button>
               </div>
             </motion.div>

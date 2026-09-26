@@ -321,9 +321,25 @@ export default function ChecklistView({
       ...getDeletedTaskIdsForDate(selectedDate)
     ]);
 
+    // Fast lookup map of all previously recorded tasks for this date (from calendarNotes)
+    const existingById = new Map<string, DailyTask>();
+    if (note && note.checklist && note.checklist.length > 0) {
+      note.checklist.forEach(t => existingById.set(t.id, t));
+    }
+
     let baseList: DailyTask[] = [];
     if (selectedDate === todayStr) {
-      baseList = dailyTasks.filter(t => isTaskScheduledForDate(t, todayStr) && !deletedIds.has(t.id));
+      const scheduledDaily = dailyTasks.filter(t => isTaskScheduledForDate(t, todayStr) && !deletedIds.has(t.id));
+      scheduledDaily.forEach(t => existingById.set(t.id, t));
+
+      // Also include any custom day tasks (e.g. dt-day-xxx) or non-standard daily tasks from note.checklist
+      const customDayTasks = (note?.checklist || []).filter(t => 
+        (t.id.startsWith('dt-day-') || t.createdDate === todayStr) &&
+        !scheduledDaily.some(d => d.id === t.id) &&
+        !deletedIds.has(t.id)
+      );
+
+      baseList = [...scheduledDaily, ...customDayTasks];
     } else {
       if (note && note.checklist && note.checklist.length > 0) {
         baseList = note.checklist.filter(t => isTaskScheduledForDate(t, selectedDate) && !deletedIds.has(t.id));
@@ -334,11 +350,8 @@ export default function ChecklistView({
           subtasks: t.subtasks?.map(s => ({ ...s, completed: false }))
         }));
       }
+      baseList.forEach(t => existingById.set(t.id, t));
     }
-
-    // Fast lookup map of base tasks
-    const existingById = new Map<string, DailyTask>();
-    baseList.forEach(t => existingById.set(t.id, t));
 
     // Calculate weekday for selectedDate (1=Segunda ... 7=Domingo) and (0=Dom ... 6=Sab)
     const [sY, sM, sD] = selectedDate.split('-').map(Number);
@@ -381,12 +394,16 @@ export default function ChecklistView({
         const startTime = block.startTime || blockHour;
         const period = getTimePeriodFromHour(startTime);
 
+        const isBlockCompleted = existing !== undefined
+          ? existing.completed
+          : (selectedDate === todayStr ? !!block.completed : false);
+
         const subtasks: SubTask[] = block.subtasks ? block.subtasks.map((st: SubTask) => {
           const existingSub = existing?.subtasks?.find(s => s.id === st.id || s.text === st.text);
           return {
             id: st.id,
             text: st.text,
-            completed: existingSub ? existingSub.completed : (existing?.completed || false)
+            completed: existingSub !== undefined ? existingSub.completed : (isBlockCompleted || false)
           };
         }) : [];
 
@@ -395,7 +412,7 @@ export default function ChecklistView({
           text: block.text,
           category: block.color || 'Rotina',
           period,
-          completed: existing ? existing.completed : false,
+          completed: isBlockCompleted,
           xpReward: 15,
           reminderTime: block.reminderTime || startTime,
           isRecurring: block.isWeeklyRecurring !== false,
@@ -434,18 +451,22 @@ export default function ChecklistView({
         const existing = existingById.get(taskId);
         const period = getTimePeriodFromHour(item.time);
 
+        const routineDefaultCompleted = item.isEveryDay 
+          ? (item.completedDays || []).includes(dayOfWeekSun0)
+          : (item.dayOfWeek === dayOfWeekSun0 || item.dayOfWeek === -1 ? !!item.completed : false);
+
+        const isCompleted = existing !== undefined
+          ? existing.completed
+          : (selectedDate === todayStr ? routineDefaultCompleted : false);
+
         const subtasks: SubTask[] = item.subtasks ? item.subtasks.map((st: SubTask) => {
           const existingSub = existing?.subtasks?.find(s => s.id === st.id || s.text === st.text);
           return {
             id: st.id,
             text: st.text,
-            completed: existingSub ? existingSub.completed : (existing?.completed || (item.completedDays && item.completedDays.includes(dayOfWeekSun0)) || false)
+            completed: existingSub !== undefined ? existingSub.completed : isCompleted
           };
         }) : [];
-
-        const isCompleted = existing
-          ? existing.completed
-          : false;
 
         dynamicRoutineTasks.push({
           id: taskId,
@@ -538,41 +559,103 @@ export default function ChecklistView({
   }, [todayStr, setDailyTasks, setBibleTracker, lastDailyResetDate, setLastDailyResetDate, gridRoutine, propRoutine, propSetRoutine]);
 
   const updateActiveTasks = (updater: (prev: DailyTask[]) => DailyTask[], deletedTaskId?: string) => {
+    // 1. Calculate the updated task list from current activeTasks
+    const newTasks = updater(activeTasks);
+
+    // 2. If viewing today, update dailyTasks for standard daily tasks
     if (selectedDate === todayStr) {
       setDailyTasks(prev => {
-        const currentMap = new Map<string, DailyTask>(prev.map(t => [t.id, t]));
-        activeTasks.forEach(at => {
-          if (
-            !currentMap.has(at.id) &&
-            !at.id.startsWith('grid-') &&
-            !at.id.startsWith('routine-') &&
-            !at.id.startsWith('dt-day-') &&
-            at.id !== 'task-leitura' &&
-            at.id !== 'task-biblia'
-          ) {
-            currentMap.set(at.id, at);
+        const newTaskIds = new Set(newTasks.map(t => t.id));
+        const updatedPrev = prev.filter(t => {
+          if (deletedTaskId && t.id === deletedTaskId) return false;
+          if (isTaskScheduledForDate(t, todayStr) && !newTaskIds.has(t.id)) {
+            return false;
           }
+          return true;
+        }).map(t => {
+          const updated = newTasks.find(nt => nt.id === t.id);
+          return updated ? {
+            ...t,
+            completed: updated.completed,
+            subtasks: updated.subtasks,
+            isRetroactive: updated.isRetroactive,
+            completedRetroactively: updated.completedRetroactively
+          } : t;
         });
-        const combined = Array.from(currentMap.values());
-        const updated = updater(combined);
-        return updated.filter(t => 
-          !t.id.startsWith('grid-') && 
-          !t.id.startsWith('routine-') && 
+
+        const currentIds = new Set(updatedPrev.map(t => t.id));
+        const addedTasks = newTasks.filter(t => 
+          !currentIds.has(t.id) &&
+          !t.id.startsWith('grid-') &&
+          !t.id.startsWith('routine-') &&
           !t.id.startsWith('dt-day-') &&
-          t.id !== 'task-leitura' && 
+          t.id !== 'task-leitura' &&
           t.id !== 'task-biblia'
         );
+
+        return [...updatedPrev, ...addedTasks];
       });
     }
+
+    // 3. Sync gridRoutine if any grid routine block was updated
+    if (gridRoutine && saveGridRoutine && selectedDate === todayStr) {
+      let gridChanged = false;
+      const nextGrid = { ...gridRoutine };
+      newTasks.forEach(nt => {
+        if (nt.id.startsWith('grid-')) {
+          const gridKey = nt.id.replace('grid-', '');
+          if (nextGrid[gridKey] && (nextGrid[gridKey].completed !== nt.completed || JSON.stringify(nextGrid[gridKey].subtasks) !== JSON.stringify(nt.subtasks))) {
+            nextGrid[gridKey] = {
+              ...nextGrid[gridKey],
+              completed: nt.completed,
+              subtasks: nt.subtasks
+            };
+            gridChanged = true;
+          }
+        }
+      });
+      if (gridChanged) {
+        saveGridRoutine(nextGrid);
+      }
+    }
+
+    // 4. Sync propRoutine if any routine item was updated
+    if (propRoutine && propSetRoutine && selectedDate === todayStr) {
+      const [sY, sM, sD] = selectedDate.split('-').map(Number);
+      const dayOfWeekSun0 = new Date(sY, sM - 1, sD).getDay();
+      let routineChanged = false;
+      const nextRoutine = propRoutine.map(item => {
+        const matched = newTasks.find(nt => nt.id === `routine-${item.id}`);
+        if (matched) {
+          const nextState = matched.completed;
+          if (item.isEveryDay) {
+            const currentDays = item.completedDays || [];
+            const hasDay = currentDays.includes(dayOfWeekSun0);
+            if (nextState && !hasDay) {
+              routineChanged = true;
+              return { ...item, completedDays: [...currentDays, dayOfWeekSun0], subtasks: matched.subtasks };
+            } else if (!nextState && hasDay) {
+              routineChanged = true;
+              return { ...item, completedDays: currentDays.filter(d => d !== dayOfWeekSun0), subtasks: matched.subtasks };
+            }
+          } else {
+            if (item.completed !== nextState) {
+              routineChanged = true;
+              return { ...item, completed: nextState, subtasks: matched.subtasks };
+            }
+          }
+        }
+        return item;
+      });
+      if (routineChanged) {
+        propSetRoutine(nextRoutine);
+      }
+    }
+
+    // 5. Always persist the full newTasks list to calendarNotes for selectedDate
     if (setCalendarNotes) {
       setCalendarNotes(prevNotes => {
         const existingIdx = prevNotes.findIndex(n => n.date === selectedDate);
-        const currentList = existingIdx !== -1 && prevNotes[existingIdx].checklist && prevNotes[existingIdx].checklist.length > 0
-          ? prevNotes[existingIdx].checklist!
-          : activeTasks;
-        
-        const newTasks = updater(currentList);
-        
         if (existingIdx !== -1) {
           const currentDeleted = prevNotes[existingIdx].deletedTaskIds || [];
           const newDeleted = deletedTaskId && !currentDeleted.includes(deletedTaskId)

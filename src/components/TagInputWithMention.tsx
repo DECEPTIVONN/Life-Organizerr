@@ -10,6 +10,7 @@ interface TagInputWithMentionProps {
   className?: string;
   rows?: number;
   openTagManagerModal?: () => void;
+  hideTagButtons?: boolean;
 }
 
 // Helper to compute exact caret / text line coordinates inside textarea
@@ -62,7 +63,8 @@ export default function TagInputWithMention({
   placeholder = "Digite aqui... (use @ para tags, @# para criar novas)",
   className = "",
   rows = 4,
-  openTagManagerModal
+  openTagManagerModal,
+  hideTagButtons = false
 }: TagInputWithMentionProps) {
   const [tags, setTags] = useState<TagItem[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -272,37 +274,39 @@ export default function TagInputWithMention({
         />
 
         {/* Floating Quick Action Button */}
-        <div className="absolute right-2 bottom-2 z-20 flex items-center gap-1.5 bg-zinc-950/80 p-1 rounded-xl backdrop-blur-sm border border-zinc-800/80 shadow-md">
-          <button
-            type="button"
-            onClick={() => {
-              if (!showDropdown && textareaRef.current) {
-                const cursorPos = textareaRef.current.selectionStart || value.length;
-                updateDropdownPosition(cursorPos);
-              }
-              setShowDropdown(!showDropdown);
-              setSelectedParentGroup(null);
-              setSelectedParentTag(null);
-              setIsCreationMode(false);
-            }}
-            className="p-1.5 bg-zinc-900 hover:bg-orange-500/20 hover:text-orange-400 border border-zinc-800 text-zinc-300 rounded-lg text-xs transition-colors flex items-center gap-1 shadow-sm"
-            title="Inserir Tag (@)"
-          >
-            <TagIcon className="h-3.5 w-3.5 text-orange-400" />
-            <span className="text-[10px] font-mono font-bold text-orange-400">@</span>
-          </button>
-
-          {openTagManagerModal && (
+        {!hideTagButtons && (
+          <div className="absolute right-2 bottom-2 z-20 flex items-center gap-1.5 bg-zinc-950/80 p-1 rounded-xl backdrop-blur-sm border border-zinc-800/80 shadow-md">
             <button
               type="button"
-              onClick={openTagManagerModal}
-              className="p-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 rounded-lg text-xs transition-colors"
-              title="Central de Tags"
+              onClick={() => {
+                if (!showDropdown && textareaRef.current) {
+                  const cursorPos = textareaRef.current.selectionStart || value.length;
+                  updateDropdownPosition(cursorPos);
+                }
+                setShowDropdown(!showDropdown);
+                setSelectedParentGroup(null);
+                setSelectedParentTag(null);
+                setIsCreationMode(false);
+              }}
+              className="p-1.5 bg-zinc-900 hover:bg-orange-500/20 hover:text-orange-400 border border-zinc-800 text-zinc-300 rounded-lg text-xs transition-colors flex items-center gap-1 shadow-sm"
+              title="Inserir Tag (@)"
             >
-              <Folder className="h-3.5 w-3.5" />
+              <TagIcon className="h-3.5 w-3.5 text-orange-400" />
+              <span className="text-[10px] font-mono font-bold text-orange-400">@</span>
             </button>
-          )}
-        </div>
+
+            {openTagManagerModal && (
+              <button
+                type="button"
+                onClick={openTagManagerModal}
+                className="p-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 rounded-lg text-xs transition-colors"
+                title="Central de Tags"
+              >
+                <Folder className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Chips bar showing active tags with their colors */}

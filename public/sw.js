@@ -1,16 +1,17 @@
 // Service Worker for TRONUS Planner PWA (Offline & Background Notification/Alarm Support)
-const CACHE_NAME = 'tronus-planner-pwa-v5';
+const CACHE_NAME = 'tronus-planner-pwa-v6';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/favicon.ico',
+  '/icon.svg',
   '/favicon-32x32.png',
   '/favicon-16x16.png',
   '/apple-touch-icon.png',
   '/icon-192.png',
   '/icon-512.png',
-  '/manifest.json',
-  '/assets/tronus_icon.jpg'
+  '/maskable-icon-512.png',
+  '/manifest.json'
 ];
 
 // --- IndexedDB Persistent Alarm Store for SW Background Worker ---

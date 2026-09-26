@@ -317,6 +317,7 @@ export default function CalendarView({
     return localStorage.getItem('calendar_selected_date_str') || null;
   });
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
+  const [showSaveExitConfirmModal, setShowSaveExitConfirmModal] = useState(false);
 
   useEffect(() => {
     if (selectedDateStr) {
@@ -2285,6 +2286,11 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
     }, 400);
   };
 
+  const handleSaveAndPromptExit = () => {
+    handleSaveCurrentRecord();
+    setShowSaveExitConfirmModal(true);
+  };
+
   // Real-time auto-save for Espaço Diário & Fé in CalendarView (debounced)
   useEffect(() => {
     if (!selectedDateStr) return;
@@ -3091,30 +3097,30 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="p-3 sm:p-5 md:p-6 lg:p-8 flex flex-col h-full overflow-hidden min-h-0 space-y-3 md:space-y-4 w-full max-w-7xl md:mx-auto"
+                className="px-4 py-3 sm:px-6 sm:py-5 md:px-8 md:py-6 flex flex-col h-full overflow-hidden min-h-0 space-y-3 md:space-y-4 w-full max-w-7xl md:mx-auto"
+                style={{
+                  paddingTop: 'max(14px, env(safe-area-inset-top, 0px))',
+                  paddingLeft: 'max(16px, env(safe-area-inset-left, 0px))',
+                  paddingRight: 'max(16px, env(safe-area-inset-right, 0px))',
+                  paddingBottom: 'max(12px, env(safe-area-inset-bottom, 0px))',
+                }}
               >
                 {/* Panel Header */}
-                <div className="shrink-0 flex justify-between items-start border-b border-zinc-800 pb-3 md:pb-4">
+                <div className="shrink-0 flex justify-between items-center border-b border-zinc-800 pb-3 md:pb-4 px-1 sm:px-2">
                   <div>
-                    <h3 className="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">
+                    <h3 className="text-sm sm:text-base font-extrabold text-white uppercase tracking-wider flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-orange-500 inline-block animate-pulse" />
                       Meu Dia
                     </h3>
                     <p className="text-[10px] sm:text-xs text-orange-500 font-mono font-bold mt-0.5 capitalize">
                       {selectedDateStr ? formatLongDate(selectedDateStr) : 'Selecione uma data'}
                     </p>
                   </div>
-                  <div className="flex items-center gap-1.5 sm:gap-2">
-                    <button
-                      onClick={() => setIsTagModalOpen(true)}
-                      className="px-2.5 py-1 md:px-3 md:py-1.5 bg-zinc-900 hover:bg-zinc-800 text-orange-400 border border-orange-500/30 text-[10px] sm:text-xs font-bold rounded-lg flex items-center gap-1.5 transition-colors"
-                      title="Abrir Central de Tags (@)"
-                    >
-                      <Folder className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Tags
-                    </button>
+                  <div className="flex items-center gap-2 sm:gap-3 mr-1">
                     {activeRecord && (
                       <button
                         onClick={handleDeleteRecord}
-                        className="p-1.5 md:p-2 hover:bg-zinc-900 text-zinc-500 hover:text-red-500 rounded-lg transition-colors"
+                        className="p-2 sm:p-2.5 bg-zinc-900/70 hover:bg-zinc-800 text-zinc-400 hover:text-red-400 border border-zinc-800 rounded-xl transition-colors"
                         title="Apagar este dia"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -3122,10 +3128,11 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                     )}
                     <button
                       onClick={() => setSelectedDateStr(null)}
-                      className="p-1.5 md:p-2 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-lg transition-colors"
-                      title="Fechar"
+                      className="p-2 sm:p-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 rounded-xl transition-all shadow-sm active:scale-95 flex items-center justify-center"
+                      title="Fechar Meu Dia"
+                      aria-label="Fechar Meu Dia"
                     >
-                      <X className="h-4 w-4 md:h-5 md:w-5" />
+                      <X className="h-4 w-4 sm:h-5 sm:w-5" />
                     </button>
                   </div>
                 </div>
@@ -3192,7 +3199,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                               onChange={setJournalText}
                               rows={10}
                               className="flex-1 h-full min-h-[180px] sm:min-h-[240px] md:min-h-[320px] lg:min-h-[400px]"
-                              openTagManagerModal={() => setIsTagModalOpen(true)}
+                              hideTagButtons={true}
                               placeholder="Escreva aqui como foi o seu dia, suas vitórias, lições aprendidas e sentimentos... Use @ para invocar tags ou @# para criar."
                             />
                           </div>
@@ -3456,7 +3463,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                   onChange={setGratitudeText}
                                   rows={12}
                                   className="flex-1 h-full min-h-[260px] sm:min-h-[320px] lg:min-h-[380px]"
-                                  openTagManagerModal={() => setIsTagModalOpen(true)}
+                                  hideTagButtons={true}
                                   placeholder="Liste o que você é grato hoje... Use @ para invocar tags ou @# para criar."
                                 />
                               </div>
@@ -3482,7 +3489,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                   onChange={setDecreesText}
                                   rows={12}
                                   className="flex-1 h-full min-h-[260px] sm:min-h-[320px] lg:min-h-[380px]"
-                                  openTagManagerModal={() => setIsTagModalOpen(true)}
+                                  hideTagButtons={true}
                                   placeholder="Declare palavras de vitória... Use @ para invocar tags ou @# para criar."
                                 />
                               </div>
@@ -3508,7 +3515,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                   onChange={setPrayerText}
                                   rows={12}
                                   className="flex-1 h-full min-h-[260px] sm:min-h-[320px] lg:min-h-[380px]"
-                                  openTagManagerModal={() => setIsTagModalOpen(true)}
+                                  hideTagButtons={true}
                                   placeholder="Sua oração ou meditação sagrada de hoje... Use @ para invocar tags ou @# para criar."
                                 />
                               </div>
@@ -4514,9 +4521,14 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                     </div>
 
                     {/* Pinned Bottom Navigation & Save Area */}
-                    <div className="shrink-0 pt-2.5 pb-2 sm:pb-3 border-t border-zinc-800 bg-[#0a0a0c] flex items-center justify-between gap-2 z-10 sticky bottom-0">
+                    <div 
+                      className="shrink-0 pt-3 pb-3 sm:pb-4 border-t border-zinc-800/90 bg-[#0a0a0c] flex items-center justify-between gap-3 z-10 sticky bottom-0 px-1 sm:px-2"
+                      style={{
+                        paddingBottom: 'max(14px, env(safe-area-inset-bottom, 0px))',
+                      }}
+                    >
                       {/* Left: Tab Navigation Buttons */}
-                      <div className="flex items-center gap-1.5 sm:gap-2">
+                      <div className="flex items-center gap-2 sm:gap-2.5 ml-1">
                         {/* Voltar button: Available on checklist, espiritualidade, leitura, saude, agenda */}
                         {activeTopic !== 'diario' && (
                           <button
@@ -4535,10 +4547,10 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                 setActiveTopic(tabOrder[currIdx - 1]);
                               }
                             }}
-                            className="bg-zinc-900 hover:bg-zinc-800 active:scale-95 text-zinc-300 hover:text-white font-medium text-xs px-2.5 sm:px-3 py-1.5 rounded-lg flex items-center gap-1 transition-all border border-zinc-800"
+                            className="bg-zinc-900 hover:bg-zinc-850 active:scale-95 text-zinc-200 hover:text-white font-medium text-xs sm:text-sm px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl flex items-center gap-1.5 transition-all border border-zinc-800 shadow-sm"
                             title="Voltar para a aba anterior"
                           >
-                            <ChevronLeft className="h-3.5 w-3.5" />
+                            <ChevronLeft className="h-4 w-4" />
                             <span>Voltar</span>
                           </button>
                         )}
@@ -4561,11 +4573,11 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                 setActiveTopic(tabOrder[currIdx + 1]);
                               }
                             }}
-                            className="bg-orange-500/15 hover:bg-orange-500/25 active:scale-95 text-orange-400 hover:text-orange-300 font-semibold text-xs px-2.5 sm:px-3 py-1.5 rounded-lg flex items-center gap-1 transition-all border border-orange-500/30"
+                            className="bg-orange-500/15 hover:bg-orange-500/25 active:scale-95 text-orange-400 hover:text-orange-300 font-semibold text-xs sm:text-sm px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl flex items-center gap-1.5 transition-all border border-orange-500/30 shadow-sm"
                             title="Ir para a próxima aba"
                           >
                             <span>Próximo</span>
-                            <ChevronRight className="h-3.5 w-3.5" />
+                            <ChevronRight className="h-4 w-4" />
                           </button>
                         )}
 
@@ -4573,21 +4585,18 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                         {activeTopic === 'agenda' && (
                           <button
                             type="button"
-                            onClick={() => {
-                              handleSaveCurrentRecord();
-                              setSelectedDateStr(null);
-                            }}
-                            className="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-xs px-3 sm:px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all shadow-md shadow-emerald-600/20"
+                            onClick={handleSaveAndPromptExit}
+                            className="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-xs sm:text-sm px-4 sm:px-4.5 py-2 sm:py-2.5 rounded-xl flex items-center gap-1.5 transition-all shadow-md shadow-emerald-600/20"
                             title="Finalizar e fechar Meu Dia"
                           >
-                            <CheckCircle className="h-3.5 w-3.5" />
+                            <CheckCircle className="h-4 w-4" />
                             <span>Finalizar</span>
                           </button>
                         )}
                       </div>
 
                       {/* Right: Saving Indicator & Salvar Alterações Button */}
-                      <div className="flex items-center gap-2 sm:gap-3">
+                      <div className="flex items-center gap-2 sm:gap-3 mr-1">
                         {savingStatus === 'saving' && (
                           <span className="text-[10px] sm:text-xs text-orange-400 flex items-center gap-1 font-mono">
                             <span className="animate-ping h-1.5 w-1.5 rounded-full bg-orange-400 inline-block"></span>
@@ -4602,11 +4611,11 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                         )}
 
                         <button
-                          onClick={handleSaveCurrentRecord}
-                          className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg flex items-center gap-1.5 transition-colors shadow-lg shadow-orange-500/10 shrink-0"
+                          onClick={handleSaveAndPromptExit}
+                          className="bg-orange-500 hover:bg-orange-600 active:scale-95 text-white font-bold text-xs sm:text-sm px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl flex items-center gap-1.5 transition-colors shadow-lg shadow-orange-500/20 shrink-0"
                           title="Salvar alterações deste dia"
                         >
-                          <Save className="h-3.5 w-3.5" />
+                          <Save className="h-4 w-4" />
                           <span className="hidden sm:inline">Salvar Alterações</span>
                           <span className="sm:hidden">Salvar</span>
                         </button>
@@ -4619,6 +4628,59 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
             )}
           </AnimatePresence>
 
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal de Confirmação ao Salvar: Sair de Meu Dia ou Continuar */}
+      <AnimatePresence>
+        {showSaveExitConfirmModal && (
+          <div 
+            className="fixed inset-0 z-[10002] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto cursor-default"
+            onClick={() => setShowSaveExitConfirmModal(false)}
+          >
+            <motion.div
+              onClick={(e) => e.stopPropagation()}
+              initial={{ scale: 0.92, opacity: 0, y: 16 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.92, opacity: 0, y: 16 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+              className="bg-[#0f0f13] border border-zinc-800/90 rounded-2xl p-6 sm:p-7 max-w-sm w-full shadow-2xl text-center space-y-5"
+            >
+              <div className="w-14 h-14 rounded-2xl bg-orange-500/15 border border-orange-500/30 flex items-center justify-center mx-auto text-orange-400 shadow-inner">
+                <CheckCircle className="h-7 w-7 text-orange-400" />
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="text-base sm:text-lg font-extrabold text-white tracking-wide">
+                  Meu Dia Salvo!
+                </h3>
+                <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed">
+                  As alterações deste dia foram salvas com sucesso. Deseja sair do Meu Dia ou continuar editando?
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowSaveExitConfirmModal(false)}
+                  className="flex-1 py-3 px-4 bg-zinc-900 hover:bg-zinc-850 active:scale-95 text-zinc-300 hover:text-white font-semibold text-xs sm:text-sm rounded-xl border border-zinc-800 transition-all flex items-center justify-center gap-2"
+                >
+                  Continuar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSaveExitConfirmModal(false);
+                    setSelectedDateStr(null);
+                  }}
+                  className="flex-1 py-3 px-4 bg-orange-500 hover:bg-orange-600 active:scale-95 text-white font-bold text-xs sm:text-sm rounded-xl transition-all shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sair
+                </button>
               </div>
             </motion.div>
           </div>

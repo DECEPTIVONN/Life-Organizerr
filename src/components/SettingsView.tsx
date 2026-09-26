@@ -3315,16 +3315,19 @@ export default function SettingsView({
             </div>
 
             {/* Install native app */}
-            <div className="p-4 bg-zinc-950 border border-zinc-900 rounded-2xl flex items-center justify-between">
-              <div className="space-y-0.5 flex-1 pr-4">
+            <div className="p-4 bg-zinc-950 border border-zinc-900 rounded-2xl flex items-center justify-between gap-3">
+              <div className="w-10 h-10 rounded-xl border border-orange-500/30 bg-black overflow-hidden flex-shrink-0 flex items-center justify-center p-0.5 shadow-[0_0_12px_rgba(249,115,22,0.2)]">
+                <img src="/icon-192.png" alt="L Logo" className="w-full h-full object-contain rounded-lg" referrerPolicy="no-referrer" />
+              </div>
+              <div className="space-y-0.5 flex-1 pr-2">
                 <h4 className="text-xs font-bold text-zinc-200">Instalar Aplicativo (PWA)</h4>
-                <p className="text-[10px] text-zinc-500 font-mono leading-normal">Adicione este Planner como aplicativo autônomo e offline.</p>
+                <p className="text-[10px] text-zinc-500 font-mono leading-normal">Adicione à tela inicial com o ícone oficial estilizado.</p>
               </div>
               <button
                 type="button"
                 onClick={handleInstallApp}
                 disabled={pwaInstalled}
-                className="px-3.5 py-1.5 bg-orange-500 text-white font-bold text-[9px] rounded-lg tracking-wider disabled:opacity-40 uppercase"
+                className="px-3.5 py-1.5 bg-orange-500 hover:bg-orange-600 text-white font-bold text-[9px] rounded-lg tracking-wider disabled:opacity-40 uppercase transition-all"
               >
                 {pwaInstalled ? 'Instalado ✓' : 'Instalar'}
               </button>

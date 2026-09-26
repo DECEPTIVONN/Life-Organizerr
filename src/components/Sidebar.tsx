@@ -2066,8 +2066,8 @@ export default function Sidebar({
               </button>
 
               <div className="flex items-center gap-3 mb-4">
-                <div className="p-2.5 bg-orange-500/10 rounded-xl border border-orange-500/20 text-orange-500">
-                  <Smartphone className="h-6 w-6 animate-bounce" />
+                <div className="w-12 h-12 rounded-xl border border-orange-500/40 bg-black overflow-hidden flex items-center justify-center p-0.5 shadow-[0_0_20px_rgba(249,115,22,0.3)] flex-shrink-0">
+                  <img src="/icon-192.png" alt="TRONUS App Icon" className="w-full h-full object-contain rounded-lg" referrerPolicy="no-referrer" />
                 </div>
                 <div>
                   <h3 className="text-sm font-black text-white uppercase tracking-wider">Instalar TRONUS HUD</h3>

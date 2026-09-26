@@ -435,7 +435,8 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
     addXp(15);
   };
 
-  const handleToggleSubtask = (routineId: string, subtaskId: string) => {
+  const handleToggleSubtask = (routineId: string, subtaskId: string, targetDay?: number) => {
+    const dayToUse = targetDay !== undefined ? targetDay : selectedDay;
     if (routineId.startsWith('grid-')) {
       const gridKey = routineId.replace('grid-', '');
       if (gridRoutine && gridRoutine[gridKey] && setGridRoutine) {
@@ -474,13 +475,13 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
         
         if (item.isEveryDay) {
           const completedDays = item.completedDays || [];
-          const isCurrentlyCompleted = completedDays.includes(selectedDay);
+          const isCurrentlyCompleted = completedDays.includes(dayToUse);
           let nextCompletedDays = completedDays;
           if (allCompleted && !isCurrentlyCompleted) {
-            nextCompletedDays = [...completedDays, selectedDay];
+            nextCompletedDays = [...completedDays, dayToUse];
             addXp(10);
           } else if (!allCompleted && isCurrentlyCompleted) {
-            nextCompletedDays = completedDays.filter(d => d !== selectedDay);
+            nextCompletedDays = completedDays.filter(d => d !== dayToUse);
             addXp(-10);
           }
           return { ...item, subtasks: updatedSubtasks, completedDays: nextCompletedDays };
@@ -500,7 +501,8 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
     }));
   };
 
-  const handleToggleCompleted = (id: string) => {
+  const handleToggleCompleted = (id: string, targetDay?: number) => {
+    const dayToUse = targetDay !== undefined ? targetDay : selectedDay;
     if (id.startsWith('grid-')) {
       const gridKey = id.replace('grid-', '');
       if (gridRoutine && gridRoutine[gridKey] && setGridRoutine) {
@@ -524,11 +526,11 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
       if (item.id === id) {
         if (item.isEveryDay) {
           const completedDays = item.completedDays || [];
-          const isCurrentlyCompleted = completedDays.includes(selectedDay);
+          const isCurrentlyCompleted = completedDays.includes(dayToUse);
           const nextState = !isCurrentlyCompleted;
           const nextCompletedDays = isCurrentlyCompleted
-            ? completedDays.filter(d => d !== selectedDay)
-            : [...completedDays, selectedDay];
+            ? completedDays.filter(d => d !== dayToUse)
+            : [...completedDays, dayToUse];
           
           addXp(nextState ? 10 : -10);
 
@@ -1222,7 +1224,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                           type="button"
                                           onClick={() => {
                                             setSelectedDay(day.id);
-                                            handleToggleSubtask(item.id, st.id);
+                                            handleToggleSubtask(item.id, st.id, day.id);
                                           }}
                                           className={`w-3 h-3 rounded border flex items-center justify-center transition-all shrink-0 ${
                                             st.completed 
@@ -1245,9 +1247,9 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                               <div className="flex items-center justify-between border-t border-zinc-900/60 pt-2 mt-0.5">
                                 <button
                                   onClick={() => {
-                                    // Switch active selectedDay to execute toggle completed correctly
+                                    // Switch active selectedDay and toggle for the specific column day
                                     setSelectedDay(day.id);
-                                    handleToggleCompleted(item.id);
+                                    handleToggleCompleted(item.id, day.id);
                                   }}
                                   className={`p-1 rounded-lg border transition-all ${
                                     isItemCompleted 

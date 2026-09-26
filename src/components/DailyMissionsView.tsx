@@ -935,7 +935,10 @@ export default function DailyMissionsView({
                     {/* Checkbox */}
                     <button
                       type="button"
-                      onClick={() => handleToggleTask(task.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleTask(task.id);
+                      }}
                       className={`w-5 h-5 mt-0.5 rounded-lg flex items-center justify-center transition-all shrink-0 cursor-pointer ${
                         task.completed
                           ? 'bg-white border-white text-zinc-950 shadow-sm'
