@@ -43,7 +43,9 @@ import {
   Globe,
   Folder,
   Flame,
-  Play
+  Play,
+  Utensils,
+  Coffee
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import TagManagementModal from './TagManagementModal';
@@ -1024,6 +1026,72 @@ export default function CalendarView({
   // Topic Tabs for Active Day Note
   const [activeTopic, setActiveTopic] = useState<'diario' | 'checklist' | 'espiritualidade' | 'leitura' | 'saude' | 'agenda'>('diario');
   const [activeSubtopic, setActiveSubtopic] = useState<'gratidao' | 'decretos' | 'oracao'>('gratidao');
+  const [activeMealTab, setActiveMealTab] = useState<'manha' | 'tarde' | 'noite'>('manha');
+
+  // Swipe gesture detection between tabs on mobile
+  const touchStartXRef = useRef<number | null>(null);
+  const touchStartYRef = useRef<number | null>(null);
+  const touchStartTimeRef = useRef<number>(0);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const target = e.target as HTMLElement;
+    // Don't trigger tab swipe if dragging an input, textarea or range slider
+    if (
+      target.tagName === 'TEXTAREA' || 
+      target.tagName === 'INPUT' || 
+      target.closest('input') || 
+      target.closest('textarea') ||
+      target.closest('.no-swipe')
+    ) {
+      touchStartXRef.current = null;
+      touchStartYRef.current = null;
+      return;
+    }
+
+    if (e.touches.length === 1) {
+      touchStartXRef.current = e.touches[0].clientX;
+      touchStartYRef.current = e.touches[0].clientY;
+      touchStartTimeRef.current = Date.now();
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null || touchStartYRef.current === null) return;
+
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    const diffX = touchEndX - touchStartXRef.current;
+    const diffY = touchEndY - touchStartYRef.current;
+    const timeElapsed = Date.now() - touchStartTimeRef.current;
+
+    touchStartXRef.current = null;
+    touchStartYRef.current = null;
+
+    // Must be predominantly horizontal and quick enough
+    if (timeElapsed < 600 && Math.abs(diffX) > 40 && Math.abs(diffX) > Math.abs(diffY) * 1.3) {
+      const tabOrder: Array<'diario' | 'checklist' | 'espiritualidade' | 'leitura' | 'saude' | 'agenda'> = [
+        'diario',
+        'checklist',
+        'espiritualidade',
+        'leitura',
+        'saude',
+        'agenda'
+      ];
+      const currIdx = tabOrder.indexOf(activeTopic);
+
+      if (diffX < 0) {
+        // Swiped left -> Next tab
+        if (currIdx !== -1 && currIdx < tabOrder.length - 1) {
+          setActiveTopic(tabOrder[currIdx + 1]);
+        }
+      } else {
+        // Swiped right -> Previous tab
+        if (currIdx > 0) {
+          setActiveTopic(tabOrder[currIdx - 1]);
+        }
+      }
+    }
+  };
   
   // Master Templates configuration
   const [isEditingTemplates, setIsEditingTemplates] = useState(false);
@@ -3145,7 +3213,11 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                   </div>
                 ) : (
                   /* Active Day Entry Editor */
-                  <div className="flex-1 flex flex-col overflow-hidden min-h-0 space-y-3">
+                  <div 
+                    onTouchStart={handleTouchStart} 
+                    onTouchEnd={handleTouchEnd}
+                    className="flex-1 flex flex-col overflow-hidden min-h-0 space-y-3"
+                  >
                     
                      {/* Primary Topic Selector (Grid de Categorias de Bloco) */}
                     <div className="shrink-0 grid grid-cols-3 sm:grid-cols-6 gap-1.5 sm:gap-2 bg-zinc-950 p-1.5 sm:p-2 rounded-xl sm:rounded-2xl border border-zinc-900">
@@ -3179,8 +3251,37 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                       })}
                     </div>
 
+                    {/* Mobile Swipe Indicators & Navigation Affordance */}
+                    <div className="flex sm:hidden items-center justify-between px-1 text-[9.5px] text-zinc-500 font-mono select-none">
+                      <span className="flex items-center gap-0.5 text-zinc-500">
+                        <ChevronLeft className="w-3 h-3" /> deslize
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        {(['diario', 'checklist', 'espiritualidade', 'leitura', 'saude', 'agenda'] as const).map((tabId) => (
+                          <button
+                            key={tabId}
+                            type="button"
+                            onClick={() => setActiveTopic(tabId)}
+                            className={`h-1.5 rounded-full transition-all ${
+                              activeTopic === tabId 
+                                ? 'w-4 bg-orange-500 shadow-[0_0_6px_rgba(249,115,22,0.6)]' 
+                                : 'w-1.5 bg-zinc-800'
+                            }`}
+                            aria-label={`Aba ${tabId}`}
+                          />
+                        ))}
+                      </div>
+                      <span className="flex items-center gap-0.5 text-zinc-500">
+                        deslize <ChevronRight className="w-3 h-3" />
+                      </span>
+                    </div>
+
                     {/* Topic Content Container (Scrollable) */}
-                    <div className="flex-1 overflow-y-auto min-h-0 pr-1 space-y-3 scrollbar-thin flex flex-col">
+                    <div 
+                      onTouchStart={handleTouchStart} 
+                      onTouchEnd={handleTouchEnd}
+                      className="flex-1 overflow-y-auto min-h-0 pr-1 space-y-3 scrollbar-thin flex flex-col"
+                    >
                       {activeTopic === 'diario' ? (
                         /* DIARIO TOPIC (COM ALTER EGO DOMINANTE ABAIXO DE COMO FOI O SEU DIA) */
                         <div className="space-y-4 flex-1 flex flex-col min-h-0">
@@ -4112,144 +4213,223 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                       ) : activeTopic === 'saude' ? (
                         /* SAÚDE TOPIC */
                         <div className="space-y-4 pb-2">
-                          {/* Sleep Section */}
-                          <div className="bg-zinc-950/40 border border-zinc-900 rounded-xl p-3.5 space-y-3">
-                            <div className="flex items-center gap-2 border-b border-zinc-900 pb-2">
-                              <Clock className="h-4 w-4 text-orange-500" />
-                              <span className="text-xs font-bold text-white uppercase tracking-wider">
-                                Registro de Sono
-                              </span>
+                          {/* Sleep Architecture Card */}
+                          <div className="bg-[#0b0c10] border border-indigo-500/20 rounded-2xl p-4 sm:p-5 space-y-3.5 relative overflow-hidden shadow-lg shadow-indigo-950/20">
+                            <div className="flex items-center justify-between border-b border-zinc-850/80 pb-3">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+                                  <Moon className="w-4 h-4" />
+                                </div>
+                                <div>
+                                  <h4 className="text-xs font-black text-white uppercase tracking-wider font-mono">
+                                    Sono & Descanso
+                                  </h4>
+                                  <p className="text-[10px] text-zinc-400 font-medium">
+                                    Ciclo circadiano e recuperação
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Calculated Sleep Badge */}
+                              {(() => {
+                                if (!sleepBedTime || !sleepWakeTime) return null;
+                                const bedParts = sleepBedTime.split(':').map(Number);
+                                const wakeParts = sleepWakeTime.split(':').map(Number);
+                                if (bedParts.length === 2 && wakeParts.length === 2 && !isNaN(bedParts[0]) && !isNaN(wakeParts[0])) {
+                                  let bedMin = bedParts[0] * 60 + bedParts[1];
+                                  let wakeMin = wakeParts[0] * 60 + wakeParts[1];
+                                  if (wakeMin <= bedMin) wakeMin += 24 * 60;
+                                  const diffMin = wakeMin - bedMin;
+                                  const hrs = Math.floor(diffMin / 60);
+                                  const mins = diffMin % 60;
+                                  const hrsNum = diffMin / 60;
+                                  const isOptimal = hrsNum >= 7 && hrsNum <= 9;
+                                  return (
+                                    <div className="text-right">
+                                      <div className="text-sm sm:text-base font-extrabold text-indigo-300 font-mono">
+                                        {hrs}h{mins > 0 ? ` ${mins}m` : ''}
+                                      </div>
+                                      <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border ${
+                                        isOptimal 
+                                          ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' 
+                                          : hrsNum < 6 
+                                          ? 'bg-amber-500/15 text-amber-400 border-amber-500/30' 
+                                          : 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30'
+                                      }`}>
+                                        {isOptimal ? 'Sono Ideal ✨' : hrsNum < 6 ? '< 6h de sono' : 'Sono Registrado'}
+                                      </span>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              })()}
                             </div>
-                            
-                            <div className="grid grid-cols-2 gap-3">
-                              <div>
-                                <label className="text-[10px] text-zinc-400 font-bold block mb-1">
-                                  Quando se deitou (ontem):
-                                </label>
+
+                            {/* Dual Time Pickers as Modern Glass Cards */}
+                            <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
+                              <div className="bg-zinc-950/80 border border-zinc-800/80 hover:border-indigo-500/40 rounded-xl p-3 space-y-1.5 transition-colors">
+                                <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-400">
+                                  <Moon className="w-3.5 h-3.5 text-indigo-400" />
+                                  <span>Deitou (Ontem)</span>
+                                </div>
                                 <input
                                   type="time"
                                   value={sleepBedTime}
                                   onChange={(e) => setSleepBedTime(e.target.value)}
-                                  onClick={(e) => {
-                                    try {
-                                      if ('showPicker' in HTMLInputElement.prototype) {
-                                        (e.currentTarget as any).showPicker();
-                                      }
-                                    } catch {}
-                                  }}
-                                  onFocus={(e) => {
-                                    try {
-                                      if ('showPicker' in HTMLInputElement.prototype) {
-                                        (e.currentTarget as any).showPicker();
-                                      }
-                                    } catch {}
-                                  }}
-                                  className="w-full bg-zinc-950 border border-zinc-850 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono cursor-pointer"
+                                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs sm:text-sm text-white focus:outline-none focus:border-indigo-500/60 font-mono font-bold text-center cursor-pointer"
                                 />
                               </div>
-                              
-                              <div>
-                                <label className="text-[10px] text-zinc-400 font-bold block mb-1">
-                                  Quando acordou (hoje):
-                                </label>
+
+                              <div className="bg-zinc-950/80 border border-zinc-800/80 hover:border-amber-500/40 rounded-xl p-3 space-y-1.5 transition-colors">
+                                <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-400">
+                                  <Sun className="w-3.5 h-3.5 text-amber-400" />
+                                  <span>Acordou (Hoje)</span>
+                                </div>
                                 <input
                                   type="time"
                                   value={sleepWakeTime}
                                   onChange={(e) => setSleepWakeTime(e.target.value)}
-                                  onClick={(e) => {
-                                    try {
-                                      if ('showPicker' in HTMLInputElement.prototype) {
-                                        (e.currentTarget as any).showPicker();
-                                      }
-                                    } catch {}
-                                  }}
-                                  onFocus={(e) => {
-                                    try {
-                                      if ('showPicker' in HTMLInputElement.prototype) {
-                                        (e.currentTarget as any).showPicker();
-                                      }
-                                    } catch {}
-                                  }}
-                                  className="w-full bg-zinc-950 border border-zinc-850 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono cursor-pointer"
+                                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs sm:text-sm text-white focus:outline-none focus:border-amber-500/60 font-mono font-bold text-center cursor-pointer"
                                 />
                               </div>
                             </div>
-
-                            {/* Sleep calculation display */}
-                            {sleepBedTime && sleepWakeTime && (
-                              <div className="mt-2 text-center p-2 bg-orange-500/5 border border-orange-500/10 rounded-lg">
-                                <span className="text-[10px] text-zinc-400">Tempo total de sono calculado:</span>
-                                <div className="text-sm font-bold text-orange-400 font-mono mt-0.5">
-                                  {(() => {
-                                    const bedParts = sleepBedTime.split(':').map(Number);
-                                    const wakeParts = sleepWakeTime.split(':').map(Number);
-                                    if (bedParts.length === 2 && wakeParts.length === 2) {
-                                      let bedMin = bedParts[0] * 60 + bedParts[1];
-                                      let wakeMin = wakeParts[0] * 60 + wakeParts[1];
-                                      if (wakeMin <= bedMin) {
-                                        wakeMin += 24 * 60;
-                                      }
-                                      const diffHr = Math.floor((wakeMin - bedMin) / 60);
-                                      const diffMn = (wakeMin - bedMin) % 60;
-                                      return `${diffHr}h${diffMn > 0 ? ` ${diffMn}m` : ''}`;
-                                    }
-                                    return '0h';
-                                  })()}
-                                </div>
-                              </div>
-                            )}
                           </div>
 
-                          {/* Food Section */}
-                          <div className="bg-zinc-950/40 border border-zinc-900 rounded-xl p-3.5 space-y-3">
-                            <div className="flex items-center gap-2 border-b border-zinc-900 pb-2">
-                              <BookOpen className="h-4 w-4 text-orange-500" />
-                              <span className="text-xs font-bold text-white uppercase tracking-wider">
-                                Registro de Alimentação
+                          {/* Food & Nutrition Section */}
+                          <div className="bg-[#0b0c10] border border-emerald-500/20 rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-lg shadow-emerald-950/20">
+                            <div className="flex items-center justify-between border-b border-zinc-850/80 pb-3">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                                  <Utensils className="w-4 h-4" />
+                                </div>
+                                <div>
+                                  <h4 className="text-xs font-black text-white uppercase tracking-wider font-mono">
+                                    Alimentação & Nutrição
+                                  </h4>
+                                  <p className="text-[10px] text-zinc-400 font-medium">
+                                    Registro ágil das refeições
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Meals counter badge */}
+                              <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                                {[foodMorning, foodAfternoon, foodNight].filter(f => f.trim().length > 0).length}/3 Salvas
                               </span>
                             </div>
 
-                            <div className="space-y-2.5">
-                              <div>
-                                <label className="text-[10px] text-zinc-400 font-bold block mb-1">
-                                  Manhã:
-                                </label>
-                                <textarea
-                                  value={foodMorning}
-                                  onChange={(e) => setFoodMorning(e.target.value)}
-                                  onKeyDown={(e) => handleAutoListKeyDown(e, foodMorning, setFoodMorning)}
-                                  placeholder="Ex: 1. Ovos mexidos, café e banana"
-                                  rows={2}
-                                  className="w-full bg-zinc-950 border border-zinc-850 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-y min-h-[52px]"
-                                />
+                            {/* Meal Selector Tabs */}
+                            <div className="grid grid-cols-3 gap-1.5 p-1 bg-zinc-950 rounded-xl border border-zinc-850">
+                              {[
+                                { id: 'manha', label: 'Café / Manhã', icon: Coffee, text: foodMorning },
+                                { id: 'tarde', label: 'Almoço / Tarde', icon: Utensils, text: foodAfternoon },
+                                { id: 'noite', label: 'Jantar / Noite', icon: Moon, text: foodNight },
+                              ].map(meal => {
+                                const Icon = meal.icon;
+                                const isActive = activeMealTab === meal.id;
+                                const hasData = meal.text.trim().length > 0;
+                                return (
+                                  <button
+                                    key={meal.id}
+                                    type="button"
+                                    onClick={() => setActiveMealTab(meal.id as any)}
+                                    className={`flex items-center justify-center gap-1.5 py-2 px-1.5 rounded-lg text-xs font-bold transition-all ${
+                                      isActive
+                                        ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
+                                        : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+                                    }`}
+                                  >
+                                    <Icon className="w-3.5 h-3.5 shrink-0" />
+                                    <span className="truncate">{meal.label}</span>
+                                    {hasData && (
+                                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isActive ? 'bg-white' : 'bg-emerald-400'}`} />
+                                    )}
+                                  </button>
+                                );
+                              })}
+                            </div>
+
+                            {/* Active Meal Textarea & Smart Chips */}
+                            <div className="space-y-2">
+                              <textarea
+                                value={
+                                  activeMealTab === 'manha' ? foodMorning :
+                                  activeMealTab === 'tarde' ? foodAfternoon :
+                                  foodNight
+                                }
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (activeMealTab === 'manha') setFoodMorning(val);
+                                  else if (activeMealTab === 'tarde') setFoodAfternoon(val);
+                                  else setFoodNight(val);
+                                }}
+                                onKeyDown={(e) => {
+                                  if (activeMealTab === 'manha') handleAutoListKeyDown(e, foodMorning, setFoodMorning);
+                                  else if (activeMealTab === 'tarde') handleAutoListKeyDown(e, foodAfternoon, setFoodAfternoon);
+                                  else handleAutoListKeyDown(e, foodNight, setFoodNight);
+                                }}
+                                placeholder={
+                                  activeMealTab === 'manha' ? 'Ex: 1. Ovos mexidos, café preto e fruta' :
+                                  activeMealTab === 'tarde' ? 'Ex: 1. Arroz integral, feijão, frango e salada' :
+                                  'Ex: 1. Omelete leve com salada ou sopa nutritiva'
+                                }
+                                rows={3}
+                                className="w-full bg-zinc-950 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500/50 resize-y min-h-[64px] font-sans leading-relaxed"
+                              />
+
+                              {/* Quick Suggestion Chips */}
+                              <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                                <span className="text-[9px] text-zinc-500 font-mono font-medium">Toque para adicionar:</span>
+                                {(activeMealTab === 'manha'
+                                  ? ['Ovos', 'Café', 'Fruta', 'Aveia', 'Whey', 'Pão integral']
+                                  : activeMealTab === 'tarde'
+                                  ? ['Frango', 'Arroz', 'Feijão', 'Salada', 'Carne', 'Legumes']
+                                  : ['Omelete', 'Sopa', 'Salada', 'Frango', 'Chá', 'Proteína']
+                                ).map(tag => (
+                                  <button
+                                    key={tag}
+                                    type="button"
+                                    onClick={() => {
+                                      const appendItem = (prev: string) => {
+                                        const trimmed = prev.trim();
+                                        if (!trimmed) return `1. ${tag}`;
+                                        const lines = trimmed.split('\n');
+                                        return `${trimmed}\n${lines.length + 1}. ${tag}`;
+                                      };
+                                      if (activeMealTab === 'manha') setFoodMorning(appendItem(foodMorning));
+                                      else if (activeMealTab === 'tarde') setFoodAfternoon(appendItem(foodAfternoon));
+                                      else setFoodNight(appendItem(foodNight));
+                                    }}
+                                    className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-zinc-900 hover:bg-emerald-500/20 text-zinc-300 hover:text-emerald-300 border border-zinc-800 transition-colors"
+                                  >
+                                    + {tag}
+                                  </button>
+                                ))}
                               </div>
 
-                              <div>
-                                <label className="text-[10px] text-zinc-400 font-bold block mb-1">
-                                  Tarde:
-                                </label>
-                                <textarea
-                                  value={foodAfternoon}
-                                  onChange={(e) => setFoodAfternoon(e.target.value)}
-                                  onKeyDown={(e) => handleAutoListKeyDown(e, foodAfternoon, setFoodAfternoon)}
-                                  placeholder="Ex: 1. Arroz, feijão, frango e salada"
-                                  rows={2}
-                                  className="w-full bg-zinc-950 border border-zinc-850 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-y min-h-[52px]"
-                                />
-                              </div>
-
-                              <div>
-                                <label className="text-[10px] text-zinc-400 font-bold block mb-1">
-                                  Noite:
-                                </label>
-                                <textarea
-                                  value={foodNight}
-                                  onChange={(e) => setFoodNight(e.target.value)}
-                                  onKeyDown={(e) => handleAutoListKeyDown(e, foodNight, setFoodNight)}
-                                  placeholder="Ex: 1. Sopa de legumes ou whey com aveia"
-                                  rows={2}
-                                  className="w-full bg-zinc-950 border border-zinc-850 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-y min-h-[52px]"
-                                />
+                              {/* Mini overview of other meals */}
+                              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-zinc-900/80">
+                                {(['manha', 'tarde', 'noite'] as const)
+                                  .filter(m => m !== activeMealTab)
+                                  .map(m => {
+                                    const label = m === 'manha' ? 'Café / Manhã' : m === 'tarde' ? 'Almoço / Tarde' : 'Jantar / Noite';
+                                    const text = m === 'manha' ? foodMorning : m === 'tarde' ? foodAfternoon : foodNight;
+                                    return (
+                                      <div
+                                        key={m}
+                                        onClick={() => setActiveMealTab(m)}
+                                        className="p-2 bg-zinc-950/60 hover:bg-zinc-900 border border-zinc-900 hover:border-zinc-800 rounded-lg cursor-pointer transition-all"
+                                      >
+                                        <div className="flex items-center justify-between text-[10px] font-bold text-zinc-400">
+                                          <span>{label}</span>
+                                          <span className="text-[9px] text-zinc-600 font-mono">Editar &rarr;</span>
+                                        </div>
+                                        <p className="text-[10px] text-zinc-400 truncate mt-0.5 font-sans">
+                                          {text.trim() || 'Não preenchido'}
+                                        </p>
+                                      </div>
+                                    );
+                                  })}
                               </div>
                             </div>
                           </div>
