@@ -2067,10 +2067,10 @@ export default function Sidebar({
 
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-12 h-12 rounded-xl border border-orange-500/40 bg-black overflow-hidden flex items-center justify-center p-0.5 shadow-[0_0_20px_rgba(249,115,22,0.3)] flex-shrink-0">
-                  <img src="/icon-192.png" alt="TRONUS App Icon" className="w-full h-full object-contain rounded-lg" referrerPolicy="no-referrer" />
+                  <img src="/icon-192.png" alt="Life Organizer App Icon" className="w-full h-full object-contain rounded-lg" referrerPolicy="no-referrer" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-white uppercase tracking-wider">Instalar TRONUS HUD</h3>
+                  <h3 className="text-sm font-black text-white uppercase tracking-wider">Instalar Life Organizer</h3>
                   <p className="text-[9px] text-orange-500 font-mono font-bold">EXPERIÊNCIA DE APLICATIVO NATIVO</p>
                 </div>
               </div>
@@ -2102,7 +2102,7 @@ export default function Sidebar({
                   <ol className="text-[11px] text-zinc-400 list-decimal pl-4 space-y-1">
                     <li>Toque no ícone de <strong className="text-orange-400">três pontinhos</strong> (canto superior direito do navegador).</li>
                     <li>Selecione a opção <strong className="text-white">"Instalar aplicativo"</strong> ou <strong className="text-white">"Adicionar à tela inicial"</strong>.</li>
-                    <li>Aproveite o TRONUS com suporte completo a gestos e imersão total!</li>
+                    <li>Aproveite o Life Organizer com suporte completo a gestos e imersão total!</li>
                   </ol>
                 </div>
               </div>

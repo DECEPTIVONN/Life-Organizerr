@@ -69,12 +69,12 @@ export const ReviewReminderModal: React.FC<ReviewReminderModalProps> = ({
     const granted = await requestNotificationPermission();
     if (granted) {
       if (type === 'weekly') {
-        sendSystemNotification('⏰ Teste: Review Semanal TRONUS', {
+        sendSystemNotification('⏰ Teste: Review Semanal Life Organizer', {
           body: `Lembrete agendado para toda ${getWeeklyReviewDayLabel(settings.weekly.dayOfWeek)} às ${settings.weekly.time}. Momento de avaliar sua semana!`,
           tag: 'test-weekly-review-reminder'
         });
       } else {
-        sendSystemNotification('🌟 Teste: Review Mensal TRONUS', {
+        sendSystemNotification('🌟 Teste: Review Mensal Life Organizer', {
           body: `Lembrete agendado para ${getMonthlyReviewTimingLabel(settings.monthly)} às ${settings.monthly.time}. Fechamento de ciclo e aprendizados!`,
           tag: 'test-monthly-review-reminder'
         });

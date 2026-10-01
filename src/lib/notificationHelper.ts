@@ -1,4 +1,4 @@
-// System Notification & Background Alarm Manager for TRONUS Planner PWA
+// System Notification & Background Alarm Manager for Life Organizer PWA
 
 export async function requestNotificationPermission(): Promise<boolean> {
   if (typeof window === 'undefined' || !('Notification' in window)) {
@@ -25,6 +25,9 @@ export async function sendSystemNotification(
   const granted = await requestNotificationPermission();
   if (!granted) return false;
 
+  // Always brand the notification with Life Organizer
+  const resolvedTitle = title.includes('Life Organizer') ? title : `Life Organizer • ${title}`;
+
   const defaultOptions: NotificationOptions & { vibrate?: number[]; renotify?: boolean } = {
     icon: '/icon-192.png',
     badge: '/favicon-32x32.png',
@@ -38,7 +41,7 @@ export async function sendSystemNotification(
     if ('serviceWorker' in navigator) {
       const registration = await navigator.serviceWorker.ready;
       if (registration && registration.showNotification) {
-        await registration.showNotification(title, defaultOptions);
+        await registration.showNotification(resolvedTitle, defaultOptions);
         return true;
       }
     }
@@ -48,7 +51,7 @@ export async function sendSystemNotification(
 
   // Fallback to standard window Notification
   try {
-    new Notification(title, defaultOptions);
+    new Notification(resolvedTitle, defaultOptions);
     return true;
   } catch (err) {
     console.error('Window Notification error:', err);

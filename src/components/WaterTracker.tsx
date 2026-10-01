@@ -202,57 +202,57 @@ export default function WaterTracker({
         </div>
       </div>
 
-      {/* Quick Action Dose Buttons */}
-      <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
+      {/* Quick Action Dose Buttons (Compact & Sleek) */}
+      <div className="flex items-center justify-between gap-1 sm:gap-1.5">
         <button
           type="button"
           onClick={() => handleAdd(-0.25)}
           disabled={currentLiters <= 0}
-          className="py-1.5 px-1 bg-zinc-950 hover:bg-zinc-900 border border-zinc-850 disabled:opacity-30 disabled:pointer-events-none rounded-lg flex items-center justify-center gap-1 text-[10px] sm:text-[11px] text-zinc-400 hover:text-white font-mono font-bold transition-all active:scale-95"
+          className="flex-1 h-6 sm:h-7 px-1 bg-zinc-950 hover:bg-zinc-900 border border-zinc-850 disabled:opacity-25 disabled:pointer-events-none rounded-md flex items-center justify-center gap-0.5 text-[9px] sm:text-[10px] text-zinc-400 hover:text-white font-mono font-bold transition-all active:scale-95 cursor-pointer"
           title="Desfazer / Remover 250ml"
         >
-          <Minus className="w-3 h-3 text-rose-400 shrink-0" />
-          <span className="truncate">250ml</span>
+          <Minus className="w-2.5 h-2.5 text-rose-400 shrink-0" />
+          <span className="truncate">-250ml</span>
         </button>
 
         <button
           type="button"
           onClick={() => handleAdd(0.20)}
-          className="py-1.5 px-1 bg-zinc-900/80 hover:bg-cyan-950/40 border border-zinc-800 hover:border-cyan-500/40 rounded-lg flex items-center justify-center gap-1 text-[10px] sm:text-[11px] text-cyan-400 hover:text-cyan-300 font-mono font-bold transition-all active:scale-95 shadow-xs"
+          className="flex-1 h-6 sm:h-7 px-1 bg-zinc-900/80 hover:bg-cyan-950/40 border border-zinc-800 hover:border-cyan-500/40 rounded-md flex items-center justify-center gap-0.5 text-[9px] sm:text-[10px] text-cyan-400 hover:text-cyan-300 font-mono font-bold transition-all active:scale-95 shadow-xs cursor-pointer"
           title="Adicionar copo pequeno de 200ml"
         >
-          <Plus className="w-3 h-3 text-cyan-400 shrink-0" />
-          <span className="truncate">200ml</span>
+          <Plus className="w-2.5 h-2.5 text-cyan-400 shrink-0" />
+          <span className="truncate">+200ml</span>
         </button>
 
         <button
           type="button"
           onClick={() => handleAdd(0.25)}
-          className="py-1.5 px-1 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 hover:border-cyan-500/50 rounded-lg flex items-center justify-center gap-1 text-[10px] sm:text-[11px] text-cyan-300 font-mono font-bold transition-all active:scale-95 shadow-xs"
+          className="flex-1 h-6 sm:h-7 px-1 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 hover:border-cyan-500/50 rounded-md flex items-center justify-center gap-0.5 text-[9px] sm:text-[10px] text-cyan-300 font-mono font-bold transition-all active:scale-95 shadow-xs cursor-pointer"
           title="Adicionar copo padrão de 250ml"
         >
-          <Plus className="w-3 h-3 text-cyan-400 shrink-0" />
-          <span className="truncate">250ml</span>
+          <Plus className="w-2.5 h-2.5 text-cyan-400 shrink-0" />
+          <span className="truncate">+250ml</span>
         </button>
 
         <button
           type="button"
           onClick={() => handleAdd(0.50)}
-          className="py-1.5 px-1 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 hover:border-blue-500/50 rounded-lg flex items-center justify-center gap-1 text-[10px] sm:text-[11px] text-blue-300 font-mono font-bold transition-all active:scale-95 shadow-xs"
+          className="flex-1 h-6 sm:h-7 px-1 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 hover:border-blue-500/50 rounded-md flex items-center justify-center gap-0.5 text-[9px] sm:text-[10px] text-blue-300 font-mono font-bold transition-all active:scale-95 shadow-xs cursor-pointer"
           title="Adicionar garrafinha de 500ml"
         >
-          <Plus className="w-3 h-3 text-blue-400 shrink-0" />
-          <span className="truncate">500ml</span>
+          <Plus className="w-2.5 h-2.5 text-blue-400 shrink-0" />
+          <span className="truncate">+500ml</span>
         </button>
 
         <button
           type="button"
           onClick={() => handleAdd(1.00)}
-          className="py-1.5 px-1 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 hover:border-indigo-500/50 rounded-lg flex items-center justify-center gap-1 text-[10px] sm:text-[11px] text-indigo-300 font-mono font-bold transition-all active:scale-95 shadow-xs"
+          className="flex-1 h-6 sm:h-7 px-1 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 hover:border-indigo-500/50 rounded-md flex items-center justify-center gap-0.5 text-[9px] sm:text-[10px] text-indigo-300 font-mono font-bold transition-all active:scale-95 shadow-xs cursor-pointer"
           title="Adicionar garrafa / jarra de 1.0 Litro"
         >
-          <Plus className="w-3 h-3 text-indigo-400 shrink-0" />
-          <span className="truncate">1.0 L</span>
+          <Plus className="w-2.5 h-2.5 text-indigo-400 shrink-0" />
+          <span className="truncate">+1.0L</span>
         </button>
       </div>
 

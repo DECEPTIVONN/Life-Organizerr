@@ -47,7 +47,8 @@ import { ReviewReminderModal } from './ReviewReminderModal';
 import { 
   getReviewRemindersSettings, 
   getWeeklyReviewDayLabel, 
-  getMonthlyReviewTimingLabel, 
+  getMonthlyReviewTimingLabel,
+  getTargetReviewMonthAndYear,
   ReviewRemindersSettings 
 } from '../utils/reviewReminderUtils';
 import { CalendarNote, DailyTask, MonthlyReview, WeeklyReview, YearlyBook, SubTask, Goal, FinanceEntry } from '../types';
@@ -86,6 +87,7 @@ interface AnuaisViewProps {
   freeEditMode?: boolean;
   masterTemplates?: { gratitude: string; decrees: string; prayer: string };
   setMasterTemplates?: React.Dispatch<React.SetStateAction<{ gratitude: string; decrees: string; prayer: string }>>;
+  targetReviewRequest?: { type: 'weekly' | 'monthly'; timestamp: number } | null;
 }
 
 export default function AnuaisView({
@@ -115,10 +117,11 @@ export default function AnuaisView({
   setIsMonthlyReviewOpen: propSetIsMonthlyReviewOpen,
   isWeeklyReviewsOpen: propIsWeeklyReviewsOpen,
   setIsWeeklyReviewsOpen: propSetIsWeeklyReviewsOpen,
-  freeEditMode = false
+  freeEditMode = false,
+  targetReviewRequest = null
 }: AnuaisViewProps) {
   const [selectedYear, setSelectedYear] = useState(() => Math.max(2026, new Date().getFullYear()));
-  const [selectedMonthIndex, setSelectedMonthIndex] = useState<number>(0); // 0-11 for months, -1 for "Livros"
+  const [selectedMonthIndex, setSelectedMonthIndex] = useState<number>(() => new Date().getMonth()); // 0-11 for months, -1 for "Livros"
 
   const isBookInMonthAndYear = (bk: YearlyBook, yr: number, monthIdx: number) => {
     if (bk.year !== yr) return false;
@@ -680,6 +683,78 @@ export default function AnuaisView({
       setTimeout(() => setIsWeeklyReviewModalOpen(false), 800);
     }, 500);
   };
+
+  // Handle external redirect to latest review (e.g. from ReviewReminderBanner)
+  useEffect(() => {
+    if (!targetReviewRequest) return;
+
+    if (targetReviewRequest.type === 'weekly') {
+      const now = new Date();
+      let targetYear = now.getFullYear();
+      let targetWeek = getWeekNumber(now);
+
+      // Look for the latest weekly review by year and weekNumber
+      if (weeklyReviews && weeklyReviews.length > 0) {
+        const sorted = [...weeklyReviews].sort((a, b) => {
+          if (a.year !== b.year) return b.year - a.year;
+          return b.weekNumber - a.weekNumber;
+        });
+        targetYear = sorted[0].year;
+        targetWeek = sorted[0].weekNumber;
+      }
+
+      // Find the month containing this week
+      let targetMonth = now.getMonth();
+      for (let m = 0; m < 12; m++) {
+        const weeks = getWeeksForMonth(targetYear, m);
+        if (weeks.includes(targetWeek)) {
+          targetMonth = m;
+          break;
+        }
+      }
+
+      setSelectedYear(targetYear);
+      setSelectedMonthIndex(targetMonth);
+      setIsWeeklyReviewsOpen(true);
+      setExpandedWeekNum(targetWeek);
+
+      setTimeout(() => {
+        handleOpenWeeklyReview(targetWeek);
+        const el = document.getElementById(`expanded-week-detail-${targetWeek}`) || document.getElementById('weekly-reviews-section');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 150);
+    } else if (targetReviewRequest.type === 'monthly') {
+      const now = new Date();
+      let targetYear = now.getFullYear();
+      let targetMonth = now.getMonth();
+
+      if (monthlyReviews && monthlyReviews.length > 0) {
+        const sorted = [...monthlyReviews].sort((a, b) => {
+          if (a.year !== b.year) return b.year - a.year;
+          return b.month - a.month;
+        });
+        targetYear = sorted[0].year;
+        targetMonth = sorted[0].month;
+      } else {
+        const target = getTargetReviewMonthAndYear(reviewReminderSettings, now);
+        targetYear = target.year;
+        targetMonth = target.month;
+      }
+
+      setSelectedYear(targetYear);
+      setSelectedMonthIndex(targetMonth);
+      setIsMonthlyReviewOpen(true);
+
+      setTimeout(() => {
+        const el = document.getElementById('monthly-review-section');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 150);
+    }
+  }, [targetReviewRequest]);
 
   // Get days list of selected month
   const getDaysInMonth = (yr: number, monthIdx: number) => {
@@ -1939,7 +2014,7 @@ export default function AnuaisView({
                     wr => wr.year === selectedYear && weeksInMonth.includes(wr.weekNumber)
                   );
                 return (
-                  <div className="p-6 bg-zinc-950/60 border border-zinc-900 rounded-3xl space-y-5">
+                  <div id="monthly-review-section" className="p-6 bg-zinc-950/60 border border-zinc-900 rounded-3xl space-y-5">
                     {/* Collapsible Dropdown Header & Visual Trigger */}
                     <div 
                       onClick={() => setIsMonthlyReviewOpen(!isMonthlyReviewOpen)}
@@ -2374,7 +2449,7 @@ export default function AnuaisView({
               })()}
 
               {/* Weeks of this Month (Squares Grid Layout) */}
-              <div className="p-5 bg-zinc-950/40 border border-zinc-900 rounded-3xl space-y-4">
+              <div id="weekly-reviews-section" className="p-5 bg-zinc-950/40 border border-zinc-900 rounded-3xl space-y-4">
                 <div 
                   onClick={() => setIsWeeklyReviewsOpen(!isWeeklyReviewsOpen)}
                   className="flex justify-between items-center cursor-pointer select-none group pb-1.5 border-b border-zinc-900/60"

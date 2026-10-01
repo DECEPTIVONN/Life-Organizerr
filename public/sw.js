@@ -1,5 +1,5 @@
-// Service Worker for TRONUS Planner PWA (Offline & Background Notification/Alarm Support)
-const CACHE_NAME = 'tronus-planner-pwa-v6';
+// Service Worker for Life Organizer PWA (Offline & Background Notification/Alarm Support)
+const CACHE_NAME = 'life-organizer-pwa-v7';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -52,7 +52,7 @@ async function saveAlarmsToDB(alarms) {
         // Schedule OS-native TimestampTrigger if supported by browser/device
         if (alarm.targetTimestamp && alarm.targetTimestamp > nowMs && self.registration && self.Notification && 'showTrigger' in self.Notification.prototype && self.TimestampTrigger) {
           try {
-            self.registration.showNotification(alarm.title || 'TRONUS Planner', {
+            self.registration.showNotification(alarm.title || 'Life Organizer', {
               body: alarm.body || 'Lembrete agendado',
               icon: '/icon-192.png',
               badge: '/favicon-32x32.png',
@@ -162,7 +162,7 @@ async function checkScheduledAlarms() {
         const notifKey = `ts-${item.id}-${item.targetTimestamp}`;
         if (!(await isAlreadyNotified(notifKey))) {
           await markAsNotified(notifKey);
-          await self.registration.showNotification(item.title || 'TRONUS Planner', {
+          await self.registration.showNotification(item.title || 'Life Organizer', {
             body: item.body || 'Seu alarme/lembrete atingiu o horário agendado!',
             icon: '/icon-192.png',
             badge: '/favicon-32x32.png',
@@ -201,7 +201,7 @@ async function checkScheduledAlarms() {
             const notifKey = `time-${item.id}-${todayStr}-${item.scheduledTime}`;
             if (!(await isAlreadyNotified(notifKey))) {
               await markAsNotified(notifKey);
-              await self.registration.showNotification(item.title || 'TRONUS Planner', {
+              await self.registration.showNotification(item.title || 'Life Organizer', {
                 body: item.body || `Lembrete agendado para as ${item.scheduledTime}`,
                 icon: '/icon-192.png',
                 badge: '/favicon-32x32.png',
@@ -282,7 +282,7 @@ self.addEventListener('message', (event) => {
 // Web Push Event Handler (Server Push Notifications for Background Delivery)
 self.addEventListener('push', (event) => {
   let data = {
-    title: 'TRONUS Planner',
+    title: 'Life Organizer',
     body: 'Você tem um novo lembrete agendado!'
   };
 
@@ -291,13 +291,13 @@ self.addEventListener('push', (event) => {
       data = event.data.json();
     } catch (e) {
       data = {
-        title: 'TRONUS Planner',
+        title: 'Life Organizer',
         body: event.data.text()
       };
     }
   }
 
-  const title = data.title || 'TRONUS Planner';
+  const title = data.title || 'Life Organizer';
   const options = {
     body: data.body || 'Você possui um novo lembrete!',
     icon: data.icon || '/icon-192.png',

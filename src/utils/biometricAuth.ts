@@ -52,7 +52,7 @@ export async function registerBiometricCredential(userName: string = 'Usuario'):
     const credential = (await navigator.credentials.create({
       publicKey: {
         challenge,
-        rp: { name: 'PLANNER App' },
+        rp: { name: 'Life Organizer' },
         user: {
           id: userId,
           name: userName,

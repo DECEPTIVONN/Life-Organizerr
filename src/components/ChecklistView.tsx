@@ -704,13 +704,13 @@ export default function ChecklistView({
     try {
       const granted = await requestNotificationPermission();
       if (granted) {
-        const title = taskName && taskName.trim() ? `Lembrete: ${taskName.trim()}` : 'TRONUS Planner - Lembrete 🔔';
+        const title = taskName && taskName.trim() ? `Lembrete: ${taskName.trim()}` : 'Life Organizer - Lembrete 🔔';
         const body = reminderTime && reminderTime.trim()
           ? `Lembrete agendado para as ${reminderTime}. Notificação ativada com sucesso!`
           : 'As notificações do seu checklist foram testadas e ativadas com sucesso!';
         const sent = await sendSystemNotification(title, {
           body,
-          tag: 'tronus-test-notif'
+          tag: 'life-organizer-test-notif'
         });
         if (sent) {
           alert('🔔 Notificação enviada com sucesso!');
@@ -751,7 +751,7 @@ export default function ChecklistView({
           const notifKey = `notified_${task.id}_${todayStr}_${currentHHMM}`;
           if (!localStorage.getItem(notifKey)) {
             localStorage.setItem(notifKey, '1');
-            sendSystemNotification(`Lembrete TRONUS: ${task.text}`, {
+            sendSystemNotification(`Lembrete: ${task.text}`, {
               body: `Horário planejado: ${task.reminderTime} | Pilar: ${task.category}`,
               tag: `task-${task.id}`
             });

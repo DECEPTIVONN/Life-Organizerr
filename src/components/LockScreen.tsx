@@ -179,7 +179,7 @@ export default function LockScreen({
             <ShieldCheck className="h-3.5 w-3.5" style={{ color: 'var(--color-orange-400, #fb923c)' }} />
           )}
           <span className="text-[10px] font-mono font-bold tracking-widest text-zinc-300 uppercase">
-            {isBiometricOnlyMode ? 'DESBLOQUEIO POR BIOMETRIA' : 'TELA DE BLOQUEIO ATIVA'}
+            {isBiometricOnlyMode ? 'DESBLOQUEIO • LIFE ORGANIZER' : 'TELA DE BLOQUEIO • LIFE ORGANIZER'}
           </span>
         </div>
 
@@ -217,7 +217,7 @@ export default function LockScreen({
         <p className="text-[11px] text-zinc-400/90 max-w-xs mx-auto leading-relaxed mb-6 select-none">
           {isBiometricOnlyMode ? (
             <>
-              Entrada preferencial com <span className="font-bold" style={{ color: 'var(--color-orange-400, #fb923c)' }}>Impressão Digital</span>. Toque no sensor biométrico para desbloquear.
+              Entrada preferencial com <span className="font-bold" style={{ color: 'var(--color-orange-400, #fb923c)' }}>Impressão Digital</span>. Toque no sensor biométrico para desbloquear o <span className="font-bold text-white">Life Organizer</span>.
             </>
           ) : biometricFailedAttempts >= 3 ? (
             <>
@@ -225,7 +225,7 @@ export default function LockScreen({
             </>
           ) : (
             <>
-              O bloqueio do app está ativado. Digite sua <span className="text-zinc-200 font-bold">Senha de Bloqueio do App</span> para acessar o <span className="font-black tracking-widest font-mono" style={{ color: 'var(--color-orange-500, #f97316)' }}>PLANNER</span>.
+              O bloqueio do app está ativado. Digite sua <span className="text-zinc-200 font-bold">Senha de Bloqueio</span> para acessar o <span className="font-black tracking-widest font-mono" style={{ color: 'var(--color-orange-500, #f97316)' }}>LIFE ORGANIZER</span>.
             </>
           )}
         </p>
@@ -448,7 +448,7 @@ export default function LockScreen({
                   </p>
                   <p className="text-[10px] bg-zinc-900/60 p-3 rounded-xl border border-zinc-900 text-zinc-500 flex gap-2">
                     <Info className="h-4 w-4 text-orange-400 shrink-0 mt-0.5" />
-                    <span>Limpando a senha, o Planner voltará ao estado original. Seus dados na nuvem permanecem seguros.</span>
+                    <span>Limpando a senha, o Life Organizer voltará ao estado original. Seus dados na nuvem permanecem seguros.</span>
                   </p>
                 </div>
               </div>

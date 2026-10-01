@@ -1,8 +1,8 @@
 {
-  "id": "tronus-planner-pwa",
-  "name": "TRONUS Planner",
-  "short_name": "TRONUS",
-  "description": "HUD Planner & Task System",
+  "id": "life-organizer-pwa",
+  "name": "Life Organizer",
+  "short_name": "Life Organizer",
+  "description": "Life Organizer - Planejador de vida completo com gamificação, dashboard, finanças, rotina e metas",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

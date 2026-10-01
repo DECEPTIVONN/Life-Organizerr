@@ -1713,7 +1713,7 @@ export default function SettingsView({
                         ? 'Defina uma senha de bloqueio primeiro para habilitar a impressão digital.'
                         : appLockBiometricEnabled
                         ? 'Entrada por biometria / impressão digital ativada.'
-                        : 'Ative para desbloquear o Planner usando a digital do seu dispositivo.'}
+                        : 'Ative para desbloquear o Life Organizer usando a digital do seu dispositivo.'}
                     </p>
                   </div>
                 </div>
@@ -2328,7 +2328,7 @@ export default function SettingsView({
                       Notificações do Sistema & Segundo Plano (PWA)
                     </h4>
                     <p className="text-[10px] text-zinc-400 mt-1 leading-relaxed">
-                      Permite que os alarmes, timers e lembretes do TRONUS apareçam diretamente na central do sistema operacional (Windows, Android, iOS, macOS), mesmo com a aba ou o navegador fechados.
+                      Permite que os alarmes, timers e lembretes do Life Organizer apareçam diretamente na central do sistema operacional (Windows, Android, iOS, macOS), mesmo com a aba ou o navegador fechados.
                     </p>
                   </div>
                 </div>
@@ -2341,8 +2341,8 @@ export default function SettingsView({
                         const granted = await requestNotificationPermission();
                         if (granted) {
                           sendSystemNotification('Notificações Ativas!', {
-                            body: 'O TRONUS enviará seus alertas e alarmes em segundo plano.',
-                            tag: 'tronus-perm-test'
+                            body: 'O Life Organizer enviará seus alertas e alarmes em segundo plano.',
+                            tag: 'life-organizer-perm-test'
                           });
                         } else {
                           alert('Permissão de notificação negada ou bloqueada no navegador. Habilite nas configurações do seu navegador ou sistema operacional.');
@@ -2357,9 +2357,9 @@ export default function SettingsView({
                     <button
                       type="button"
                       onClick={() => {
-                        sendSystemNotification('⏰ Teste de Alarme TRONUS', {
+                        sendSystemNotification('⏰ Teste de Alarme Life Organizer', {
                           body: 'Notificação do sistema funcionando em segundo plano!',
-                          tag: 'test-alarm-pwa'
+                          tag: 'test-alarm-life-organizer'
                         });
                       }}
                       className="px-3.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-700 text-xs font-semibold rounded-xl transition-all cursor-pointer"

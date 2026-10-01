@@ -45,7 +45,9 @@ import {
   Flame,
   Play,
   Utensils,
-  Coffee
+  Coffee,
+  Droplets,
+  Activity
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import TagManagementModal from './TagManagementModal';
@@ -1027,20 +1029,58 @@ export default function CalendarView({
   const [activeTopic, setActiveTopic] = useState<'diario' | 'checklist' | 'espiritualidade' | 'leitura' | 'saude' | 'agenda'>('diario');
   const [activeSubtopic, setActiveSubtopic] = useState<'gratidao' | 'decretos' | 'oracao'>('gratidao');
   const [activeMealTab, setActiveMealTab] = useState<'manha' | 'tarde' | 'noite'>('manha');
+  const [newMealCustomInput, setNewMealCustomInput] = useState('');
+  const [showMealNotesInput, setShowMealNotesInput] = useState(false);
+  const [dailyEnergyLevel, setDailyEnergyLevel] = useState<string>(() => {
+    return localStorage.getItem('planner_daily_energy_level') || '🔋 Alta Disposição';
+  });
 
   // Swipe gesture detection between tabs on mobile
   const touchStartXRef = useRef<number | null>(null);
   const touchStartYRef = useRef<number | null>(null);
   const touchStartTimeRef = useRef<number>(0);
+  const [topicSlideDirection, setTopicSlideDirection] = useState<1 | -1>(1);
+
+  const tabOrderList: Array<'diario' | 'checklist' | 'espiritualidade' | 'leitura' | 'saude' | 'agenda'> = [
+    'diario',
+    'checklist',
+    'espiritualidade',
+    'leitura',
+    'saude',
+    'agenda'
+  ];
+
+  const handleSelectTopic = (newTopic: 'diario' | 'checklist' | 'espiritualidade' | 'leitura' | 'saude' | 'agenda') => {
+    const currIdx = tabOrderList.indexOf(activeTopic);
+    const nextIdx = tabOrderList.indexOf(newTopic);
+    if (currIdx !== -1 && nextIdx !== -1 && currIdx !== nextIdx) {
+      setTopicSlideDirection(nextIdx > currIdx ? 1 : -1);
+    }
+    setActiveTopic(newTopic);
+  };
+
+  const goToNextTopic = () => {
+    const currIdx = tabOrderList.indexOf(activeTopic);
+    if (currIdx !== -1 && currIdx < tabOrderList.length - 1) {
+      setTopicSlideDirection(1);
+      setActiveTopic(tabOrderList[currIdx + 1]);
+    }
+  };
+
+  const goToPrevTopic = () => {
+    const currIdx = tabOrderList.indexOf(activeTopic);
+    if (currIdx > 0) {
+      setTopicSlideDirection(-1);
+      setActiveTopic(tabOrderList[currIdx - 1]);
+    }
+  };
 
   const handleTouchStart = (e: React.TouchEvent) => {
     const target = e.target as HTMLElement;
-    // Don't trigger tab swipe if dragging an input, textarea or range slider
+    // Don't trigger tab swipe if dragging an input range slider or element with .no-swipe
     if (
-      target.tagName === 'TEXTAREA' || 
-      target.tagName === 'INPUT' || 
-      target.closest('input') || 
-      target.closest('textarea') ||
+      target.getAttribute('type') === 'range' || 
+      target.closest('input[type="range"]') ||
       target.closest('.no-swipe')
     ) {
       touchStartXRef.current = null;
@@ -1067,28 +1107,14 @@ export default function CalendarView({
     touchStartXRef.current = null;
     touchStartYRef.current = null;
 
-    // Must be predominantly horizontal and quick enough
-    if (timeElapsed < 600 && Math.abs(diffX) > 40 && Math.abs(diffX) > Math.abs(diffY) * 1.3) {
-      const tabOrder: Array<'diario' | 'checklist' | 'espiritualidade' | 'leitura' | 'saude' | 'agenda'> = [
-        'diario',
-        'checklist',
-        'espiritualidade',
-        'leitura',
-        'saude',
-        'agenda'
-      ];
-      const currIdx = tabOrder.indexOf(activeTopic);
-
+    // Detect deliberate horizontal swipe: at least 35px, primarily horizontal (1.2x vertical), under 750ms
+    if (timeElapsed < 750 && Math.abs(diffX) > 35 && Math.abs(diffX) > Math.abs(diffY) * 1.2) {
       if (diffX < 0) {
         // Swiped left -> Next tab
-        if (currIdx !== -1 && currIdx < tabOrder.length - 1) {
-          setActiveTopic(tabOrder[currIdx + 1]);
-        }
+        goToNextTopic();
       } else {
         // Swiped right -> Previous tab
-        if (currIdx > 0) {
-          setActiveTopic(tabOrder[currIdx - 1]);
-        }
+        goToPrevTopic();
       }
     }
   };
@@ -3220,7 +3246,11 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                   >
                     
                      {/* Primary Topic Selector (Grid de Categorias de Bloco) */}
-                    <div className="shrink-0 grid grid-cols-3 sm:grid-cols-6 gap-1.5 sm:gap-2 bg-zinc-950 p-1.5 sm:p-2 rounded-xl sm:rounded-2xl border border-zinc-900">
+                    <div 
+                      onTouchStart={handleTouchStart}
+                      onTouchEnd={handleTouchEnd}
+                      className="shrink-0 grid grid-cols-3 sm:grid-cols-6 gap-1.5 sm:gap-2 bg-zinc-950 p-1.5 sm:p-2 rounded-xl sm:rounded-2xl border border-zinc-900"
+                    >
                       {[
                         { id: 'diario', label: 'Diário Pessoal', icon: FileText },
                         { id: 'checklist', label: 'Checklist', icon: Check },
@@ -3235,8 +3265,8 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                           <button
                             key={tb.id}
                             type="button"
-                            onClick={() => setActiveTopic(tb.id as any)}
-                            className={`flex flex-col items-center justify-center p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all font-sans ${
+                            onClick={() => handleSelectTopic(tb.id as any)}
+                            className={`flex flex-col items-center justify-center p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all font-sans cursor-pointer active:scale-95 ${
                               isActive
                                 ? 'bg-orange-500 text-white font-extrabold shadow-lg shadow-orange-500/20 border border-orange-400/40 scale-[1.02]'
                                 : 'bg-zinc-900/80 hover:bg-zinc-850 text-zinc-400 hover:text-white border border-zinc-800/80'
@@ -3252,28 +3282,40 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                     </div>
 
                     {/* Mobile Swipe Indicators & Navigation Affordance */}
-                    <div className="flex sm:hidden items-center justify-between px-1 text-[9.5px] text-zinc-500 font-mono select-none">
-                      <span className="flex items-center gap-0.5 text-zinc-500">
-                        <ChevronLeft className="w-3 h-3" /> deslize
-                      </span>
+                    <div 
+                      onTouchStart={handleTouchStart}
+                      onTouchEnd={handleTouchEnd}
+                      className="flex sm:hidden items-center justify-between px-1 text-[9.5px] text-zinc-500 font-mono select-none"
+                    >
+                      <button 
+                        type="button"
+                        onClick={goToPrevTopic}
+                        className="flex items-center gap-0.5 text-zinc-500 hover:text-orange-400 active:scale-95 cursor-pointer py-1"
+                      >
+                        <ChevronLeft className="w-3 h-3" /> anterior
+                      </button>
                       <div className="flex items-center gap-1.5">
                         {(['diario', 'checklist', 'espiritualidade', 'leitura', 'saude', 'agenda'] as const).map((tabId) => (
                           <button
                             key={tabId}
                             type="button"
-                            onClick={() => setActiveTopic(tabId)}
-                            className={`h-1.5 rounded-full transition-all ${
+                            onClick={() => handleSelectTopic(tabId)}
+                            className={`h-1.5 rounded-full transition-all cursor-pointer ${
                               activeTopic === tabId 
                                 ? 'w-4 bg-orange-500 shadow-[0_0_6px_rgba(249,115,22,0.6)]' 
-                                : 'w-1.5 bg-zinc-800'
+                                : 'w-1.5 bg-zinc-800 hover:bg-zinc-700'
                             }`}
                             aria-label={`Aba ${tabId}`}
                           />
                         ))}
                       </div>
-                      <span className="flex items-center gap-0.5 text-zinc-500">
-                        deslize <ChevronRight className="w-3 h-3" />
-                      </span>
+                      <button 
+                        type="button"
+                        onClick={goToNextTopic}
+                        className="flex items-center gap-0.5 text-zinc-500 hover:text-orange-400 active:scale-95 cursor-pointer py-1"
+                      >
+                        próximo <ChevronRight className="w-3 h-3" />
+                      </button>
                     </div>
 
                     {/* Topic Content Container (Scrollable) */}
@@ -3282,6 +3324,16 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                       onTouchEnd={handleTouchEnd}
                       className="flex-1 overflow-y-auto min-h-0 pr-1 space-y-3 scrollbar-thin flex flex-col"
                     >
+                      <AnimatePresence mode="wait" custom={topicSlideDirection}>
+                        <motion.div
+                          key={activeTopic}
+                          custom={topicSlideDirection}
+                          initial={(dir: number) => ({ x: dir > 0 ? 35 : -35, opacity: 0 })}
+                          animate={{ x: 0, opacity: 1 }}
+                          exit={(dir: number) => ({ x: dir > 0 ? -35 : 35, opacity: 0 })}
+                          transition={{ duration: 0.18, ease: 'easeOut' }}
+                          className="flex-1 flex flex-col min-h-0 space-y-3"
+                        >
                       {activeTopic === 'diario' ? (
                         /* DIARIO TOPIC (COM ALTER EGO DOMINANTE ABAIXO DE COMO FOI O SEU DIA) */
                         <div className="space-y-4 flex-1 flex flex-col min-h-0">
@@ -4211,9 +4263,127 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                           )}
                         </div>
                       ) : activeTopic === 'saude' ? (
-                        /* SAÚDE TOPIC */
+                        /* SAÚDE & BEM-ESTAR DASHBOARD (Sem cara de formulário, interface moderna e fluida) */
                         <div className="space-y-4 pb-2">
-                          {/* Sleep Architecture Card */}
+                          {/* 1. Vitality & Wellness Summary Hub */}
+                          {(() => {
+                            // Sleep stats calculation
+                            let sleepInfo: { hrs: number; mins: number; isOptimal: boolean; label: string } | null = null;
+                            if (sleepBedTime && sleepWakeTime) {
+                              const bedParts = sleepBedTime.split(':').map(Number);
+                              const wakeParts = sleepWakeTime.split(':').map(Number);
+                              if (bedParts.length === 2 && wakeParts.length === 2 && !isNaN(bedParts[0]) && !isNaN(wakeParts[0])) {
+                                let bedMin = bedParts[0] * 60 + bedParts[1];
+                                let wakeMin = wakeParts[0] * 60 + wakeParts[1];
+                                if (wakeMin <= bedMin) wakeMin += 24 * 60;
+                                const diffMin = wakeMin - bedMin;
+                                const hrs = Math.floor(diffMin / 60);
+                                const mins = diffMin % 60;
+                                const hrsNum = diffMin / 60;
+                                const isOptimal = hrsNum >= 7 && hrsNum <= 9;
+                                sleepInfo = {
+                                  hrs,
+                                  mins,
+                                  isOptimal,
+                                  label: isOptimal ? 'Sono Ideal ✨' : hrsNum < 6 ? '< 6h de sono' : `${hrs}h${mins > 0 ? ` ${mins}m` : ''}`
+                                };
+                              }
+                            }
+
+                            const mealsFilledCount = [foodMorning, foodAfternoon, foodNight].filter(f => f.trim().length > 0).length;
+                            const waterProgressPct = Math.min(100, Math.round((waterLiters / 3.0) * 100));
+
+                            return (
+                              <div className="bg-[#0b0c10] border border-zinc-800/80 rounded-2xl p-3.5 sm:p-4 space-y-3 shadow-md">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-7 h-7 rounded-lg bg-orange-500/15 border border-orange-500/30 flex items-center justify-center text-orange-400">
+                                      <Activity className="w-3.5 h-3.5" />
+                                    </div>
+                                    <div>
+                                      <h4 className="text-xs font-black text-white uppercase tracking-wider font-mono">
+                                        Painel de Vitalidade
+                                      </h4>
+                                      <p className="text-[10px] text-zinc-400">
+                                        Métricas biológicas e bem-estar do dia
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400">
+                                    {mealsFilledCount === 3 && (waterLiters >= 2.0) && sleepInfo ? '🟢 Dia Equilibrado' : '🟡 Registro Ativo'}
+                                  </span>
+                                </div>
+
+                                {/* 3 Metric Cards */}
+                                <div className="grid grid-cols-3 gap-2">
+                                  {/* Sleep Card */}
+                                  <div className="p-2.5 bg-zinc-950/70 border border-indigo-500/20 rounded-xl space-y-1">
+                                    <div className="flex items-center justify-between text-[10px] text-zinc-400">
+                                      <span className="flex items-center gap-1 font-mono"><Moon className="w-3 h-3 text-indigo-400" /> Sono</span>
+                                      <span className="text-[8.5px] font-bold text-indigo-400">{sleepInfo ? (sleepInfo.isOptimal ? 'Ideal' : 'Log') : 'Pendente'}</span>
+                                    </div>
+                                    <div className="text-xs sm:text-sm font-black text-white font-mono">
+                                      {sleepInfo ? `${sleepInfo.hrs}h${sleepInfo.mins > 0 ? ` ${sleepInfo.mins}m` : ''}` : '-- : --'}
+                                    </div>
+                                  </div>
+
+                                  {/* Food Card */}
+                                  <div className="p-2.5 bg-zinc-950/70 border border-emerald-500/20 rounded-xl space-y-1">
+                                    <div className="flex items-center justify-between text-[10px] text-zinc-400">
+                                      <span className="flex items-center gap-1 font-mono"><Utensils className="w-3 h-3 text-emerald-400" /> Refeições</span>
+                                      <span className="text-[8.5px] font-bold text-emerald-400">{mealsFilledCount}/3</span>
+                                    </div>
+                                    <div className="text-xs sm:text-sm font-black text-white font-mono">
+                                      {mealsFilledCount === 3 ? 'Completas' : mealsFilledCount === 0 ? 'Iniciar' : `${mealsFilledCount} Salva${mealsFilledCount > 1 ? 's' : ''}`}
+                                    </div>
+                                  </div>
+
+                                  {/* Water Card */}
+                                  <div className="p-2.5 bg-zinc-950/70 border border-cyan-500/20 rounded-xl space-y-1">
+                                    <div className="flex items-center justify-between text-[10px] text-zinc-400">
+                                      <span className="flex items-center gap-1 font-mono"><Droplets className="w-3 h-3 text-cyan-400" /> Água</span>
+                                      <span className="text-[8.5px] font-bold text-cyan-400">{waterProgressPct}%</span>
+                                    </div>
+                                    <div className="text-xs sm:text-sm font-black text-white font-mono">
+                                      {waterLiters.toFixed(2)} L
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Disposição / Nível de Energia Quick Selector */}
+                                <div className="pt-2 border-t border-zinc-900 flex items-center justify-between flex-wrap gap-2">
+                                  <span className="text-[9.5px] text-zinc-400 font-mono font-bold flex items-center gap-1">
+                                    <Zap className="w-3 h-3 text-amber-400" /> Disposição Hoje:
+                                  </span>
+                                  <div className="flex items-center gap-1 flex-wrap">
+                                    {['🔋 Alta', '⚡ Produtivo', '🧘 Equilibrado', '🪫 Cansado'].map(level => {
+                                      const isSelected = dailyEnergyLevel === level;
+                                      return (
+                                        <button
+                                          key={level}
+                                          type="button"
+                                          onClick={() => {
+                                            setDailyEnergyLevel(level);
+                                            localStorage.setItem('planner_daily_energy_level', level);
+                                          }}
+                                          className={`px-2 py-0.5 rounded-lg text-[9.5px] font-mono font-bold transition-all cursor-pointer ${
+                                            isSelected
+                                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-xs'
+                                              : 'bg-zinc-900/80 text-zinc-400 hover:text-white border border-zinc-800'
+                                          }`}
+                                        >
+                                          {level}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })()}
+
+                          {/* 2. Sleep Architecture Card (Modern Glass with 1-Tap Presets) */}
                           <div className="bg-[#0b0c10] border border-indigo-500/20 rounded-2xl p-4 sm:p-5 space-y-3.5 relative overflow-hidden shadow-lg shadow-indigo-950/20">
                             <div className="flex items-center justify-between border-b border-zinc-850/80 pb-3">
                               <div className="flex items-center gap-2.5">
@@ -4225,14 +4395,20 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                     Sono & Descanso
                                   </h4>
                                   <p className="text-[10px] text-zinc-400 font-medium">
-                                    Ciclo circadiano e recuperação
+                                    Ciclo circadiano e recuperação celular
                                   </p>
                                 </div>
                               </div>
 
                               {/* Calculated Sleep Badge */}
                               {(() => {
-                                if (!sleepBedTime || !sleepWakeTime) return null;
+                                if (!sleepBedTime || !sleepWakeTime) {
+                                  return (
+                                    <span className="text-[9px] font-mono text-zinc-500 bg-zinc-900/60 px-2 py-0.5 rounded border border-zinc-800">
+                                      Defina horários
+                                    </span>
+                                  );
+                                }
                                 const bedParts = sleepBedTime.split(':').map(Number);
                                 const wakeParts = sleepWakeTime.split(':').map(Number);
                                 if (bedParts.length === 2 && wakeParts.length === 2 && !isNaN(bedParts[0]) && !isNaN(wakeParts[0])) {
@@ -4249,14 +4425,14 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                       <div className="text-sm sm:text-base font-extrabold text-indigo-300 font-mono">
                                         {hrs}h{mins > 0 ? ` ${mins}m` : ''}
                                       </div>
-                                      <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border ${
+                                      <span className={`text-[8.5px] font-mono font-bold px-1.5 py-0.5 rounded border ${
                                         isOptimal 
                                           ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' 
                                           : hrsNum < 6 
                                           ? 'bg-amber-500/15 text-amber-400 border-amber-500/30' 
                                           : 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30'
                                       }`}>
-                                        {isOptimal ? 'Sono Ideal ✨' : hrsNum < 6 ? '< 6h de sono' : 'Sono Registrado'}
+                                        {isOptimal ? 'Sono Ideal ✨' : hrsNum < 6 ? '< 6h (déficit)' : 'Registrado'}
                                       </span>
                                     </div>
                                   );
@@ -4268,173 +4444,325 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                             {/* Dual Time Pickers as Modern Glass Cards */}
                             <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
                               <div className="bg-zinc-950/80 border border-zinc-800/80 hover:border-indigo-500/40 rounded-xl p-3 space-y-1.5 transition-colors">
-                                <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-400">
-                                  <Moon className="w-3.5 h-3.5 text-indigo-400" />
-                                  <span>Deitou (Ontem)</span>
+                                <div className="flex items-center justify-between text-[10px] font-bold text-zinc-400">
+                                  <span className="flex items-center gap-1.5"><Moon className="w-3.5 h-3.5 text-indigo-400" /> Deitou (Ontem)</span>
+                                  {sleepBedTime && <span className="text-indigo-400 font-mono font-bold">{sleepBedTime}</span>}
                                 </div>
                                 <input
                                   type="time"
                                   value={sleepBedTime}
                                   onChange={(e) => setSleepBedTime(e.target.value)}
-                                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs sm:text-sm text-white focus:outline-none focus:border-indigo-500/60 font-mono font-bold text-center cursor-pointer"
+                                  className="w-full bg-zinc-900 border border-zinc-800 hover:border-indigo-500/40 rounded-lg px-2.5 py-1.5 text-xs sm:text-sm text-white focus:outline-none focus:border-indigo-500/60 font-mono font-bold text-center cursor-pointer transition-colors"
                                 />
                               </div>
 
                               <div className="bg-zinc-950/80 border border-zinc-800/80 hover:border-amber-500/40 rounded-xl p-3 space-y-1.5 transition-colors">
-                                <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-400">
-                                  <Sun className="w-3.5 h-3.5 text-amber-400" />
-                                  <span>Acordou (Hoje)</span>
+                                <div className="flex items-center justify-between text-[10px] font-bold text-zinc-400">
+                                  <span className="flex items-center gap-1.5"><Sun className="w-3.5 h-3.5 text-amber-400" /> Acordou (Hoje)</span>
+                                  {sleepWakeTime && <span className="text-amber-400 font-mono font-bold">{sleepWakeTime}</span>}
                                 </div>
                                 <input
                                   type="time"
                                   value={sleepWakeTime}
                                   onChange={(e) => setSleepWakeTime(e.target.value)}
-                                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs sm:text-sm text-white focus:outline-none focus:border-amber-500/60 font-mono font-bold text-center cursor-pointer"
+                                  className="w-full bg-zinc-900 border border-zinc-800 hover:border-amber-500/40 rounded-lg px-2.5 py-1.5 text-xs sm:text-sm text-white focus:outline-none focus:border-amber-500/60 font-mono font-bold text-center cursor-pointer transition-colors"
                                 />
                               </div>
                             </div>
+
+                            {/* 1-Tap Sleep Schedule Presets */}
+                            <div className="space-y-1.5 pt-1">
+                              <span className="text-[9px] text-zinc-500 font-mono font-medium block">
+                                Atalhos rápidos de sono (1 toque):
+                              </span>
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                                {[
+                                  { label: '22:30 → 06:30', hrs: '8h', bed: '22:30', wake: '06:30' },
+                                  { label: '23:00 → 07:00', hrs: '8h', bed: '23:00', wake: '07:00' },
+                                  { label: '00:00 → 07:30', hrs: '7h30', bed: '00:00', wake: '07:30' },
+                                  { label: '23:30 → 07:00', hrs: '7h30', bed: '23:30', wake: '07:00' },
+                                ].map(preset => {
+                                  const isCurrent = sleepBedTime === preset.bed && sleepWakeTime === preset.wake;
+                                  return (
+                                    <button
+                                      key={preset.label}
+                                      type="button"
+                                      onClick={() => {
+                                        setSleepBedTime(preset.bed);
+                                        setSleepWakeTime(preset.wake);
+                                      }}
+                                      className={`py-1 px-1.5 rounded-lg text-[9.5px] font-mono font-bold border transition-all cursor-pointer flex items-center justify-between ${
+                                        isCurrent
+                                          ? 'bg-indigo-500/25 border-indigo-500/60 text-indigo-300 shadow-xs'
+                                          : 'bg-zinc-900/60 hover:bg-zinc-850 border-zinc-800 text-zinc-400 hover:text-white'
+                                      }`}
+                                    >
+                                      <span>{preset.label}</span>
+                                      <span className="text-[8px] text-indigo-400">{preset.hrs}</span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
                           </div>
 
-                          {/* Food & Nutrition Section */}
-                          <div className="bg-[#0b0c10] border border-emerald-500/20 rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-lg shadow-emerald-950/20">
-                            <div className="flex items-center justify-between border-b border-zinc-850/80 pb-3">
-                              <div className="flex items-center gap-2.5">
-                                <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                                  <Utensils className="w-4 h-4" />
+                          {/* 3. Smart Culinary Hub (Alimentação Interativa sem cara de formulário) */}
+                          {(() => {
+                            // Helper to parse items
+                            const parseFoodList = (raw: string): string[] => {
+                              if (!raw || !raw.trim()) return [];
+                              return raw
+                                .split('\n')
+                                .map(line => line.replace(/^\d+[\.\-\)]\s*/, '').trim())
+                                .filter(Boolean);
+                            };
+
+                            const serializeFoodList = (items: string[]): string => {
+                              return items.map((item, idx) => `${idx + 1}. ${item}`).join('\n');
+                            };
+
+                            const currentFoodRaw = 
+                              activeMealTab === 'manha' ? foodMorning :
+                              activeMealTab === 'tarde' ? foodAfternoon :
+                              foodNight;
+
+                            const setMealRaw = (newText: string) => {
+                              if (activeMealTab === 'manha') setFoodMorning(newText);
+                              else if (activeMealTab === 'tarde') setFoodAfternoon(newText);
+                              else setFoodNight(newText);
+                            };
+
+                            const currentItems = parseFoodList(currentFoodRaw);
+
+                            const handleAddItem = (itemName: string) => {
+                              const trimmed = itemName.trim();
+                              if (!trimmed) return;
+                              if (currentItems.includes(trimmed)) return;
+                              const updated = [...currentItems, trimmed];
+                              setMealRaw(serializeFoodList(updated));
+                            };
+
+                            const handleRemoveItem = (index: number) => {
+                              const updated = currentItems.filter((_, i) => i !== index);
+                              setMealRaw(serializeFoodList(updated));
+                            };
+
+                            const quickSuggestions = 
+                              activeMealTab === 'manha'
+                                ? ['Ovos mexidos', 'Café preto', 'Frutas', 'Aveia', 'Whey protein', 'Pão integral', 'Iogurte natural']
+                                : activeMealTab === 'tarde'
+                                ? ['Frango grelhado', 'Arroz integral', 'Feijão', 'Salada verde', 'Legumes cozidos', 'Carne magra', 'Azeite']
+                                : ['Omelete leve', 'Sopa nutritiva', 'Salada colorida', 'Frango grelhado', 'Chá calmante', 'Legumes'];
+
+                            return (
+                              <div className="bg-[#0b0c10] border border-emerald-500/20 rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-lg shadow-emerald-950/20">
+                                <div className="flex items-center justify-between border-b border-zinc-850/80 pb-3">
+                                  <div className="flex items-center gap-2.5">
+                                    <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                                      <Utensils className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                      <h4 className="text-xs font-black text-white uppercase tracking-wider font-mono">
+                                        Alimentação & Nutrição
+                                      </h4>
+                                      <p className="text-[10px] text-zinc-400 font-medium">
+                                        Cardápio interativo e registro ágil
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  {/* Meals counter badge */}
+                                  <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                                    {[foodMorning, foodAfternoon, foodNight].filter(f => f.trim().length > 0).length}/3 Salvas
+                                  </span>
                                 </div>
-                                <div>
-                                  <h4 className="text-xs font-black text-white uppercase tracking-wider font-mono">
-                                    Alimentação & Nutrição
-                                  </h4>
-                                  <p className="text-[10px] text-zinc-400 font-medium">
-                                    Registro ágil das refeições
-                                  </p>
-                                </div>
-                              </div>
 
-                              {/* Meals counter badge */}
-                              <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                                {[foodMorning, foodAfternoon, foodNight].filter(f => f.trim().length > 0).length}/3 Salvas
-                              </span>
-                            </div>
-
-                            {/* Meal Selector Tabs */}
-                            <div className="grid grid-cols-3 gap-1.5 p-1 bg-zinc-950 rounded-xl border border-zinc-850">
-                              {[
-                                { id: 'manha', label: 'Café / Manhã', icon: Coffee, text: foodMorning },
-                                { id: 'tarde', label: 'Almoço / Tarde', icon: Utensils, text: foodAfternoon },
-                                { id: 'noite', label: 'Jantar / Noite', icon: Moon, text: foodNight },
-                              ].map(meal => {
-                                const Icon = meal.icon;
-                                const isActive = activeMealTab === meal.id;
-                                const hasData = meal.text.trim().length > 0;
-                                return (
-                                  <button
-                                    key={meal.id}
-                                    type="button"
-                                    onClick={() => setActiveMealTab(meal.id as any)}
-                                    className={`flex items-center justify-center gap-1.5 py-2 px-1.5 rounded-lg text-xs font-bold transition-all ${
-                                      isActive
-                                        ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
-                                        : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
-                                    }`}
-                                  >
-                                    <Icon className="w-3.5 h-3.5 shrink-0" />
-                                    <span className="truncate">{meal.label}</span>
-                                    {hasData && (
-                                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isActive ? 'bg-white' : 'bg-emerald-400'}`} />
-                                    )}
-                                  </button>
-                                );
-                              })}
-                            </div>
-
-                            {/* Active Meal Textarea & Smart Chips */}
-                            <div className="space-y-2">
-                              <textarea
-                                value={
-                                  activeMealTab === 'manha' ? foodMorning :
-                                  activeMealTab === 'tarde' ? foodAfternoon :
-                                  foodNight
-                                }
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  if (activeMealTab === 'manha') setFoodMorning(val);
-                                  else if (activeMealTab === 'tarde') setFoodAfternoon(val);
-                                  else setFoodNight(val);
-                                }}
-                                onKeyDown={(e) => {
-                                  if (activeMealTab === 'manha') handleAutoListKeyDown(e, foodMorning, setFoodMorning);
-                                  else if (activeMealTab === 'tarde') handleAutoListKeyDown(e, foodAfternoon, setFoodAfternoon);
-                                  else handleAutoListKeyDown(e, foodNight, setFoodNight);
-                                }}
-                                placeholder={
-                                  activeMealTab === 'manha' ? 'Ex: 1. Ovos mexidos, café preto e fruta' :
-                                  activeMealTab === 'tarde' ? 'Ex: 1. Arroz integral, feijão, frango e salada' :
-                                  'Ex: 1. Omelete leve com salada ou sopa nutritiva'
-                                }
-                                rows={3}
-                                className="w-full bg-zinc-950 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500/50 resize-y min-h-[64px] font-sans leading-relaxed"
-                              />
-
-                              {/* Quick Suggestion Chips */}
-                              <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                                <span className="text-[9px] text-zinc-500 font-mono font-medium">Toque para adicionar:</span>
-                                {(activeMealTab === 'manha'
-                                  ? ['Ovos', 'Café', 'Fruta', 'Aveia', 'Whey', 'Pão integral']
-                                  : activeMealTab === 'tarde'
-                                  ? ['Frango', 'Arroz', 'Feijão', 'Salada', 'Carne', 'Legumes']
-                                  : ['Omelete', 'Sopa', 'Salada', 'Frango', 'Chá', 'Proteína']
-                                ).map(tag => (
-                                  <button
-                                    key={tag}
-                                    type="button"
-                                    onClick={() => {
-                                      const appendItem = (prev: string) => {
-                                        const trimmed = prev.trim();
-                                        if (!trimmed) return `1. ${tag}`;
-                                        const lines = trimmed.split('\n');
-                                        return `${trimmed}\n${lines.length + 1}. ${tag}`;
-                                      };
-                                      if (activeMealTab === 'manha') setFoodMorning(appendItem(foodMorning));
-                                      else if (activeMealTab === 'tarde') setFoodAfternoon(appendItem(foodAfternoon));
-                                      else setFoodNight(appendItem(foodNight));
-                                    }}
-                                    className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-zinc-900 hover:bg-emerald-500/20 text-zinc-300 hover:text-emerald-300 border border-zinc-800 transition-colors"
-                                  >
-                                    + {tag}
-                                  </button>
-                                ))}
-                              </div>
-
-                              {/* Mini overview of other meals */}
-                              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-zinc-900/80">
-                                {(['manha', 'tarde', 'noite'] as const)
-                                  .filter(m => m !== activeMealTab)
-                                  .map(m => {
-                                    const label = m === 'manha' ? 'Café / Manhã' : m === 'tarde' ? 'Almoço / Tarde' : 'Jantar / Noite';
-                                    const text = m === 'manha' ? foodMorning : m === 'tarde' ? foodAfternoon : foodNight;
+                                {/* Meal Selector Tabs */}
+                                <div className="grid grid-cols-3 gap-1.5 p-1 bg-zinc-950 rounded-xl border border-zinc-850">
+                                  {[
+                                    { id: 'manha', label: 'Café / Manhã', icon: Coffee, text: foodMorning },
+                                    { id: 'tarde', label: 'Almoço / Tarde', icon: Utensils, text: foodAfternoon },
+                                    { id: 'noite', label: 'Jantar / Noite', icon: Moon, text: foodNight },
+                                  ].map(meal => {
+                                    const Icon = meal.icon;
+                                    const isActive = activeMealTab === meal.id;
+                                    const hasData = meal.text.trim().length > 0;
                                     return (
-                                      <div
-                                        key={m}
-                                        onClick={() => setActiveMealTab(m)}
-                                        className="p-2 bg-zinc-950/60 hover:bg-zinc-900 border border-zinc-900 hover:border-zinc-800 rounded-lg cursor-pointer transition-all"
+                                      <button
+                                        key={meal.id}
+                                        type="button"
+                                        onClick={() => setActiveMealTab(meal.id as any)}
+                                        className={`flex items-center justify-center gap-1.5 py-2 px-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                          isActive
+                                            ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20 scale-[1.01]'
+                                            : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+                                        }`}
                                       >
-                                        <div className="flex items-center justify-between text-[10px] font-bold text-zinc-400">
-                                          <span>{label}</span>
-                                          <span className="text-[9px] text-zinc-600 font-mono">Editar &rarr;</span>
-                                        </div>
-                                        <p className="text-[10px] text-zinc-400 truncate mt-0.5 font-sans">
-                                          {text.trim() || 'Não preenchido'}
-                                        </p>
-                                      </div>
+                                        <Icon className="w-3.5 h-3.5 shrink-0" />
+                                        <span className="truncate">{meal.label}</span>
+                                        {hasData && (
+                                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isActive ? 'bg-white' : 'bg-emerald-400'}`} />
+                                        )}
+                                      </button>
                                     );
                                   })}
-                              </div>
-                            </div>
-                          </div>
+                                </div>
 
-                          {/* Water Section */}
+                                {/* Interactive Meal Items Tag Board (No form feel) */}
+                                <div className="space-y-2.5">
+                                  <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400">
+                                    <span className="font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1">
+                                      <span>Alimentos Registrados</span>
+                                      <span className="text-zinc-500 font-normal">({currentItems.length} itens)</span>
+                                    </span>
+                                    {currentItems.length > 0 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setMealRaw('')}
+                                        className="text-[9px] text-zinc-500 hover:text-rose-400 transition-colors cursor-pointer"
+                                      >
+                                        Limpar refeição
+                                      </button>
+                                    )}
+                                  </div>
+
+                                  {/* Food Items Pills Grid */}
+                                  <div className="p-3 bg-zinc-950/80 border border-zinc-850 rounded-xl min-h-[58px] flex flex-wrap items-center gap-1.5">
+                                    {currentItems.length === 0 ? (
+                                      <p className="text-[11px] text-zinc-500 italic font-sans">
+                                        Nenhum alimento registrado ainda. Toque nas sugestões abaixo ou digite para adicionar rapidamente.
+                                      </p>
+                                    ) : (
+                                      currentItems.map((item, idx) => (
+                                        <span
+                                          key={idx}
+                                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-semibold shadow-xs animate-in fade-in"
+                                        >
+                                          <span>{item}</span>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleRemoveItem(idx)}
+                                            className="text-emerald-400 hover:text-rose-400 p-0.5 rounded transition-colors cursor-pointer"
+                                            title="Remover este item"
+                                          >
+                                            <X className="w-3 h-3" />
+                                          </button>
+                                        </span>
+                                      ))
+                                    )}
+                                  </div>
+
+                                  {/* Quick Add Custom Food Single-line Input */}
+                                  <form
+                                    onSubmit={(e) => {
+                                      e.preventDefault();
+                                      if (newMealCustomInput.trim()) {
+                                        handleAddItem(newMealCustomInput.trim());
+                                        setNewMealCustomInput('');
+                                      }
+                                    }}
+                                    className="flex items-center gap-2"
+                                  >
+                                    <input
+                                      type="text"
+                                      value={newMealCustomInput}
+                                      onChange={(e) => setNewMealCustomInput(e.target.value)}
+                                      placeholder="Ex: Frango grelhado, Tapioca, Salada..."
+                                      className="flex-1 bg-zinc-950 border border-zinc-800 hover:border-emerald-500/40 rounded-xl px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500/60 font-sans transition-colors"
+                                    />
+                                    <button
+                                      type="submit"
+                                      disabled={!newMealCustomInput.trim()}
+                                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-30 disabled:pointer-events-none text-white text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer shrink-0"
+                                    >
+                                      + Adicionar
+                                    </button>
+                                  </form>
+
+                                  {/* Quick Suggestion Chips (1-tap add) */}
+                                  <div className="space-y-1 pt-1">
+                                    <span className="text-[9px] text-zinc-500 font-mono font-medium block">
+                                      Sugestões populares (toque para adicionar):
+                                    </span>
+                                    <div className="flex flex-wrap items-center gap-1.5">
+                                      {quickSuggestions.map(tag => {
+                                        const alreadyHas = currentItems.includes(tag);
+                                        return (
+                                          <button
+                                            key={tag}
+                                            type="button"
+                                            onClick={() => {
+                                              if (!alreadyHas) handleAddItem(tag);
+                                            }}
+                                            disabled={alreadyHas}
+                                            className={`text-[10px] font-medium px-2 py-0.5 rounded-md border transition-all cursor-pointer ${
+                                              alreadyHas
+                                                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 opacity-60'
+                                                : 'bg-zinc-900/80 hover:bg-emerald-500/20 text-zinc-300 hover:text-emerald-300 border-zinc-800'
+                                            }`}
+                                          >
+                                            {alreadyHas ? '✓ ' : '+ '}{tag}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+
+                                  {/* Quick Dietary Vibe Pills */}
+                                  <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                                    <span className="text-[9px] text-zinc-500 font-mono font-medium">Perfil:</span>
+                                    {['🥗 Saudável', '💪 Alto Teor Proteico', '⚖️ Equilibrado', '⚡ Leve', '🍰 Refeição Livre'].map(vibe => {
+                                      const alreadyHas = currentItems.includes(vibe);
+                                      return (
+                                        <button
+                                          key={vibe}
+                                          type="button"
+                                          onClick={() => {
+                                            if (!alreadyHas) handleAddItem(vibe);
+                                          }}
+                                          className={`text-[9.5px] font-medium px-2 py-0.5 rounded-full border transition-all cursor-pointer ${
+                                            alreadyHas
+                                              ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
+                                              : 'bg-zinc-900/60 hover:bg-zinc-850 text-zinc-400 hover:text-zinc-200 border-zinc-850'
+                                          }`}
+                                        >
+                                          {vibe}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+
+                                  {/* Mini overview of other meals */}
+                                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-zinc-900/80">
+                                    {(['manha', 'tarde', 'noite'] as const)
+                                      .filter(m => m !== activeMealTab)
+                                      .map(m => {
+                                        const label = m === 'manha' ? 'Café / Manhã' : m === 'tarde' ? 'Almoço / Tarde' : 'Jantar / Noite';
+                                        const text = m === 'manha' ? foodMorning : m === 'tarde' ? foodAfternoon : foodNight;
+                                        const items = parseFoodList(text);
+                                        return (
+                                          <div
+                                            key={m}
+                                            onClick={() => setActiveMealTab(m)}
+                                            className="p-2 bg-zinc-950/60 hover:bg-zinc-900 border border-zinc-900 hover:border-zinc-800 rounded-lg cursor-pointer transition-all"
+                                          >
+                                            <div className="flex items-center justify-between text-[10px] font-bold text-zinc-400">
+                                              <span>{label}</span>
+                                              <span className="text-[9px] text-zinc-600 font-mono">Editar &rarr;</span>
+                                            </div>
+                                            <p className="text-[10px] text-zinc-400 truncate mt-0.5 font-sans">
+                                              {items.length > 0 ? items.join(', ') : 'Não preenchido'}
+                                            </p>
+                                          </div>
+                                        );
+                                      })}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })()}
+
+                          {/* 4. Water Section */}
                           <WaterTracker 
                             waterLiters={waterLiters} 
                             onChange={setWaterLiters} 
@@ -4698,10 +5026,14 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                           )}
                         </div>
                       )}
+                        </motion.div>
+                      </AnimatePresence>
                     </div>
 
                     {/* Pinned Bottom Navigation & Save Area */}
                     <div 
+                      onTouchStart={handleTouchStart}
+                      onTouchEnd={handleTouchEnd}
                       className="shrink-0 pt-3 pb-3 sm:pb-4 border-t border-zinc-800/90 bg-[#0a0a0c] flex items-center justify-between gap-3 z-10 sticky bottom-0 px-1 sm:px-2"
                       style={{
                         paddingBottom: 'max(14px, env(safe-area-inset-bottom, 0px))',
@@ -4713,21 +5045,8 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                         {activeTopic !== 'diario' && (
                           <button
                             type="button"
-                            onClick={() => {
-                              const tabOrder: Array<'diario' | 'checklist' | 'espiritualidade' | 'leitura' | 'saude' | 'agenda'> = [
-                                'diario',
-                                'checklist',
-                                'espiritualidade',
-                                'leitura',
-                                'saude',
-                                'agenda'
-                              ];
-                              const currIdx = tabOrder.indexOf(activeTopic);
-                              if (currIdx > 0) {
-                                setActiveTopic(tabOrder[currIdx - 1]);
-                              }
-                            }}
-                            className="bg-zinc-900 hover:bg-zinc-850 active:scale-95 text-zinc-200 hover:text-white font-medium text-xs sm:text-sm px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl flex items-center gap-1.5 transition-all border border-zinc-800 shadow-sm"
+                            onClick={goToPrevTopic}
+                            className="bg-zinc-900 hover:bg-zinc-850 active:scale-95 text-zinc-200 hover:text-white font-medium text-xs sm:text-sm px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl flex items-center gap-1.5 transition-all border border-zinc-800 shadow-sm cursor-pointer"
                             title="Voltar para a aba anterior"
                           >
                             <ChevronLeft className="h-4 w-4" />
@@ -4739,21 +5058,8 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                         {activeTopic !== 'agenda' && (
                           <button
                             type="button"
-                            onClick={() => {
-                              const tabOrder: Array<'diario' | 'checklist' | 'espiritualidade' | 'leitura' | 'saude' | 'agenda'> = [
-                                'diario',
-                                'checklist',
-                                'espiritualidade',
-                                'leitura',
-                                'saude',
-                                'agenda'
-                              ];
-                              const currIdx = tabOrder.indexOf(activeTopic);
-                              if (currIdx !== -1 && currIdx < tabOrder.length - 1) {
-                                setActiveTopic(tabOrder[currIdx + 1]);
-                              }
-                            }}
-                            className="bg-orange-500/15 hover:bg-orange-500/25 active:scale-95 text-orange-400 hover:text-orange-300 font-semibold text-xs sm:text-sm px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl flex items-center gap-1.5 transition-all border border-orange-500/30 shadow-sm"
+                            onClick={goToNextTopic}
+                            className="bg-orange-500/15 hover:bg-orange-500/25 active:scale-95 text-orange-400 hover:text-orange-300 font-semibold text-xs sm:text-sm px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl flex items-center gap-1.5 transition-all border border-orange-500/30 shadow-sm cursor-pointer"
                             title="Ir para a próxima aba"
                           >
                             <span>Próximo</span>

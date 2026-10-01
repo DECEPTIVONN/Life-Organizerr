@@ -68,10 +68,11 @@ export const ReviewReminderBanner: React.FC<ReviewReminderBannerProps> = ({
             initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
-            className="p-3.5 sm:p-4 bg-[#0c0c10]/95 border border-orange-500/40 rounded-2xl shadow-[0_0_20px_rgba(249,115,22,0.15)] backdrop-blur-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 relative overflow-hidden"
+            onClick={onOpenWeeklyReview}
+            className="p-3.5 sm:p-4 bg-[#0c0c10]/95 border border-orange-500/40 hover:border-orange-500/80 rounded-2xl shadow-[0_0_20px_rgba(249,115,22,0.15)] hover:shadow-[0_0_25px_rgba(249,115,22,0.25)] backdrop-blur-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 relative overflow-hidden cursor-pointer transition-all group"
           >
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-orange-500/15 border border-orange-500/30 rounded-xl text-orange-400 shrink-0 animate-pulse">
+              <div className="p-2.5 bg-orange-500/15 border border-orange-500/30 rounded-xl text-orange-400 shrink-0 group-hover:scale-105 transition-transform animate-pulse">
                 <Calendar className="h-4.5 w-4.5" />
               </div>
               <div>
@@ -79,12 +80,12 @@ export const ReviewReminderBanner: React.FC<ReviewReminderBannerProps> = ({
                   <span className="text-[9px] font-mono font-black uppercase tracking-wider text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-full border border-orange-500/20">
                     Ciclo Semanal • Hoje ({getWeeklyReviewDayLabel(settings.weekly.dayOfWeek)})
                   </span>
-                  <span className="text-xs font-black text-white font-mono">
+                  <span className="text-xs font-black text-white font-mono group-hover:text-orange-300 transition-colors">
                     Hora da Review Semanal!
                   </span>
                 </div>
                 <p className="text-[11px] text-zinc-400 mt-0.5 leading-snug">
-                  Hoje é o seu dia definido para fechar a semana. Registre conquistas, desafios e direcione seu próximo ciclo.
+                  Toque para abrir a última review semanal. Registre conquistas, desafios e direcione seu próximo ciclo.
                 </p>
               </div>
             </div>
@@ -92,7 +93,10 @@ export const ReviewReminderBanner: React.FC<ReviewReminderBannerProps> = ({
             <div className="flex items-center gap-2 self-end sm:self-center shrink-0 w-full sm:w-auto justify-end">
               <button
                 type="button"
-                onClick={() => onConfigureReminders('weekly')}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onConfigureReminders('weekly');
+                }}
                 className="px-2.5 py-1.5 text-zinc-400 hover:text-zinc-200 text-[11px] font-mono rounded-lg hover:bg-zinc-900 border border-transparent hover:border-zinc-800 transition-all flex items-center gap-1 cursor-pointer"
                 title="Mudar o dia do lembrete da Review Semanal"
               >
@@ -102,16 +106,22 @@ export const ReviewReminderBanner: React.FC<ReviewReminderBannerProps> = ({
 
               <button
                 type="button"
-                onClick={onOpenWeeklyReview}
-                className="px-3.5 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold font-mono rounded-xl transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenWeeklyReview();
+                }}
+                className="px-3.5 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold font-mono rounded-xl transition-all shadow-md flex items-center gap-1.5 cursor-pointer active:scale-95"
               >
-                <span>Preencher Agora</span>
+                <span>Abrir Review</span>
                 <ArrowRight className="h-3.5 w-3.5" />
               </button>
 
               <button
                 type="button"
-                onClick={() => setDismissedWeekly(true)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDismissedWeekly(true);
+                }}
                 className="p-1.5 text-zinc-500 hover:text-zinc-300 rounded-lg hover:bg-zinc-900 transition-colors cursor-pointer"
                 title="Fechar por agora"
               >
@@ -129,10 +139,11 @@ export const ReviewReminderBanner: React.FC<ReviewReminderBannerProps> = ({
             initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
-            className="p-3.5 sm:p-4 bg-[#0c0c10]/95 border border-orange-500/40 rounded-2xl shadow-[0_0_20px_rgba(249,115,22,0.15)] backdrop-blur-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 relative overflow-hidden"
+            onClick={onOpenMonthlyReview}
+            className="p-3.5 sm:p-4 bg-[#0c0c10]/95 border border-orange-500/40 hover:border-orange-500/80 rounded-2xl shadow-[0_0_20px_rgba(249,115,22,0.15)] hover:shadow-[0_0_25px_rgba(249,115,22,0.25)] backdrop-blur-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 relative overflow-hidden cursor-pointer transition-all group"
           >
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-orange-500/15 border border-orange-500/30 rounded-xl text-orange-400 shrink-0 animate-pulse">
+              <div className="p-2.5 bg-orange-500/15 border border-orange-500/30 rounded-xl text-orange-400 shrink-0 group-hover:scale-105 transition-transform animate-pulse">
                 <Sparkles className="h-4.5 w-4.5" />
               </div>
               <div>
@@ -140,12 +151,12 @@ export const ReviewReminderBanner: React.FC<ReviewReminderBannerProps> = ({
                   <span className="text-[9px] font-mono font-black uppercase tracking-wider text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-full border border-orange-500/20">
                     Ciclo Mensal • Hoje ({getMonthlyReviewTimingLabel(settings.monthly)})
                   </span>
-                  <span className="text-xs font-black text-white font-mono">
+                  <span className="text-xs font-black text-white font-mono group-hover:text-orange-300 transition-colors">
                     Hora da Review Mensal!
                   </span>
                 </div>
                 <p className="text-[11px] text-zinc-400 mt-0.5 leading-snug">
-                  Seu dia programado de fechamento de mês. Consolide momentos marcantes, métricas e lições aprendidas.
+                  Toque para abrir o último review mensal. Consolide momentos marcantes, métricas e lições aprendidas.
                 </p>
               </div>
             </div>
@@ -153,7 +164,10 @@ export const ReviewReminderBanner: React.FC<ReviewReminderBannerProps> = ({
             <div className="flex items-center gap-2 self-end sm:self-center shrink-0 w-full sm:w-auto justify-end">
               <button
                 type="button"
-                onClick={() => onConfigureReminders('monthly')}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onConfigureReminders('monthly');
+                }}
                 className="px-2.5 py-1.5 text-zinc-400 hover:text-zinc-200 text-[11px] font-mono rounded-lg hover:bg-zinc-900 border border-transparent hover:border-zinc-800 transition-all flex items-center gap-1 cursor-pointer"
                 title="Mudar o dia do lembrete da Review Mensal"
               >
@@ -163,16 +177,22 @@ export const ReviewReminderBanner: React.FC<ReviewReminderBannerProps> = ({
 
               <button
                 type="button"
-                onClick={onOpenMonthlyReview}
-                className="px-3.5 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold font-mono rounded-xl transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenMonthlyReview();
+                }}
+                className="px-3.5 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold font-mono rounded-xl transition-all shadow-md flex items-center gap-1.5 cursor-pointer active:scale-95"
               >
-                <span>Preencher Agora</span>
+                <span>Abrir Review</span>
                 <ArrowRight className="h-3.5 w-3.5" />
               </button>
 
               <button
                 type="button"
-                onClick={() => setDismissedMonthly(true)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDismissedMonthly(true);
+                }}
                 className="p-1.5 text-zinc-500 hover:text-zinc-300 rounded-lg hover:bg-zinc-900 transition-colors cursor-pointer"
                 title="Fechar por agora"
               >

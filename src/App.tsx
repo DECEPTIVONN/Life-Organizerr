@@ -1510,6 +1510,7 @@ export default function App() {
 
   const [isAppReminderModalOpen, setIsAppReminderModalOpen] = useState<boolean>(false);
   const [appReminderModalTab, setAppReminderModalTab] = useState<'weekly' | 'monthly' | 'all'>('all');
+  const [targetReviewRequest, setTargetReviewRequest] = useState<{ type: 'weekly' | 'monthly'; timestamp: number } | null>(null);
 
   const [userBio, setUserBio] = useState<string>(() => {
     return localStorage.getItem('mbc_userBio') || 'Construindo um império de disciplina diária. Foco na jornada e maestria contínua.';
@@ -3497,6 +3498,7 @@ export default function App() {
             setYearlyImages={setYearlyImages}
             overviewYears={overviewYears}
             setOverviewYears={setOverviewYears}
+            targetReviewRequest={targetReviewRequest}
           />
         );
       case 'projetos':
@@ -3824,10 +3826,12 @@ export default function App() {
               onOpenWeeklyReview={() => {
                 setActiveTab('anuais');
                 setIsWeeklyReviewsOpen(true);
+                setTargetReviewRequest({ type: 'weekly', timestamp: Date.now() });
               }}
               onOpenMonthlyReview={() => {
                 setActiveTab('anuais');
                 setIsMonthlyReviewOpen(true);
+                setTargetReviewRequest({ type: 'monthly', timestamp: Date.now() });
               }}
               onConfigureReminders={(tab) => {
                 setAppReminderModalTab(tab);
