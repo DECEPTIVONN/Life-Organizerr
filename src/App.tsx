@@ -231,6 +231,11 @@ export default function App() {
     return (localStorage.getItem('mbc_mobile_navbar_mode') as 'fixed' | 'flexible') || 'fixed';
   });
 
+  // Mobile Navbar Shape ('oval' vs 'reta')
+  const [mobileNavbarShape, setMobileNavbarShape] = useState<'oval' | 'reta'>(() => {
+    return (localStorage.getItem('mbc_mobile_navbar_shape') as 'oval' | 'reta') || 'oval';
+  });
+
   // Card Glow Effect (matches water tracker effect, toggleable)
   const [cardGlowEnabled, setCardGlowEnabled] = useState<boolean>(() => {
     return localStorage.getItem('mbc_card_glow_enabled') !== 'false';
@@ -3611,6 +3616,8 @@ export default function App() {
             setMobileSlideTransition={setMobileSlideTransition}
             mobileNavbarMode={mobileNavbarMode}
             setMobileNavbarMode={setMobileNavbarMode}
+            mobileNavbarShape={mobileNavbarShape}
+            setMobileNavbarShape={setMobileNavbarShape}
             cardGlowEnabled={cardGlowEnabled}
             setCardGlowEnabled={setCardGlowEnabled}
             setAccountDeactivated={setAccountDeactivated}
@@ -3796,6 +3803,7 @@ export default function App() {
         onOpenStreakHub={() => setIsStreakHubOpen(true)}
         onOpenRankingModal={() => setIsRankingModalOpen(true)}
         mobileNavbarMode={mobileNavbarMode}
+        mobileNavbarShape={mobileNavbarShape}
       />
 
       {/* 2. Main Workspace Area (responsive margin/padding for the fixed desktop HUD and mobile header) */}

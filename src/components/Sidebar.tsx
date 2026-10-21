@@ -70,6 +70,7 @@ interface SidebarProps {
   onOpenStreakHub?: () => void;
   onOpenRankingModal?: () => void;
   mobileNavbarMode?: 'fixed' | 'flexible';
+  mobileNavbarShape?: 'oval' | 'reta';
 }
 
 interface SearchResult {
@@ -101,7 +102,8 @@ export default function Sidebar({
   onAddReminder,
   onOpenStreakHub,
   onOpenRankingModal,
-  mobileNavbarMode = 'fixed'
+  mobileNavbarMode = 'fixed',
+  mobileNavbarShape = 'oval'
 }: SidebarProps) {
   
   // Animation/HUD state
@@ -942,207 +944,394 @@ export default function Sidebar({
         )}
       </AnimatePresence>
 
-      {/* 3. MOBILE CURVED FUTURISTIC BOTTOM NAV BAR (Fixed or Flexible on scroll) */}
-      <div 
-        className={`lg:hidden fixed bottom-0 left-0 right-0 h-[92px] pointer-events-none z-40 transition-transform duration-300 ease-in-out ${
-          isMobileNavHidden && mobileNavbarMode === 'flexible' && !mobileMenuOpen && !radialMenuOpen
-            ? 'translate-y-[120%]'
-            : 'translate-y-0'
-        }`}
-      >
-
-        {/* SVG background with neon glowing stroke and dark filled area */}
-        <div className="absolute inset-0 pointer-events-auto">
-          <svg 
-            className="w-full h-full filter drop-shadow-[0_-8px_16px_rgba(249,115,22,0.25)]" 
-            viewBox="0 0 100 100" 
-            preserveAspectRatio="none"
-          >
-            {/* Main curved path border */}
-            <path 
-              d="M 0 30 Q 50 0 100 30 L 100 100 L 0 100 Z" 
-              fill="none" 
-              stroke="var(--color-orange-500, #f97316)" 
-              strokeWidth="1.5" 
-            />
-            {/* Main curved path background */}
-            <path 
-              d="M 0 30 Q 50 0 100 30 L 100 100 L 0 100 Z" 
-              fill="#09090b" 
-              opacity="0.98"
-            />
-          </svg>
-        </div>
-
-        {/* Navigation buttons container */}
-        <div className="absolute inset-x-0 bottom-0 top-3 flex items-start justify-around px-2 pb-2 pointer-events-auto">
-          {/* Item 1: Menu */}
-          <button 
-            onClick={() => setMobileMenuOpen(true)}
-            className="relative flex flex-col items-center justify-center w-14 h-14 group cursor-pointer select-none outline-none focus:outline-none active:bg-transparent bg-transparent"
-            style={{ WebkitTapHighlightColor: 'transparent', WebkitTouchCallout: 'none' }}
-          >
-            <div 
-              className={`transition-all duration-300 ${
-                isMenuBtnActive 
-                  ? "text-orange-500 scale-110 -translate-y-2 filter drop-shadow-[0_0_10px_rgba(249,115,22,0.8)]" 
-                  : "text-zinc-400 group-hover:text-white"
-              }`}
+      {/* 3. MOBILE BOTTOM NAV BAR (Fixed or Flexible on scroll, Oval vs Reta shape) */}
+      {mobileNavbarShape === 'reta' ? (
+        <div 
+          className={`lg:hidden fixed bottom-0 left-0 right-0 z-40 transition-transform duration-300 ease-in-out ${
+            isMobileNavHidden && mobileNavbarMode === 'flexible' && !mobileMenuOpen && !radialMenuOpen
+              ? 'translate-y-[120%]'
+              : 'translate-y-0'
+          }`}
+        >
+          {/* Straight bar container matching Image 2 */}
+          <div className="w-full h-16 bg-[#0a0a0f]/95 backdrop-blur-xl border-t border-zinc-800/80 shadow-[0_-4px_24px_rgba(0,0,0,0.6)] flex items-stretch justify-around px-1 relative pointer-events-auto">
+            {/* Item 1: Menu */}
+            <button 
+              onClick={() => setMobileMenuOpen(true)}
+              className="relative flex-1 flex flex-col items-center justify-center group cursor-pointer select-none outline-none focus:outline-none active:bg-transparent bg-transparent"
+              style={{ WebkitTapHighlightColor: 'transparent', WebkitTouchCallout: 'none' }}
             >
-              <Menu className="h-5 w-5" />
-            </div>
-            {isMenuBtnActive && (
-              <>
-                <div className="absolute bottom-5.5 w-6 h-0.5 bg-orange-500 rounded-full shadow-[0_0_12px_#f97316] z-10" />
-                <span className="absolute bottom-1.5 text-[7px] font-mono font-black tracking-widest text-orange-500 uppercase">
-                  MENU
-                </span>
-              </>
-            )}
-          </button>
+              {isMenuBtnActive && (
+                <div className="absolute top-0 w-8 h-1 bg-orange-500 rounded-b-full shadow-[0_2px_12px_var(--color-orange-500,#f97316)] z-10" />
+              )}
+              <div 
+                className={`transition-all duration-200 ${
+                  isMenuBtnActive 
+                    ? "text-orange-500 filter drop-shadow-[0_0_8px_rgba(249,115,22,0.8)]" 
+                    : "text-zinc-500 group-hover:text-zinc-300"
+                }`}
+              >
+                <Menu className="h-5 w-5" />
+              </div>
+              <span className={`text-[9px] font-mono tracking-widest uppercase mt-1 transition-colors ${
+                isMenuBtnActive
+                  ? "font-bold text-orange-500 drop-shadow-[0_0_6px_rgba(249,115,22,0.6)]"
+                  : "font-semibold text-zinc-500 group-hover:text-zinc-300"
+              }`}>
+                MENU
+              </span>
+            </button>
 
-          {/* Item 2: Calendário */}
-          <button 
-            onClick={() => {
-              setActiveTab('calendario');
-              setMobileMenuOpen(false);
-            }}
-            className="relative flex flex-col items-center justify-center w-14 h-14 group cursor-pointer select-none outline-none focus:outline-none active:bg-transparent bg-transparent"
-            style={{ WebkitTapHighlightColor: 'transparent', WebkitTouchCallout: 'none' }}
-          >
-            <div 
-              className={`transition-all duration-300 ${
+            {/* Item 2: Calendário / Agenda */}
+            <button 
+              onClick={() => {
+                setActiveTab('calendario');
+                setMobileMenuOpen(false);
+              }}
+              className="relative flex-1 flex flex-col items-center justify-center group cursor-pointer select-none outline-none focus:outline-none active:bg-transparent bg-transparent"
+              style={{ WebkitTapHighlightColor: 'transparent', WebkitTouchCallout: 'none' }}
+            >
+              {activeTab === 'calendario' && !mobileMenuOpen && (
+                <div className="absolute top-0 w-8 h-1 bg-orange-500 rounded-b-full shadow-[0_2px_12px_var(--color-orange-500,#f97316)] z-10" />
+              )}
+              <div 
+                className={`transition-all duration-200 ${
+                  activeTab === 'calendario' && !mobileMenuOpen
+                    ? "text-orange-500 filter drop-shadow-[0_0_8px_rgba(249,115,22,0.8)]" 
+                    : "text-zinc-500 group-hover:text-zinc-300"
+                }`}
+              >
+                <Calendar className="h-5 w-5" />
+              </div>
+              <span className={`text-[9px] font-mono tracking-widest uppercase mt-1 transition-colors ${
                 activeTab === 'calendario' && !mobileMenuOpen
-                  ? "text-orange-500 scale-110 -translate-y-2 filter drop-shadow-[0_0_10px_rgba(249,115,22,0.8)]" 
-                  : "text-zinc-400 group-hover:text-white"
-              }`}
-            >
-              <Calendar className="h-5 w-5" />
-            </div>
-            {activeTab === 'calendario' && !mobileMenuOpen && (
-              <>
-                <div className="absolute bottom-5.5 w-6 h-0.5 bg-orange-500 rounded-full shadow-[0_0_12px_#f97316] z-10" />
-                <span className="absolute bottom-1.5 text-[7px] font-mono font-black tracking-widest text-orange-500 uppercase">
-                  AGENDA
-                </span>
-              </>
-            )}
-          </button>
+                  ? "font-bold text-orange-500 drop-shadow-[0_0_6px_rgba(249,115,22,0.6)]"
+                  : "font-semibold text-zinc-500 group-hover:text-zinc-300"
+              }`}>
+                AGENDA
+              </span>
+            </button>
 
-          {/* Item 3: Home (Dashboard) - sits at x=50, the exact peak of the curve */}
-          <button 
-            onClick={() => {
-              setActiveTab('dashboard');
-              setMobileMenuOpen(false);
-            }}
-            className="relative flex flex-col items-center justify-center w-14 h-14 group cursor-pointer select-none outline-none focus:outline-none active:bg-transparent bg-transparent"
-            style={{ WebkitTapHighlightColor: 'transparent', WebkitTouchCallout: 'none' }}
-          >
-            <div 
-              className={`transition-all duration-300 ${
+            {/* Item 3: Home / Início */}
+            <button 
+              onClick={() => {
+                setActiveTab('dashboard');
+                setMobileMenuOpen(false);
+              }}
+              className="relative flex-1 flex flex-col items-center justify-center group cursor-pointer select-none outline-none focus:outline-none active:bg-transparent bg-transparent"
+              style={{ WebkitTapHighlightColor: 'transparent', WebkitTouchCallout: 'none' }}
+            >
+              {activeTab === 'dashboard' && !mobileMenuOpen && (
+                <div className="absolute top-0 w-8 h-1 bg-orange-500 rounded-b-full shadow-[0_2px_12px_var(--color-orange-500,#f97316)] z-10" />
+              )}
+              <div 
+                className={`transition-all duration-200 ${
+                  activeTab === 'dashboard' && !mobileMenuOpen
+                    ? "text-orange-500 filter drop-shadow-[0_0_8px_rgba(249,115,22,0.8)]" 
+                    : "text-zinc-500 group-hover:text-zinc-300"
+                }`}
+              >
+                <LayoutDashboard className="h-5 w-5" />
+              </div>
+              <span className={`text-[9px] font-mono tracking-widest uppercase mt-1 transition-colors ${
                 activeTab === 'dashboard' && !mobileMenuOpen
-                  ? "text-orange-500 scale-115 -translate-y-2.5 filter drop-shadow-[0_0_10px_rgba(249,115,22,0.8)]" 
-                  : "text-zinc-400 group-hover:text-white"
-              }`}
-            >
-              <LayoutDashboard className="h-5.5 w-5.5" />
-            </div>
-            {activeTab === 'dashboard' && !mobileMenuOpen && (
-              <>
-                <div className="absolute bottom-5.5 w-6 h-0.5 bg-orange-500 rounded-full shadow-[0_0_12px_#f97316] z-10" />
-                <span className="absolute bottom-1.5 text-[7px] font-mono font-black tracking-widest text-orange-500 uppercase">
-                  HOME
-                </span>
-              </>
-            )}
-          </button>
+                  ? "font-bold text-orange-500 drop-shadow-[0_0_6px_rgba(249,115,22,0.6)]"
+                  : "font-semibold text-zinc-500 group-hover:text-zinc-300"
+              }`}>
+                INÍCIO
+              </span>
+            </button>
 
-          {/* Item 4: Checklist Diária */}
-          <button 
-            onClick={() => {
-              setActiveTab('checklist');
-              setMobileMenuOpen(false);
-            }}
-            className="relative flex flex-col items-center justify-center w-14 h-14 group cursor-pointer select-none outline-none focus:outline-none active:bg-transparent bg-transparent"
-            style={{ WebkitTapHighlightColor: 'transparent', WebkitTouchCallout: 'none' }}
-          >
-            <div 
-              className={`transition-all duration-300 ${
+            {/* Item 4: Checklist / Tarefas */}
+            <button 
+              onClick={() => {
+                setActiveTab('checklist');
+                setMobileMenuOpen(false);
+              }}
+              className="relative flex-1 flex flex-col items-center justify-center group cursor-pointer select-none outline-none focus:outline-none active:bg-transparent bg-transparent"
+              style={{ WebkitTapHighlightColor: 'transparent', WebkitTouchCallout: 'none' }}
+            >
+              {activeTab === 'checklist' && !mobileMenuOpen && (
+                <div className="absolute top-0 w-8 h-1 bg-orange-500 rounded-b-full shadow-[0_2px_12px_var(--color-orange-500,#f97316)] z-10" />
+              )}
+              <div 
+                className={`transition-all duration-200 ${
+                  activeTab === 'checklist' && !mobileMenuOpen
+                    ? "text-orange-500 filter drop-shadow-[0_0_8px_rgba(249,115,22,0.8)]" 
+                    : "text-zinc-500 group-hover:text-zinc-300"
+                }`}
+              >
+                <CheckSquare className="h-5 w-5" />
+              </div>
+              <span className={`text-[9px] font-mono tracking-widest uppercase mt-1 transition-colors ${
                 activeTab === 'checklist' && !mobileMenuOpen
-                  ? "text-orange-500 scale-110 -translate-y-2 filter drop-shadow-[0_0_10px_rgba(249,115,22,0.8)]" 
-                  : "text-zinc-400 group-hover:text-white"
-              }`}
+                  ? "font-bold text-orange-500 drop-shadow-[0_0_6px_rgba(249,115,22,0.6)]"
+                  : "font-semibold text-zinc-500 group-hover:text-zinc-300"
+              }`}>
+                TAREFAS
+              </span>
+            </button>
+
+            {/* Item 5: Notas (Com Long-Press para Lembretes/Cronômetro/Timer) */}
+            <button 
+              onTouchStart={startNotasLongPress}
+              onTouchMove={handleTouchMoveShortcut}
+              onTouchEnd={() => cancelNotasLongPress(true)}
+              onTouchCancel={() => cancelNotasLongPress(false)}
+              onMouseDown={startNotasLongPress}
+              onMouseMove={handleTouchMoveShortcut}
+              onMouseUp={() => cancelNotasLongPress(true)}
+              onMouseLeave={() => cancelNotasLongPress(false)}
+              className="relative flex-1 flex flex-col items-center justify-center group cursor-pointer select-none outline-none focus:outline-none active:bg-transparent bg-transparent"
+              style={{ WebkitTapHighlightColor: 'transparent', WebkitTouchCallout: 'none' }}
             >
-              <CheckSquare className="h-5 w-5" />
-            </div>
-            {activeTab === 'checklist' && !mobileMenuOpen && (
-              <>
-                <div className="absolute bottom-5.5 w-6 h-0.5 bg-orange-500 rounded-full shadow-[0_0_12px_#f97316] z-10" />
-                <span className="absolute bottom-1.5 text-[7px] font-mono font-black tracking-widest text-orange-500 uppercase">
-                  TAREFAS
-                </span>
-              </>
-            )}
-          </button>
-
-          {/* Item 5: Notas (Com Long-Press para Lembretes/Cronômetro/Timer) */}
-          <button 
-            onTouchStart={startNotasLongPress}
-            onTouchMove={handleTouchMoveShortcut}
-            onTouchEnd={() => cancelNotasLongPress(true)}
-            onTouchCancel={() => cancelNotasLongPress(false)}
-            onMouseDown={startNotasLongPress}
-            onMouseMove={handleTouchMoveShortcut}
-            onMouseUp={() => cancelNotasLongPress(true)}
-            onMouseLeave={() => cancelNotasLongPress(false)}
-            className="relative flex flex-col items-center justify-center w-14 h-14 group cursor-pointer select-none outline-none focus:outline-none active:bg-transparent bg-transparent"
-            style={{ WebkitTapHighlightColor: 'transparent', WebkitTouchCallout: 'none' }}
-          >
-            {/* Visual holding progress ring */}
-            {pressProgress > 0 && (
-              <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none z-20 overflow-visible">
-                <circle
-                  cx="28"
-                  cy="28"
-                  r="22"
-                  stroke="rgba(249, 115, 22, 0.2)"
-                  strokeWidth="3"
-                  fill="none"
-                />
-                <circle
-                  cx="28"
-                  cy="28"
-                  r="22"
-                  stroke="#f97316"
-                  strokeWidth="3"
-                  fill="none"
-                  strokeDasharray="138"
-                  strokeDashoffset={138 - (138 * pressProgress) / 100}
-                  strokeLinecap="round"
-                />
-              </svg>
-            )}
-
-            <div 
-              className={`transition-all duration-300 ${
+              {pressProgress > 0 && (
+                <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none z-20 overflow-visible">
+                  <circle
+                    cx="50%"
+                    cy="40%"
+                    r="16"
+                    stroke="rgba(249, 115, 22, 0.2)"
+                    strokeWidth="2.5"
+                    fill="none"
+                  />
+                  <circle
+                    cx="50%"
+                    cy="40%"
+                    r="16"
+                    stroke="#f97316"
+                    strokeWidth="2.5"
+                    fill="none"
+                    strokeDasharray="100"
+                    strokeDashoffset={100 - (100 * pressProgress) / 100}
+                    strokeLinecap="round"
+                  />
+                </svg>
+              )}
+              {activeTab === 'notas' && !mobileMenuOpen && (
+                <div className="absolute top-0 w-8 h-1 bg-orange-500 rounded-b-full shadow-[0_2px_12px_var(--color-orange-500,#f97316)] z-10" />
+              )}
+              <div 
+                className={`transition-all duration-200 ${
+                  activeTab === 'notas' && !mobileMenuOpen
+                    ? "text-orange-500 filter drop-shadow-[0_0_8px_rgba(249,115,22,0.8)]" 
+                    : "text-zinc-500 group-hover:text-zinc-300"
+                }`}
+              >
+                <BookOpen className="h-5 w-5" />
+              </div>
+              <span className={`text-[9px] font-mono tracking-widest uppercase mt-1 transition-colors ${
                 activeTab === 'notas' && !mobileMenuOpen
-                  ? "text-orange-500 scale-110 -translate-y-2 filter drop-shadow-[0_0_10px_rgba(249,115,22,0.8)]" 
-                  : "text-zinc-400 group-hover:text-white"
-              }`}
-            >
-              <BookOpen className="h-5 w-5" />
-            </div>
-            {activeTab === 'notas' && !mobileMenuOpen && (
-              <>
-                <div className="absolute bottom-5.5 w-6 h-0.5 bg-orange-500 rounded-full shadow-[0_0_12px_#f97316] z-10" />
-                <span className="absolute bottom-1.5 text-[7px] font-mono font-black tracking-widest text-orange-500 uppercase">
-                  NOTAS
-                </span>
-              </>
-            )}
-          </button>
+                  ? "font-bold text-orange-500 drop-shadow-[0_0_6px_rgba(249,115,22,0.6)]"
+                  : "font-semibold text-zinc-500 group-hover:text-zinc-300"
+              }`}>
+                NOTAS
+              </span>
+            </button>
+          </div>
         </div>
-      </div>
+      ) : (
+        /* OVAL: MOBILE CURVED FUTURISTIC BOTTOM NAV BAR */
+        <div 
+          className={`lg:hidden fixed bottom-0 left-0 right-0 h-[92px] pointer-events-none z-40 transition-transform duration-300 ease-in-out ${
+            isMobileNavHidden && mobileNavbarMode === 'flexible' && !mobileMenuOpen && !radialMenuOpen
+              ? 'translate-y-[120%]'
+              : 'translate-y-0'
+          }`}
+        >
+          {/* SVG background with neon glowing stroke and dark filled area */}
+          <div className="absolute inset-0 pointer-events-auto">
+            <svg 
+              className="w-full h-full filter drop-shadow-[0_-8px_16px_rgba(249,115,22,0.25)]" 
+              viewBox="0 0 100 100" 
+              preserveAspectRatio="none"
+            >
+              {/* Main curved path border */}
+              <path 
+                d="M 0 30 Q 50 0 100 30 L 100 100 L 0 100 Z" 
+                fill="none" 
+                stroke="var(--color-orange-500, #f97316)" 
+                strokeWidth="1.5" 
+              />
+              {/* Main curved path background */}
+              <path 
+                d="M 0 30 Q 50 0 100 30 L 100 100 L 0 100 Z" 
+                fill="#09090b" 
+                opacity="0.98"
+              />
+            </svg>
+          </div>
+
+          {/* Navigation buttons container */}
+          <div className="absolute inset-x-0 bottom-0 top-3 flex items-start justify-around px-2 pb-2 pointer-events-auto">
+            {/* Item 1: Menu */}
+            <button 
+              onClick={() => setMobileMenuOpen(true)}
+              className="relative flex flex-col items-center justify-center w-14 h-14 group cursor-pointer select-none outline-none focus:outline-none active:bg-transparent bg-transparent"
+              style={{ WebkitTapHighlightColor: 'transparent', WebkitTouchCallout: 'none' }}
+            >
+              <div 
+                className={`transition-all duration-300 ${
+                  isMenuBtnActive 
+                    ? "text-orange-500 scale-110 -translate-y-2 filter drop-shadow-[0_0_10px_rgba(249,115,22,0.8)]" 
+                    : "text-zinc-400 group-hover:text-white"
+                }`}
+              >
+                <Menu className="h-5 w-5" />
+              </div>
+              {isMenuBtnActive && (
+                <>
+                  <div className="absolute bottom-5.5 w-6 h-0.5 bg-orange-500 rounded-full shadow-[0_0_12px_#f97316] z-10" />
+                  <span className="absolute bottom-1.5 text-[7px] font-mono font-black tracking-widest text-orange-500 uppercase">
+                    MENU
+                  </span>
+                </>
+              )}
+            </button>
+
+            {/* Item 2: Calendário */}
+            <button 
+              onClick={() => {
+                setActiveTab('calendario');
+                setMobileMenuOpen(false);
+              }}
+              className="relative flex flex-col items-center justify-center w-14 h-14 group cursor-pointer select-none outline-none focus:outline-none active:bg-transparent bg-transparent"
+              style={{ WebkitTapHighlightColor: 'transparent', WebkitTouchCallout: 'none' }}
+            >
+              <div 
+                className={`transition-all duration-300 ${
+                  activeTab === 'calendario' && !mobileMenuOpen
+                    ? "text-orange-500 scale-110 -translate-y-2 filter drop-shadow-[0_0_10px_rgba(249,115,22,0.8)]" 
+                    : "text-zinc-400 group-hover:text-white"
+                }`}
+              >
+                <Calendar className="h-5 w-5" />
+              </div>
+              {activeTab === 'calendario' && !mobileMenuOpen && (
+                <>
+                  <div className="absolute bottom-5.5 w-6 h-0.5 bg-orange-500 rounded-full shadow-[0_0_12px_#f97316] z-10" />
+                  <span className="absolute bottom-1.5 text-[7px] font-mono font-black tracking-widest text-orange-500 uppercase">
+                    AGENDA
+                  </span>
+                </>
+              )}
+            </button>
+
+            {/* Item 3: Home (Dashboard) - sits at x=50, the exact peak of the curve */}
+            <button 
+              onClick={() => {
+                setActiveTab('dashboard');
+                setMobileMenuOpen(false);
+              }}
+              className="relative flex flex-col items-center justify-center w-14 h-14 group cursor-pointer select-none outline-none focus:outline-none active:bg-transparent bg-transparent"
+              style={{ WebkitTapHighlightColor: 'transparent', WebkitTouchCallout: 'none' }}
+            >
+              <div 
+                className={`transition-all duration-300 ${
+                  activeTab === 'dashboard' && !mobileMenuOpen
+                    ? "text-orange-500 scale-115 -translate-y-2.5 filter drop-shadow-[0_0_10px_rgba(249,115,22,0.8)]" 
+                    : "text-zinc-400 group-hover:text-white"
+                }`}
+              >
+                <LayoutDashboard className="h-5.5 w-5.5" />
+              </div>
+              {activeTab === 'dashboard' && !mobileMenuOpen && (
+                <>
+                  <div className="absolute bottom-5.5 w-6 h-0.5 bg-orange-500 rounded-full shadow-[0_0_12px_#f97316] z-10" />
+                  <span className="absolute bottom-1.5 text-[7px] font-mono font-black tracking-widest text-orange-500 uppercase">
+                    HOME
+                  </span>
+                </>
+              )}
+            </button>
+
+            {/* Item 4: Checklist Diária */}
+            <button 
+              onClick={() => {
+                setActiveTab('checklist');
+                setMobileMenuOpen(false);
+              }}
+              className="relative flex flex-col items-center justify-center w-14 h-14 group cursor-pointer select-none outline-none focus:outline-none active:bg-transparent bg-transparent"
+              style={{ WebkitTapHighlightColor: 'transparent', WebkitTouchCallout: 'none' }}
+            >
+              <div 
+                className={`transition-all duration-300 ${
+                  activeTab === 'checklist' && !mobileMenuOpen
+                    ? "text-orange-500 scale-110 -translate-y-2 filter drop-shadow-[0_0_10px_rgba(249,115,22,0.8)]" 
+                    : "text-zinc-400 group-hover:text-white"
+                }`}
+              >
+                <CheckSquare className="h-5 w-5" />
+              </div>
+              {activeTab === 'checklist' && !mobileMenuOpen && (
+                <>
+                  <div className="absolute bottom-5.5 w-6 h-0.5 bg-orange-500 rounded-full shadow-[0_0_12px_#f97316] z-10" />
+                  <span className="absolute bottom-1.5 text-[7px] font-mono font-black tracking-widest text-orange-500 uppercase">
+                    TAREFAS
+                  </span>
+                </>
+              )}
+            </button>
+
+            {/* Item 5: Notas (Com Long-Press para Lembretes/Cronômetro/Timer) */}
+            <button 
+              onTouchStart={startNotasLongPress}
+              onTouchMove={handleTouchMoveShortcut}
+              onTouchEnd={() => cancelNotasLongPress(true)}
+              onTouchCancel={() => cancelNotasLongPress(false)}
+              onMouseDown={startNotasLongPress}
+              onMouseMove={handleTouchMoveShortcut}
+              onMouseUp={() => cancelNotasLongPress(true)}
+              onMouseLeave={() => cancelNotasLongPress(false)}
+              className="relative flex flex-col items-center justify-center w-14 h-14 group cursor-pointer select-none outline-none focus:outline-none active:bg-transparent bg-transparent"
+              style={{ WebkitTapHighlightColor: 'transparent', WebkitTouchCallout: 'none' }}
+            >
+              {/* Visual holding progress ring */}
+              {pressProgress > 0 && (
+                <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none z-20 overflow-visible">
+                  <circle
+                    cx="28"
+                    cy="28"
+                    r="22"
+                    stroke="rgba(249, 115, 22, 0.2)"
+                    strokeWidth="3"
+                    fill="none"
+                  />
+                  <circle
+                    cx="28"
+                    cy="28"
+                    r="22"
+                    stroke="#f97316"
+                    strokeWidth="3"
+                    fill="none"
+                    strokeDasharray="138"
+                    strokeDashoffset={138 - (138 * pressProgress) / 100}
+                    strokeLinecap="round"
+                  />
+                </svg>
+              )}
+
+              <div 
+                className={`transition-all duration-300 ${
+                  activeTab === 'notas' && !mobileMenuOpen
+                    ? "text-orange-500 scale-110 -translate-y-2 filter drop-shadow-[0_0_10px_rgba(249,115,22,0.8)]" 
+                    : "text-zinc-400 group-hover:text-white"
+                }`}
+              >
+                <BookOpen className="h-5 w-5" />
+              </div>
+              {activeTab === 'notas' && !mobileMenuOpen && (
+                <>
+                  <div className="absolute bottom-5.5 w-6 h-0.5 bg-orange-500 rounded-full shadow-[0_0_12px_#f97316] z-10" />
+                  <span className="absolute bottom-1.5 text-[7px] font-mono font-black tracking-widest text-orange-500 uppercase">
+                    NOTAS
+                  </span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* QUICK ACTION POPOVER FOR LEMBRETES & TIMER (Triggered by hold on "Notas" in Mobile Navbar) */}
       {radialMenuOpen && (

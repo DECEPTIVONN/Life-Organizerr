@@ -390,8 +390,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
             className="flex flex-col items-center"
           >
             {/* Minimalist Bold Brand Title matching the Grok style */}
-            <h1 className="text-5xl sm:text-6xl font-bold tracking-tight text-white font-sans drop-shadow-sm">
-              Planner
+            <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-white font-sans drop-shadow-sm">
+              Life Organizer
             </h1>
 
             {/* Subtitle in clean monospace / refined typography */}
@@ -879,7 +879,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
                     Escaneie para entrar
                   </h3>
                   <p className="text-xs text-zinc-400">
-                    Aponte a câmera ou use o Planner conectado no seu celular.
+                    Aponte a câmera ou use o Life Organizer conectado no seu celular.
                   </p>
                 </div>
 
@@ -1071,7 +1071,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
                 {activeLegalModal === 'terms' ? (
                   <>
                     <p>
-                      Bem-vindo ao Planner. Ao acessar ou utilizar nossa plataforma, você concorda em cumprir estes Termos de Uso.
+                      Bem-vindo ao Life Organizer. Ao acessar ou utilizar nossa plataforma, você concorda em cumprir estes Termos de Uso.
                     </p>
                     <p className="font-semibold text-white">1. Uso da Conta</p>
                     <p>
@@ -1085,7 +1085,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
                 ) : (
                   <>
                     <p>
-                      Sua privacidade e a proteção de seus dados pessoais são prioridades absolutas no Planner.
+                      Sua privacidade e a proteção de seus dados pessoais são prioridades absolutas no Life Organizer.
                     </p>
                     <p className="font-semibold text-white">1. Coleta de Informações</p>
                     <p>

@@ -3,6 +3,7 @@ import { requestNotificationPermission, sendSystemNotification } from '../lib/no
 import { 
   User, 
   Lock, 
+  ArrowUpDown,
   Shield, 
   Bell, 
   Maximize, 
@@ -56,8 +57,9 @@ import defaultLockBg from '../assets/images/1271888.jpg';
 import ColorSchemeModal from './ColorSchemeModal';
 import { THEME_PRESETS, applyThemeColor } from '../utils/themeColors';
 import { motion, AnimatePresence } from 'motion/react';
+import QRCode from 'qrcode';
 import { setSupabaseConfig, testSupabaseConnection } from '../lib/supabase';
-import { authorizeQrLoginSession } from '../lib/auth';
+import { authorizeQrLoginSession, createQrLoginSession, checkQrLoginSessionStatus, QrLoginSession } from '../lib/auth';
 import { saveGoogleOAuthTokens, clearGoogleOAuthSession, refreshGoogleAccessToken, getValidGoogleAccessToken } from '../utils/googleToken';
 import {
   ConnectedDevice,
@@ -104,6 +106,10 @@ interface SettingsViewProps {
   // Mobile Navbar Mode (Fixed vs Flexible)
   mobileNavbarMode?: 'fixed' | 'flexible';
   setMobileNavbarMode?: (mode: 'fixed' | 'flexible') => void;
+
+  // Mobile Navbar Shape (Oval vs Reta)
+  mobileNavbarShape?: 'oval' | 'reta';
+  setMobileNavbarShape?: (shape: 'oval' | 'reta') => void;
 
   // Card Glow Effect
   cardGlowEnabled?: boolean;
@@ -205,6 +211,8 @@ export default function SettingsView({
   setMobileSlideTransition,
   mobileNavbarMode = 'fixed',
   setMobileNavbarMode,
+  mobileNavbarShape = 'oval',
+  setMobileNavbarShape,
   cardGlowEnabled = true,
   setCardGlowEnabled,
   setAccountDeactivated,
@@ -451,6 +459,118 @@ export default function SettingsView({
   const [editingDevice, setEditingDevice] = useState<ConnectedDevice | null>(null);
   const [showConnectDeviceModal, setShowConnectDeviceModal] = useState(false);
   const [editDeviceCustomName, setEditDeviceCustomName] = useState('');
+
+  // Estados para gerar QR Code de conexão de novo aparelho (5 minutos / 300s)
+  const [connectQrSession, setConnectQrSession] = useState<QrLoginSession | null>(null);
+  const [connectQrDataUrl, setConnectQrDataUrl] = useState<string | null>(null);
+  const [connectQrCountdown, setConnectQrCountdown] = useState<number>(300);
+  const [connectQrLoading, setConnectQrLoading] = useState<boolean>(false);
+  const [connectDeviceTab, setConnectDeviceTab] = useState<'qrcode' | 'codigo'>('qrcode');
+  const [manualCodeInput, setManualCodeInput] = useState<string>('');
+  const [manualCodeAuthorizing, setManualCodeAuthorizing] = useState<boolean>(false);
+  const [manualCodeFeedback, setManualCodeFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // Estado do formato da barra de navegação mobile (oval vs reta)
+  const [currentNavbarShape, setCurrentNavbarShape] = useState<'oval' | 'reta'>(() => {
+    return mobileNavbarShape || (localStorage.getItem('mbc_mobile_navbar_shape') as 'oval' | 'reta') || 'oval';
+  });
+
+  useEffect(() => {
+    if (mobileNavbarShape) {
+      setCurrentNavbarShape(mobileNavbarShape);
+    }
+  }, [mobileNavbarShape]);
+
+  // Função para gerar uma nova sessão de QR Code de 5 minutos
+  const generateNewDeviceQr = async () => {
+    setConnectQrLoading(true);
+    setManualCodeFeedback(null);
+    try {
+      const session = await createQrLoginSession();
+      setConnectQrSession(session);
+      setConnectQrCountdown(300);
+
+      // Payload do QR Code com link direto e parâmetros de sessão
+      const qrPayload = `${window.location.origin}/?qr_session=${session.sessionId}`;
+      const url = await QRCode.toDataURL(qrPayload, {
+        width: 280,
+        margin: 2,
+        color: {
+          dark: '#09090b',
+          light: '#ffffff'
+        }
+      });
+      setConnectQrDataUrl(url);
+    } catch (err) {
+      console.error('Erro ao gerar QR Code para pareamento:', err);
+    } finally {
+      setConnectQrLoading(false);
+    }
+  };
+
+  // Efeito disparado quando o modal de conectar dispositivo abre
+  useEffect(() => {
+    if (showConnectDeviceModal) {
+      generateNewDeviceQr();
+    } else {
+      setConnectQrDataUrl(null);
+      setConnectQrSession(null);
+      setManualCodeInput('');
+      setManualCodeFeedback(null);
+    }
+  }, [showConnectDeviceModal]);
+
+  // Contagem regressiva de 5 minutos (300 segundos) e polling de conexão
+  useEffect(() => {
+    if (!showConnectDeviceModal || !connectQrSession) return;
+
+    const timer = setInterval(() => {
+      setConnectQrCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    // Polling caso o outro aparelho escaneie o QR Code e autorize a sessão
+    const pollInterval = setInterval(async () => {
+      if (connectQrSession?.sessionId) {
+        const updated = await checkQrLoginSessionStatus(connectQrSession.sessionId);
+        if (updated && updated.status === 'authorized') {
+          clearInterval(pollInterval);
+          // Registrar novo aparelho conectado na lista
+          const nowTs = Date.now();
+          const newDev: ConnectedDevice = {
+            id: `dev-qr-${nowTs}`,
+            name: updated.user?.name ? `${updated.user.name} (Novo Aparelho)` : 'Novo Aparelho Conectado via QR Code',
+            browser: 'Navegador / App',
+            os: 'Dispositivo Pareado',
+            isCurrent: false,
+            lastActiveTimestamp: nowTs,
+            lastActive: formatLastActiveTime(nowTs, false),
+            ip: '189.28.102.89',
+            deviceType: 'mobile'
+          };
+          const accKey = getAccountKey();
+          const currentDevs = await fetchAccountDevices();
+          const newList = [newDev, ...currentDevs.filter(d => d.id !== newDev.id)];
+          await saveAccountDevices(accKey, newList);
+          setConnectedDevices(newList);
+          setManualCodeFeedback({ type: 'success', message: 'Aparelho conectado com sucesso via QR Code!' });
+          setTimeout(() => {
+            setShowConnectDeviceModal(false);
+          }, 2000);
+        }
+      }
+    }, 2500);
+
+    return () => {
+      clearInterval(timer);
+      clearInterval(pollInterval);
+    };
+  }, [showConnectDeviceModal, connectQrSession]);
 
   // Sync and update connected devices in real time
   useEffect(() => {
@@ -2883,60 +3003,138 @@ export default function SettingsView({
               </button>
             </div>
 
-            {/* Comportamento da Navbar Mobile (Fixa vs Flexível) */}
-            <div className="p-4 bg-zinc-950 border border-zinc-900 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="space-y-0.5 flex-1 pr-2">
-                <div className="flex items-center gap-2">
-                  <h4 className="text-xs font-bold text-zinc-200">Comportamento da Navbar Mobile</h4>
-                  <span className={`text-[8px] font-bold px-2 py-0.5 rounded-full font-mono uppercase border ${
-                    mobileNavbarMode === 'flexible'
-                      ? 'text-orange-400 bg-orange-500/10 border-orange-500/20'
-                      : 'text-zinc-400 bg-zinc-800/40 border-zinc-700/40'
-                  }`}>
-                    {mobileNavbarMode === 'flexible' ? 'Flexível' : 'Fixa'}
-                  </span>
-                </div>
-                <p className="text-[10px] text-zinc-500 font-mono leading-normal">
-                  {mobileNavbarMode === 'flexible'
-                    ? 'Flexível: Ao deslizar para baixo, a barra inferior fica oculta para maior área útil; ao deslizar para cima, ela reaparece.'
-                    : 'Fixa: A barra inferior de navegação permanece sempre fixa e visível na base da tela.'}
+            {/* EXIBIÇÃO: BARRA DE NAVEGAÇÃO (Comportamento Fixa/Flexível & Formato Reta/Oval) */}
+            <div className="p-5 bg-zinc-950 border border-zinc-900 rounded-2xl space-y-5">
+              {/* Header */}
+              <div className="space-y-1">
+                <span className="text-[10px] font-mono font-bold tracking-widest text-[#f04444] uppercase">
+                  Exibição
+                </span>
+                <h4 className="text-sm font-black text-white tracking-wide uppercase">
+                  Barra de Navegação
+                </h4>
+                <p className="text-xs text-zinc-400 font-sans">
+                  Comportamento e formato da barra inferior de navegação.
                 </p>
               </div>
-              <div className="flex items-center gap-1.5 self-start sm:self-center bg-zinc-900/80 p-1 rounded-xl border border-zinc-800 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (setMobileNavbarMode) {
-                      setMobileNavbarMode('fixed');
-                      localStorage.setItem('mbc_mobile_navbar_mode', 'fixed');
+
+              {/* Seletor 1: Comportamento (Fixa vs Flexível) */}
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  {/* FIXA */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (setMobileNavbarMode) {
+                        setMobileNavbarMode('fixed');
+                        localStorage.setItem('mbc_mobile_navbar_mode', 'fixed');
+                        addXp(10);
+                      }
+                    }}
+                    className={`flex flex-col items-center justify-center gap-2 py-4 rounded-2xl transition-all cursor-pointer font-mono font-bold text-xs uppercase tracking-wider ${
+                      mobileNavbarMode === 'fixed'
+                        ? 'bg-[#f04444] text-white shadow-[0_0_20px_rgba(240,68,68,0.35)]'
+                        : 'bg-zinc-900/60 border border-zinc-800/80 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                    }`}
+                  >
+                    <Lock className="w-5 h-5 mb-0.5" />
+                    <span>Fixa</span>
+                  </button>
+
+                  {/* FLEXÍVEL */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (setMobileNavbarMode) {
+                        setMobileNavbarMode('flexible');
+                        localStorage.setItem('mbc_mobile_navbar_mode', 'flexible');
+                        addXp(10);
+                      }
+                    }}
+                    className={`flex flex-col items-center justify-center gap-2 py-4 rounded-2xl transition-all cursor-pointer font-mono font-bold text-xs uppercase tracking-wider ${
+                      mobileNavbarMode === 'flexible'
+                        ? 'bg-[#f04444] text-white shadow-[0_0_20px_rgba(240,68,68,0.35)]'
+                        : 'bg-zinc-900/60 border border-zinc-800/80 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                    }`}
+                  >
+                    <ArrowUpDown className="w-5 h-5 mb-0.5" />
+                    <span>Flexível</span>
+                  </button>
+                </div>
+
+                <p className="text-xs text-zinc-400 font-sans">
+                  {mobileNavbarMode === 'flexible'
+                    ? 'A navbar recolhe ao deslizar para baixo e volta ao deslizar para cima.'
+                    : 'A barra de navegação permanece sempre fixa e visível na parte inferior da tela.'}
+                </p>
+              </div>
+
+              {/* Seletor 2: Formato da Barra (Reta vs Oval) */}
+              <div className="pt-4 border-t border-zinc-900/80 space-y-3">
+                <div>
+                  <h5 className="text-xs font-bold text-white tracking-wide uppercase font-mono">
+                    Formato da Barra
+                  </h5>
+                  <p className="text-[11px] text-zinc-400 font-sans">
+                    Visual da barra inferior: clássica (reta) ou curva neon.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  {/* RETA */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCurrentNavbarShape('reta');
+                      if (setMobileNavbarShape) {
+                        setMobileNavbarShape('reta');
+                      }
+                      localStorage.setItem('mbc_mobile_navbar_shape', 'reta');
                       addXp(10);
-                    }
-                  }}
-                  className={`px-3.5 py-1.5 rounded-lg text-[9px] font-mono font-bold uppercase transition-all cursor-pointer ${
-                    mobileNavbarMode === 'fixed'
-                      ? 'bg-orange-500 text-white shadow-[0_0_12px_rgba(249,115,22,0.4)]'
-                      : 'text-zinc-400 hover:text-zinc-200'
-                  }`}
-                >
-                  Fixa
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (setMobileNavbarMode) {
-                      setMobileNavbarMode('flexible');
-                      localStorage.setItem('mbc_mobile_navbar_mode', 'flexible');
+                    }}
+                    className={`flex flex-col items-center justify-center gap-2 py-4 rounded-2xl transition-all cursor-pointer font-mono font-bold text-xs uppercase tracking-wider ${
+                      currentNavbarShape === 'reta'
+                        ? 'bg-[#f04444] text-white shadow-[0_0_20px_rgba(240,68,68,0.35)]'
+                        : 'bg-zinc-900/60 border border-zinc-800/80 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                    }`}
+                  >
+                    <div className="w-5 h-5 flex flex-col justify-center items-center gap-1">
+                      <div className="w-4 h-0.5 bg-current rounded-full" />
+                      <div className="w-4 h-0.5 bg-current rounded-full" />
+                      <div className="w-4 h-0.5 bg-current rounded-full" />
+                    </div>
+                    <span>Reta</span>
+                  </button>
+
+                  {/* OVAL */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCurrentNavbarShape('oval');
+                      if (setMobileNavbarShape) {
+                        setMobileNavbarShape('oval');
+                      }
+                      localStorage.setItem('mbc_mobile_navbar_shape', 'oval');
                       addXp(10);
-                    }
-                  }}
-                  className={`px-3.5 py-1.5 rounded-lg text-[9px] font-mono font-bold uppercase transition-all cursor-pointer ${
-                    mobileNavbarMode === 'flexible'
-                      ? 'bg-orange-500 text-white shadow-[0_0_12px_rgba(249,115,22,0.4)]'
-                      : 'text-zinc-400 hover:text-zinc-200'
-                  }`}
-                >
-                  Flexível
-                </button>
+                    }}
+                    className={`flex flex-col items-center justify-center gap-2 py-4 rounded-2xl transition-all cursor-pointer font-mono font-bold text-xs uppercase tracking-wider ${
+                      currentNavbarShape === 'oval'
+                        ? 'bg-[#f04444] text-white shadow-[0_0_20px_rgba(240,68,68,0.35)]'
+                        : 'bg-zinc-900/60 border border-zinc-800/80 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                    }`}
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                      <path d="M 4 14 C 8 8, 16 8, 20 14" />
+                    </svg>
+                    <span>Oval</span>
+                  </button>
+                </div>
+
+                <p className="text-xs text-zinc-400 font-sans">
+                  {currentNavbarShape === 'reta'
+                    ? 'Barra clássica reta, como no layout original.'
+                    : 'Barra flutuante moderna curva neon com bordas arredondadas.'}
+                </p>
               </div>
             </div>
 
@@ -3587,131 +3785,242 @@ export default function SettingsView({
         )}
       </AnimatePresence>
 
-      {/* Modal: Conectar Dispositivo (QR Code / Pareamento Real) */}
+      {/* Modal: Conectar Dispositivo (QR Code com duração de 5 minutos & Código do Aparelho) */}
       <AnimatePresence>
         {showConnectDeviceModal && (
           <div 
             onClick={() => setShowConnectDeviceModal(false)}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm cursor-pointer"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md cursor-pointer"
           >
             <motion.div
               onClick={(e) => e.stopPropagation()}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="cursor-default bg-zinc-950 border border-emerald-500/30 rounded-2xl p-5 max-w-sm w-full space-y-4 text-center shadow-2xl relative"
+              className="cursor-default bg-zinc-950 border border-emerald-500/30 rounded-3xl p-5 sm:p-6 max-w-md w-full space-y-4 text-center shadow-2xl relative"
             >
+              {/* Header */}
               <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
                 <div className="flex items-center gap-2">
-                  <QrCode className="h-4.5 w-4.5 text-emerald-400" />
-                  <h3 className="text-xs font-black uppercase tracking-wider text-white">Conectar Novo Dispositivo</h3>
+                  <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <QrCode className="h-4 w-4" />
+                  </div>
+                  <div className="text-left">
+                    <h3 className="text-xs font-black uppercase tracking-wider text-white">Conectar Novo Aparelho</h3>
+                    <p className="text-[10px] text-zinc-500 font-mono">Sincronização em tempo real</p>
+                  </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowConnectDeviceModal(false)}
-                  className="text-zinc-500 hover:text-white p-1 transition-colors"
+                  className="text-zinc-500 hover:text-white p-1.5 rounded-lg hover:bg-zinc-900 transition-colors cursor-pointer"
                 >
                   <X className="h-4 w-4" />
                 </button>
               </div>
 
-              {/* Authorize Pin Form */}
-              <div className="space-y-3 bg-zinc-900/60 p-3.5 rounded-2xl border border-zinc-800 text-left">
-                <label className="block text-[11px] font-bold text-zinc-200">
-                  Digitar Código do Outro Aparelho (6 dígitos ou PLN-...):
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Ex: 482910"
-                    id="qrPinInput"
-                    className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 font-mono tracking-wider uppercase"
-                  />
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      const inputEl = document.getElementById('qrPinInput') as HTMLInputElement;
-                      const pinVal = inputEl?.value.trim();
-                      if (!pinVal) return;
-
-                      const authRes = await authorizeQrLoginSession(pinVal, {
-                        email: userEmail || 'usuario@lifeorganizer.app',
-                        username: userHandle.replace(/^@/, '') || 'usuario',
-                        name: userName || 'Usuário',
-                        syncKey: syncKey || 'MBC-LOCAL',
-                        provider: 'email'
-                      });
-
-                      if (authRes.ok) {
-                        const nowTs = Date.now();
-                        const newDev: ConnectedDevice = {
-                          id: `dev-qr-${nowTs}`,
-                          name: 'Novo Aparelho Conectado',
-                          browser: 'Web Browser',
-                          os: 'Mobile/PC',
-                          isCurrent: false,
-                          lastActiveTimestamp: nowTs,
-                          lastActive: formatLastActiveTime(nowTs, false),
-                          ip: '189.28.102.89',
-                          deviceType: 'mobile'
-                        };
-                        const accKey = getAccountKey();
-                        const currentDevs = await fetchAccountDevices();
-                        const newList = [newDev, ...currentDevs.filter(d => d.id !== newDev.id)];
-                        await saveAccountDevices(accKey, newList);
-                        setConnectedDevices(newList);
-                        alert('✅ Sessão de login e aparelho autorizados com sucesso!');
-                        setShowConnectDeviceModal(false);
-                      } else {
-                        alert(`⚠️ ${authRes.message}`);
-                      }
-                    }}
-                    className="py-2 px-3 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold rounded-xl transition-all shadow-md shrink-0"
-                  >
-                    Autorizar
-                  </button>
-                </div>
-                <p className="text-[10px] text-zinc-400 leading-relaxed">
-                  Digite o código de 6 dígitos mostrado na tela de login QR Code do outro celular ou computador para autorizá-lo imediatamente.
-                </p>
+              {/* Tabs Switcher: Escanear QR Code vs Digitar Código */}
+              <div className="grid grid-cols-2 gap-1 p-1 bg-zinc-900/80 rounded-xl border border-zinc-800/80">
+                <button
+                  type="button"
+                  onClick={() => setConnectDeviceTab('qrcode')}
+                  className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                    connectDeviceTab === 'qrcode'
+                      ? 'bg-emerald-500 text-zinc-950 shadow-md font-black'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  <QrCode className="h-3.5 w-3.5" />
+                  QR Code
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConnectDeviceTab('codigo')}
+                  className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                    connectDeviceTab === 'codigo'
+                      ? 'bg-emerald-500 text-zinc-950 shadow-md font-black'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  <Smartphone className="h-3.5 w-3.5" />
+                  Código Numérico
+                </button>
               </div>
 
-              <div className="relative my-2">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-zinc-800" />
+              {/* Feedback messages */}
+              {manualCodeFeedback && (
+                <div className={`p-3 rounded-xl text-xs font-medium flex items-center gap-2 text-left ${
+                  manualCodeFeedback.type === 'success'
+                    ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-300'
+                    : 'bg-red-500/10 border border-red-500/30 text-red-300'
+                }`}>
+                  {manualCodeFeedback.type === 'success' ? (
+                    <CheckCircle className="h-4 w-4 shrink-0 text-emerald-400" />
+                  ) : (
+                    <AlertTriangle className="h-4 w-4 shrink-0 text-red-400" />
+                  )}
+                  <span>{manualCodeFeedback.message}</span>
                 </div>
-                <div className="relative flex justify-center text-[9px] uppercase font-bold tracking-wider">
-                  <span className="px-2 bg-zinc-950 text-zinc-500">ou simular aparelho de teste</span>
-                </div>
-              </div>
+              )}
 
-              {/* Action to test adding a connected device */}
-              <button
-                type="button"
-                onClick={async () => {
-                  const nowTs = Date.now();
-                  const newDev: ConnectedDevice = {
-                    id: `dev-test-${nowTs}`,
-                    name: 'Safari (iPhone 15 Pro)',
-                    browser: 'Apple Safari',
-                    os: 'iOS 17.5',
-                    isCurrent: false,
-                    lastActiveTimestamp: nowTs,
-                    lastActive: formatLastActiveTime(nowTs, false),
-                    ip: '189.28.102.89',
-                    deviceType: 'mobile'
-                  };
-                  const accKey = getAccountKey();
-                  const currentDevs = await fetchAccountDevices();
-                  const newList = [newDev, ...currentDevs.filter(d => d.id !== newDev.id)];
-                  await saveAccountDevices(accKey, newList);
-                  setConnectedDevices(newList);
-                  setShowConnectDeviceModal(false);
-                }}
-                className="w-full py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 font-bold text-xs rounded-xl transition-all"
-              >
-                Simular Novo Aparelho
-              </button>
+              {/* TAB 1: QR CODE COM DURAÇÃO DE 5 MINUTOS */}
+              {connectDeviceTab === 'qrcode' && (
+                <div className="space-y-3.5 pt-1">
+                  <div className="relative mx-auto w-[220px] h-[220px] bg-white rounded-2xl p-3 shadow-2xl flex items-center justify-center overflow-hidden border-2 border-emerald-500/40">
+                    {connectQrLoading ? (
+                      <div className="flex flex-col items-center justify-center gap-2 text-zinc-700">
+                        <RefreshCw className="h-8 w-8 animate-spin text-emerald-600" />
+                        <span className="text-[11px] font-mono font-bold text-zinc-600">Gerando QR Code...</span>
+                      </div>
+                    ) : connectQrDataUrl && connectQrCountdown > 0 ? (
+                      <div className="relative group">
+                        <img 
+                          src={connectQrDataUrl} 
+                          alt="QR Code de Conexão de Novo Aparelho" 
+                          className="w-full h-full object-contain"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <div className="w-9 h-9 bg-zinc-950 border border-emerald-400/40 rounded-xl flex items-center justify-center shadow-lg">
+                            <Smartphone className="w-5 h-5 text-emerald-400" />
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center p-3 text-center space-y-2">
+                        <AlertTriangle className="h-8 w-8 text-amber-500" />
+                        <p className="text-[11px] font-bold text-zinc-800">QR Code expirado</p>
+                        <p className="text-[9px] text-zinc-500">A duração de 5 minutos encerrou.</p>
+                        <button
+                          type="button"
+                          onClick={generateNewDeviceQr}
+                          className="px-3 py-1.5 bg-emerald-500 text-zinc-950 font-bold text-xs rounded-xl shadow cursor-pointer hover:bg-emerald-400"
+                        >
+                          Gerar Novo Código
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Informações da Sessão e Código PIN */}
+                  {connectQrSession && (
+                    <div className="space-y-1.5 bg-zinc-900/60 p-3 rounded-2xl border border-zinc-800/80">
+                      <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400">
+                        <span className="font-bold uppercase">Código de Conexão:</span>
+                        <div className="flex items-center gap-1.5 font-black text-xs text-emerald-400">
+                          <Clock className="h-3.5 w-3.5 text-emerald-400" />
+                          <span>
+                            {Math.floor(connectQrCountdown / 60)}:{(connectQrCountdown % 60).toString().padStart(2, '0')} min
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-center gap-3 pt-1">
+                        <span className="text-2xl font-black font-mono tracking-widest text-emerald-400 bg-zinc-950 px-4 py-1.5 rounded-xl border border-emerald-500/30 shadow-inner">
+                          {connectQrSession.pinCode ? `${connectQrSession.pinCode.slice(0, 3)} - ${connectQrSession.pinCode.slice(3)}` : '------'}
+                        </span>
+                        <button
+                          type="button"
+                          title="Gerar outro QR Code"
+                          onClick={generateNewDeviceQr}
+                          disabled={connectQrLoading}
+                          className="p-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl transition-all"
+                        >
+                          <RefreshCw className={`h-4 w-4 ${connectQrLoading ? 'animate-spin' : ''}`} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <p className="text-[11px] text-zinc-400 leading-relaxed font-sans">
+                    Aponte a câmera do seu outro aparelho para escanear o QR Code ou acesse este site no novo dispositivo e digite o código acima.
+                  </p>
+                </div>
+              )}
+
+              {/* TAB 2: DIGITAR CÓDIGO DO OUTRO APARELHO */}
+              {connectDeviceTab === 'codigo' && (
+                <div className="space-y-4 pt-1">
+                  <div className="space-y-3 bg-zinc-900/60 p-4 rounded-2xl border border-zinc-800 text-left">
+                    <label className="block text-xs font-bold text-zinc-200">
+                      Código do Outro Aparelho (6 dígitos ou PLN-...):
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={manualCodeInput}
+                        onChange={(e) => setManualCodeInput(e.target.value)}
+                        placeholder="Ex: 482 910"
+                        maxLength={12}
+                        className="flex-1 bg-zinc-950 border border-zinc-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none font-mono tracking-wider uppercase text-center"
+                      />
+                      <button
+                        type="button"
+                        disabled={manualCodeAuthorizing || !manualCodeInput.trim()}
+                        onClick={async () => {
+                          const pinVal = manualCodeInput.trim();
+                          if (!pinVal) return;
+                          setManualCodeAuthorizing(true);
+                          setManualCodeFeedback(null);
+                          try {
+                            const authRes = await authorizeQrLoginSession(pinVal, {
+                              email: userEmail || 'usuario@lifeorganizer.app',
+                              username: userHandle.replace(/^@/, '') || 'usuario',
+                              name: userName || 'Usuário',
+                              syncKey: syncKey || 'MBC-LOCAL',
+                              provider: 'email'
+                            });
+
+                            if (authRes.ok) {
+                              const nowTs = Date.now();
+                              const newDev: ConnectedDevice = {
+                                id: `dev-qr-${nowTs}`,
+                                name: 'Novo Aparelho Autorizado',
+                                browser: 'Web / Mobile',
+                                os: 'Dispositivo Conectado',
+                                isCurrent: false,
+                                lastActiveTimestamp: nowTs,
+                                lastActive: formatLastActiveTime(nowTs, false),
+                                ip: '189.28.102.89',
+                                deviceType: 'mobile'
+                              };
+                              const accKey = getAccountKey();
+                              const currentDevs = await fetchAccountDevices();
+                              const newList = [newDev, ...currentDevs.filter(d => d.id !== newDev.id)];
+                              await saveAccountDevices(accKey, newList);
+                              setConnectedDevices(newList);
+                              setManualCodeFeedback({ type: 'success', message: 'Aparelho autorizado e conectado com sucesso!' });
+                              setManualCodeInput('');
+                              setTimeout(() => {
+                                setShowConnectDeviceModal(false);
+                              }, 2000);
+                            } else {
+                              setManualCodeFeedback({ type: 'error', message: authRes.message });
+                            }
+                          } catch (err: any) {
+                            setManualCodeFeedback({ type: 'error', message: err?.message || 'Erro ao conectar aparelho.' });
+                          } finally {
+                            setManualCodeAuthorizing(false);
+                          }
+                        }}
+                        className="py-2 px-4 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-zinc-950 text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-md shrink-0 flex items-center gap-1.5"
+                      >
+                        {manualCodeAuthorizing ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle className="h-3.5 w-3.5" />}
+                        Autorizar
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-zinc-400 leading-relaxed">
+                      Se você abriu a tela de login QR Code em outro celular ou navegador, digite os 6 dígitos exibidos lá para vinculá-lo instantaneamente a esta conta.
+                    </p>
+                  </div>
+
+                  <div className="p-3 bg-zinc-900/40 rounded-xl border border-zinc-800/80 text-left flex items-start gap-2.5">
+                    <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                    <p className="text-[10px] text-zinc-400 leading-relaxed">
+                      Ambos os dispositivos compartilham a mesma chave de criptografia de ponta a ponta e sincronizam alterações sem fio.
+                    </p>
+                  </div>
+                </div>
+              )}
             </motion.div>
           </div>
         )}

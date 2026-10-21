@@ -3,7 +3,7 @@ import path from "path";
 import fs from "fs";
 import compression from "compression";
 import app from "./api/index";
-import { startServerPushAlarmWorker } from "./api/push.js";
+import { startServerPushAlarmWorker } from "./api/push";
 
 async function startServer() {
   const PORT = 3000;
