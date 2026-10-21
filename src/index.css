@@ -35,12 +35,16 @@ a:focus, a:active, a:focus-visible {
 }
 
 /* Utility to hide scrollbars completely */
-.no-scrollbar::-webkit-scrollbar {
+.no-scrollbar::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar,
+.sidebar-minimized-scroll::-webkit-scrollbar {
   display: none !important;
   width: 0 !important;
   height: 0 !important;
 }
-.no-scrollbar {
+.no-scrollbar,
+.scrollbar-none,
+.sidebar-minimized-scroll {
   -ms-overflow-style: none !important;
   scrollbar-width: none !important;
 }

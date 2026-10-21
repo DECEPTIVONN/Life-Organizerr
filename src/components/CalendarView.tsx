@@ -47,7 +47,14 @@ import {
   Utensils,
   Coffee,
   Droplets,
-  Activity
+  Activity,
+  TrendingUp,
+  Scale,
+  BatteryLow,
+  Salad,
+  Dumbbell,
+  Feather,
+  Cake
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import TagManagementModal from './TagManagementModal';
@@ -1032,7 +1039,8 @@ export default function CalendarView({
   const [newMealCustomInput, setNewMealCustomInput] = useState('');
   const [showMealNotesInput, setShowMealNotesInput] = useState(false);
   const [dailyEnergyLevel, setDailyEnergyLevel] = useState<string>(() => {
-    return localStorage.getItem('planner_daily_energy_level') || '🔋 Alta Disposição';
+    const raw = localStorage.getItem('planner_daily_energy_level') || 'Alta';
+    return raw.replace(/^[^\w\sÀ-ÿ]+/, '').trim() || 'Alta';
   });
 
   // Swipe gesture detection between tabs on mobile
@@ -3071,16 +3079,24 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
           </div>
         </div>
 
-        {/* Sticky floating '+' button - styled perfectly */}
+        {/* Sticky floating '+' button - identical style to DailyMissionsView FAB */}
         <button
+          type="button"
           onClick={() => {
             const todayStr = getTodayDateStr();
             handleSelectDate(todayStr);
           }}
-          className="fixed bottom-6 right-6 md:bottom-8 md:right-8 bg-[#2f437c] hover:bg-[#3b539c] text-white p-4 rounded-2xl shadow-xl shadow-black/40 hover:scale-105 active:scale-95 transition-all z-40 flex items-center justify-center border border-[#405697]"
-          title="Nova Entrada/Evento"
+          className="fixed bottom-28 sm:bottom-8 right-5 sm:right-8 z-40 w-12 h-12 sm:w-13 sm:h-13 rounded-full bg-[#09090b]/80 hover:bg-[#141419]/90 active:scale-90 shadow-xl backdrop-blur-md transition-all flex items-center justify-center cursor-pointer group outline-none select-none border-0"
+          title="Nova Entrada / Evento"
+          aria-label="Nova Entrada / Evento"
         >
-          <Plus className="h-6 w-6" />
+          <Plus 
+            className="w-5 h-5 sm:w-5.5 sm:h-5.5 stroke-[2.2] transition-transform duration-200 group-hover:scale-110 group-active:scale-90" 
+            style={{ 
+              color: 'var(--color-orange-500, #f97316)',
+              filter: 'drop-shadow(0 0 8px var(--accent-glow, rgba(249,115,22,0.5)))'
+            }}
+          />
         </button>
 
       {/* Fullscreen Modal Overlay for Espaço Diário & Fé or Master Templates */}
@@ -4356,24 +4372,31 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                   <span className="text-[9.5px] text-zinc-400 font-mono font-bold flex items-center gap-1">
                                     <Zap className="w-3 h-3 text-amber-400" /> Disposição Hoje:
                                   </span>
-                                  <div className="flex items-center gap-1 flex-wrap">
-                                    {['🔋 Alta', '⚡ Produtivo', '🧘 Equilibrado', '🪫 Cansado'].map(level => {
-                                      const isSelected = dailyEnergyLevel === level;
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    {[
+                                      { id: 'Alta', label: 'Alta', icon: Zap, color: 'text-amber-400', activeBg: 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-xs' },
+                                      { id: 'Produtivo', label: 'Produtivo', icon: TrendingUp, color: 'text-blue-400', activeBg: 'bg-blue-500/20 text-blue-300 border-blue-500/50 shadow-xs' },
+                                      { id: 'Equilibrado', label: 'Equilibrado', icon: Scale, color: 'text-emerald-400', activeBg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-xs' },
+                                      { id: 'Cansado', label: 'Cansado', icon: BatteryLow, color: 'text-rose-400', activeBg: 'bg-rose-500/20 text-rose-300 border-rose-500/50 shadow-xs' }
+                                    ].map(levelItem => {
+                                      const isSelected = dailyEnergyLevel === levelItem.label || dailyEnergyLevel.toLowerCase().includes(levelItem.label.toLowerCase());
+                                      const LevelIcon = levelItem.icon;
                                       return (
                                         <button
-                                          key={level}
+                                          key={levelItem.id}
                                           type="button"
                                           onClick={() => {
-                                            setDailyEnergyLevel(level);
-                                            localStorage.setItem('planner_daily_energy_level', level);
+                                            setDailyEnergyLevel(levelItem.label);
+                                            localStorage.setItem('planner_daily_energy_level', levelItem.label);
                                           }}
-                                          className={`px-2 py-0.5 rounded-lg text-[9.5px] font-mono font-bold transition-all cursor-pointer ${
+                                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[9.5px] font-mono font-bold transition-all cursor-pointer border ${
                                             isSelected
-                                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-xs'
-                                              : 'bg-zinc-900/80 text-zinc-400 hover:text-white border border-zinc-800'
+                                              ? levelItem.activeBg
+                                              : 'bg-zinc-900/80 text-zinc-400 hover:text-white border-zinc-800 hover:bg-zinc-800'
                                           }`}
                                         >
-                                          {level}
+                                          <LevelIcon className={`w-3.5 h-3.5 ${isSelected ? 'text-current' : levelItem.color}`} />
+                                          <span>{levelItem.label}</span>
                                         </button>
                                       );
                                     })}
@@ -4547,13 +4570,6 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                               setMealRaw(serializeFoodList(updated));
                             };
 
-                            const quickSuggestions = 
-                              activeMealTab === 'manha'
-                                ? ['Ovos mexidos', 'Café preto', 'Frutas', 'Aveia', 'Whey protein', 'Pão integral', 'Iogurte natural']
-                                : activeMealTab === 'tarde'
-                                ? ['Frango grelhado', 'Arroz integral', 'Feijão', 'Salada verde', 'Legumes cozidos', 'Carne magra', 'Azeite']
-                                : ['Omelete leve', 'Sopa nutritiva', 'Salada colorida', 'Frango grelhado', 'Chá calmante', 'Legumes'];
-
                             return (
                               <div className="bg-[#0b0c10] border border-emerald-500/20 rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-lg shadow-emerald-950/20">
                                 <div className="flex items-center justify-between border-b border-zinc-850/80 pb-3">
@@ -4630,25 +4646,38 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                   <div className="p-3 bg-zinc-950/80 border border-zinc-850 rounded-xl min-h-[58px] flex flex-wrap items-center gap-1.5">
                                     {currentItems.length === 0 ? (
                                       <p className="text-[11px] text-zinc-500 italic font-sans">
-                                        Nenhum alimento registrado ainda. Toque nas sugestões abaixo ou digite para adicionar rapidamente.
+                                        Nenhum alimento registrado ainda. Digite acima ou selecione um perfil abaixo para registrar.
                                       </p>
                                     ) : (
-                                      currentItems.map((item, idx) => (
-                                        <span
-                                          key={idx}
-                                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-semibold shadow-xs animate-in fade-in"
-                                        >
-                                          <span>{item}</span>
-                                          <button
-                                            type="button"
-                                            onClick={() => handleRemoveItem(idx)}
-                                            className="text-emerald-400 hover:text-rose-400 p-0.5 rounded transition-colors cursor-pointer"
-                                            title="Remover este item"
+                                      currentItems.map((item, idx) => {
+                                        const cleanItem = item.replace(/^[^\w\sÀ-ÿ]+/, '').trim();
+                                        const matchedProfile = [
+                                          { label: 'Saudável', icon: Salad, color: 'text-emerald-400' },
+                                          { label: 'Alto Teor Proteico', icon: Dumbbell, color: 'text-orange-400' },
+                                          { label: 'Equilibrado', icon: Scale, color: 'text-cyan-400' },
+                                          { label: 'Leve', icon: Feather, color: 'text-teal-300' },
+                                          { label: 'Refeição Livre', icon: Cake, color: 'text-purple-400' }
+                                        ].find(p => p.label.toLowerCase() === cleanItem.toLowerCase());
+                                        const ItemIcon = matchedProfile?.icon;
+
+                                        return (
+                                          <span
+                                            key={idx}
+                                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-semibold shadow-xs animate-in fade-in"
                                           >
-                                            <X className="w-3 h-3" />
-                                          </button>
-                                        </span>
-                                      ))
+                                            {ItemIcon && <ItemIcon className={`w-3.5 h-3.5 ${matchedProfile.color}`} />}
+                                            <span>{cleanItem || item}</span>
+                                            <button
+                                              type="button"
+                                              onClick={() => handleRemoveItem(idx)}
+                                              className="text-emerald-400 hover:text-rose-400 p-0.5 rounded transition-colors cursor-pointer ml-0.5"
+                                              title="Remover este item"
+                                            >
+                                              <X className="w-3 h-3" />
+                                            </button>
+                                          </span>
+                                        );
+                                      })
                                     )}
                                   </div>
 
@@ -4679,54 +4708,38 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                     </button>
                                   </form>
 
-                                  {/* Quick Suggestion Chips (1-tap add) */}
-                                  <div className="space-y-1 pt-1">
-                                    <span className="text-[9px] text-zinc-500 font-mono font-medium block">
-                                      Sugestões populares (toque para adicionar):
-                                    </span>
-                                    <div className="flex flex-wrap items-center gap-1.5">
-                                      {quickSuggestions.map(tag => {
-                                        const alreadyHas = currentItems.includes(tag);
-                                        return (
-                                          <button
-                                            key={tag}
-                                            type="button"
-                                            onClick={() => {
-                                              if (!alreadyHas) handleAddItem(tag);
-                                            }}
-                                            disabled={alreadyHas}
-                                            className={`text-[10px] font-medium px-2 py-0.5 rounded-md border transition-all cursor-pointer ${
-                                              alreadyHas
-                                                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 opacity-60'
-                                                : 'bg-zinc-900/80 hover:bg-emerald-500/20 text-zinc-300 hover:text-emerald-300 border-zinc-800'
-                                            }`}
-                                          >
-                                            {alreadyHas ? '✓ ' : '+ '}{tag}
-                                          </button>
-                                        );
-                                      })}
-                                    </div>
-                                  </div>
-
-                                  {/* Quick Dietary Vibe Pills */}
+                                  {/* Quick Dietary Vibe Pills with Site-Standard Vector Icons */}
                                   <div className="flex flex-wrap items-center gap-1.5 pt-1">
                                     <span className="text-[9px] text-zinc-500 font-mono font-medium">Perfil:</span>
-                                    {['🥗 Saudável', '💪 Alto Teor Proteico', '⚖️ Equilibrado', '⚡ Leve', '🍰 Refeição Livre'].map(vibe => {
-                                      const alreadyHas = currentItems.includes(vibe);
+                                    {[
+                                      { id: 'saudavel', label: 'Saudável', icon: Salad, color: 'text-emerald-400', activeClass: 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 shadow-xs' },
+                                      { id: 'proteico', label: 'Alto Teor Proteico', icon: Dumbbell, color: 'text-orange-400', activeClass: 'bg-orange-500/20 border-orange-500/50 text-orange-300 shadow-xs' },
+                                      { id: 'equilibrado', label: 'Equilibrado', icon: Scale, color: 'text-cyan-400', activeClass: 'bg-cyan-500/20 border-cyan-500/50 text-cyan-300 shadow-xs' },
+                                      { id: 'leve', label: 'Leve', icon: Feather, color: 'text-teal-300', activeClass: 'bg-teal-500/20 border-teal-500/50 text-teal-300 shadow-xs' },
+                                      { id: 'livre', label: 'Refeição Livre', icon: Cake, color: 'text-purple-400', activeClass: 'bg-purple-500/20 border-purple-500/50 text-purple-300 shadow-xs' }
+                                    ].map(vibe => {
+                                      const VibeIcon = vibe.icon;
+                                      const alreadyHas = currentItems.some(i => i === vibe.label || i.replace(/^[^\w\sÀ-ÿ]+/, '').trim().toLowerCase() === vibe.label.toLowerCase());
                                       return (
                                         <button
-                                          key={vibe}
+                                          key={vibe.id}
                                           type="button"
                                           onClick={() => {
-                                            if (!alreadyHas) handleAddItem(vibe);
+                                            if (alreadyHas) {
+                                              const idx = currentItems.findIndex(i => i === vibe.label || i.replace(/^[^\w\sÀ-ÿ]+/, '').trim().toLowerCase() === vibe.label.toLowerCase());
+                                              if (idx !== -1) handleRemoveItem(idx);
+                                            } else {
+                                              handleAddItem(vibe.label);
+                                            }
                                           }}
-                                          className={`text-[9.5px] font-medium px-2 py-0.5 rounded-full border transition-all cursor-pointer ${
+                                          className={`inline-flex items-center gap-1.5 text-[9.5px] font-mono font-bold px-2.5 py-1 rounded-full border transition-all cursor-pointer ${
                                             alreadyHas
-                                              ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
-                                              : 'bg-zinc-900/60 hover:bg-zinc-850 text-zinc-400 hover:text-zinc-200 border-zinc-850'
+                                              ? vibe.activeClass
+                                              : 'bg-zinc-900/60 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border-zinc-800'
                                           }`}
                                         >
-                                          {vibe}
+                                          <VibeIcon className={`w-3.5 h-3.5 ${alreadyHas ? 'text-current' : vibe.color}`} />
+                                          <span>{vibe.label}</span>
                                         </button>
                                       );
                                     })}

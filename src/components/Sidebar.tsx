@@ -2042,8 +2042,14 @@ export default function Sidebar({
           )}
         </div>
 
-        {/* Navigation Section */}
-        <nav className="flex-1 px-2.5 py-4 space-y-1.5 overflow-y-auto scrollbar-none flex flex-col items-center">
+        {/* Navigation Section - scrollbar is completely hidden when minimized */}
+        <nav 
+          className={`flex-1 px-2.5 py-4 space-y-1.5 flex flex-col items-center overflow-y-auto transition-all ${
+            isExpanded 
+              ? '' 
+              : 'no-scrollbar scrollbar-none sidebar-minimized-scroll [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden [&::-webkit-scrollbar]:w-0'
+          }`}
+        >
           {/* Quick Search Button in Sidebar - perfectly centered when collapsed */}
           <button
             onClick={() => setSearchOpen(true)}
