@@ -65,6 +65,22 @@ export const THEME_PRESETS: ThemePreset[] = [
     accentHex: '#dce775',
     glowColor: 'rgba(205, 220, 57, 0.4)',
   },
+  {
+    id: 'preto-padrao',
+    name: 'Preto Padrão (Atual)',
+    primaryHex: '#27272a',
+    accentHex: '#71717a',
+    glowColor: 'rgba(113, 113, 122, 0.35)',
+    previewGradient: 'from-zinc-800 to-zinc-950',
+  },
+  {
+    id: 'preto-amoled',
+    name: 'Preto AMOLED',
+    primaryHex: '#000000',
+    accentHex: '#18181b',
+    glowColor: 'rgba(255, 255, 255, 0.25)',
+    previewGradient: 'from-black to-zinc-900',
+  },
 ];
 
 export function hexToRgb(hex: string): { r: number; g: number; b: number } {
@@ -177,9 +193,29 @@ export function applyThemeColor(primaryHex: string) {
   root.style.setProperty('--theme-nav-glow', `0 4px 15px rgba(${r}, ${g}, ${b}, 0.4)`);
 }
 
-// Auto-apply saved theme on initial script load if in browser
+export function applyDarkBackgroundStyle(style: 'padrao' | 'amoled') {
+  if (typeof document === 'undefined') return;
+  const root = document.documentElement;
+  if (style === 'amoled') {
+    root.classList.add('amoled-mode');
+  } else {
+    root.classList.remove('amoled-mode');
+  }
+  try {
+    localStorage.setItem('mbc_dark_background_style', style);
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+// Auto-apply saved theme and dark style on initial script load if in browser
 if (typeof window !== 'undefined') {
   try {
+    const savedDarkStyle = (localStorage.getItem('mbc_dark_background_style') as 'padrao' | 'amoled') || 'padrao';
+    if (savedDarkStyle === 'amoled') {
+      document.documentElement.classList.add('amoled-mode');
+    }
+
     const savedPreset = localStorage.getItem('mbc_theme_preset') || 'default';
     const savedCustomHex = localStorage.getItem('mbc_custom_theme_hex') || '#3396f3';
     if (savedPreset === 'custom' && savedCustomHex) {

@@ -1174,10 +1174,16 @@ export default function DailyMissionsView({
       <button
         type="button"
         onClick={handleOpenCreateTask}
-        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-white text-zinc-950 hover:bg-zinc-200 active:scale-95 shadow-2xl flex items-center justify-center font-bold text-2xl transition-all cursor-pointer"
+        className="fixed bottom-28 sm:bottom-8 right-5 sm:right-8 z-40 w-12 h-12 sm:w-13 sm:h-13 rounded-full bg-[#09090b]/80 hover:bg-[#141419]/90 active:scale-90 shadow-xl backdrop-blur-md transition-all flex items-center justify-center cursor-pointer group outline-none select-none border-0"
         aria-label="Nova tarefa"
       >
-        <Plus className="w-7 h-7 stroke-[2.5]" />
+        <Plus 
+          className="w-5 h-5 sm:w-5.5 sm:h-5.5 stroke-[2.2] transition-transform duration-200 group-hover:scale-110 group-active:scale-90" 
+          style={{ 
+            color: 'var(--color-orange-500, #f97316)',
+            filter: 'drop-shadow(0 0 8px var(--accent-glow, rgba(249,115,22,0.5)))'
+          }}
+        />
       </button>
 
       {/* ======================================================== */}

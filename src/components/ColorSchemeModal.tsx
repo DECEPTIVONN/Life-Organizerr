@@ -8,6 +8,7 @@ import {
   rgbToHsv,
   hsvToRgb,
   applyThemeColor,
+  applyDarkBackgroundStyle,
 } from '../utils/themeColors';
 
 interface ColorSchemeModalProps {
@@ -35,6 +36,9 @@ export default function ColorSchemeModal({
   const [tempVal, setTempVal] = useState<number>(95);
   const [brightness, setBrightness] = useState<number>(100); // 0 to 200%
   const [colorFormat, setColorFormat] = useState<'RGB' | 'HEX' | 'HSL'>('RGB');
+  const [darkBackgroundStyle, setDarkBackgroundStyle] = useState<'padrao' | 'amoled'>(() => {
+    return (typeof window !== 'undefined' ? (localStorage.getItem('mbc_dark_background_style') as 'padrao' | 'amoled') : 'padrao') || 'padrao';
+  });
 
   // Canvas 2D drag ref & Wheel ref
   const pickerCanvasRef = useRef<HTMLDivElement>(null);
@@ -252,8 +256,82 @@ export default function ColorSchemeModal({
                 </div>
               </button>
 
+              {/* SEÇÃO: ESTILO PRETO (PADRÃO ATUAL VS AMOLED) */}
+              <div className="p-4 md:p-5 bg-zinc-950/80 rounded-2xl border border-zinc-800/80 space-y-3">
+                <div>
+                  <h4 className="text-xs md:text-sm font-bold text-zinc-100 font-mono flex items-center gap-2">
+                    Estilo de Fundo Preto
+                  </h4>
+                  <p className="text-[11px] md:text-xs text-zinc-400 font-mono mt-0.5">
+                    Selecione entre o fundo escuro padrão e o preto puro AMOLED (0% de luz para economia de bateria).
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  {/* PRETO PADRÃO */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDarkBackgroundStyle('padrao');
+                      applyDarkBackgroundStyle('padrao');
+                    }}
+                    className={`p-3.5 rounded-xl border transition-all text-left flex items-center gap-3 cursor-pointer ${
+                      darkBackgroundStyle === 'padrao'
+                        ? 'bg-zinc-900 border-orange-500/80 shadow-[0_0_14px_rgba(249,115,22,0.25)]'
+                        : 'bg-zinc-900/40 border-zinc-800 hover:border-zinc-700'
+                    }`}
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-[#040405] border border-zinc-700 shrink-0 flex items-center justify-center">
+                      {darkBackgroundStyle === 'padrao' && (
+                        <Check className="w-4 h-4 text-orange-400 stroke-[3]" />
+                      )}
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold font-mono text-zinc-200 block">
+                        Preto Padrão
+                      </span>
+                      <span className="text-[10px] text-zinc-500 font-mono">
+                        Atual (Tons de Obsidiana)
+                      </span>
+                    </div>
+                  </button>
+
+                  {/* PRETO AMOLED */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDarkBackgroundStyle('amoled');
+                      applyDarkBackgroundStyle('amoled');
+                    }}
+                    className={`p-3.5 rounded-xl border transition-all text-left flex items-center gap-3 cursor-pointer ${
+                      darkBackgroundStyle === 'amoled'
+                        ? 'bg-zinc-900 border-orange-500/80 shadow-[0_0_14px_rgba(249,115,22,0.25)]'
+                        : 'bg-zinc-900/40 border-zinc-800 hover:border-zinc-700'
+                    }`}
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-black border border-zinc-600 shrink-0 flex items-center justify-center shadow-inner">
+                      {darkBackgroundStyle === 'amoled' && (
+                        <Check className="w-4 h-4 text-orange-400 stroke-[3]" />
+                      )}
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold font-mono text-zinc-200 block">
+                        Preto AMOLED
+                      </span>
+                      <span className="text-[10px] text-zinc-500 font-mono">
+                        Preto Puro #000000 (OLED)
+                      </span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
               {/* GRID OF PRESET THEMES */}
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 pt-1">
+              <div className="space-y-2">
+                <span className="text-xs font-mono font-bold text-zinc-400 uppercase tracking-wider block">
+                  Cores de Destaque
+                </span>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 pt-1">
                 {THEME_PRESETS.map((preset) => {
                   const isSelected = activePresetId === preset.id;
                   return (
@@ -263,6 +341,13 @@ export default function ColorSchemeModal({
                       onClick={() => {
                         onSelectPreset(preset.id);
                         applyThemeColor(preset.primaryHex);
+                        if (preset.id === 'preto-amoled') {
+                          setDarkBackgroundStyle('amoled');
+                          applyDarkBackgroundStyle('amoled');
+                        } else if (preset.id === 'preto-padrao') {
+                          setDarkBackgroundStyle('padrao');
+                          applyDarkBackgroundStyle('padrao');
+                        }
                       }}
                       className={`p-3.5 md:p-4 rounded-2xl border transition-all flex items-center gap-3 text-left relative overflow-hidden group ${
                         isSelected
@@ -294,7 +379,8 @@ export default function ColorSchemeModal({
                 })}
               </div>
             </div>
-          )}
+          </div>
+        )}
 
           {/* MODE 2: CUSTOM COLOR PICKER 2D CANVAS */}
           {viewMode === 'custom_2d' && (

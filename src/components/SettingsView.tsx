@@ -55,7 +55,7 @@ import {
 } from '../utils/reviewReminderUtils';
 import defaultLockBg from '../assets/images/1271888.jpg';
 import ColorSchemeModal from './ColorSchemeModal';
-import { THEME_PRESETS, applyThemeColor } from '../utils/themeColors';
+import { THEME_PRESETS, applyThemeColor, applyDarkBackgroundStyle } from '../utils/themeColors';
 import { motion, AnimatePresence } from 'motion/react';
 import QRCode from 'qrcode';
 import { setSupabaseConfig, testSupabaseConnection } from '../lib/supabase';
@@ -480,6 +480,11 @@ export default function SettingsView({
       setCurrentNavbarShape(mobileNavbarShape);
     }
   }, [mobileNavbarShape]);
+
+  // Estado do estilo de fundo escuro (preto padrão vs preto amoled)
+  const [darkBackgroundStyle, setDarkBackgroundStyle] = useState<'padrao' | 'amoled'>(() => {
+    return (typeof window !== 'undefined' ? (localStorage.getItem('mbc_dark_background_style') as 'padrao' | 'amoled') : 'padrao') || 'padrao';
+  });
 
   // Função para gerar uma nova sessão de QR Code de 5 minutos
   const generateNewDeviceQr = async () => {
@@ -3134,6 +3139,80 @@ export default function SettingsView({
                   {currentNavbarShape === 'reta'
                     ? 'Barra clássica reta, como no layout original.'
                     : 'Barra flutuante moderna curva neon com bordas arredondadas.'}
+                </p>
+              </div>
+            </div>
+
+            {/* Estilo de Fundo Preto (Preto Padrão vs Preto AMOLED) */}
+            <div className="p-4 bg-zinc-950 border border-zinc-900 rounded-2xl space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <Palette className="w-4 h-4 text-orange-400" />
+                    <h4 className="text-xs font-bold text-zinc-200">Estilo de Fundo Preto</h4>
+                    <span className="text-[8px] font-bold text-orange-400 bg-orange-500/10 border border-orange-500/20 px-2 py-0.5 rounded-full font-mono uppercase">
+                      Display
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-zinc-500 font-mono leading-normal">
+                    Selecione entre o preto padrão atual (tons profundos de obsidiana) e o preto AMOLED (preto puro #000000 para economia de bateria e telas OLED).
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2 pt-1">
+                <div className="grid grid-cols-2 gap-3">
+                  {/* PRETO PADRÃO */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDarkBackgroundStyle('padrao');
+                      applyDarkBackgroundStyle('padrao');
+                      addXp(10);
+                    }}
+                    className={`flex flex-col items-center justify-center gap-2 py-4 rounded-2xl transition-all cursor-pointer font-mono font-bold text-xs uppercase tracking-wider ${
+                      darkBackgroundStyle === 'padrao'
+                        ? 'bg-zinc-800 border-2 border-orange-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.25)]'
+                        : 'bg-zinc-900/60 border border-zinc-800/80 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                    }`}
+                  >
+                    <div className="w-7 h-7 rounded-xl bg-[#040405] border border-zinc-600 flex items-center justify-center shadow-inner">
+                      {darkBackgroundStyle === 'padrao' && (
+                        <Check className="w-4 h-4 text-orange-400 stroke-[3]" />
+                      )}
+                    </div>
+                    <span>Preto Padrão</span>
+                    <span className="text-[9px] font-normal text-zinc-400 font-mono lowercase">atual (obsidiana)</span>
+                  </button>
+
+                  {/* PRETO AMOLED */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDarkBackgroundStyle('amoled');
+                      applyDarkBackgroundStyle('amoled');
+                      addXp(10);
+                    }}
+                    className={`flex flex-col items-center justify-center gap-2 py-4 rounded-2xl transition-all cursor-pointer font-mono font-bold text-xs uppercase tracking-wider ${
+                      darkBackgroundStyle === 'amoled'
+                        ? 'bg-black border-2 border-orange-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.35)]'
+                        : 'bg-zinc-900/60 border border-zinc-800/80 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                    }`}
+                  >
+                    <div className="w-7 h-7 rounded-xl bg-black border border-zinc-700 flex items-center justify-center shadow-inner">
+                      {darkBackgroundStyle === 'amoled' && (
+                        <Check className="w-4 h-4 text-orange-400 stroke-[3]" />
+                      )}
+                    </div>
+                    <span>Preto AMOLED</span>
+                    <span className="text-[9px] font-normal text-zinc-400 font-mono lowercase">puro #000000 (oled)</span>
+                  </button>
+                </div>
+
+                <p className="text-xs text-zinc-400 font-sans">
+                  {darkBackgroundStyle === 'amoled'
+                    ? 'Modo AMOLED ativado: pixels totalmente pretos (#000000) economizando energia em telas OLED/AMOLED.'
+                    : 'Modo Padrão ativado: tonalidade suave e escura padrão da interface.'}
                 </p>
               </div>
             </div>

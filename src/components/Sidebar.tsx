@@ -876,15 +876,48 @@ export default function Sidebar({
                 </button>
               </div>
 
-              {/* Profile card inside mobile */}
-              <div className="mb-6 p-4 bg-zinc-950 rounded-xl border border-zinc-900">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-orange-500/10 rounded-lg border border-orange-500/20">
-                    <Trophy className="h-5 w-5 text-orange-500" />
+              {/* User profile with XP progress bar inside mobile (matches desktop sidebar) */}
+              <div className="mb-6 p-4 bg-zinc-950 rounded-2xl border border-zinc-900/80 space-y-3">
+                <button 
+                  onClick={() => {
+                    setActiveTab('perfil');
+                    setMobileMenuOpen(false);
+                  }}
+                  className="flex items-center gap-3 min-w-0 text-left hover:opacity-80 transition-opacity active:scale-95 w-full cursor-pointer"
+                  title="Ver seu Perfil"
+                >
+                  <img 
+                    src={userPhoto} 
+                    alt={userName} 
+                    className="h-9 w-9 rounded-full object-cover border border-orange-500/20 flex-shrink-0 shadow-[0_0_8px_rgba(249,115,22,0.15)]"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-xs font-bold text-white tracking-tight truncate">{userName}</h3>
+                    <p className="text-[9px] text-orange-500 font-mono font-bold">{xpTotal} XP Acumulados</p>
                   </div>
-                  <div>
-                    <h4 className="text-xs font-black text-white uppercase tracking-wider">Membro Premium</h4>
-                    <p className="text-[10px] text-gray-500 font-mono mt-0.5">Nível {level} ({xpTotal} XP)</p>
+                </button>
+
+                {/* Experience progress bar */}
+                <div>
+                  <div className="w-full bg-zinc-900/80 h-1.5 rounded-full overflow-hidden border border-zinc-800/40">
+                    <div 
+                      className="bg-gradient-to-r from-orange-500 to-amber-500 h-full rounded-full transition-all duration-300" 
+                      style={{ width: `${progressPercent}%` }} 
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-[8px] font-mono text-gray-500 mt-1">
+                    <span>{xpInCurrentLevel} / 1000 XP</span>
+                    <button
+                      onClick={() => {
+                        if (onOpenStreakHub) onOpenStreakHub();
+                        setMobileMenuOpen(false);
+                      }}
+                      className="text-orange-400 hover:text-orange-300 flex items-center gap-0.5 font-bold hover:bg-orange-500/10 px-1 rounded transition-colors cursor-pointer"
+                      title="Abrir Central de Ofensivas & Congelamento"
+                    >
+                      <Flame className="h-2.5 w-2.5 animate-pulse" /> {streak} dias
+                    </button>
                   </div>
                 </div>
               </div>

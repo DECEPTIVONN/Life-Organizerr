@@ -426,3 +426,38 @@ input[type=number] {
   box-shadow: 0 0 16px rgba(16, 185, 129, 0.25), 0 4px 24px rgba(16, 185, 129, 0.08) !important;
 }
 
+/* ========================================================
+   MODO PRETO AMOLED (Pure True Black #000000 para telas OLED)
+   ======================================================== */
+html.amoled-mode,
+.amoled-mode body,
+.amoled-mode #root,
+.amoled-mode #main-app-container,
+.amoled-mode #workspace-area {
+  background-color: #000000 !important;
+}
+
+.amoled-mode aside#sidebarHUD,
+.amoled-mode .bg-zinc-950,
+.amoled-mode .bg-zinc-900\/30,
+.amoled-mode .bg-zinc-900\/40,
+.amoled-mode .bg-zinc-900\/50,
+.amoled-mode .bg-zinc-900\/60,
+.amoled-mode .bg-zinc-900\/70,
+.amoled-mode .bg-zinc-900\/80,
+.amoled-mode .bg-\[\#040405\],
+.amoled-mode .bg-\[\#07070a\],
+.amoled-mode .bg-\[\#09090b\],
+.amoled-mode .bg-\[\#0a0a0f\],
+.amoled-mode .bg-\[\#121216\] {
+  background-color: #000000 !important;
+}
+
+.amoled-mode .border-zinc-900,
+.amoled-mode .border-zinc-900\/60,
+.amoled-mode .border-zinc-900\/80,
+.amoled-mode .border-zinc-850,
+.amoled-mode .border-zinc-800 {
+  border-color: #18181b !important;
+}
+
