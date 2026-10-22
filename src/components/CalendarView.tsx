@@ -581,10 +581,40 @@ export default function CalendarView({
 
   // Book Config form states
   const [bookFormName, setBookFormName] = useState(bookTracker?.bookName || '');
-  const [bookFormTotalPages, setBookFormTotalPages] = useState(bookTracker?.totalPages || 250);
-  const [bookFormDeadline, setBookFormDeadline] = useState(bookTracker?.deadlineDays || 7);
-  const [bookFormPagesRead, setBookFormPagesRead] = useState(bookTracker?.pagesRead || 0);
+  const [bookFormTotalPages, setBookFormTotalPages] = useState<number | ''>(bookTracker?.totalPages || '');
+  const [bookFormDeadline, setBookFormDeadline] = useState<number | ''>(bookTracker?.deadlineDays || '');
+  const [bookFormPagesRead, setBookFormPagesRead] = useState<number | ''>(bookTracker?.pagesRead !== undefined ? bookTracker.pagesRead : '');
   const [showBookConfig, setShowBookConfig] = useState(false);
+  const [isEditingCurrentBook, setIsEditingCurrentBook] = useState(false);
+  const [showBookSwitcherModal, setShowBookSwitcherModal] = useState(false);
+  const [bookSwitcherSearchQuery, setBookSwitcherSearchQuery] = useState('');
+  const [historySearchQuery, setHistorySearchQuery] = useState('');
+  const bookFormRef = useRef<HTMLFormElement>(null);
+
+  const handleOpenNewBook = () => {
+    setIsEditingCurrentBook(false);
+    setBookFormName('');
+    setBookFormTotalPages('');
+    setBookFormDeadline('');
+    setBookFormPagesRead('');
+    setShowBookConfig(true);
+    setShowBookSwitcherModal(false);
+    setTimeout(() => {
+      bookFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  };
+
+  const handleOpenEditBook = () => {
+    setIsEditingCurrentBook(true);
+    setBookFormName(bookTracker?.bookName || '');
+    setBookFormTotalPages(bookTracker?.totalPages || '');
+    setBookFormDeadline(bookTracker?.deadlineDays || '');
+    setBookFormPagesRead(bookTracker?.pagesRead !== undefined ? bookTracker.pagesRead : '');
+    setShowBookConfig(true);
+    setTimeout(() => {
+      bookFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  };
 
   // Bible Config form states
   const [bibleFormMode, setBibleFormMode] = useState<'vezes' | 'capitulos'>('vezes');
@@ -597,15 +627,15 @@ export default function CalendarView({
   const [pagesLoggedToday, setPagesLoggedToday] = useState('');
   const [chaptersLoggedToday, setChaptersLoggedToday] = useState('');
 
-  // Keep form values in sync when bookTracker or bibleTracker changes
+  // Keep form values in sync when bookTracker or bibleTracker changes (only if currently editing)
   useEffect(() => {
-    if (bookTracker) {
+    if (bookTracker && isEditingCurrentBook) {
       setBookFormName(bookTracker.bookName || '');
-      setBookFormTotalPages(bookTracker.totalPages || 250);
-      setBookFormDeadline(bookTracker.deadlineDays || 7);
-      setBookFormPagesRead(bookTracker.pagesRead || 0);
+      setBookFormTotalPages(bookTracker.totalPages || '');
+      setBookFormDeadline(bookTracker.deadlineDays || '');
+      setBookFormPagesRead(bookTracker.pagesRead !== undefined ? bookTracker.pagesRead : '');
     }
-  }, [bookTracker]);
+  }, [bookTracker, isEditingCurrentBook]);
 
   useEffect(() => {
     if (bibleTracker) {
@@ -760,17 +790,18 @@ export default function CalendarView({
     e.preventDefault();
     if (!setBookTracker) return;
     const todayStr = getTodayDateStr();
-    const pRead = Number(bookFormPagesRead) || 0;
-    const totalP = Number(bookFormTotalPages) || 250;
+    const pRead = bookFormPagesRead === '' ? 0 : Number(bookFormPagesRead);
+    const totalP = bookFormTotalPages === '' ? 100 : Math.max(1, Number(bookFormTotalPages));
+    const deadlineD = bookFormDeadline === '' ? 30 : Math.max(1, Number(bookFormDeadline));
     const isCompleted = pRead >= totalP;
 
     const newTrackerData: BookTracker = {
       bookName: bookFormName.trim(),
       totalPages: totalP,
-      deadlineDays: Number(bookFormDeadline) || 7,
+      deadlineDays: deadlineD,
       pagesRead: pRead,
-      startedDate: bookTracker?.startedDate || todayStr,
-      history: bookTracker?.history || []
+      startedDate: isEditingCurrentBook && bookTracker?.startedDate ? bookTracker.startedDate : todayStr,
+      history: isEditingCurrentBook && bookTracker?.history ? bookTracker.history : []
     };
 
     if (isCompleted) {
@@ -791,8 +822,11 @@ export default function CalendarView({
         history: []
       });
       setBookFormName('');
-      setBookFormPagesRead(0);
+      setBookFormTotalPages('');
+      setBookFormDeadline('');
+      setBookFormPagesRead('');
       setShowBookConfig(false);
+      setIsEditingCurrentBook(false);
       addXp(100);
     } else {
       setBookTracker(newTrackerData);
@@ -804,6 +838,7 @@ export default function CalendarView({
         setWeeklyReviews
       );
       setShowBookConfig(false);
+      setIsEditingCurrentBook(false);
       addXp(20);
     }
   };
@@ -3219,7 +3254,6 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                 <div className="shrink-0 flex justify-between items-center border-b border-zinc-800 pb-3 md:pb-4 px-1 sm:px-2">
                   <div>
                     <h3 className="text-sm sm:text-base font-extrabold text-white uppercase tracking-wider flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-orange-500 inline-block animate-pulse" />
                       Meu Dia
                     </h3>
                     <p className="text-[10px] sm:text-xs text-orange-500 font-mono font-bold mt-0.5 capitalize">
@@ -3727,26 +3761,50 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                               {bookTracker?.bookName ? (
                                 <div className="bg-zinc-950/60 border border-zinc-900 rounded-xl p-3.5 space-y-3">
                                   {/* Book Header info */}
-                                  <div className="flex items-start justify-between gap-2 border-b border-zinc-900 pb-3">
+                                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-zinc-900 pb-3">
                                     <div className="min-w-0 flex-1">
-                                      <span className="text-[9px] font-bold text-orange-400 uppercase tracking-wider block">
+                                      <span className="text-[9px] font-bold text-orange-400 uppercase tracking-wider block font-mono">
                                         Lendo Atualmente
                                       </span>
                                       <h4 className="text-sm font-bold text-white truncate mt-0.5">
                                         {bookTracker.bookName}
                                       </h4>
-                                      <p className="text-[10px] text-zinc-500 mt-0.5">
-                                        Prazo estimado: {bookTracker.deadlineDays || 7} dias
+                                      <p className="text-[10px] text-zinc-500 mt-0.5 font-mono">
+                                        Prazo: {bookTracker.deadlineDays || 7} dias • Início: {bookTracker.startedDate ? bookTracker.startedDate.split('-').reverse().join('/') : 'Hoje'}
                                       </p>
                                     </div>
-                                    <button
-                                      type="button"
-                                      onClick={() => setShowBookConfig(true)}
-                                      className="p-1.5 text-zinc-400 hover:text-white bg-zinc-900 hover:bg-zinc-800 rounded-lg border border-zinc-800 text-xs transition-colors shrink-0"
-                                      title="Editar metas do livro"
-                                    >
-                                      <Settings className="h-3.5 w-3.5" />
-                                    </button>
+
+                                    {/* Action buttons: Trocar Livro, Novo Livro, Config */}
+                                    <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+                                      <button
+                                        type="button"
+                                        onClick={() => setShowBookSwitcherModal(true)}
+                                        className="px-2.5 py-1.5 bg-zinc-900 hover:bg-zinc-850 hover:text-orange-400 text-zinc-300 rounded-lg border border-zinc-800 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+                                        title="Trocar o livro sendo lido por outro livro do seu acervo"
+                                      >
+                                        <ArrowUpDown className="h-3.5 w-3.5 text-orange-500" />
+                                        <span>Trocar Livro</span>
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={handleOpenNewBook}
+                                        className="px-2.5 py-1.5 bg-orange-500/15 hover:bg-orange-500/25 text-orange-400 hover:text-orange-300 border border-orange-500/30 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer shadow-xs"
+                                        title="Cadastrar um novo livro para ler"
+                                      >
+                                        <Plus className="h-3.5 w-3.5" />
+                                        <span>Novo Livro</span>
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={handleOpenEditBook}
+                                        className="p-1.5 text-zinc-400 hover:text-white bg-zinc-900 hover:bg-zinc-850 rounded-lg border border-zinc-800 text-xs transition-colors shrink-0 cursor-pointer"
+                                        title="Editar metas e páginas do livro atual"
+                                      >
+                                        <Settings className="h-3.5 w-3.5" />
+                                      </button>
+                                    </div>
                                   </div>
 
                                   {/* Progress bar */}
@@ -3865,41 +3923,53 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                       Cadastre o livro que você está lendo para acompanhar o progresso diário, bater metas e acumular XP.
                                     </p>
                                   </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setBookFormName('');
-                                      setBookFormTotalPages(250);
-                                      setBookFormDeadline(7);
-                                      setBookFormPagesRead(0);
-                                      setShowBookConfig(true);
-                                    }}
-                                    className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs px-4 py-2 rounded-lg inline-flex items-center gap-1.5 transition-colors shadow-lg shadow-orange-500/10"
-                                  >
-                                    <Plus className="h-3.5 w-3.5" /> Cadastrar Livro Atual
-                                  </button>
+                                  <div className="flex items-center justify-center gap-2 flex-wrap">
+                                    <button
+                                      type="button"
+                                      onClick={handleOpenNewBook}
+                                      className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs px-4 py-2 rounded-lg inline-flex items-center gap-1.5 transition-colors shadow-lg shadow-orange-500/10 cursor-pointer"
+                                    >
+                                      <Plus className="h-3.5 w-3.5" /> Cadastrar Novo Livro
+                                    </button>
+
+                                    {actualBooks && actualBooks.length > 0 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setShowBookSwitcherModal(true)}
+                                        className="bg-zinc-900 hover:bg-zinc-850 text-zinc-300 hover:text-white font-bold text-xs px-3.5 py-2 rounded-lg inline-flex items-center gap-1.5 transition-colors border border-zinc-800 cursor-pointer"
+                                      >
+                                        <ArrowUpDown className="h-3.5 w-3.5 text-orange-500" /> Escolher do Acervo ({actualBooks.length})
+                                      </button>
+                                    )}
+                                  </div>
                                 </div>
                               )}
 
                               {/* Book Config Modal / Inline Form */}
                               {showBookConfig && (
-                                <form onSubmit={handleSaveBookConfig} className="bg-zinc-950 border border-orange-500/30 rounded-xl p-3.5 space-y-3">
-                                  <div className="flex justify-between items-center border-b border-zinc-900 pb-2">
-                                    <span className="text-xs font-bold text-orange-400 uppercase tracking-wider">
-                                      {bookTracker?.bookName ? 'Editar Livro Atual' : 'Novo Livro'}
-                                    </span>
+                                <form ref={bookFormRef} onSubmit={handleSaveBookConfig} className="bg-zinc-950 border border-orange-500/40 rounded-xl p-4 space-y-3.5 shadow-xl">
+                                  <div className="flex justify-between items-center border-b border-zinc-900 pb-2.5">
+                                    <div className="flex items-center gap-2">
+                                      <BookOpen className="h-4 w-4 text-orange-400" />
+                                      <span className="text-xs font-bold text-orange-400 uppercase tracking-wider font-mono">
+                                        {isEditingCurrentBook ? 'Editar Livro Atual' : 'Cadastrar Novo Livro'}
+                                      </span>
+                                    </div>
                                     <button
                                       type="button"
-                                      onClick={() => setShowBookConfig(false)}
-                                      className="text-zinc-500 hover:text-white p-1"
+                                      onClick={() => {
+                                        setShowBookConfig(false);
+                                        setIsEditingCurrentBook(false);
+                                      }}
+                                      className="text-zinc-500 hover:text-white p-1 rounded-lg hover:bg-zinc-900 transition-colors cursor-pointer"
                                     >
                                       <X className="h-3.5 w-3.5" />
                                     </button>
                                   </div>
 
-                                  <div className="space-y-2.5">
+                                  <div className="space-y-3">
                                     <div>
-                                      <label className="text-[9px] font-bold text-zinc-400 uppercase block mb-1">
+                                      <label className="text-[9px] font-bold text-zinc-400 uppercase block mb-1 font-mono">
                                         Título do Livro
                                       </label>
                                       <input
@@ -3907,72 +3977,268 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                         required
                                         value={bookFormName}
                                         onChange={(e) => setBookFormName(e.target.value)}
-                                        placeholder="Ex: Hábitos Atômicos"
-                                        className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-orange-500/50"
+                                        placeholder="Ex: Hábitos Atômicos, O Poder do Hábito..."
+                                        className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500/50"
                                       />
                                     </div>
 
-                                    <div className="grid grid-cols-3 gap-2">
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                                       <div>
-                                        <label className="text-[9px] font-bold text-zinc-400 uppercase block mb-1">
+                                        <label className="text-[9px] font-bold text-zinc-400 uppercase block mb-1 font-mono">
                                           Total Págs
                                         </label>
                                         <input
                                           type="number"
                                           min="1"
                                           required
-                                          value={bookFormTotalPages}
-                                          onChange={(e) => setBookFormTotalPages(Number(e.target.value))}
-                                          className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono"
+                                          value={bookFormTotalPages === '' ? '' : bookFormTotalPages}
+                                          onChange={(e) => setBookFormTotalPages(e.target.value === '' ? '' : Number(e.target.value))}
+                                          placeholder="Ex: 300"
+                                          className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500/50 font-mono"
                                         />
                                       </div>
 
                                       <div>
-                                        <label className="text-[9px] font-bold text-zinc-400 uppercase block mb-1">
+                                        <label className="text-[9px] font-bold text-zinc-400 uppercase block mb-1 font-mono">
                                           Prazo (Dias)
                                         </label>
                                         <input
                                           type="number"
                                           min="1"
                                           required
-                                          value={bookFormDeadline}
-                                          onChange={(e) => setBookFormDeadline(Number(e.target.value))}
-                                          className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono"
+                                          value={bookFormDeadline === '' ? '' : bookFormDeadline}
+                                          onChange={(e) => setBookFormDeadline(e.target.value === '' ? '' : Number(e.target.value))}
+                                          placeholder="Ex: 30"
+                                          className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500/50 font-mono"
                                         />
                                       </div>
 
                                       <div>
-                                        <label className="text-[9px] font-bold text-zinc-400 uppercase block mb-1">
+                                        <label className="text-[9px] font-bold text-zinc-400 uppercase block mb-1 font-mono">
                                           Já Lidas
                                         </label>
                                         <input
                                           type="number"
                                           min="0"
-                                          value={bookFormPagesRead}
-                                          onChange={(e) => setBookFormPagesRead(Number(e.target.value))}
-                                          className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono"
+                                          value={bookFormPagesRead === '' ? '' : bookFormPagesRead}
+                                          onChange={(e) => setBookFormPagesRead(e.target.value === '' ? '' : Number(e.target.value))}
+                                          placeholder="Ex: 0"
+                                          className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500/50 font-mono"
                                         />
                                       </div>
                                     </div>
+
+                                    {/* Estimativa de páginas necessárias por dia para atingir a meta */}
+                                    {(() => {
+                                      const total = Number(bookFormTotalPages) || 0;
+                                      const read = Number(bookFormPagesRead) || 0;
+                                      const days = Number(bookFormDeadline) || 0;
+                                      const remaining = Math.max(0, total - read);
+                                      const estimate = days > 0 && remaining > 0 ? Math.max(1, Math.ceil(remaining / days)) : 0;
+
+                                      if (days > 0 && total > 0) {
+                                        return (
+                                          <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-3 flex items-center justify-between gap-3 animate-in fade-in">
+                                            <div className="space-y-0.5">
+                                              <div className="flex items-center gap-1.5 text-orange-400 font-bold font-mono text-[11px] uppercase">
+                                                <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                                                Meta Diária Estimada
+                                              </div>
+                                              <p className="text-[10px] text-zinc-400">
+                                                Para ler {remaining} {remaining === 1 ? 'página restante' : 'páginas restantes'} no prazo de {days} {days === 1 ? 'dia' : 'dias'}:
+                                              </p>
+                                            </div>
+                                            <div className="text-right shrink-0">
+                                              <span className="font-mono font-black text-white text-sm sm:text-base block">
+                                                ~{estimate}
+                                              </span>
+                                              <span className="text-[9px] font-mono text-orange-400 font-bold uppercase">
+                                                {estimate === 1 ? 'pág / dia' : 'págs / dia'}
+                                              </span>
+                                            </div>
+                                          </div>
+                                        );
+                                      }
+
+                                      return (
+                                        <div className="bg-zinc-900/40 border border-zinc-800/60 rounded-xl p-2.5 text-[10px] text-zinc-500 font-mono flex items-center gap-2">
+                                          <Clock className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+                                          <span>Digite o total de páginas e o prazo em dias para ver a estimativa diária de leitura.</span>
+                                        </div>
+                                      );
+                                    })()}
                                   </div>
 
                                   <div className="flex gap-2 pt-2 border-t border-zinc-900">
                                     <button
                                       type="button"
-                                      onClick={() => setShowBookConfig(false)}
-                                      className="flex-1 py-1.5 bg-zinc-900 text-zinc-400 text-xs font-bold rounded-lg"
+                                      onClick={() => {
+                                        setShowBookConfig(false);
+                                        setIsEditingCurrentBook(false);
+                                      }}
+                                      className="flex-1 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white text-xs font-bold rounded-lg transition-colors cursor-pointer"
                                     >
                                       Cancelar
                                     </button>
                                     <button
                                       type="submit"
-                                      className="flex-1 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-lg flex items-center justify-center gap-1"
+                                      className="flex-1 py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-lg flex items-center justify-center gap-1 transition-colors shadow-md shadow-orange-500/20 cursor-pointer"
                                     >
-                                      <Save className="h-3.5 w-3.5" /> Salvar Livro
+                                      <Save className="h-3.5 w-3.5" />
+                                      {isEditingCurrentBook ? 'Salvar Alterações' : 'Iniciar Leitura deste Livro'}
                                     </button>
                                   </div>
                                 </form>
                               )}
+
+                              {/* Modal: Trocar Livro em Andamento */}
+                              <AnimatePresence>
+                                {showBookSwitcherModal && (
+                                  <div 
+                                    onClick={() => setShowBookSwitcherModal(false)}
+                                    className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 cursor-pointer"
+                                  >
+                                    <motion.div
+                                      onClick={(e) => e.stopPropagation()}
+                                      initial={{ scale: 0.95, opacity: 0, y: 10 }}
+                                      animate={{ scale: 1, opacity: 1, y: 0 }}
+                                      exit={{ scale: 0.95, opacity: 0, y: 10 }}
+                                      className="cursor-default bg-zinc-950 border border-zinc-800 rounded-2xl p-5 w-full max-w-md shadow-2xl text-left space-y-4 max-h-[85vh] overflow-y-auto"
+                                    >
+                                      <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
+                                        <div className="flex items-center gap-2">
+                                          <div className="p-1.5 bg-orange-500/10 border border-orange-500/20 text-orange-400 rounded-lg">
+                                            <BookOpen className="w-4 h-4" />
+                                          </div>
+                                          <div>
+                                            <h3 className="text-xs font-black uppercase tracking-wider text-white font-mono">
+                                              Trocar Livro em Andamento
+                                            </h3>
+                                            <p className="text-[10px] text-zinc-400">
+                                              Escolha um livro do acervo ou cadastre um novo
+                                            </p>
+                                          </div>
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={() => setShowBookSwitcherModal(false)}
+                                          className="text-zinc-500 hover:text-white p-1 rounded-lg hover:bg-zinc-900 transition-colors cursor-pointer"
+                                        >
+                                          <X className="w-4 h-4" />
+                                        </button>
+                                      </div>
+
+                                      {/* Button to add a new book */}
+                                      <button
+                                        type="button"
+                                        onClick={handleOpenNewBook}
+                                        className="w-full py-2.5 px-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-orange-500/20 cursor-pointer transition-all"
+                                      >
+                                        <Plus className="w-4 h-4" /> Cadastrar Novo Livro
+                                      </button>
+
+                                      {/* Search Input for Acervo */}
+                                      <div className="relative">
+                                        <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                        <input
+                                          type="text"
+                                          value={bookSwitcherSearchQuery}
+                                          onChange={(e) => setBookSwitcherSearchQuery(e.target.value)}
+                                          placeholder="Buscar livro por título ou status..."
+                                          className="w-full bg-zinc-900/80 border border-zinc-800 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500/50"
+                                        />
+                                        {bookSwitcherSearchQuery && (
+                                          <button
+                                            type="button"
+                                            onClick={() => setBookSwitcherSearchQuery('')}
+                                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white text-xs p-0.5 cursor-pointer"
+                                          >
+                                            ✕
+                                          </button>
+                                        )}
+                                      </div>
+
+                                      {/* Books List from Acervo */}
+                                      {(() => {
+                                        const query = bookSwitcherSearchQuery.trim().toLowerCase();
+                                        const filteredBooks = actualBooks.filter(bk => 
+                                          !query || 
+                                          bk.title.toLowerCase().includes(query) ||
+                                          (bk.status && bk.status.toLowerCase().includes(query))
+                                        );
+
+                                        return (
+                                          <div className="space-y-2 pt-1">
+                                            <div className="flex items-center justify-between">
+                                              <span className="text-[9px] font-mono font-bold text-zinc-500 uppercase tracking-wider block">
+                                                Livros Cadastrados ({filteredBooks.length}{query ? ` de ${actualBooks.length}` : ''})
+                                              </span>
+                                              <span className="text-[9px] font-mono text-zinc-500">
+                                                Clique para ler agora
+                                              </span>
+                                            </div>
+
+                                            {filteredBooks.length === 0 ? (
+                                              <div className="bg-zinc-900/40 border border-zinc-850 rounded-xl p-4 text-center text-xs text-zinc-500 font-mono">
+                                                {query ? 'Nenhum livro encontrado para esta busca.' : 'Nenhum outro livro cadastrado no momento.'}
+                                              </div>
+                                            ) : (
+                                              <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                                                {filteredBooks.map((bk) => {
+                                                  const isCurrent = bookTracker?.bookName && bk.title.trim().toLowerCase() === bookTracker.bookName.trim().toLowerCase();
+                                                  return (
+                                                    <div
+                                                      key={bk.id}
+                                                      className={`p-3 rounded-xl border transition-all flex items-center justify-between gap-3 ${
+                                                        isCurrent 
+                                                          ? 'bg-orange-500/10 border-orange-500/40 shadow-xs'
+                                                          : 'bg-zinc-900/50 border-zinc-850 hover:border-zinc-700'
+                                                      }`}
+                                                    >
+                                                      <div className="min-w-0 flex-1 space-y-1">
+                                                        <div className="flex items-center gap-2">
+                                                          <h4 className="text-xs font-bold text-white truncate">{bk.title}</h4>
+                                                          {isCurrent && (
+                                                            <span className="text-[8px] bg-orange-500 text-white font-bold px-1.5 py-0.5 rounded-full uppercase font-mono">
+                                                              Lendo Agora
+                                                            </span>
+                                                          )}
+                                                        </div>
+                                                        <div className="text-[10px] text-zinc-400 font-mono flex items-center gap-2">
+                                                          <span>{bk.pagesRead} / {bk.totalPages} págs</span>
+                                                          <span>•</span>
+                                                          <span className="capitalize">{bk.status === 'lido' ? 'Concluído' : bk.status === 'dropado' ? 'Pausado' : 'Em Leitura'}</span>
+                                                        </div>
+                                                      </div>
+
+                                                      {!isCurrent ? (
+                                                        <button
+                                                          type="button"
+                                                          onClick={() => {
+                                                            handleResumeBookFromHistory(bk);
+                                                            setShowBookSwitcherModal(false);
+                                                          }}
+                                                          className="px-3 py-1.5 bg-zinc-800 hover:bg-orange-500 hover:text-white text-orange-400 rounded-lg text-xs font-bold font-mono transition-all border border-zinc-700 hover:border-orange-500 shrink-0 cursor-pointer flex items-center gap-1"
+                                                        >
+                                                          <Play className="w-3 h-3" /> Ler Este
+                                                        </button>
+                                                      ) : (
+                                                        <span className="text-[10px] text-orange-400 font-mono font-bold shrink-0">
+                                                          Ativo
+                                                        </span>
+                                                      )}
+                                                    </div>
+                                                  );
+                                                })}
+                                              </div>
+                                            )}
+                                          </div>
+                                        );
+                                      })()}
+                                    </motion.div>
+                                  </div>
+                                )}
+                              </AnimatePresence>
                             </div>
                           )}
 
@@ -4202,79 +4468,113 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
 
                           {/* SUBTOPIC 3: HISTÓRICO DE LIVROS */}
                           {activeSubtopicLeitura === 'historico' && (
-                            <div className="space-y-2 pb-2">
-                              <div className="flex justify-between items-center px-1">
-                                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-                                  Histórico de Leituras
-                                </span>
-                                <span className="text-[10px] text-orange-400 font-mono font-bold">
-                                  {actualBooks.length} {actualBooks.length === 1 ? 'livro' : 'livros'}
-                                </span>
+                            <div className="space-y-3 pb-2">
+                              {/* Search Input for History */}
+                              <div className="relative">
+                                <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                <input
+                                  type="text"
+                                  value={historySearchQuery}
+                                  onChange={(e) => setHistorySearchQuery(e.target.value)}
+                                  placeholder="Pesquisar no histórico por título ou status..."
+                                  className="w-full bg-zinc-950/70 border border-zinc-850 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500/50"
+                                />
+                                {historySearchQuery && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setHistorySearchQuery('')}
+                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white text-xs p-0.5 cursor-pointer"
+                                  >
+                                    ✕
+                                  </button>
+                                )}
                               </div>
 
-                              {actualBooks.length === 0 ? (
-                                <div className="bg-zinc-950/40 border border-zinc-900 rounded-xl p-8 text-center space-y-2">
-                                  <CalendarDays className="h-6 w-6 text-zinc-600 mx-auto" />
-                                  <p className="text-xs text-zinc-500">
-                                    Nenhum livro registrado no histórico anual.
-                                  </p>
-                                </div>
-                              ) : (
-                                <div className="space-y-2">
-                                  {actualBooks.map((bk) => {
-                                    const isCompleted = bk.status === 'lido' || bk.pagesRead >= bk.totalPages;
-                                    const isCurrent = bookTracker?.bookName && bk.title.trim().toLowerCase() === bookTracker.bookName.trim().toLowerCase();
-                                    return (
-                                      <div
-                                        key={bk.id}
-                                        className="bg-zinc-950/40 border border-zinc-900 rounded-xl p-3 flex items-start justify-between gap-3 hover:border-zinc-800 transition-colors"
-                                      >
-                                        <div className="min-w-0 flex-1 space-y-1">
-                                          <div className="flex items-center gap-2 flex-wrap">
-                                            <h5 className="text-xs font-bold text-white truncate">
-                                              {bk.title}
-                                            </h5>
-                                            <span
-                                              className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
-                                                isCompleted
-                                                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                                                  : bk.status === 'dropado'
-                                                  ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                                                  : 'bg-orange-500/10 text-orange-400 border border-orange-500/20'
-                                              }`}
-                                            >
-                                              {isCompleted ? 'Concluído' : bk.status === 'dropado' ? 'Pausado' : 'Em Leitura'}
-                                            </span>
-                                            {isCurrent && (
-                                              <span className="text-[8px] bg-orange-500 text-white font-bold px-1.5 py-0.2 rounded-full uppercase">
-                                                Atual
-                                              </span>
-                                            )}
-                                          </div>
+                              {(() => {
+                                const query = historySearchQuery.trim().toLowerCase();
+                                const filteredHistory = actualBooks.filter(bk => 
+                                  !query || 
+                                  bk.title.toLowerCase().includes(query) ||
+                                  (bk.status && bk.status.toLowerCase().includes(query))
+                                );
 
-                                          <div className="flex items-center gap-3 text-[10px] text-zinc-500 font-mono flex-wrap">
-                                            <span>{bk.pagesRead} / {bk.totalPages} págs</span>
-                                            {bk.readingInterval && (
-                                              <span className="text-zinc-400">{bk.readingInterval}</span>
-                                            )}
-                                          </div>
-                                        </div>
+                                return (
+                                  <>
+                                    <div className="flex justify-between items-center px-1">
+                                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                                        Histórico de Leituras
+                                      </span>
+                                      <span className="text-[10px] text-orange-400 font-mono font-bold">
+                                        {filteredHistory.length}{query ? ` de ${actualBooks.length}` : ''} {filteredHistory.length === 1 ? 'livro' : 'livros'}
+                                      </span>
+                                    </div>
 
-                                        {!isCompleted && !isCurrent && (
-                                          <button
-                                            type="button"
-                                            onClick={() => handleResumeBookFromHistory(bk)}
-                                            className="px-2.5 py-1 bg-zinc-900 hover:bg-orange-500 hover:text-white text-orange-400 text-xs font-bold rounded-lg border border-zinc-800 hover:border-orange-500 transition-all flex items-center gap-1 shrink-0"
-                                            title="Tornar este o livro atual"
-                                          >
-                                            <Play className="h-3 w-3" /> Continuar
-                                          </button>
-                                        )}
+                                    {filteredHistory.length === 0 ? (
+                                      <div className="bg-zinc-950/40 border border-zinc-900 rounded-xl p-8 text-center space-y-2">
+                                        <CalendarDays className="h-6 w-6 text-zinc-600 mx-auto" />
+                                        <p className="text-xs text-zinc-500">
+                                          {query ? 'Nenhum livro encontrado para esta pesquisa.' : 'Nenhum livro registrado no histórico anual.'}
+                                        </p>
                                       </div>
-                                    );
-                                  })}
-                                </div>
-                              )}
+                                    ) : (
+                                      <div className="space-y-2">
+                                        {filteredHistory.map((bk) => {
+                                          const isCompleted = bk.status === 'lido' || bk.pagesRead >= bk.totalPages;
+                                          const isCurrent = bookTracker?.bookName && bk.title.trim().toLowerCase() === bookTracker.bookName.trim().toLowerCase();
+                                          return (
+                                            <div
+                                              key={bk.id}
+                                              className="bg-zinc-950/40 border border-zinc-900 rounded-xl p-3 flex items-start justify-between gap-3 hover:border-zinc-800 transition-colors"
+                                            >
+                                              <div className="min-w-0 flex-1 space-y-1">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                  <h5 className="text-xs font-bold text-white truncate">
+                                                    {bk.title}
+                                                  </h5>
+                                                  <span
+                                                    className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
+                                                      isCompleted
+                                                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                                        : bk.status === 'dropado'
+                                                        ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                                                        : 'bg-orange-500/10 text-orange-400 border border-orange-500/20'
+                                                    }`}
+                                                  >
+                                                    {isCompleted ? 'Concluído' : bk.status === 'dropado' ? 'Pausado' : 'Em Leitura'}
+                                                  </span>
+                                                  {isCurrent && (
+                                                    <span className="text-[8px] bg-orange-500 text-white font-bold px-1.5 py-0.2 rounded-full uppercase">
+                                                      Atual
+                                                    </span>
+                                                  )}
+                                                </div>
+
+                                                <div className="flex items-center gap-3 text-[10px] text-zinc-500 font-mono flex-wrap">
+                                                  <span>{bk.pagesRead} / {bk.totalPages} págs</span>
+                                                  {bk.readingInterval && (
+                                                    <span className="text-zinc-400">{bk.readingInterval}</span>
+                                                  )}
+                                                </div>
+                                              </div>
+
+                                              {!isCompleted && !isCurrent && (
+                                                <button
+                                                  type="button"
+                                                  onClick={() => handleResumeBookFromHistory(bk)}
+                                                  className="px-2.5 py-1 bg-zinc-900 hover:bg-orange-500 hover:text-white text-orange-400 text-xs font-bold rounded-lg border border-zinc-800 hover:border-orange-500 transition-all flex items-center gap-1 shrink-0"
+                                                  title="Tornar este o livro atual"
+                                                >
+                                                  <Play className="h-3 w-3" /> Continuar
+                                                </button>
+                                              )}
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+                                  </>
+                                );
+                              })()}
                             </div>
                           )}
                         </div>

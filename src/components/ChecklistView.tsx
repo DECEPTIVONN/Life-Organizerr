@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { sendSystemNotification, requestNotificationPermission } from '../lib/notificationHelper';
 import { 
   CheckSquare, 
@@ -40,7 +40,9 @@ import {
   Tag,
   ListTodo,
   History,
-  CheckCircle2
+  CheckCircle2,
+  ArrowUpDown,
+  Search
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { DailyTask, SubTask, BookTracker, BibleTracker, RoutineItem, YearlyBook, WeeklyReview, MonthlyReview, CalendarNote, Habit } from '../types';
@@ -775,12 +777,42 @@ export default function ChecklistView({
   // Tracker Config Dialogs
   const [showBookConfig, setShowBookConfig] = useState(false);
   const [showBibleConfig, setShowBibleConfig] = useState(false);
+  const [isEditingCurrentBook, setIsEditingCurrentBook] = useState(false);
+  const [showBookSwitcherModal, setShowBookSwitcherModal] = useState(false);
+  const [bookSwitcherSearchQuery, setBookSwitcherSearchQuery] = useState('');
+  const [historySearchQuery, setHistorySearchQuery] = useState('');
+  const bookFormRef = useRef<HTMLFormElement>(null);
 
-  // Book Config form states
-  const [bookFormName, setBookFormName] = useState(bookTracker?.bookName || 'Hábitos Atômicos');
-  const [bookFormTotalPages, setBookFormTotalPages] = useState(bookTracker?.totalPages || 250);
-  const [bookFormDeadline, setBookFormDeadline] = useState(bookTracker?.deadlineDays || 7);
-  const [bookFormPagesRead, setBookFormPagesRead] = useState(bookTracker?.pagesRead || 0);
+  // Book Config form states (clean initial states, not prefilled on new book)
+  const [bookFormName, setBookFormName] = useState(bookTracker?.bookName || '');
+  const [bookFormTotalPages, setBookFormTotalPages] = useState<number | ''>(bookTracker?.totalPages || '');
+  const [bookFormDeadline, setBookFormDeadline] = useState<number | ''>(bookTracker?.deadlineDays || '');
+  const [bookFormPagesRead, setBookFormPagesRead] = useState<number | ''>(bookTracker?.pagesRead !== undefined ? bookTracker.pagesRead : '');
+
+  const handleOpenNewBook = () => {
+    setIsEditingCurrentBook(false);
+    setBookFormName('');
+    setBookFormTotalPages('');
+    setBookFormDeadline('');
+    setBookFormPagesRead('');
+    setShowBookConfig(true);
+    setShowBookSwitcherModal(false);
+    setTimeout(() => {
+      bookFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  };
+
+  const handleOpenEditBook = () => {
+    setIsEditingCurrentBook(true);
+    setBookFormName(bookTracker?.bookName || '');
+    setBookFormTotalPages(bookTracker?.totalPages || '');
+    setBookFormDeadline(bookTracker?.deadlineDays || '');
+    setBookFormPagesRead(bookTracker?.pagesRead !== undefined ? bookTracker.pagesRead : '');
+    setShowBookConfig(true);
+    setTimeout(() => {
+      bookFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  };
 
   // Bible Config form states
   const [bibleFormMode, setBibleFormMode] = useState<'vezes' | 'capitulos'>('vezes');
@@ -1387,17 +1419,18 @@ export default function ChecklistView({
   const handleSaveBookConfig = (e: React.FormEvent) => {
     e.preventDefault();
     const todayStr = getTodayDateStr();
-    const pRead = Number(bookFormPagesRead) || 0;
-    const totalP = Number(bookFormTotalPages) || 250;
+    const pRead = bookFormPagesRead === '' ? 0 : Number(bookFormPagesRead);
+    const totalP = bookFormTotalPages === '' ? 100 : Math.max(1, Number(bookFormTotalPages));
+    const deadlineD = bookFormDeadline === '' ? 30 : Math.max(1, Number(bookFormDeadline));
     const isCompleted = pRead >= totalP;
 
     const newTrackerData: BookTracker = {
-      bookName: bookFormName,
+      bookName: bookFormName.trim(),
       totalPages: totalP,
-      deadlineDays: Number(bookFormDeadline) || 7,
+      deadlineDays: deadlineD,
       pagesRead: pRead,
-      startedDate: bookTracker?.startedDate || todayStr,
-      history: bookTracker?.history || []
+      startedDate: isEditingCurrentBook && bookTracker?.startedDate ? bookTracker.startedDate : todayStr,
+      history: isEditingCurrentBook && bookTracker?.history ? bookTracker.history : []
     };
 
     if (isCompleted) {
@@ -1418,8 +1451,11 @@ export default function ChecklistView({
         history: []
       });
       setBookFormName('');
-      setBookFormPagesRead(0);
+      setBookFormPagesRead('');
+      setBookFormTotalPages('');
+      setBookFormDeadline('');
       setShowBookConfig(false);
+      setIsEditingCurrentBook(false);
       addXp(100);
       alert(`🎉 Parabéns! O livro "${bookFormName}" foi concluído e salvo no seu histórico em Anuais. O campo foi liberado para você registrar o próximo livro!`);
     } else {
@@ -1432,6 +1468,7 @@ export default function ChecklistView({
         actualSetWeeklyReviews
       );
       setShowBookConfig(false);
+      setIsEditingCurrentBook(false);
       addXp(20);
     }
   };
@@ -1529,7 +1566,10 @@ export default function ChecklistView({
       history: []
     });
     setBookFormName('');
-    setBookFormPagesRead(0);
+    setBookFormPagesRead('');
+    setBookFormTotalPages('');
+    setBookFormDeadline('');
+    setIsEditingCurrentBook(false);
     addXp(100);
     alert(`🎉 Parabéns! O livro "${title}" foi marcado como concluído e salvo no seu histórico em Anuais. O campo foi liberado para o próximo livro!`);
   };
@@ -1562,7 +1602,10 @@ export default function ChecklistView({
       history: []
     });
     setBookFormName('');
-    setBookFormPagesRead(0);
+    setBookFormPagesRead('');
+    setBookFormTotalPages('');
+    setBookFormDeadline('');
+    setIsEditingCurrentBook(false);
     alert(`O livro "${title}" foi pausado e salvo no seu histórico de livros dropados em Anuais.`);
   };
 
@@ -2020,16 +2063,48 @@ export default function ChecklistView({
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              {bookTracker?.bookName && (
+                <>
+                  <button 
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowBookSwitcherModal(true);
+                    }}
+                    className="text-[10px] font-bold text-zinc-300 hover:text-orange-400 bg-zinc-800/80 hover:bg-zinc-800 px-2 py-1 rounded-lg transition-colors flex items-center gap-1 border border-zinc-750"
+                    title="Trocar livro em andamento"
+                  >
+                    <ArrowUpDown className="h-3 w-3 text-orange-400" />
+                    <span>Trocar</span>
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenNewBook();
+                    }}
+                    className="text-[10px] font-bold text-orange-400 hover:text-orange-300 bg-orange-500/15 hover:bg-orange-500/25 px-2 py-1 rounded-lg transition-colors flex items-center gap-1 border border-orange-500/30"
+                    title="Cadastrar um novo livro"
+                  >
+                    <Plus className="h-3 w-3" />
+                    <span>Novo</span>
+                  </button>
+                </>
+              )}
               <button 
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setShowBookConfig(true);
+                  if (bookTracker?.bookName) {
+                    handleOpenEditBook();
+                  } else {
+                    handleOpenNewBook();
+                  }
                 }}
-                className="text-[10px] font-bold text-zinc-400 hover:text-white bg-zinc-800/60 hover:bg-zinc-700 px-2 py-1 rounded transition-colors"
+                className="text-[10px] font-bold text-zinc-400 hover:text-white bg-zinc-800/60 hover:bg-zinc-700 px-2 py-1 rounded-lg transition-colors"
               >
-                Configurar
+                {bookTracker?.bookName ? 'Editar' : 'Configurar'}
               </button>
               {bookOpen ? <ChevronUp className="h-4 w-4 text-zinc-500" /> : <ChevronDown className="h-4 w-4 text-zinc-500" />}
             </div>
@@ -2045,47 +2120,81 @@ export default function ChecklistView({
               >
                 {!bookTracker?.bookName ? (
                   <div className="text-center py-6 space-y-3 bg-zinc-950/60 p-4 rounded-xl border border-zinc-900">
-                    <BookOpen className="h-8 w-8 text-zinc-600 mx-auto" />
+                    <BookOpen className="h-8 w-8 text-orange-500/70 mx-auto" />
                     <div className="space-y-1">
-                      <h4 className="text-xs font-bold text-white">Nenhum livro ativo sendo lido</h4>
-                      <p className="text-[10px] text-zinc-500">Configure um novo livro ou retome uma leitura pausada do seu histórico em Anuais.</p>
+                      <h4 className="text-xs font-bold text-white uppercase tracking-wider">Nenhum livro ativo sendo lido</h4>
+                      <p className="text-[10px] text-zinc-500">Cadastre um novo livro ou retome uma leitura do seu acervo.</p>
                     </div>
-                    <button
-                      onClick={() => setShowBookConfig(true)}
-                      className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all inline-flex items-center gap-1.5 shadow-lg shadow-orange-500/10"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                      Configurar ou Retomar Livro
-                    </button>
+                    <div className="flex items-center justify-center gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={handleOpenNewBook}
+                        className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold px-3.5 py-1.5 rounded-xl transition-all inline-flex items-center gap-1.5 shadow-lg shadow-orange-500/10 cursor-pointer"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        Cadastrar Novo Livro
+                      </button>
+                      {actualBooks && actualBooks.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setShowBookSwitcherModal(true)}
+                          className="bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white text-xs font-bold px-3.5 py-1.5 rounded-xl transition-all inline-flex items-center gap-1.5 border border-zinc-800 cursor-pointer"
+                        >
+                          <ArrowUpDown className="h-3.5 w-3.5 text-orange-500" />
+                          Escolher do Acervo ({actualBooks.length})
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   <>
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="space-y-1">
-                        <h3 className="text-sm font-bold text-white leading-snug">
+                    <div className="flex items-start justify-between gap-2 flex-wrap sm:flex-nowrap">
+                      <div className="space-y-1 min-w-0">
+                        <span className="text-[9px] font-bold text-orange-400 uppercase tracking-wider block font-mono">
+                          Lendo Atualmente
+                        </span>
+                        <h3 className="text-sm font-bold text-white leading-snug truncate">
                           {bookMetrics.bookName}
                         </h3>
-                        <p className="text-[10px] text-gray-500">
-                          Progresso: <span className="text-white font-bold">{bookMetrics.read}</span> de <span className="text-white font-bold">{bookMetrics.total}</span> páginas ({bookMetrics.progressPercent}%)
+                        <p className="text-[10px] text-gray-500 font-mono">
+                          Progresso: <span className="text-white font-bold">{bookMetrics.read}</span> de <span className="text-white font-bold">{bookMetrics.total}</span> páginas ({bookMetrics.progressPercent}%) • Prazo: {bookTracker?.deadlineDays || 7}d
                         </p>
                       </div>
 
-                      <div className="flex items-center gap-1.5 shrink-0">
+                      <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => setShowBookSwitcherModal(true)}
+                          className="px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-orange-400 border border-zinc-800 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                          title="Trocar o livro atual por outro do acervo"
+                        >
+                          <ArrowUpDown className="h-3 w-3 text-orange-500" />
+                          <span>Trocar</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleOpenNewBook}
+                          className="px-2.5 py-1 bg-orange-500/15 hover:bg-orange-500/25 text-orange-400 border border-orange-500/30 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                          title="Cadastrar um novo livro"
+                        >
+                          <Plus className="h-3 w-3" />
+                          <span>Novo</span>
+                        </button>
                         <button
                           type="button"
                           onClick={handlePauseActiveBook}
-                          className="px-2.5 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-lg text-[10px] font-bold transition-all"
+                          className="px-2.5 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-lg text-[10px] font-bold transition-all cursor-pointer"
                           title="Pausar esta leitura e salvar no histórico de livros dropados"
                         >
-                          Pausar / Dropar
+                          Pausar
                         </button>
                         <button
                           type="button"
                           onClick={handleCompleteActiveBook}
-                          className="px-2.5 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-lg text-[10px] font-bold transition-all"
+                          className="px-2.5 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-lg text-[10px] font-bold transition-all cursor-pointer"
                           title="Marcar livro como lido e salvar em Anuais"
                         >
-                          Concluir Livro
+                          Concluir
                         </button>
                       </div>
                     </div>
@@ -2317,20 +2426,30 @@ export default function ChecklistView({
             <div className="flex items-center justify-between border-b border-zinc-900 pb-3 shrink-0">
               <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
                 <BookOpen className="h-4.5 w-4.5 text-orange-500" />
-                Configurar Leitura & Histórico
+                {isEditingCurrentBook ? 'Editar Livro Atual' : 'Cadastrar Novo Livro'}
               </h3>
-              <button onClick={() => setShowBookConfig(false)} className="text-zinc-500 hover:text-white p-1">✕</button>
+              <button 
+                onClick={() => {
+                  setShowBookConfig(false);
+                  setIsEditingCurrentBook(false);
+                }} 
+                className="text-zinc-500 hover:text-white p-1"
+              >
+                ✕
+              </button>
             </div>
 
             <div className="overflow-y-auto space-y-6 pr-1 custom-scrollbar">
-              <form onSubmit={handleSaveBookConfig} className="space-y-4 bg-zinc-900/30 p-4 rounded-xl border border-zinc-900">
-                <h4 className="text-xs font-bold text-white uppercase tracking-wider text-orange-400">Novo Livro / Editar Livro Atual</h4>
+              <form ref={bookFormRef} onSubmit={handleSaveBookConfig} className="space-y-4 bg-zinc-900/30 p-4 rounded-xl border border-zinc-900">
+                <h4 className="text-xs font-bold text-white uppercase tracking-wider text-orange-400 font-mono">
+                  {isEditingCurrentBook ? 'Editar Livro Atual' : 'Novo Livro'}
+                </h4>
                 <div>
-                  <label className="text-[10px] text-gray-400 font-bold block mb-1 uppercase">Nome do Livro</label>
+                  <label className="text-[10px] text-gray-400 font-bold block mb-1 uppercase font-mono">Nome do Livro</label>
                   <input 
                     type="text"
                     required
-                    placeholder="Nome do Livro..."
+                    placeholder="Ex: Hábitos Atômicos..."
                     value={bookFormName}
                     onChange={(e) => setBookFormName(e.target.value)}
                     className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50"
@@ -2339,56 +2458,100 @@ export default function ChecklistView({
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-[10px] text-gray-400 font-bold block mb-1 uppercase">Total de Páginas</label>
+                    <label className="text-[10px] text-gray-400 font-bold block mb-1 uppercase font-mono">Total de Páginas</label>
                     <input 
                       type="number"
                       min="1"
                       required
-                      value={bookFormTotalPages}
-                      onChange={(e) => setBookFormTotalPages(Number(e.target.value))}
+                      placeholder="Ex: 300"
+                      value={bookFormTotalPages === '' ? '' : bookFormTotalPages}
+                      onChange={(e) => setBookFormTotalPages(e.target.value === '' ? '' : Number(e.target.value))}
                       className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono"
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] text-gray-400 font-bold block mb-1 uppercase">Prazo (Dias)</label>
+                    <label className="text-[10px] text-gray-400 font-bold block mb-1 uppercase font-mono">Prazo (Dias)</label>
                     <input 
                       type="number"
                       min="1"
                       required
-                      value={bookFormDeadline}
-                      onChange={(e) => setBookFormDeadline(Number(e.target.value))}
+                      placeholder="Ex: 30"
+                      value={bookFormDeadline === '' ? '' : bookFormDeadline}
+                      onChange={(e) => setBookFormDeadline(e.target.value === '' ? '' : Number(e.target.value))}
                       className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-[10px] text-gray-400 font-bold block mb-1 uppercase">Páginas Já Lidas</label>
+                  <label className="text-[10px] text-gray-400 font-bold block mb-1 uppercase font-mono">Páginas Já Lidas</label>
                   <input 
                     type="number"
                     min="0"
-                    max={bookFormTotalPages}
-                    required
-                    value={bookFormPagesRead}
-                    onChange={(e) => setBookFormPagesRead(Number(e.target.value))}
+                    placeholder="Ex: 0"
+                    value={bookFormPagesRead === '' ? '' : bookFormPagesRead}
+                    onChange={(e) => setBookFormPagesRead(e.target.value === '' ? '' : Number(e.target.value))}
                     className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500/50 font-mono"
                   />
-                  <span className="text-[9px] text-gray-500 mt-1 block">Útil caso você já tenha começado o livro.</span>
+                  <span className="text-[9px] text-gray-500 mt-1 block">Útil caso já tenha iniciado. Deixe em branco se vai começar agora.</span>
                 </div>
+
+                {/* Estimativa de páginas por dia */}
+                {(() => {
+                  const total = Number(bookFormTotalPages) || 0;
+                  const read = Number(bookFormPagesRead) || 0;
+                  const days = Number(bookFormDeadline) || 0;
+                  const remaining = Math.max(0, total - read);
+                  const estimate = days > 0 && remaining > 0 ? Math.max(1, Math.ceil(remaining / days)) : 0;
+
+                  if (days > 0 && total > 0) {
+                    return (
+                      <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-3 flex items-center justify-between gap-3 animate-in fade-in">
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-1.5 text-orange-400 font-bold font-mono text-[11px] uppercase">
+                            <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                            Meta Diária Estimada
+                          </div>
+                          <p className="text-[10px] text-zinc-400">
+                            Para ler {remaining} {remaining === 1 ? 'página restante' : 'páginas restantes'} no prazo de {days} {days === 1 ? 'dia' : 'dias'}:
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className="font-mono font-black text-white text-base block">
+                            ~{estimate}
+                          </span>
+                          <span className="text-[9px] font-mono text-orange-400 font-bold uppercase">
+                            {estimate === 1 ? 'pág / dia' : 'págs / dia'}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="bg-zinc-900/40 border border-zinc-800/60 rounded-xl p-2.5 text-[10px] text-zinc-500 font-mono flex items-center gap-2">
+                      <Clock className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+                      <span>Digite o total de páginas e o prazo em dias para ver a estimativa diária de leitura.</span>
+                    </div>
+                  );
+                })()}
 
                 <div className="flex justify-end gap-2 pt-2">
                   <button
                     type="button"
-                    onClick={() => setShowBookConfig(false)}
-                    className="text-xs text-gray-400 hover:text-white px-3 py-1.5 transition-colors"
+                    onClick={() => {
+                      setShowBookConfig(false);
+                      setIsEditingCurrentBook(false);
+                    }}
+                    className="text-xs text-gray-400 hover:text-white px-3 py-1.5 transition-colors cursor-pointer"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs px-4 py-1.5 rounded-lg transition-colors"
+                    className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs px-4 py-1.5 rounded-lg transition-colors cursor-pointer"
                   >
-                    Salvar / Iniciar Leitura
+                    {isEditingCurrentBook ? 'Salvar Alterações' : 'Salvar / Iniciar Leitura'}
                   </button>
                 </div>
               </form>
@@ -2396,56 +2559,245 @@ export default function ChecklistView({
               {/* History / Dropped Books list */}
               {actualBooks && actualBooks.length > 0 && (
                 <div className="space-y-3 pt-2">
-                  <h4 className="text-xs font-bold text-zinc-300 uppercase tracking-wider flex items-center justify-between">
-                    <span>Histórico de Livros em Anuais ({actualBooks.length})</span>
-                  </h4>
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold text-zinc-300 uppercase tracking-wider">
+                      Histórico de Livros em Anuais ({actualBooks.length})
+                    </h4>
+                  </div>
 
-                  <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-                    {actualBooks.map((bk) => {
-                      const isCurrentlyActive = bookTracker?.bookName?.trim().toLowerCase() === bk.title.trim().toLowerCase();
-                      const statusColor = 
-                        bk.status === 'lido' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                        bk.status === 'dropado' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
-                        bk.status === 'lendo' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
-                        'bg-zinc-800 text-zinc-400 border-zinc-700';
+                  {/* Search input for History */}
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={historySearchQuery}
+                      onChange={(e) => setHistorySearchQuery(e.target.value)}
+                      placeholder="Pesquisar histórico por título..."
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-9 pr-8 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500/50"
+                    />
+                    {historySearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setHistorySearchQuery('')}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white text-xs p-0.5 cursor-pointer"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
 
-                      const statusLabel = 
-                        bk.status === 'lido' ? 'Lido' :
-                        bk.status === 'dropado' ? 'Pausado / Dropado' :
-                        bk.status === 'lendo' ? 'Lendo Atualmente' :
-                        'Quero Ler';
+                  {(() => {
+                    const query = historySearchQuery.trim().toLowerCase();
+                    const filtered = actualBooks.filter(bk => 
+                      !query || 
+                      bk.title.toLowerCase().includes(query) ||
+                      (bk.status && bk.status.toLowerCase().includes(query))
+                    );
 
+                    if (filtered.length === 0) {
                       return (
-                        <div key={bk.id} className="bg-zinc-900/50 border border-zinc-900 rounded-xl p-3 flex items-center justify-between gap-3 hover:border-zinc-800 transition-colors">
-                          <div className="space-y-1 min-w-0 flex-1">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-xs font-bold text-white truncate">{bk.title}</span>
-                              <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${statusColor}`}>
-                                {statusLabel}
-                              </span>
-                            </div>
-                            <p className="text-[10px] text-zinc-500">
-                              {bk.pagesRead} / {bk.totalPages} págs • Intervalo: {bk.readingInterval || '—'}
-                            </p>
-                          </div>
-
-                          {!isCurrentlyActive && bk.status !== 'lido' && (
-                            <button
-                              type="button"
-                              onClick={() => handleResumeBookFromHistory(bk)}
-                              className="px-3 py-1.5 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/20 rounded-lg text-[10px] font-bold transition-all shrink-0 flex items-center gap-1"
-                            >
-                              <Play className="h-3 w-3 fill-orange-400" />
-                              Continuar Lendo
-                            </button>
-                          )}
+                        <div className="bg-zinc-900/40 border border-zinc-850 rounded-xl p-4 text-center text-xs text-zinc-500 font-mono">
+                          Nenhum livro encontrado para esta busca.
                         </div>
                       );
-                    })}
-                  </div>
+                    }
+
+                    return (
+                      <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                        {filtered.map((bk) => {
+                          const isCurrentlyActive = bookTracker?.bookName?.trim().toLowerCase() === bk.title.trim().toLowerCase();
+                          const statusColor = 
+                            bk.status === 'lido' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                            bk.status === 'dropado' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
+                            bk.status === 'lendo' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
+                            'bg-zinc-800 text-zinc-400 border-zinc-700';
+
+                          const statusLabel = 
+                            bk.status === 'lido' ? 'Lido' :
+                            bk.status === 'dropado' ? 'Pausado / Dropado' :
+                            bk.status === 'lendo' ? 'Lendo Atualmente' :
+                            'Quero Ler';
+
+                          return (
+                            <div key={bk.id} className="bg-zinc-900/50 border border-zinc-900 rounded-xl p-3 flex items-center justify-between gap-3 hover:border-zinc-800 transition-colors">
+                              <div className="space-y-1 min-w-0 flex-1">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-xs font-bold text-white truncate">{bk.title}</span>
+                                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${statusColor}`}>
+                                    {statusLabel}
+                                  </span>
+                                </div>
+                                <p className="text-[10px] text-zinc-500">
+                                  {bk.pagesRead} / {bk.totalPages} págs • Intervalo: {bk.readingInterval || '—'}
+                                </p>
+                              </div>
+
+                              {!isCurrentlyActive && bk.status !== 'lido' && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleResumeBookFromHistory(bk)}
+                                  className="px-3 py-1.5 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/20 rounded-lg text-[10px] font-bold transition-all shrink-0 flex items-center gap-1 cursor-pointer"
+                                >
+                                  <Play className="h-3 w-3 fill-orange-400" />
+                                  Continuar Lendo
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
             </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Modal: Trocar Livro em Andamento */}
+      {showBookSwitcherModal && (
+        <div 
+          onClick={() => setShowBookSwitcherModal(false)}
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 cursor-pointer"
+        >
+          <motion.div
+            onClick={(e) => e.stopPropagation()}
+            initial={{ scale: 0.95, opacity: 0, y: 10 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.95, opacity: 0, y: 10 }}
+            className="cursor-default bg-zinc-950 border border-zinc-800 rounded-2xl p-5 w-full max-w-md shadow-2xl text-left space-y-4 max-h-[85vh] overflow-y-auto"
+          >
+            <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-orange-500/10 border border-orange-500/20 text-orange-400 rounded-lg">
+                  <BookOpen className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-black uppercase tracking-wider text-white font-mono">
+                    Trocar Livro em Andamento
+                  </h3>
+                  <p className="text-[10px] text-zinc-400">
+                    Escolha um livro do acervo ou cadastre um novo
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowBookSwitcherModal(false)}
+                className="text-zinc-500 hover:text-white p-1 rounded-lg hover:bg-zinc-900 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Button to add a new book */}
+            <button
+              type="button"
+              onClick={handleOpenNewBook}
+              className="w-full py-2.5 px-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-orange-500/20 cursor-pointer transition-all"
+            >
+              <Plus className="w-4 h-4" /> Cadastrar Novo Livro
+            </button>
+
+            {/* Search Input for Acervo */}
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                value={bookSwitcherSearchQuery}
+                onChange={(e) => setBookSwitcherSearchQuery(e.target.value)}
+                placeholder="Buscar livro por título ou status..."
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500/50"
+              />
+              {bookSwitcherSearchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setBookSwitcherSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white text-xs p-0.5 cursor-pointer"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {/* Books List from Acervo */}
+            {(() => {
+              const query = bookSwitcherSearchQuery.trim().toLowerCase();
+              const filteredBooks = actualBooks.filter(bk => 
+                !query || 
+                bk.title.toLowerCase().includes(query) ||
+                (bk.status && bk.status.toLowerCase().includes(query))
+              );
+
+              return (
+                <div className="space-y-2 pt-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-mono font-bold text-zinc-500 uppercase tracking-wider block">
+                      Livros Cadastrados ({filteredBooks.length}{query ? ` de ${actualBooks.length}` : ''})
+                    </span>
+                    <span className="text-[9px] font-mono text-zinc-500">
+                      Clique para ler agora
+                    </span>
+                  </div>
+
+                  {filteredBooks.length === 0 ? (
+                    <div className="bg-zinc-900/40 border border-zinc-850 rounded-xl p-4 text-center text-xs text-zinc-500 font-mono">
+                      {query ? 'Nenhum livro encontrado para esta busca.' : 'Nenhum outro livro cadastrado no momento.'}
+                    </div>
+                  ) : (
+                    <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                      {filteredBooks.map((bk) => {
+                        const isCurrent = bookTracker?.bookName && bk.title.trim().toLowerCase() === bookTracker.bookName.trim().toLowerCase();
+                        return (
+                          <div
+                            key={bk.id}
+                            className={`p-3 rounded-xl border transition-all flex items-center justify-between gap-3 ${
+                              isCurrent 
+                                ? 'bg-orange-500/10 border-orange-500/40 shadow-xs'
+                                : 'bg-zinc-900/50 border-zinc-850 hover:border-zinc-700'
+                            }`}
+                          >
+                            <div className="min-w-0 flex-1 space-y-1">
+                              <div className="flex items-center gap-2">
+                                <h4 className="text-xs font-bold text-white truncate">{bk.title}</h4>
+                                {isCurrent && (
+                                  <span className="text-[8px] bg-orange-500 text-white font-bold px-1.5 py-0.5 rounded-full uppercase font-mono">
+                                    Lendo Agora
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[10px] text-zinc-400 font-mono flex items-center gap-2">
+                                <span>{bk.pagesRead} / {bk.totalPages} págs</span>
+                                <span>•</span>
+                                <span className="capitalize">{bk.status === 'lido' ? 'Concluído' : bk.status === 'dropado' ? 'Pausado' : 'Em Leitura'}</span>
+                              </div>
+                            </div>
+
+                            {!isCurrent ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  handleResumeBookFromHistory(bk);
+                                  setShowBookSwitcherModal(false);
+                                }}
+                                className="px-3 py-1.5 bg-zinc-800 hover:bg-orange-500 hover:text-white text-orange-400 rounded-lg text-xs font-bold font-mono transition-all border border-zinc-700 hover:border-orange-500 shrink-0 cursor-pointer flex items-center gap-1"
+                              >
+                                <Play className="w-3 h-3" /> Ler Este
+                              </button>
+                            ) : (
+                              <span className="text-[10px] text-orange-400 font-mono font-bold shrink-0">
+                                Ativo
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </motion.div>
         </div>
       )}
