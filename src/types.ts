@@ -336,6 +336,19 @@ export interface ProjectList {
   order: number;
 }
 
+export interface ProjectPrompt {
+  id: string;
+  projectId?: string | null; // specific to a project, or null/undefined for global
+  title: string;
+  content: string;
+  category?: string; // 'Desenvolvimento', 'Ideação', 'Planejamento', 'Design', 'Marketing', 'Geral'
+  isFavorite: boolean; // opção de favoritar
+  isGlobal: boolean; // deixar como global (exibir em todos os projetos)
+  tags?: string[];
+  createdAt: string;
+  updatedAt?: string;
+}
+
 export interface Project {
   id: string;
   title: string;
@@ -349,6 +362,7 @@ export interface Project {
   quote?: string; // Frase ou lema do projeto
   lists: ProjectList[];
   cards: ProjectCard[];
+  prompts?: ProjectPrompt[];
   createdAt: string;
   updatedAt: string;
 }

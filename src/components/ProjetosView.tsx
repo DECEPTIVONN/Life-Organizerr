@@ -58,10 +58,15 @@ import {
   Github,
   Figma,
   AlertTriangle,
-  Lightbulb
+  Lightbulb,
+  Rocket,
+  ArrowUp,
+  ArrowDown,
+  Minus,
+  Bot
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Project, ProjectList, ProjectCard, ProjectCardChecklist, ProjectCardComment } from '../types';
+import { Project, ProjectList, ProjectCard, ProjectCardChecklist, ProjectCardComment, ProjectPrompt } from '../types';
 
 interface ProjetosViewProps {
   projects: Project[];
@@ -95,11 +100,47 @@ const COVER_COLORS = [
   { name: 'Ciano', hex: '#06b6d4' }
 ];
 
-export const PRIORITY_CONFIG: Record<string, { label: string; bg: string; text: string; border: string; dot: string; icon?: string }> = {
+export const PRIORITY_CONFIG: Record<string, { label: string; bg: string; text: string; border: string; dot: string }> = {
   baixa: { label: 'Baixa', bg: 'bg-emerald-500/15', text: 'text-emerald-400', border: 'border-emerald-500/30', dot: 'bg-emerald-500' },
   media: { label: 'Média', bg: 'bg-sky-500/15', text: 'text-sky-400', border: 'border-sky-500/30', dot: 'bg-sky-500' },
   alta: { label: 'Alta', bg: 'bg-orange-500/15', text: 'text-orange-400', border: 'border-orange-500/30', dot: 'bg-orange-500' },
-  urgente: { label: 'Urgente', bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/40 animate-pulse', dot: 'bg-red-500', icon: '🔥' },
+  urgente: { label: 'Urgente', bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/40 animate-pulse', dot: 'bg-red-500' },
+};
+
+// Helper to remove legacy/raw emojis from list titles
+export const sanitizeListTitle = (title: string): string => {
+  return title.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '').trim();
+};
+
+// Helper: Standard site Lucide icon for each Kanban list
+export const getListHeaderIcon = (title: string) => {
+  const cleanTitle = sanitizeListTitle(title).toLowerCase();
+  
+  if (cleanTitle.includes('ideia') || cleanTitle.includes('insight') || cleanTitle.includes('brainstorm')) {
+    return { icon: Lightbulb, color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/30' };
+  }
+  if (cleanTitle.includes('planeja') || cleanTitle.includes('design') || cleanTitle.includes('arquitetura')) {
+    return { icon: Compass, color: 'text-sky-400', bg: 'bg-sky-500/10 border-sky-500/30' };
+  }
+  if (cleanTitle.includes('backlog') || cleanTitle.includes('fila') || cleanTitle.includes('a fazer')) {
+    return { icon: Layers, color: 'text-indigo-400', bg: 'bg-indigo-500/10 border-indigo-500/30' };
+  }
+  if (cleanTitle.includes('refina') || cleanTitle.includes('especifica')) {
+    return { icon: SlidersHorizontal, color: 'text-cyan-400', bg: 'bg-cyan-500/10 border-cyan-500/30' };
+  }
+  if (cleanTitle.includes('sprint') || cleanTitle.includes('andamento') || cleanTitle.includes('progresso')) {
+    return { icon: Rocket, color: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/30' };
+  }
+  if (cleanTitle.includes('desenvolv') || cleanTitle.includes('dev') || cleanTitle.includes('código') || cleanTitle.includes('execu')) {
+    return { icon: Code, color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/30' };
+  }
+  if (cleanTitle.includes('revis') || cleanTitle.includes('review') || cleanTitle.includes('teste') || cleanTitle.includes('qa')) {
+    return { icon: Search, color: 'text-purple-400', bg: 'bg-purple-500/10 border-purple-500/30' };
+  }
+  if (cleanTitle.includes('conclu') || cleanTitle.includes('done') || cleanTitle.includes('finaliz') || cleanTitle.includes('entreg')) {
+    return { icon: CheckCircle2, color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/30' };
+  }
+  return { icon: FolderKanban, color: 'text-zinc-400', bg: 'bg-zinc-800/80 border-zinc-700/60' };
 };
 
 // Helper: Alerta de Prazos Próximos (< 24h ou Atrasado)
@@ -239,10 +280,90 @@ export default function ProjetosView({
   // File Input Ref for Cover Upload
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Active View Mode (Quadro, Tabela, Cronograma, Painel) & Board Search
-  const [activeViewMode, setActiveViewMode] = useState<'quadro' | 'tabela' | 'cronograma' | 'painel'>('quadro');
+  // Active View Mode (Quadro, Tabela, Cronograma, Painel, Prompts) & Board Search
+  const [activeViewMode, setActiveViewMode] = useState<'quadro' | 'tabela' | 'cronograma' | 'painel' | 'prompts'>('quadro');
   const [boardSearch, setBoardSearch] = useState('');
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+
+  // Prompts State (Global & Project-Scoped)
+  const [prompts, setPrompts] = useState<ProjectPrompt[]>(() => {
+    try {
+      const saved = localStorage.getItem('mbc_project_prompts');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error('Failed to parse mbc_project_prompts', e);
+    }
+    return [
+      {
+        id: 'prompt-seed-1',
+        projectId: null,
+        title: 'Especificações Técnicas de Feature',
+        category: 'Desenvolvimento',
+        content: `Atue como Arquiteto de Software Sênior. Para a seguinte funcionalidade de [NOME_DA_FUNCIONALIDADE]:\n\n1. Modelo de Dados & Tipagem: Descreva interfaces TypeScript e estruturas necessárias.\n2. Regras de Negócio: Liste validações, edge cases e restrições.\n3. Fluxo de Execução: Explique o passo a passo de frontend e backend.\n4. Critérios de Aceite (DoD): Formate uma lista em markdown pronta para ser colada no Kanban do projeto.`,
+        isFavorite: true,
+        isGlobal: true,
+        tags: ['Arquitetura', 'TypeScript', 'Backlog'],
+        createdAt: new Date().toLocaleDateString('pt-BR')
+      },
+      {
+        id: 'prompt-seed-2',
+        projectId: null,
+        title: 'Decomposição em Cartões Kanban',
+        category: 'Planejamento',
+        content: `Você é um Agile Coach especialista em Scrum e Kanban. Com base no objetivo do projeto:\n"[DESCREVA_A_META_OU_SPRINT]"\n\nCrie de 4 a 6 cartões de tarefas acionáveis e independentes contendo:\n- Título claro no padrão: [Ação] + [Componente/Tela]\n- Descrição resumida\n- Estimativa de horas de esforço (1h a 8h)\n- Prioridade sugerida (Baixa, Média, Alta ou Urgente)\n- Checklist de 3 sub-tarefas de validação técnica.`,
+        isFavorite: true,
+        isGlobal: true,
+        tags: ['Scrum', 'Kanban', 'Sprint'],
+        createdAt: new Date().toLocaleDateString('pt-BR')
+      },
+      {
+        id: 'prompt-seed-3',
+        projectId: null,
+        title: 'Refatoração Clean Code & Otimização',
+        category: 'Desenvolvimento',
+        content: `Analise criticamente o seguinte trecho de código:\n\n\`\`\`\n[COLE_SEU_CÓDIGO_AQUI]\n\`\`\`\n\nIdentifique:\n1. Código duplicado ou redundante.\n2. Oportunidades de simplificação seguindo Clean Code e SOLID.\n3. Performance e possíveis vazamentos de memória/re-renderizações desnecessárias.\nReescreva o código refatorado, seguro e conciso.`,
+        isFavorite: false,
+        isGlobal: true,
+        tags: ['CleanCode', 'Refatoração', 'Qualidade'],
+        createdAt: new Date().toLocaleDateString('pt-BR')
+      },
+      {
+        id: 'prompt-seed-4',
+        projectId: null,
+        title: 'Copywriting de Lançamento & Chamadas',
+        category: 'Marketing',
+        content: `Atue como Copywriter de Produto para o projeto [NOME_DO_PROJETO].\n\nGere:\n1. Uma proposta de valor irresistível em 1 linha (Hero headline).\n2. Três bullet points com foco em transformação e dor resolvida.\n3. Texto curto de anúncio para redes sociais com chamada para ação (CTA).`,
+        isFavorite: false,
+        isGlobal: true,
+        tags: ['Copywriting', 'Marketing', 'Lançamento'],
+        createdAt: new Date().toLocaleDateString('pt-BR')
+      }
+    ];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('mbc_project_prompts', JSON.stringify(prompts));
+    } catch (e) {
+      console.error('Failed to save mbc_project_prompts', e);
+    }
+  }, [prompts]);
+
+  // Prompts UI State
+  const [promptSearch, setPromptSearch] = useState('');
+  const [promptFilterScope, setPromptFilterScope] = useState<'todos' | 'favoritos' | 'globais' | 'projeto'>('todos');
+  const [promptFilterCategory, setPromptFilterCategory] = useState<string>('Todos');
+  const [copiedPromptId, setCopiedPromptId] = useState<string | null>(null);
+
+  // Prompt Modal (Create & Edit) State
+  const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
+  const [editingPrompt, setEditingPrompt] = useState<ProjectPrompt | null>(null);
+  const [promptTitleInput, setPromptTitleInput] = useState('');
+  const [promptContentInput, setPromptContentInput] = useState('');
+  const [promptCategoryInput, setPromptCategoryInput] = useState('Desenvolvimento');
+  const [promptIsFavoriteInput, setPromptIsFavoriteInput] = useState(false);
+  const [promptIsGlobalInput, setPromptIsGlobalInput] = useState(false);
+  const [promptTagsInput, setPromptTagsInput] = useState('');
 
   // Sub-items & Card Features State
   const [addingSubItemForItemId, setAddingSubItemForItemId] = useState<string | null>(null);
@@ -596,15 +717,15 @@ export default function ProjetosView({
         defaultLists = [
           { id: `l-${Date.now()}-1`, title: 'Ideias 💡', order: 0 },
           { id: `l-${Date.now()}-2`, title: 'Em planejamento 📐', order: 1 },
-          { id: `l-${Date.now()}-3`, title: 'A Fazer 📋', order: 2 },
-          { id: `l-${Date.now()}-4`, title: 'Em Progresso ⏳', order: 3 },
-          { id: `l-${Date.now()}-5`, title: 'Concluído ✅', order: 4 },
+          { id: `l-${Date.now()}-3`, title: 'A Fazer', order: 2 },
+          { id: `l-${Date.now()}-4`, title: 'Em Progresso', order: 3 },
+          { id: `l-${Date.now()}-5`, title: 'Concluído', order: 4 },
         ];
       } else {
         defaultLists = [
-          { id: `l-${Date.now()}-1`, title: 'Ideias 💡', order: 0 },
-          { id: `l-${Date.now()}-2`, title: 'Em planejamento 📐', order: 1 },
-          { id: `l-${Date.now()}-3`, title: 'A Fazer 📋', order: 2 }
+          { id: `l-${Date.now()}-1`, title: 'Ideias', order: 0 },
+          { id: `l-${Date.now()}-2`, title: 'Em planejamento', order: 1 },
+          { id: `l-${Date.now()}-3`, title: 'A Fazer', order: 2 }
         ];
       }
 
@@ -652,6 +773,180 @@ export default function ProjetosView({
       }
     }
   };
+
+  // --- Prompts Handlers & Scope Visibility ---
+  const toggleFavoritePrompt = (promptId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setPrompts(prev => prev.map(p => {
+      if (p.id === promptId) {
+        const nextFav = !p.isFavorite;
+        if (nextFav) addXp(5);
+        return { ...p, isFavorite: nextFav, updatedAt: new Date().toISOString() };
+      }
+      return p;
+    }));
+  };
+
+  const toggleGlobalPrompt = (promptId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setPrompts(prev => prev.map(p => {
+      if (p.id === promptId) {
+        const nextGlobal = !p.isGlobal;
+        return {
+          ...p,
+          isGlobal: nextGlobal,
+          projectId: nextGlobal ? null : (activeProjectId || p.projectId),
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return p;
+    }));
+  };
+
+  const handleCopyPrompt = async (prompt: ProjectPrompt, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    try {
+      let textToCopy = prompt.content;
+      if (activeProject) {
+        textToCopy = textToCopy.replace(/\[NOME_DO_PROJETO\]/g, activeProject.title);
+      }
+      await navigator.clipboard.writeText(textToCopy);
+      setCopiedPromptId(prompt.id);
+      addXp(5);
+      setTimeout(() => {
+        setCopiedPromptId(prev => (prev === prompt.id ? null : prev));
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to copy prompt content:', err);
+    }
+  };
+
+  const handleOpenNewPromptModal = () => {
+    setEditingPrompt(null);
+    setPromptTitleInput('');
+    setPromptContentInput('');
+    setPromptCategoryInput('Desenvolvimento');
+    setPromptIsFavoriteInput(false);
+    setPromptIsGlobalInput(false);
+    setPromptTagsInput('');
+    setIsPromptModalOpen(true);
+  };
+
+  const handleOpenEditPromptModal = (prompt: ProjectPrompt, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setEditingPrompt(prompt);
+    setPromptTitleInput(prompt.title);
+    setPromptContentInput(prompt.content);
+    setPromptCategoryInput(prompt.category || 'Desenvolvimento');
+    setPromptIsFavoriteInput(prompt.isFavorite);
+    setPromptIsGlobalInput(prompt.isGlobal);
+    setPromptTagsInput((prompt.tags || []).join(', '));
+    setIsPromptModalOpen(true);
+  };
+
+  const handleSavePrompt = () => {
+    if (!promptTitleInput.trim() || !promptContentInput.trim()) return;
+
+    const parsedTags = promptTagsInput
+      .split(',')
+      .map(t => t.trim())
+      .filter(Boolean);
+
+    if (editingPrompt) {
+      setPrompts(prev => prev.map(p => {
+        if (p.id === editingPrompt.id) {
+          return {
+            ...p,
+            title: promptTitleInput.trim(),
+            content: promptContentInput.trim(),
+            category: promptCategoryInput,
+            isFavorite: promptIsFavoriteInput,
+            isGlobal: promptIsGlobalInput,
+            projectId: promptIsGlobalInput ? null : (p.projectId || activeProjectId),
+            tags: parsedTags,
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return p;
+      }));
+    } else {
+      const newP: ProjectPrompt = {
+        id: `prompt-${Date.now()}`,
+        projectId: promptIsGlobalInput ? null : activeProjectId,
+        title: promptTitleInput.trim(),
+        content: promptContentInput.trim(),
+        category: promptCategoryInput,
+        isFavorite: promptIsFavoriteInput,
+        isGlobal: promptIsGlobalInput,
+        tags: parsedTags,
+        createdAt: new Date().toLocaleDateString('pt-BR'),
+        updatedAt: new Date().toISOString()
+      };
+      setPrompts(prev => [newP, ...prev]);
+      addXp(15);
+    }
+
+    setIsPromptModalOpen(false);
+  };
+
+  const handleDeletePrompt = (promptId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (window.confirm('Deseja realmente excluir este prompt?')) {
+      setPrompts(prev => prev.filter(p => p.id !== promptId));
+    }
+  };
+
+  const handleCreateCardFromPrompt = (prompt: ProjectPrompt, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!activeProject || activeProject.lists.length === 0) return;
+
+    const firstList = activeProject.lists[0];
+    const newCard: ProjectCard = {
+      id: `c-prompt-${Date.now()}`,
+      listId: firstList.id,
+      title: prompt.title,
+      description: prompt.content,
+      priority: 'media',
+      createdAt: new Date().toISOString()
+    };
+
+    setProjects(prev => prev.map(p => {
+      if (p.id === activeProject.id) {
+        return {
+          ...p,
+          cards: [...p.cards, newCard],
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return p;
+    }));
+
+    addXp(10);
+    setActiveViewMode('quadro');
+  };
+
+  // Prompts visible in this active project
+  const projectVisiblePrompts = prompts.filter(p => {
+    const belongs = p.isGlobal || p.projectId === activeProjectId || !p.projectId;
+    if (!belongs) return false;
+
+    if (promptFilterScope === 'favoritos' && !p.isFavorite) return false;
+    if (promptFilterScope === 'globais' && !p.isGlobal) return false;
+    if (promptFilterScope === 'projeto' && p.isGlobal) return false;
+
+    if (promptFilterCategory !== 'Todos' && p.category !== promptFilterCategory) return false;
+
+    if (promptSearch.trim()) {
+      const q = promptSearch.toLowerCase();
+      const matchTitle = p.title.toLowerCase().includes(q);
+      const matchContent = p.content.toLowerCase().includes(q);
+      const matchCategory = p.category?.toLowerCase().includes(q);
+      const matchTags = (p.tags || []).some(t => t.toLowerCase().includes(q));
+      if (!matchTitle && !matchContent && !matchCategory && !matchTags) return false;
+    }
+
+    return true;
+  });
 
   // --- Kanban Board Handlers ---
   const handleSaveNewList = () => {
@@ -2037,13 +2332,14 @@ export default function ProjetosView({
             </div>
           </div>
 
-          {/* INTERNAL NAVBAR (Interface individual do projeto: Kanban, Tabela, Cronograma, Painel) */}
-          <nav className="internal-nav w-full max-w-3xl" aria-label="Navegação do Projeto">
+          {/* INTERNAL NAVBAR (Interface individual do projeto: Kanban, Tabela, Cronograma, Painel, Prompts) */}
+          <nav className="internal-nav w-full max-w-4xl" aria-label="Navegação do Projeto">
             <button
               type="button"
               onClick={() => setActiveViewMode('quadro')}
               className={`internal-nav-btn ${activeViewMode === 'quadro' ? 'active' : ''}`}
             >
+              <FolderKanban className="h-3.5 w-3.5" />
               <span>Kanban</span>
             </button>
 
@@ -2052,6 +2348,7 @@ export default function ProjetosView({
               onClick={() => setActiveViewMode('tabela')}
               className={`internal-nav-btn ${activeViewMode === 'tabela' ? 'active' : ''}`}
             >
+              <Table className="h-3.5 w-3.5" />
               <span>Tabela</span>
             </button>
 
@@ -2060,6 +2357,7 @@ export default function ProjetosView({
               onClick={() => setActiveViewMode('cronograma')}
               className={`internal-nav-btn ${activeViewMode === 'cronograma' ? 'active' : ''}`}
             >
+              <CalendarDays className="h-3.5 w-3.5" />
               <span>Cronograma</span>
             </button>
 
@@ -2068,11 +2366,26 @@ export default function ProjetosView({
               onClick={() => setActiveViewMode('painel')}
               className={`internal-nav-btn ${activeViewMode === 'painel' ? 'active' : ''}`}
             >
+              <BarChart3 className="h-3.5 w-3.5" />
               <span>Painel</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveViewMode('prompts')}
+              className={`internal-nav-btn ${activeViewMode === 'prompts' ? 'active' : ''}`}
+            >
+              <Sparkles className="h-3.5 w-3.5 text-orange-400" />
+              <span>Prompts</span>
+              {projectVisiblePrompts.length > 0 && (
+                <span className="ml-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-orange-500/15 text-orange-400 border border-orange-500/30">
+                  {projectVisiblePrompts.length}
+                </span>
+              )}
             </button>
           </nav>
 
-          {/* 1. KANBAN BOARD CONTAINER (Horizontal Scrollable Column Layout with Expanded Widths) */}
+          {/* 1. KANBAN BOARD CONTAINER (Horizontal Scrollable Column Layout with Expanded Widths on Desktop) */}
           {activeViewMode === 'quadro' && (
             <div className="flex items-start gap-4 overflow-x-auto horizontal-scrollbar pb-6 pt-1 min-h-[calc(100vh-270px)]">
               {activeProject.lists.map(list => {
@@ -2085,35 +2398,50 @@ export default function ProjetosView({
                     (c.description && c.description.toLowerCase().includes(boardSearch.toLowerCase()));
                 });
 
+                const { icon: ListIcon, color: iconColor, bg: iconBg } = getListHeaderIcon(list.title);
+                const cleanTitle = sanitizeListTitle(list.title);
+
                 return (
                   <div
                     key={list.id}
                     onDragOver={(e) => handleListDragOver(e, list.id)}
                     onDrop={(e) => handleListDrop(e, list.id)}
-                    className={`w-80 sm:w-96 md:w-[380px] lg:w-[420px] shrink-0 bg-zinc-900/40 backdrop-blur-md border ${
+                    className={`w-80 sm:w-[360px] md:w-[420px] lg:w-[480px] xl:w-[540px] 2xl:w-[600px] shrink-0 bg-zinc-900/40 backdrop-blur-md border ${
                       dragOverListId === list.id ? 'border-orange-500/80 bg-zinc-900/80 ring-2 ring-orange-500/20' : 'border-zinc-800/60'
                     } rounded-2xl flex flex-col max-h-[calc(100vh-270px)] shadow-xl transition-all`}
                   >
-                    {/* List Header (Draggable for list reordering) */}
+                    {/* List Header with Standard Site Icon (Draggable for list reordering) */}
                     <div
                       draggable
                       onDragStart={(e) => handleListHeaderDragStart(e, list.id)}
                       className="p-3.5 border-b border-zinc-800/50 flex items-center justify-between cursor-grab active:cursor-grabbing hover:bg-zinc-800/30 transition-colors rounded-t-2xl group/header"
                     >
-                      <div className="flex items-center gap-2">
-                        <GripVertical className="h-3.5 w-3.5 text-zinc-600 group-hover/header:text-orange-400 transition-colors" />
-                        <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-200">
-                          {list.title}
+                      <div className="flex items-center gap-2 min-w-0">
+                        <GripVertical className="h-3.5 w-3.5 text-zinc-600 group-hover/header:text-orange-400 transition-colors shrink-0" />
+                        <div className={`p-1.5 rounded-lg border flex items-center justify-center shrink-0 ${iconBg} ${iconColor}`}>
+                          <ListIcon className="h-3.5 w-3.5" />
+                        </div>
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-200 truncate" title={cleanTitle}>
+                          {cleanTitle}
                         </h3>
-                        <span className="bg-zinc-800/80 text-zinc-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-zinc-700/40 font-mono">
+                        <span className="bg-zinc-800/80 text-zinc-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-zinc-700/40 font-mono shrink-0">
                           {listCards.length}
                         </span>
                       </div>
 
                       <div className="flex items-center gap-1">
                         <button
+                          type="button"
+                          onClick={() => setAddingCardForListId(addingCardForListId === list.id ? null : list.id)}
+                          className="p-1.5 text-zinc-500 hover:text-orange-400 hover:bg-zinc-800/60 rounded-lg transition-colors cursor-pointer"
+                          title="Adicionar Cartão"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => handleOpenEditListModal(list)}
-                          className="p-1 text-zinc-500 hover:text-zinc-300 transition-colors"
+                          className="p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/60 rounded-lg transition-colors cursor-pointer"
                           title="Editar Lista"
                         >
                           <Edit3 className="h-3.5 w-3.5" />
@@ -2170,109 +2498,46 @@ export default function ProjetosView({
                                 : card.completed
                                 ? 'border-emerald-500/30 opacity-70'
                                 : 'border-zinc-800/80 hover:border-orange-500/40'
-                            } rounded-xl p-3 space-y-2.5 transition-all shadow-md hover:shadow-orange-500/5 cursor-grab active:cursor-grabbing relative group overflow-hidden`}
+                            } rounded-xl p-3.5 sm:p-4 space-y-3 transition-all shadow-md hover:shadow-orange-500/5 cursor-grab active:cursor-grabbing relative group overflow-hidden w-full`}
                           >
                             {/* Top Cover Bar */}
                             {card.coverColor && (
                               <div
-                                className="h-1 w-full rounded-full mb-1 opacity-90"
+                                className="h-1.5 w-full rounded-full mb-1 opacity-90"
                                 style={{ backgroundColor: card.coverColor }}
                               />
                             )}
 
-                            {/* Priority & Labels / Tags Pills */}
-                            <div className="flex flex-wrap items-center gap-1">
-                              {/* Priority Badge */}
-                              {card.priority && PRIORITY_CONFIG[card.priority] && (
-                                <span className={`text-[9px] font-black px-2 py-0.5 rounded border flex items-center gap-1 uppercase tracking-wider ${PRIORITY_CONFIG[card.priority].bg} ${PRIORITY_CONFIG[card.priority].text} ${PRIORITY_CONFIG[card.priority].border}`}>
-                                  <span className={`w-1.5 h-1.5 rounded-full ${PRIORITY_CONFIG[card.priority].dot}`} />
-                                  <span>{PRIORITY_CONFIG[card.priority].label}</span>
-                                </span>
-                              )}
-
-                              {/* Labels */}
-                              {card.labels && card.labels.length > 0 && (
-                                card.labels.map(lbl => (
-                                  <span
-                                    key={lbl.id}
-                                    className="text-[9px] font-medium px-2 py-0.5 rounded-md text-white shadow-sm"
-                                    style={{ backgroundColor: lbl.color || '#3b82f6' }}
-                                  >
-                                    {lbl.name}
-                                  </span>
-                                ))
-                              )}
-                            </div>
-
-                            {/* Title with Checkbox */}
-                            <div className="flex items-start gap-2">
-                              <button
-                                type="button"
-                                onClick={(e) => handleToggleCardCompleted(card.id, e)}
-                                className={`mt-0.5 shrink-0 h-4 w-4 rounded-full border flex items-center justify-center transition-all ${
-                                  card.completed
-                                    ? 'bg-emerald-500 border-emerald-500 text-black'
-                                    : 'border-zinc-700 hover:border-orange-500'
-                                }`}
-                              >
-                                {card.completed && <CheckCircle2 className="h-3.5 w-3.5" />}
-                              </button>
-
-                              <span className={`text-xs font-semibold leading-snug flex-1 ${
-                                card.completed ? 'line-through text-zinc-500' : 'text-zinc-100'
-                              }`}>
-                                {card.title}
-                              </span>
-                            </div>
-
-                            {/* Footer Indicators */}
-                            <div className="flex items-center justify-between text-[10px] text-zinc-400 pt-1 font-mono border-t border-zinc-800/50">
-                              <div className="flex flex-wrap items-center gap-2">
-                                {card.description && (
-                                  <span title="Possui descrição">
-                                    <List className="h-3 w-3 text-zinc-500" />
+                            {/* Top Row: Priority Badge, Labels and Due Date */}
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                {/* Priority Badge with Site Standard Icon */}
+                                {card.priority && PRIORITY_CONFIG[card.priority] && (
+                                  <span className={`text-[9px] font-black px-2 py-0.5 rounded-md border flex items-center gap-1 uppercase tracking-wider ${PRIORITY_CONFIG[card.priority].bg} ${PRIORITY_CONFIG[card.priority].text} ${PRIORITY_CONFIG[card.priority].border}`}>
+                                    {card.priority === 'urgente' && <Flame className="h-3 w-3 text-red-400" />}
+                                    {card.priority === 'alta' && <ArrowUp className="h-3 w-3 text-orange-400" />}
+                                    {card.priority === 'media' && <Minus className="h-3 w-3 text-sky-400" />}
+                                    {card.priority === 'baixa' && <ArrowDown className="h-3 w-3 text-emerald-400" />}
+                                    <span>{PRIORITY_CONFIG[card.priority].label}</span>
                                   </span>
                                 )}
 
-                                {totalChecklistItems > 0 && (
-                                  <span
-                                    className={`flex items-center gap-1 font-bold ${
-                                      completedChecklistItems === totalChecklistItems
-                                        ? 'text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20'
-                                        : 'text-zinc-400'
-                                    }`}
-                                    title="Checklist com sub-itens"
-                                  >
-                                    <CheckSquare className="h-3 w-3 text-orange-400" />
-                                    <span>{completedChecklistItems}/{totalChecklistItems}</span>
-                                  </span>
-                                )}
-
-                                {(card.estimatedHours !== undefined || card.loggedHours !== undefined) && (
-                                  <span
-                                    className="flex items-center gap-1 text-[9px] font-mono font-bold bg-zinc-950/90 text-orange-400 px-1.5 py-0.5 rounded border border-orange-500/30"
-                                    title={`Esforço: ${card.loggedHours || 0}h trabalhadas / ${card.estimatedHours || 0}h estimadas`}
-                                  >
-                                    <Clock className="h-3 w-3 text-orange-400" />
-                                    <span>{card.loggedHours || 0}/{card.estimatedHours || 0}h</span>
-                                  </span>
-                                )}
-
-                                {card.attachments && card.attachments.length > 0 && (
-                                  <span className="flex items-center gap-0.5 text-orange-400/90 font-bold" title={`${card.attachments.length} anexo(s)`}>
-                                    <Paperclip className="h-3 w-3 text-orange-400" />
-                                    <span>{card.attachments.length}</span>
-                                  </span>
-                                )}
-
-                                {card.comments && card.comments.length > 0 && (
-                                  <span className="flex items-center gap-0.5 text-zinc-400" title="Comentários">
-                                    <MessageSquare className="h-3 w-3" />
-                                    <span>{card.comments.length}</span>
-                                  </span>
+                                {/* Labels */}
+                                {card.labels && card.labels.length > 0 && (
+                                  card.labels.map(lbl => (
+                                    <span
+                                      key={lbl.id}
+                                      className="text-[9px] font-medium px-2 py-0.5 rounded-md text-white shadow-sm flex items-center gap-1"
+                                      style={{ backgroundColor: lbl.color || '#3b82f6' }}
+                                    >
+                                      <Tag className="h-2.5 w-2.5 opacity-80" />
+                                      <span>{lbl.name}</span>
+                                    </span>
+                                  ))
                                 )}
                               </div>
 
+                              {/* Due Date Indicator */}
                               {card.dueDate && (
                                 <span
                                   className={`flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-md border font-mono shrink-0 ${
@@ -2292,6 +2557,104 @@ export default function ProjetosView({
                                   )}
                                   <span>{dueStatus.text || card.dueDate}</span>
                                 </span>
+                              )}
+                            </div>
+
+                            {/* Middle Row: Checkbox, Title & Description preview */}
+                            <div className="flex items-start gap-2.5">
+                              <button
+                                type="button"
+                                onClick={(e) => handleToggleCardCompleted(card.id, e)}
+                                className={`mt-0.5 shrink-0 h-4.5 w-4.5 rounded-lg border flex items-center justify-center transition-all ${
+                                  card.completed
+                                    ? 'bg-emerald-500 border-emerald-500 text-black'
+                                    : 'border-zinc-700 hover:border-orange-500 bg-zinc-900/50'
+                                }`}
+                              >
+                                {card.completed && <Check className="h-3 w-3 stroke-[3]" />}
+                              </button>
+
+                              <div className="flex-1 min-w-0 space-y-1">
+                                <span className={`text-xs sm:text-sm font-semibold leading-snug block ${
+                                  card.completed ? 'line-through text-zinc-500' : 'text-zinc-100 group-hover:text-white'
+                                }`}>
+                                  {card.title}
+                                </span>
+                                {card.description && (
+                                  <p className="text-[11px] text-zinc-400 line-clamp-2 leading-relaxed">
+                                    {card.description}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Footer Row: Progress bar & Indicators laid out horizontally */}
+                            <div className="flex flex-wrap items-center justify-between gap-2.5 text-[10px] text-zinc-400 pt-2 font-mono border-t border-zinc-800/50">
+                              <div className="flex flex-wrap items-center gap-2">
+                                {card.description && (
+                                  <span className="flex items-center gap-1 text-zinc-500" title="Possui descrição">
+                                    <FileText className="h-3 w-3 text-zinc-500" />
+                                  </span>
+                                )}
+
+                                {totalChecklistItems > 0 && (
+                                  <div
+                                    className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md border ${
+                                      completedChecklistItems === totalChecklistItems
+                                        ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20 font-bold'
+                                        : 'bg-zinc-950/60 border-zinc-800/80 text-zinc-300'
+                                    }`}
+                                    title="Checklist de sub-tarefas"
+                                  >
+                                    <CheckSquare className="h-3 w-3 text-orange-400 shrink-0" />
+                                    <span>{completedChecklistItems}/{totalChecklistItems}</span>
+                                    <div className="w-12 sm:w-16 bg-zinc-800 rounded-full h-1 overflow-hidden ml-0.5">
+                                      <div
+                                        className="bg-emerald-500 h-full rounded-full transition-all duration-300"
+                                        style={{ width: `${Math.round((completedChecklistItems / totalChecklistItems) * 100)}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                )}
+
+                                {(card.estimatedHours !== undefined || card.loggedHours !== undefined) && (
+                                  <span
+                                    className="flex items-center gap-1 bg-zinc-950/60 text-orange-400 px-2 py-0.5 rounded-md border border-orange-500/20"
+                                    title={`Esforço: ${card.loggedHours || 0}h trabalhadas / ${card.estimatedHours || 0}h estimadas`}
+                                  >
+                                    <Clock className="h-3 w-3 text-orange-400" />
+                                    <span>{card.loggedHours || 0}/{card.estimatedHours || 0}h</span>
+                                  </span>
+                                )}
+
+                                {card.attachments && card.attachments.length > 0 && (
+                                  <span className="flex items-center gap-1 bg-zinc-950/60 px-2 py-0.5 rounded-md border border-zinc-800/80 text-orange-400" title={`${card.attachments.length} anexo(s)`}>
+                                    <Paperclip className="h-3 w-3" />
+                                    <span>{card.attachments.length}</span>
+                                  </span>
+                                )}
+
+                                {card.comments && card.comments.length > 0 && (
+                                  <span className="flex items-center gap-1 bg-zinc-950/60 px-2 py-0.5 rounded-md border border-zinc-800/80 text-zinc-400" title="Comentários">
+                                    <MessageSquare className="h-3 w-3" />
+                                    <span>{card.comments.length}</span>
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Assignees Avatars */}
+                              {card.assignees && card.assignees.length > 0 && (
+                                <div className="flex -space-x-1.5 shrink-0">
+                                  {card.assignees.map(a => (
+                                    <span
+                                      key={a.id}
+                                      className="h-5 w-5 rounded-full bg-orange-500/20 border border-orange-500/40 text-orange-300 text-[9px] font-bold flex items-center justify-center uppercase ring-1 ring-zinc-950"
+                                      title={a.name}
+                                    >
+                                      {a.name.substring(0, 2)}
+                                    </span>
+                                  ))}
+                                </div>
                               )}
                             </div>
                           </motion.div>
@@ -2788,6 +3151,297 @@ export default function ProjetosView({
                   })}
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* 5. PROMPTS VIEW (Biblioteca de Prompts do Projeto e Globais) */}
+          {activeViewMode === 'prompts' && (
+            <div className="space-y-5 animate-fadeIn">
+              {/* Prompts Top Control Bar */}
+              <div className="bg-zinc-900/40 backdrop-blur-md border border-zinc-800/60 rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-800/60">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-400 shrink-0">
+                      <Sparkles className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2 flex-wrap">
+                        <span>Prompts do Projeto</span>
+                        <span className="text-xs font-mono font-normal text-zinc-400">
+                          ({projectVisiblePrompts.length} disponíveis)
+                        </span>
+                      </h2>
+                      <p className="text-xs text-zinc-400">
+                        Gerencie prompts de IA e modelos de tarefas específicos deste projeto ou globais (exibidos em todos os projetos).
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleOpenNewPromptModal}
+                    className="px-3.5 py-2 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-xl shadow-lg shadow-orange-500/20 transition-all cursor-pointer flex items-center justify-center gap-1.5 self-start sm:self-auto shrink-0"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>Novo Prompt</span>
+                  </button>
+                </div>
+
+                {/* Filter and Search Row */}
+                <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+                  {/* Scope Filters */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 horizontal-scrollbar">
+                    <button
+                      type="button"
+                      onClick={() => setPromptFilterScope('todos')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                        promptFilterScope === 'todos'
+                          ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20'
+                          : 'bg-zinc-900/90 text-zinc-400 hover:text-white border border-zinc-800/80'
+                      }`}
+                    >
+                      Todos ({prompts.filter(p => p.isGlobal || p.projectId === activeProjectId || !p.projectId).length})
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setPromptFilterScope('favoritos')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                        promptFilterScope === 'favoritos'
+                          ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20 font-black'
+                          : 'bg-zinc-900/90 text-zinc-400 hover:text-white border border-zinc-800/80'
+                      }`}
+                    >
+                      <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                      <span>Favoritos ({prompts.filter(p => p.isFavorite && (p.isGlobal || p.projectId === activeProjectId || !p.projectId)).length})</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setPromptFilterScope('globais')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                        promptFilterScope === 'globais'
+                          ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20 font-black'
+                          : 'bg-zinc-900/90 text-zinc-400 hover:text-white border border-zinc-800/80'
+                      }`}
+                      title="Exibidos em todos os projetos"
+                    >
+                      <Globe className="h-3.5 w-3.5 text-sky-400" />
+                      <span>Globais ({prompts.filter(p => p.isGlobal).length})</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setPromptFilterScope('projeto')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                        promptFilterScope === 'projeto'
+                          ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/20 font-black'
+                          : 'bg-zinc-900/90 text-zinc-400 hover:text-white border border-zinc-800/80'
+                      }`}
+                      title="Específicos deste projeto"
+                    >
+                      <Folder className="h-3.5 w-3.5" />
+                      <span>Deste Projeto ({prompts.filter(p => !p.isGlobal && (p.projectId === activeProjectId || !p.projectId)).length})</span>
+                    </button>
+                  </div>
+
+                  {/* Search Input */}
+                  <div className="relative flex items-center min-w-[240px] md:w-72">
+                    <Search className="absolute left-3 h-3.5 w-3.5 text-zinc-400" />
+                    <input
+                      type="text"
+                      placeholder="Buscar prompts ou tags..."
+                      value={promptSearch}
+                      onChange={(e) => setPromptSearch(e.target.value)}
+                      className="w-full bg-zinc-900/90 border border-zinc-800/90 rounded-xl pl-8.5 pr-8 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500/50 shadow-inner"
+                    />
+                    {promptSearch && (
+                      <button
+                        type="button"
+                        onClick={() => setPromptSearch('')}
+                        className="absolute right-2.5 text-zinc-500 hover:text-white cursor-pointer"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Category Pills */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 horizontal-scrollbar pt-1 border-t border-zinc-800/40">
+                  <span className="text-[10px] uppercase font-bold text-zinc-500 mr-1 font-mono shrink-0">Categorias:</span>
+                  {['Todos', 'Desenvolvimento', 'Planejamento', 'Marketing', 'Design', 'Geral'].map(cat => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setPromptFilterCategory(cat)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all whitespace-nowrap cursor-pointer ${
+                        promptFilterCategory === cat
+                          ? 'bg-zinc-800 text-orange-400 border border-orange-500/40 font-bold'
+                          : 'bg-zinc-900/60 text-zinc-400 hover:text-zinc-200 border border-zinc-800/60'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Prompts Cards Grid */}
+              {projectVisiblePrompts.length === 0 ? (
+                <div className="bg-zinc-900/30 border border-dashed border-zinc-800 rounded-2xl p-12 text-center space-y-3">
+                  <Sparkles className="h-10 w-10 text-zinc-600 mx-auto" />
+                  <p className="text-sm font-bold text-zinc-300">Nenhum prompt encontrado</p>
+                  <p className="text-xs text-zinc-500 max-w-md mx-auto">
+                    {promptSearch || promptFilterScope !== 'todos' || promptFilterCategory !== 'Todos'
+                      ? 'Nenhum prompt corresponde aos filtros selecionados. Tente ajustar os termos de busca.'
+                      : 'Adicione seu primeiro prompt ou marque um prompt existente como global para que ele apareça aqui.'}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleOpenNewPromptModal}
+                    className="px-4 py-2 bg-orange-500/20 text-orange-400 border border-orange-500/40 hover:bg-orange-500/30 text-xs font-bold rounded-xl transition-all inline-flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>Criar Primeiro Prompt</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {projectVisiblePrompts.map(prompt => {
+                    const isCopied = copiedPromptId === prompt.id;
+                    return (
+                      <div
+                        key={prompt.id}
+                        className={`bg-zinc-900/50 hover:bg-zinc-900/80 border ${
+                          prompt.isFavorite ? 'border-amber-500/40 shadow-amber-500/5' : 'border-zinc-800/80 hover:border-orange-500/40'
+                        } rounded-2xl p-4 sm:p-4.5 flex flex-col justify-between gap-3.5 transition-all shadow-xl group`}
+                      >
+                        {/* Header: Category Badge + Favorite Star + Global Button */}
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-zinc-800/80 border border-zinc-700/60 text-orange-400 font-mono">
+                                {prompt.category || 'Geral'}
+                              </span>
+
+                              {/* Global vs Project Badge / Toggle */}
+                              <button
+                                type="button"
+                                onClick={(e) => toggleGlobalPrompt(prompt.id, e)}
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded-md border flex items-center gap-1 transition-all cursor-pointer ${
+                                  prompt.isGlobal
+                                    ? 'bg-sky-500/15 text-sky-400 border-sky-500/30 hover:bg-sky-500/25'
+                                    : 'bg-zinc-800/60 text-zinc-400 border-zinc-700/50 hover:text-white hover:border-zinc-600'
+                                }`}
+                                title={prompt.isGlobal ? 'Global: Exibido em todos os projetos (clique para tornar específico)' : 'Específico deste projeto (clique para tornar global)'}
+                              >
+                                <Globe className="h-2.5 w-2.5" />
+                                <span>{prompt.isGlobal ? 'Global' : 'Deste Projeto'}</span>
+                              </button>
+                            </div>
+
+                            <div className="flex items-center gap-1">
+                              {/* Favorite Star Button */}
+                              <button
+                                type="button"
+                                onClick={(e) => toggleFavoritePrompt(prompt.id, e)}
+                                className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
+                                  prompt.isFavorite
+                                    ? 'bg-amber-500/20 text-amber-400 border-amber-500/40'
+                                    : 'bg-zinc-800/60 text-zinc-500 hover:text-amber-400 border-zinc-700/50 hover:border-amber-500/30'
+                                }`}
+                                title={prompt.isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+                              >
+                                <Star className={`h-3.5 w-3.5 ${prompt.isFavorite ? 'fill-amber-400 text-amber-400' : ''}`} />
+                              </button>
+
+                              {/* Edit Button */}
+                              <button
+                                type="button"
+                                onClick={(e) => handleOpenEditPromptModal(prompt, e)}
+                                className="p-1.5 rounded-lg bg-zinc-800/60 text-zinc-400 hover:text-orange-400 border border-zinc-700/50 hover:border-orange-500/30 transition-all cursor-pointer"
+                                title="Editar Prompt"
+                              >
+                                <Edit3 className="h-3.5 w-3.5" />
+                              </button>
+
+                              {/* Delete Button */}
+                              <button
+                                type="button"
+                                onClick={(e) => handleDeletePrompt(prompt.id, e)}
+                                className="p-1.5 rounded-lg bg-zinc-800/60 text-zinc-500 hover:text-red-400 border border-zinc-700/50 hover:border-red-500/30 transition-all cursor-pointer"
+                                title="Excluir Prompt"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Prompt Title */}
+                          <h3 className="text-sm sm:text-base font-black text-white group-hover:text-orange-400 transition-colors leading-tight">
+                            {prompt.title}
+                          </h3>
+
+                          {/* Tags if any */}
+                          {prompt.tags && prompt.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 pt-0.5">
+                              {prompt.tags.map(t => (
+                                <span key={t} className="text-[9px] font-mono text-zinc-400 bg-zinc-950/80 px-1.5 py-0.5 rounded border border-zinc-800">
+                                  #{t}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Prompt Content Code Block */}
+                        <div className="bg-zinc-950/90 border border-zinc-800/80 rounded-xl p-3 max-h-48 overflow-y-auto custom-scrollbar relative">
+                          <pre className="text-xs text-zinc-300 font-mono whitespace-pre-wrap leading-relaxed select-text font-normal">
+                            {prompt.content}
+                          </pre>
+                        </div>
+
+                        {/* Actions Footer */}
+                        <div className="pt-2 border-t border-zinc-800/60 flex items-center justify-between gap-2">
+                          <button
+                            type="button"
+                            onClick={(e) => handleCreateCardFromPrompt(prompt, e)}
+                            className="px-2.5 py-1.5 bg-zinc-800/80 hover:bg-zinc-800 text-zinc-300 hover:text-orange-400 border border-zinc-700/60 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
+                            title="Criar um cartão no Kanban com este prompt"
+                          >
+                            <Plus className="h-3 w-3" />
+                            <span>Gerar Tarefa</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(e) => handleCopyPrompt(prompt, e)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm ${
+                              isCopied
+                                ? 'bg-emerald-500 text-black font-black'
+                                : 'bg-orange-500 hover:bg-orange-600 text-white shadow-orange-500/20'
+                            }`}
+                            title="Copiar texto do prompt para a área de transferência"
+                          >
+                            {isCopied ? (
+                              <>
+                                <Check className="h-3.5 w-3.5 stroke-[3]" />
+                                <span>Copiado!</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="h-3.5 w-3.5" />
+                                <span>Copiar Prompt</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -4230,12 +4884,12 @@ export default function ProjetosView({
                   </span>
                   <div className="flex flex-wrap gap-1.5">
                     {[
-                      'Ideias 💡',
-                      'Em planejamento 📐',
-                      'A Fazer 📋',
-                      'Em desenvolvimento ⚡',
-                      'Revisão de código 🔍',
-                      'Concluído 🎆'
+                      'Ideias',
+                      'Em planejamento',
+                      'Backlog',
+                      'Em desenvolvimento',
+                      'Revisão de código',
+                      'Concluído'
                     ].map(sug => (
                       <button
                         key={sug}
@@ -4277,6 +4931,179 @@ export default function ProjetosView({
                     Salvar Nome
                   </button>
                 </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 6. MODAL: CRIAR / EDITAR PROMPT */}
+      <AnimatePresence>
+        {isPromptModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsPromptModalOpen(false)}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              className="bg-zinc-950 border border-zinc-800 rounded-2xl max-w-xl w-full p-5 sm:p-6 relative z-50 shadow-2xl space-y-4 max-h-[90vh] flex flex-col"
+            >
+              <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 bg-orange-500/10 text-orange-400 rounded-xl border border-orange-500/20">
+                    <Sparkles className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-bold text-white">
+                      {editingPrompt ? 'Editar Prompt' : 'Novo Prompt de IA / Tarefa'}
+                    </h3>
+                    <p className="text-xs text-zinc-400">
+                      Configure as instruções e defina o escopo de visibilidade.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsPromptModalOpen(false)}
+                  className="text-zinc-500 hover:text-white p-1 cursor-pointer rounded-lg hover:bg-zinc-900"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="space-y-4 overflow-y-auto custom-scrollbar flex-1 pr-1">
+                {/* Title */}
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block font-mono">
+                    Título do Prompt
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ex: Gerador de Especificação de Feature"
+                    value={promptTitleInput}
+                    onChange={(e) => setPromptTitleInput(e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500 font-medium"
+                  />
+                </div>
+
+                {/* Category & Tags */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block font-mono">
+                      Categoria
+                    </label>
+                    <select
+                      value={promptCategoryInput}
+                      onChange={(e) => setPromptCategoryInput(e.target.value)}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500 cursor-pointer font-medium"
+                    >
+                      <option value="Desenvolvimento">Desenvolvimento</option>
+                      <option value="Planejamento">Planejamento</option>
+                      <option value="Marketing">Marketing</option>
+                      <option value="Design">Design</option>
+                      <option value="Ideação">Ideação</option>
+                      <option value="Geral">Geral</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block font-mono">
+                      Tags (separadas por vírgula)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ex: TypeScript, SOLID, Backend"
+                      value={promptTagsInput}
+                      onChange={(e) => setPromptTagsInput(e.target.value)}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500 font-mono"
+                    />
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block font-mono">
+                      Conteúdo do Prompt
+                    </label>
+                    <span className="text-[10px] text-zinc-500 font-mono">
+                      Variável opcional: [NOME_DO_PROJETO]
+                    </span>
+                  </div>
+                  <textarea
+                    rows={8}
+                    placeholder="Digite o conteúdo das instruções do prompt aqui..."
+                    value={promptContentInput}
+                    onChange={(e) => setPromptContentInput(e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3 text-xs text-zinc-200 focus:outline-none focus:border-orange-500 font-mono resize-none leading-relaxed"
+                  />
+                </div>
+
+                {/* Scope & Favorite Toggles */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  {/* Global Toggle */}
+                  <label className="flex items-start gap-2.5 p-3 rounded-xl bg-zinc-900/60 border border-zinc-800 hover:border-zinc-700 transition-colors cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={promptIsGlobalInput}
+                      onChange={(e) => setPromptIsGlobalInput(e.target.checked)}
+                      className="mt-0.5 rounded border-zinc-700 text-orange-500 focus:ring-orange-500 cursor-pointer"
+                    />
+                    <div className="space-y-0.5">
+                      <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                        <Globe className="h-3.5 w-3.5 text-sky-400" />
+                        <span>Prompt Global</span>
+                      </span>
+                      <p className="text-[10px] text-zinc-400 leading-tight">
+                        Exibir este prompt na aba Prompts de todos os projetos.
+                      </p>
+                    </div>
+                  </label>
+
+                  {/* Favorite Toggle */}
+                  <label className="flex items-start gap-2.5 p-3 rounded-xl bg-zinc-900/60 border border-zinc-800 hover:border-zinc-700 transition-colors cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={promptIsFavoriteInput}
+                      onChange={(e) => setPromptIsFavoriteInput(e.target.checked)}
+                      className="mt-0.5 rounded border-zinc-700 text-orange-500 focus:ring-orange-500 cursor-pointer"
+                    />
+                    <div className="space-y-0.5">
+                      <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                        <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
+                        <span>Favoritar Prompt</span>
+                      </span>
+                      <p className="text-[10px] text-zinc-400 leading-tight">
+                        Fixa o prompt no topo e destaca com estrela dourada.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div className="pt-3 flex items-center justify-end gap-2 border-t border-zinc-900">
+                <button
+                  type="button"
+                  onClick={() => setIsPromptModalOpen(false)}
+                  className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold text-xs rounded-xl transition-colors cursor-pointer border border-zinc-800"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSavePrompt}
+                  disabled={!promptTitleInput.trim() || !promptContentInput.trim()}
+                  className="px-5 py-2 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-lg shadow-orange-500/20 transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <Check className="h-4 w-4" />
+                  <span>Salvar Prompt</span>
+                </button>
               </div>
             </motion.div>
           </div>
