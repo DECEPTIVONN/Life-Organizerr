@@ -72,6 +72,7 @@ import { saveGoogleOAuthTokens, clearGoogleOAuthSession, refreshGoogleAccessToke
 import { handleAutoListKeyDown, formatTimeInput, moveCursorToEnd } from '../utils/listUtils';
 import { calculateReadingInterval, syncBookWithYearlyBooks } from '../utils/bookUtils';
 import { getDeletedTaskIdsForDate, addDeletedTaskIdForDate } from '../utils/taskStorage';
+import { getLastAccessAfter18ForYesterday } from '../utils/userActivityTracker';
 // @ts-ignore
 import classicalLightEngraving from '../assets/images/classical_light_engraving_1784335041654.jpg';
 
@@ -1182,7 +1183,7 @@ export default function CalendarView({
   const [decreesText, setDecreesText] = useState('');
   const [prayerText, setPrayerText] = useState('');
   const [noteReminderTime, setNoteReminderTime] = useState('');
-  const [alterEgoWinner, setAlterEgoWinner] = useState<'Alfredo' | 'Beto' | null>(null);
+  const [alterEgoWinner, setAlterEgoWinner] = useState<'Alfredo' | 'Beto' | 'Positivo' | 'Negativo' | null>(null);
   const [alterEgoText, setAlterEgoText] = useState('');
   const [sleepBedTime, setSleepBedTime] = useState('');
   const [sleepWakeTime, setSleepWakeTime] = useState('');
@@ -2004,7 +2005,8 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
           : templatePrayer
       );
       
-      setSleepBedTime(activeRecord.sleepBedTime || '');
+      const inferredBedTime = (!activeRecord.sleepBedTime) ? (getLastAccessAfter18ForYesterday(selectedDateStr) || '') : '';
+      setSleepBedTime(activeRecord.sleepBedTime || inferredBedTime);
       setSleepWakeTime(activeRecord.sleepWakeTime || '');
       setFoodMorning(activeRecord.foodMorning || '');
       setFoodAfternoon(activeRecord.foodAfternoon || '');
@@ -2089,7 +2091,8 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
       setDecreesText(templateDecrees);
       setPrayerText(templatePrayer);
       
-      setSleepBedTime('');
+      const inferredBedTime = getLastAccessAfter18ForYesterday(selectedDateStr) || '';
+      setSleepBedTime(inferredBedTime);
       setSleepWakeTime('');
       setFoodMorning('');
       setFoodAfternoon('');
@@ -3407,15 +3410,15 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                             />
                           </div>
 
-                          {/* Alter Ego Dominante do Dia (Abaixo de Como foi o seu dia?) */}
+                          {/* Saldo do dia (Abaixo de Como foi o seu dia?) */}
                           <div className="bg-zinc-950/40 border border-zinc-900 rounded-xl p-2.5 sm:p-3 space-y-2 shrink-0">
                             <div className="flex justify-between items-center">
                               <div>
                                 <span className="text-[10px] text-gray-300 font-bold uppercase tracking-wider block">
-                                  Alter Ego Dominante do Dia
+                                  Saldo do dia
                                 </span>
                                 <span className="text-[9px] text-zinc-500 block">
-                                  Quem prevaleceu hoje?
+                                  Como foi o balanço das suas decisões hoje?
                                 </span>
                               </div>
                               {alterEgoWinner && (
@@ -3432,32 +3435,32 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                             <div className="grid grid-cols-2 gap-2">
                               <button
                                 type="button"
-                                onClick={() => setAlterEgoWinner(prev => prev === 'Alfredo' ? null : 'Alfredo')}
-                                className={`py-2 px-3 rounded-xl border text-center transition-all flex items-center justify-center gap-2 ${
-                                  alterEgoWinner === 'Alfredo'
-                                    ? 'bg-orange-500/15 border-orange-500/50 text-orange-400 shadow-[0_2px_10px_rgba(249,115,22,0.15)] font-bold'
+                                onClick={() => setAlterEgoWinner(prev => (prev === 'Positivo' || prev === 'Alfredo') ? null : 'Positivo')}
+                                className={`py-2 px-3 rounded-xl border text-center transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                                  (alterEgoWinner === 'Positivo' || alterEgoWinner === 'Alfredo')
+                                    ? 'bg-emerald-500/15 border-emerald-500/50 text-emerald-400 shadow-[0_2px_10px_rgba(16,185,129,0.15)] font-bold'
                                     : 'bg-zinc-950/60 border-zinc-900 text-gray-500 hover:text-gray-300 hover:border-zinc-800'
                                 }`}
                               >
-                                <CheckCircle className="h-4 w-4 text-orange-500 shrink-0" />
+                                <CheckCircle className={`h-4 w-4 shrink-0 ${(alterEgoWinner === 'Positivo' || alterEgoWinner === 'Alfredo') ? 'text-emerald-400' : 'text-emerald-500/60'}`} />
                                 <div className="text-left">
-                                  <span className="text-[11px] block font-bold leading-tight">Alfredo</span>
-                                  <span className="text-[8px] text-zinc-500 block font-normal">Disciplina & Foco</span>
+                                  <span className="text-[11px] block font-bold leading-tight">Positivo</span>
+                                  <span className="text-[8px] text-zinc-500 block font-normal">Disciplina & Progresso</span>
                                 </div>
                               </button>
 
                               <button
                                 type="button"
-                                onClick={() => setAlterEgoWinner(prev => prev === 'Beto' ? null : 'Beto')}
-                                className={`py-2 px-3 rounded-xl border text-center transition-all flex items-center justify-center gap-2 ${
-                                  alterEgoWinner === 'Beto'
+                                onClick={() => setAlterEgoWinner(prev => (prev === 'Negativo' || prev === 'Beto') ? null : 'Negativo')}
+                                className={`py-2 px-3 rounded-xl border text-center transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                                  (alterEgoWinner === 'Negativo' || alterEgoWinner === 'Beto')
                                     ? 'bg-rose-500/15 border-rose-500/50 text-rose-400 shadow-[0_2px_10px_rgba(244,63,94,0.15)] font-bold'
                                     : 'bg-zinc-950/60 border-zinc-900 text-gray-500 hover:text-gray-300 hover:border-zinc-800'
                                 }`}
                               >
-                                <AlertCircle className="h-4 w-4 text-rose-500 shrink-0" />
+                                <AlertCircle className={`h-4 w-4 shrink-0 ${(alterEgoWinner === 'Negativo' || alterEgoWinner === 'Beto') ? 'text-rose-400' : 'text-rose-500/60'}`} />
                                 <div className="text-left">
-                                  <span className="text-[11px] block font-bold leading-tight">Beto</span>
+                                  <span className="text-[11px] block font-bold leading-tight">Negativo</span>
                                   <span className="text-[8px] text-zinc-500 block font-normal">Impulso & Procrastinação</span>
                                 </div>
                               </button>

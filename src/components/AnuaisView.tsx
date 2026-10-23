@@ -55,6 +55,7 @@ import { CalendarNote, DailyTask, MonthlyReview, WeeklyReview, YearlyBook, SubTa
 import { calculateReadingInterval, formatDateBR } from '../utils/bookUtils';
 import { handleAutoListKeyDown, formatTimeInput, moveCursorToEnd } from '../utils/listUtils';
 import { getDeletedTaskIdsForDate, addDeletedTaskIdForDate } from '../utils/taskStorage';
+import { getLastAccessAfter18ForYesterday } from '../utils/userActivityTracker';
 
 interface AnuaisViewProps {
   notes: CalendarNote[];
@@ -397,7 +398,7 @@ export default function AnuaisView({
   const [foodNight, setFoodNight] = useState('');
   const [waterLiters, setWaterLiters] = useState(0);
   const [dayChecklist, setDayChecklist] = useState<DailyTask[]>([]);
-  const [alterEgoWinner, setAlterEgoWinner] = useState<'Alfredo' | 'Beto' | null>(null);
+  const [alterEgoWinner, setAlterEgoWinner] = useState<'Alfredo' | 'Beto' | 'Positivo' | 'Negativo' | null>(null);
   const [alterEgoText, setAlterEgoText] = useState('');
   const [newDayTaskText, setNewDayTaskText] = useState('');
   const [savingStatus, setSavingStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
@@ -883,7 +884,8 @@ export default function AnuaisView({
       setGratitudeText(existing.gratitudeText || templateGratitude);
       setDecreesText(existing.decreesText || templateDecrees);
       setPrayerText(existing.prayerText || templatePrayer);
-      setSleepBedTime(existing.sleepBedTime || '');
+      const inferredBedTime = (!existing.sleepBedTime) ? (getLastAccessAfter18ForYesterday(dateStr) || '') : '';
+      setSleepBedTime(existing.sleepBedTime || inferredBedTime);
       setSleepWakeTime(existing.sleepWakeTime || '');
       setFoodMorning(existing.foodMorning || '');
       setFoodAfternoon(existing.foodAfternoon || '');
@@ -940,7 +942,8 @@ export default function AnuaisView({
       setGratitudeText(templateGratitude);
       setDecreesText(templateDecrees);
       setPrayerText(templatePrayer);
-      setSleepBedTime('');
+      const inferredBedTime = getLastAccessAfter18ForYesterday(dateStr) || '';
+      setSleepBedTime(inferredBedTime);
       setSleepWakeTime('');
       setFoodMorning('');
       setFoodAfternoon('');
@@ -1393,8 +1396,8 @@ export default function AnuaisView({
 
             // 3. Disciplina (de acordo com os alter-egos)
             const notesForYear = notes.filter(n => n.date.startsWith(String(year)) && n.isDailyRecord);
-            const alfredoWins = notesForYear.filter(n => n.alterEgoWinner === 'Alfredo').length;
-            const betoWins = notesForYear.filter(n => n.alterEgoWinner === 'Beto').length;
+            const alfredoWins = notesForYear.filter(n => n.alterEgoWinner === 'Alfredo' || n.alterEgoWinner === 'Positivo').length;
+            const betoWins = notesForYear.filter(n => n.alterEgoWinner === 'Beto' || n.alterEgoWinner === 'Negativo').length;
             const totalWins = alfredoWins + betoWins;
             const disciplinePercent = totalWins > 0 ? Math.round((alfredoWins / totalWins) * 100) : 100;
 
@@ -2697,14 +2700,14 @@ export default function AnuaisView({
                         </div>
 
                         <div className="flex items-center gap-3 shrink-0">
-                          {/* Alter ego indicator */}
+                          {/* Saldo do dia indicator */}
                           {record?.alterEgoWinner && (
                             <span className={`text-[8px] font-bold font-mono uppercase px-1.5 py-0.5 rounded border ${
-                              record.alterEgoWinner === 'Alfredo' 
-                                ? 'bg-orange-500/10 border-orange-500/20 text-orange-400' 
+                              (record.alterEgoWinner === 'Positivo' || record.alterEgoWinner === 'Alfredo')
+                                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
                                 : 'bg-rose-500/10 border-rose-500/20 text-rose-400'
-                            }`} title="Vencedor do Alter Ego">
-                              {record.alterEgoWinner}
+                            }`} title="Saldo do Dia">
+                              {record.alterEgoWinner === 'Alfredo' ? 'Positivo' : record.alterEgoWinner === 'Beto' ? 'Negativo' : record.alterEgoWinner}
                             </span>
                           )}
 
@@ -2790,7 +2793,7 @@ export default function AnuaisView({
                   { id: 'diario', label: 'Diário Pessoal', icon: BookOpen },
                   { id: 'checklist', label: 'Checklist Diário', icon: CheckSquare },
                   { id: 'espiritualidade', label: 'Espiritualidade', icon: Sparkles },
-                  { id: 'alteregos', label: 'Alter Egos', icon: Sliders },
+                  { id: 'alteregos', label: 'Saldo do Dia', icon: Sliders },
                   { id: 'saude', label: 'Saúde & Hábitos', icon: Heart }
                 ].map((tb) => {
                   const Icon = tb.icon;
@@ -2994,10 +2997,10 @@ export default function AnuaisView({
                   <div className="space-y-4 min-h-[300px]">
                     <div>
                       <span className="text-[10px] text-zinc-400 font-bold block uppercase tracking-wider">
-                        Vencedor de Hoje
+                        Saldo do dia
                       </span>
                       <p className="text-[9.5px] text-zinc-500 leading-normal mt-0.5">
-                        Defina se Alfredo (Disciplina e Progresso) ou Beto (Preguiça e Impulsividade) governou suas decisões hoje.
+                        Defina se o saldo das suas decisões e ações hoje foi Positivo ou Negativo.
                       </p>
                     </div>
 
@@ -3005,35 +3008,35 @@ export default function AnuaisView({
                       <button
                         type="button"
                         onClick={() => {
-                          setAlterEgoWinner('Alfredo');
+                          setAlterEgoWinner('Positivo');
                           addXp(5);
                         }}
-                        className={`p-4 rounded-2xl border text-center transition-all flex flex-col items-center justify-center gap-1 ${
-                          alterEgoWinner === 'Alfredo'
-                            ? 'bg-orange-500/10 border-orange-500/30 text-orange-400 font-black'
+                        className={`p-4 rounded-2xl border text-center transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                          (alterEgoWinner === 'Positivo' || alterEgoWinner === 'Alfredo')
+                            ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400 font-black shadow-lg shadow-emerald-500/10'
                             : 'bg-zinc-950 border-zinc-900 text-zinc-500 hover:text-zinc-300'
                         }`}
                       >
-                        <Zap className="h-5 w-5 mb-1" />
-                        <span className="text-xs">Alfredo</span>
-                        <span className="text-[8px] uppercase tracking-wider opacity-60">Disciplina</span>
+                        <Zap className={`h-5 w-5 mb-1 ${(alterEgoWinner === 'Positivo' || alterEgoWinner === 'Alfredo') ? 'text-emerald-400' : 'text-emerald-500/60'}`} />
+                        <span className="text-xs">Positivo</span>
+                        <span className="text-[8px] uppercase tracking-wider opacity-60">Disciplina & Progresso</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => {
-                          setAlterEgoWinner('Beto');
+                          setAlterEgoWinner('Negativo');
                           addXp(5);
                         }}
-                        className={`p-4 rounded-2xl border text-center transition-all flex flex-col items-center justify-center gap-1 ${
-                          alterEgoWinner === 'Beto'
-                            ? 'bg-rose-500/10 border-rose-500/30 text-rose-400 font-black'
+                        className={`p-4 rounded-2xl border text-center transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                          (alterEgoWinner === 'Negativo' || alterEgoWinner === 'Beto')
+                            ? 'bg-rose-500/15 border-rose-500/40 text-rose-400 font-black shadow-lg shadow-rose-500/10'
                             : 'bg-zinc-950 border-zinc-900 text-zinc-500 hover:text-zinc-300'
                         }`}
                       >
-                        <Trash2 className="h-5 w-5 mb-1" />
-                        <span className="text-xs">Beto</span>
-                        <span className="text-[8px] uppercase tracking-wider opacity-60">Impulso</span>
+                        <Trash2 className={`h-5 w-5 mb-1 ${(alterEgoWinner === 'Negativo' || alterEgoWinner === 'Beto') ? 'text-rose-400' : 'text-rose-500/60'}`} />
+                        <span className="text-xs">Negativo</span>
+                        <span className="text-[8px] uppercase tracking-wider opacity-60">Impulso & Procrastinação</span>
                       </button>
                     </div>
 

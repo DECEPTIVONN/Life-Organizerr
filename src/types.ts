@@ -106,7 +106,7 @@ export interface CalendarNote {
   isDailyRecord?: boolean;
   checklist?: DailyTask[];
   deletedTaskIds?: string[];
-  alterEgoWinner?: 'Alfredo' | 'Beto' | null;
+  alterEgoWinner?: 'Alfredo' | 'Beto' | 'Positivo' | 'Negativo' | null;
   alterEgoText?: string;
   sleepBedTime?: string;
   sleepWakeTime?: string;

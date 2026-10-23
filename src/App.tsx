@@ -68,6 +68,7 @@ import { DEFAULT_VISION_BOARD_CARDS } from './components/VisionBoard';
 import { BankAccount, CreditCardItem, DebtItem, BudgetLimit } from './components/FinancesView';
 import { cleanupExpiredGridRoutine, cleanupExpiredRoutineItems } from './utils/routineUtils';
 import { getDeletedTaskIdsForDate } from './utils/taskStorage';
+import { initUserActivityTracker } from './utils/userActivityTracker';
 
 // Types
 import { 
@@ -1760,6 +1761,7 @@ export default function App() {
 
   // --- Background Device Registration & Heartbeat ---
   useEffect(() => {
+    initUserActivityTracker();
     syncAndRegisterCurrentDevice().catch(() => {});
 
     const heartbeatInterval = setInterval(() => {
