@@ -1,4 +1,6 @@
 // System Notification & Background Alarm Manager for Life Organizer PWA
+import { buildAllAlarms } from './alarmBuilder';
+import { debouncedSyncAlarms, immediateCancelAlarm } from './alarmSync';
 
 export async function requestNotificationPermission(): Promise<boolean> {
   if (typeof window === 'undefined' || !('Notification' in window)) {
@@ -282,20 +284,21 @@ export async function syncAlarmsToServiceWorker(payload: {
     console.error('[TRONUS] Failed to sync alarms to SW:', err);
   }
 
-  // 2. Register Web Push subscription & Sync alarms with server backend
+  // 2. Dispatch UTC-precise alarms to the server push scheduler
   try {
-    const effectiveSyncKey = (typeof localStorage !== 'undefined' ? localStorage.getItem('mbc_sync_key') : undefined) || 'GUEST';
-    registerWebPushSubscription(effectiveSyncKey).then(async (subscription) => {
-      await fetch('/api/push/sync-alarms', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          syncKey: effectiveSyncKey,
-          alarms,
-          subscription: subscription ? subscription.toJSON() : undefined
-        })
-      }).catch(() => {});
+    const effectiveSyncKey = (typeof localStorage !== 'undefined' ? localStorage.getItem('mbc_sync_key') : undefined) || syncKey || 'GUEST';
+    const serverAlarms = buildAllAlarms({
+      reminders: payload.reminders,
+      dailyTasks: payload.dailyTasks,
+      routine: payload.routine,
+      gridRoutine: payload.gridRoutine,
+      notes: payload.notes,
+      calendarNotes: payload.calendarNotes,
+      dailySpaceEnabled: payload.dailySpaceEnabled,
+      dailySpaceTime: payload.dailySpaceTime
     });
+
+    debouncedSyncAlarms(serverAlarms, effectiveSyncKey);
   } catch (err) {
     console.warn('[TRONUS] Server Web Push sync warning:', err);
   }

@@ -14,11 +14,33 @@ import {
   isSafeRedirectUrl
 } from "./security.js";
 import { pushRouter } from "./push.js";
+import { getSchedulerHealth, rearm } from "../src/server/scheduler.js";
 
 const app = express();
 
 // Web Push API routes
 app.use(["/api/push", "/push"], pushRouter);
+
+// Health & Monitoring endpoint (conforming to Notificações.md Section 11)
+app.get(["/api/health", "/health"], (_req, res) => {
+  res.json({
+    status: "healthy",
+    uptime: process.uptime(),
+    timestamp: Date.now(),
+    scheduler: getSchedulerHealth()
+  });
+});
+
+// Optional external cron trigger endpoint (Section 12)
+app.post("/api/push/tick", (req, res) => {
+  const secret = req.headers["x-tick-token"] || req.query.token;
+  const expected = process.env.TICK_TOKEN;
+  if (expected && secret !== expected) {
+    return res.status(401).json({ error: "Unauthorized tick token" });
+  }
+  rearm();
+  res.json({ success: true, triggered: true });
+});
 
 // 1. IP Blacklist Enforcer (Drops blacklisted scanner IPs)
 app.use(ipBlacklistCheckMiddleware);

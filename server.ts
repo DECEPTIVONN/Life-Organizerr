@@ -3,13 +3,13 @@ import path from "path";
 import fs from "fs";
 import compression from "compression";
 import app from "./api/index";
-import { startServerPushAlarmWorker } from "./api/push";
+import { startScheduler } from "./src/server/scheduler";
 
 async function startServer() {
   const PORT = 3000;
 
   // Start background Web Push worker loop for server-side scheduled alarm delivery
-  startServerPushAlarmWorker();
+  startScheduler();
 
   const distPath = path.join(process.cwd(), "dist");
   const indexHtmlExists = fs.existsSync(path.join(distPath, "index.html"));

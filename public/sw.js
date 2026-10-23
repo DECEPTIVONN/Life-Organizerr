@@ -291,22 +291,30 @@ self.addEventListener('push', (event) => {
       data = event.data.json();
     } catch (e) {
       data = {
-        title: 'Life Organizer',
+        title: 'TRONUS',
         body: event.data.text()
       };
     }
   }
 
-  const title = data.title || 'Life Organizer';
+  const title = data.title || 'TRONUS';
+  const isTimeCritical = data.kind === 'timer' || data.kind === 'pomodoro';
+
   const options = {
     body: data.body || 'Você possui um novo lembrete!',
     icon: data.icon || '/icon-192.png',
     badge: '/favicon-32x32.png',
-    vibrate: [300, 100, 300, 100, 300],
-    requireInteraction: true,
+    vibrate: data.vibrate || [200, 100, 200, 100, 400],
+    requireInteraction: isTimeCritical || data.requireInteraction || false,
     renotify: true,
-    tag: data.tag || 'web-push-reminder',
-    data: { url: data.url || '/' }
+    tag: data.tag || `push-${Date.now()}`,
+    timestamp: data.fireAt || Date.now(),
+    data: {
+      url: data.url || '/',
+      alarmId: data.id,
+      kind: data.kind
+    },
+    actions: data.actions || []
   };
 
   event.waitUntil(
@@ -314,22 +322,80 @@ self.addEventListener('push', (event) => {
   );
 });
 
-// Handle Background Notification Clicks (Focus/Open App)
+// Handle Background Notification Clicks (Focus/Open App & Quick Actions)
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const urlToOpen = event.notification.data?.url || '/';
+  const { url = '/', alarmId, kind } = event.notification.data || {};
+  const action = event.action;
 
+  // Handle Quick Actions from Notification Banners
+  if (action === 'snooze' && alarmId) {
+    const minutes = kind === 'pomodoro' || kind === 'timer' ? 5 : 10;
+    event.waitUntil(
+      fetch('/api/push/snooze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ alarmId, minutes })
+      }).catch((e) => console.warn('[TRONUS SW] Snooze action error:', e))
+    );
+    return;
+  }
+
+  if (action === 'done' && alarmId) {
+    event.waitUntil(
+      fetch('/api/push/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ alarmId })
+      }).catch((e) => console.warn('[TRONUS SW] Complete action error:', e))
+    );
+    return;
+  }
+
+  // Focus existing window or open a new window and navigate to the requested URL
   event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      for (const client of clientList) {
-        if (client.url && 'focus' in client) {
-          return client.focus();
+    (async () => {
+      const allClients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      for (const client of allClients) {
+        if ('focus' in client) {
+          await client.focus();
+          client.postMessage({ type: 'NAVIGATE', url });
+          return;
         }
       }
       if (self.clients.openWindow) {
-        return self.clients.openWindow(urlToOpen);
+        await self.clients.openWindow(url);
       }
-    })
+    })()
+  );
+});
+
+// Handle push subscription change (browser/network renewal)
+self.addEventListener('pushsubscriptionchange', (event) => {
+  event.waitUntil(
+    (async () => {
+      try {
+        const vapidRes = await fetch('/api/push/vapid-public-key');
+        if (!vapidRes.ok) return;
+        const { publicKey } = await vapidRes.json();
+        if (!publicKey) return;
+
+        const newSubscription = await self.registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: publicKey
+        });
+
+        await fetch('/api/push/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            subscription: newSubscription.toJSON()
+          })
+        });
+      } catch (err) {
+        console.error('[TRONUS SW] Error handling pushsubscriptionchange:', err);
+      }
+    })()
   );
 });
 

@@ -1,244 +1,316 @@
 import express from "express";
+import rateLimit from "express-rate-limit";
+import { z } from "zod";
 import webpush from "web-push";
-
-// VAPID keys setup
-let vapidPublicKey = process.env.VAPID_PUBLIC_KEY || "";
-let vapidPrivateKey = process.env.VAPID_PRIVATE_KEY || "";
-const vapidSubject = process.env.VAPID_SUBJECT || "mailto:admin@tronusplanner.app";
-
-if (!vapidPublicKey || !vapidPrivateKey) {
-  // Deterministic fallback VAPID keypair if env vars are missing
-  const keys = webpush.generateVAPIDKeys();
-  vapidPublicKey = keys.publicKey;
-  vapidPrivateKey = keys.privateKey;
-  console.log("[Web Push] Generated VAPID Keys dynamically.");
-}
-
-try {
-  webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
-} catch (err) {
-  console.error("[Web Push] Error setting VAPID details:", err);
-}
-
-export interface PushSubscriptionItem {
-  syncKey: string;
-  subscription: webpush.PushSubscription;
-  updatedAt: string;
-}
-
-export interface ScheduledServerAlarm {
-  id: string;
-  title: string;
-  body: string;
-  scheduledTime?: string;
-  scheduledDate?: string;
-  dayOfWeek?: number;
-  isEveryDay?: boolean;
-  targetTimestamp?: number;
-}
-
-// In-memory persistent stores for subscriptions and user scheduled alarms
-const subscriptionsMap = new Map<string, webpush.PushSubscription[]>(); // syncKey -> array of subscriptions
-const userAlarmsMap = new Map<string, ScheduledServerAlarm[]>(); // syncKey -> array of alarms
-const serverNotifiedLog = new Set<string>(); // deduplication log key -> boolean
+import {
+  getVapidDetails,
+  upsertSubscription,
+  removeSubscription,
+  replaceAlarms,
+  patchAlarms,
+  cancelAlarm,
+  completeAlarm,
+  snoozeAlarm,
+  getSubscriptionsBySyncKey,
+  getStats,
+  ScheduledAlarmRecord
+} from "../src/server/db";
+import { rearm } from "../src/server/scheduler";
 
 export const pushRouter = express.Router();
 
-// 1. Get VAPID Public Key
-pushRouter.get("/vapid-public-key", (req, res) => {
-  res.json({ publicKey: vapidPublicKey });
+// Ensure JSON parsing with up to 256kb payload
+pushRouter.use(express.json({ limit: "256kb" }));
+
+// Rate limiter for push endpoints: max 120 requests per minute
+const pushLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many push notification requests, please try again later." }
 });
 
-// 2. Subscribe endpoint
+pushRouter.use(pushLimiter);
+
+// -------------------------------------------------------------
+// Validation Schemas
+// -------------------------------------------------------------
+const SubscribeSchema = z.object({
+  syncKey: z.string().optional().default("GUEST"),
+  subscription: z.object({
+    endpoint: z.string().url(),
+    keys: z.object({
+      p256dh: z.string(),
+      auth: z.string()
+    })
+  }),
+  timezone: z.string().optional(),
+  platform: z.enum(["android", "ios", "windows", "other"]).optional().default("other")
+});
+
+const SyncAlarmsSchema = z.object({
+  syncKey: z.string().optional().default("GUEST"),
+  mode: z.enum(["replace", "patch"]).optional().default("replace"),
+  timezone: z.string().optional(),
+  platform: z.string().optional(),
+  subscription: z
+    .object({
+      endpoint: z.string().url(),
+      keys: z.object({
+        p256dh: z.string(),
+        auth: z.string()
+      })
+    })
+    .optional(),
+  alarms: z
+    .array(
+      z.object({
+        id: z.string(),
+        fireAt: z.number(),
+        title: z.string(),
+        body: z.string().optional(),
+        kind: z
+          .enum([
+            "task",
+            "routine",
+            "pomodoro",
+            "timer",
+            "reminder",
+            "calendar",
+            "note",
+            "myday",
+            "review"
+          ])
+          .optional()
+          .default("reminder"),
+        url: z.string().optional().default("/"),
+        tag: z.string().optional(),
+        recurrence: z.string().nullable().optional(),
+        timezone: z.string().optional(),
+        payload: z.string().nullable().optional(),
+        version: z.number().optional()
+      })
+    )
+    .optional()
+    .default([]),
+  removeIds: z.array(z.string()).optional().default([])
+});
+
+const SendTestSchema = z.object({
+  syncKey: z.string().optional().default("GUEST"),
+  title: z.string().optional().default("TRONUS Planner"),
+  body: z.string().optional().default("Teste de notificação com o app fechado!"),
+  url: z.string().optional().default("/"),
+  tag: z.string().optional()
+});
+
+// -------------------------------------------------------------
+// Endpoints
+// -------------------------------------------------------------
+
+// 1. GET /api/push/vapid-public-key
+pushRouter.get("/vapid-public-key", (_req, res) => {
+  const details = getVapidDetails();
+  res.json({ publicKey: details.publicKey });
+});
+
+// 2. POST /api/push/subscribe
 pushRouter.post("/subscribe", (req, res) => {
-  const { syncKey, subscription } = req.body || {};
-  if (!subscription || !subscription.endpoint) {
-    return res.status(400).json({ error: "Subscription object with endpoint is required." });
+  const parseResult = SubscribeSchema.safeParse(req.body);
+  if (!parseResult.success) {
+    return res.status(400).json({ error: "Invalid subscription payload", details: parseResult.error.format() });
   }
 
-  const key = (syncKey || "GUEST").trim().toUpperCase();
-  const existing = subscriptionsMap.get(key) || [];
+  const { syncKey, subscription, timezone, platform } = parseResult.data;
+  const userAgent = req.headers["user-agent"] || "";
 
-  // Deduplicate by endpoint
-  const filtered = existing.filter((sub) => sub.endpoint !== subscription.endpoint);
-  filtered.push(subscription);
+  const record = upsertSubscription({
+    sync_key: syncKey,
+    endpoint: subscription.endpoint,
+    p256dh: subscription.keys.p256dh,
+    auth: subscription.keys.auth,
+    timezone,
+    platform,
+    user_agent: userAgent
+  });
 
-  subscriptionsMap.set(key, filtered);
-  console.log(`[Web Push] Device subscribed for syncKey: ${key} (Total subscriptions: ${filtered.length})`);
-
-  res.json({ success: true, totalSubscriptions: filtered.length });
+  res.json({
+    success: true,
+    subscriptionId: record.id,
+    syncKey: record.sync_key,
+    platform: record.platform
+  });
 });
 
-// 3. Unsubscribe endpoint
-pushRouter.post("/unsubscribe", (req, res) => {
-  const { syncKey, endpoint } = req.body || {};
-  if (!endpoint) {
-    return res.status(400).json({ error: "Endpoint is required." });
+// 3. DELETE /api/push/subscription
+pushRouter.delete("/subscription", (req, res) => {
+  const endpoint = req.body?.endpoint || req.query?.endpoint;
+  if (!endpoint || typeof endpoint !== "string") {
+    return res.status(400).json({ error: "Endpoint parameter is required." });
   }
 
-  const key = (syncKey || "GUEST").trim().toUpperCase();
-  const existing = subscriptionsMap.get(key) || [];
-  const filtered = existing.filter((sub) => sub.endpoint !== endpoint);
-
-  subscriptionsMap.set(key, filtered);
-  res.json({ success: true, remainingSubscriptions: filtered.length });
+  const removed = removeSubscription(endpoint);
+  res.json({ success: removed });
 });
 
-// 4. Direct Push Notification trigger endpoint
+// 4. POST /api/push/sync-alarms
+pushRouter.post("/sync-alarms", (req, res) => {
+  const parseResult = SyncAlarmsSchema.safeParse(req.body);
+  if (!parseResult.success) {
+    return res.status(400).json({ error: "Invalid sync payload", details: parseResult.error.format() });
+  }
+
+  const { syncKey, mode, timezone, platform, subscription, alarms, removeIds } = parseResult.data;
+
+  // If subscription is provided in the sync payload, update it automatically
+  if (subscription) {
+    upsertSubscription({
+      sync_key: syncKey,
+      endpoint: subscription.endpoint,
+      p256dh: subscription.keys.p256dh,
+      auth: subscription.keys.auth,
+      timezone,
+      platform,
+      user_agent: req.headers["user-agent"]
+    });
+  }
+
+  let totalActive = 0;
+
+  if (mode === "replace") {
+    const formattedAlarms: Partial<ScheduledAlarmRecord>[] = alarms.map((a) => ({
+      id: a.id,
+      fire_at: a.fireAt,
+      title: a.title,
+      body: a.body || "",
+      kind: a.kind,
+      url: a.url,
+      tag: a.tag || `alarm-${a.id}`,
+      recurrence: a.recurrence,
+      timezone: a.timezone || timezone || "America/Sao_Paulo",
+      payload: a.payload,
+      version: a.version || 1
+    }));
+
+    const result = replaceAlarms(syncKey, formattedAlarms);
+    totalActive = result.length;
+  } else {
+    // Mode patch
+    const formattedAlarms: Partial<ScheduledAlarmRecord>[] = alarms.map((a) => ({
+      id: a.id,
+      fire_at: a.fireAt,
+      title: a.title,
+      body: a.body || "",
+      kind: a.kind,
+      url: a.url,
+      tag: a.tag || `alarm-${a.id}`,
+      recurrence: a.recurrence,
+      timezone: a.timezone || timezone || "America/Sao_Paulo",
+      payload: a.payload,
+      version: a.version || 1
+    }));
+
+    patchAlarms(syncKey, formattedAlarms, removeIds);
+  }
+
+  // Wake the scheduler immediately so newly created or moved alarms are timed accurately
+  rearm();
+
+  const stats = getStats(syncKey);
+  res.json({
+    success: true,
+    mode,
+    activeAlarms: stats.pendingAlarmsCount,
+    nextFireAt: stats.nextFireAt
+  });
+});
+
+// 5. POST /api/push/send (Immediate test push)
 pushRouter.post("/send", async (req, res) => {
-  const { syncKey, title, body, icon, url, tag } = req.body || {};
-  const key = (syncKey || "GUEST").trim().toUpperCase();
-  const subs = subscriptionsMap.get(key) || [];
+  const parseResult = SendTestSchema.safeParse(req.body);
+  if (!parseResult.success) {
+    return res.status(400).json({ error: "Invalid test payload", details: parseResult.error.format() });
+  }
+
+  const { syncKey, title, body, url, tag } = parseResult.data;
+  const subs = getSubscriptionsBySyncKey(syncKey);
 
   if (subs.length === 0) {
-    return res.status(404).json({ error: "No active push subscriptions found for this syncKey." });
+    return res.status(404).json({
+      error: "No registered push subscriptions found for this syncKey. Please activate notifications on this device first."
+    });
   }
 
   const payload = JSON.stringify({
-    title: title || "TRONUS Planner",
-    body: body || "Você tem um novo lembrete!",
-    icon: icon || "/icon-192.png",
-    url: url || "/",
-    tag: tag || `push-${Date.now()}`
+    title,
+    body,
+    icon: "/icon-192.png",
+    badge: "/favicon-32x32.png",
+    url,
+    tag: tag || `test-${Date.now()}`,
+    fireAt: Date.now(),
+    vibrate: [200, 100, 200, 100, 400],
+    actions: [{ action: "open", title: "Abrir App" }]
   });
 
   let sentCount = 0;
-  const expiredEndpoints: string[] = [];
-
   for (const sub of subs) {
     try {
-      await webpush.sendNotification(sub, payload);
+      await webpush.sendNotification(
+        {
+          endpoint: sub.endpoint,
+          keys: { p256dh: sub.p256dh, auth: sub.auth }
+        },
+        payload,
+        {
+          TTL: 60,
+          urgency: "high"
+        }
+      );
       sentCount++;
     } catch (err: any) {
-      console.error("[Web Push] Send error:", err.statusCode || err.message);
-      if (err.statusCode === 404 || err.statusCode === 410) {
-        expiredEndpoints.push(sub.endpoint);
-      }
+      console.error("[Web Push Test] Error:", err.statusCode || err.message);
     }
-  }
-
-  // Clean up expired subscriptions
-  if (expiredEndpoints.length > 0) {
-    const remaining = subs.filter((s) => !expiredEndpoints.includes(s.endpoint));
-    subscriptionsMap.set(key, remaining);
   }
 
   res.json({ success: true, sentCount, totalSubscriptions: subs.length });
 });
 
-// 5. Sync User Alarms for Server-Side Scheduled Dispatch
-pushRouter.post("/sync-alarms", (req, res) => {
-  const { syncKey, alarms, subscription } = req.body || {};
-  const key = (syncKey || "GUEST").trim().toUpperCase();
-
-  if (subscription && subscription.endpoint) {
-    const existing = subscriptionsMap.get(key) || [];
-    const filtered = existing.filter((sub) => sub.endpoint !== subscription.endpoint);
-    filtered.push(subscription);
-    subscriptionsMap.set(key, filtered);
+// 6. POST /api/push/snooze (Notification Action handler)
+pushRouter.post("/snooze", (req, res) => {
+  const { alarmId, minutes } = req.body || {};
+  if (!alarmId) {
+    return res.status(400).json({ error: "alarmId is required." });
   }
 
-  if (Array.isArray(alarms)) {
-    userAlarmsMap.set(key, alarms);
-    console.log(`[Web Push] Synced ${alarms.length} server alarms for syncKey: ${key}`);
-  }
+  const snoozeMins = parseInt(minutes, 10) || 10;
+  const snoozed = snoozeAlarm(String(alarmId), snoozeMins);
+  if (snoozed) rearm();
 
-  res.json({ success: true, count: userAlarmsMap.get(key)?.length || 0 });
+  res.json({ success: snoozed, snoozedMinutes: snoozeMins });
 });
 
-// --- Server-Side Background Push Alarm Worker ---
-export function startServerPushAlarmWorker() {
-  setInterval(async () => {
-    try {
-      const now = new Date();
-      const pad = (n: number) => String(n).padStart(2, "0");
-      const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-      const currentMinutesTotal = now.getHours() * 60 + now.getMinutes();
-      const currentDayOfWeek = now.getDay();
-      const nowMs = now.getTime();
+// 7. POST /api/push/complete (Notification Action handler)
+pushRouter.post("/complete", (req, res) => {
+  const { alarmId, syncKey } = req.body || {};
+  if (!alarmId) {
+    return res.status(400).json({ error: "alarmId is required." });
+  }
 
-      for (const [syncKey, alarms] of userAlarmsMap.entries()) {
-        const subs = subscriptionsMap.get(syncKey);
-        if (!subs || subs.length === 0) continue;
+  if (syncKey) {
+    cancelAlarm(syncKey, String(alarmId));
+  } else {
+    completeAlarm(String(alarmId));
+  }
+  rearm();
 
-        for (const alarm of alarms) {
-          if (!alarm) continue;
+  res.json({ success: true });
+});
 
-          let isDue = false;
-          let notifKey = "";
-
-          // Check Target Timestamp
-          if (alarm.targetTimestamp) {
-            const diffMs = nowMs - alarm.targetTimestamp;
-            if (diffMs >= 0 && diffMs <= 10 * 60 * 1000) {
-              isDue = true;
-              notifKey = `server-ts-${syncKey}-${alarm.id}-${alarm.targetTimestamp}`;
-            }
-          }
-          // Check HH:MM Time
-          else if (alarm.scheduledTime && alarm.scheduledTime.includes(":")) {
-            const [hStr, mStr] = alarm.scheduledTime.split(":");
-            const alarmMinutes = parseInt(hStr, 10) * 60 + parseInt(mStr, 10);
-            const diffMinutes = currentMinutesTotal - alarmMinutes;
-
-            if (diffMinutes >= 0 && diffMinutes <= 10) {
-              let shouldMatch = true;
-
-              if (alarm.scheduledDate && alarm.scheduledDate !== todayStr) {
-                shouldMatch = false;
-              }
-
-              if (alarm.dayOfWeek !== undefined && alarm.dayOfWeek !== null && alarm.dayOfWeek >= 0 && !alarm.isEveryDay) {
-                if (alarm.dayOfWeek !== currentDayOfWeek) {
-                  shouldMatch = false;
-                }
-              }
-
-              if (shouldMatch) {
-                isDue = true;
-                notifKey = `server-time-${syncKey}-${alarm.id}-${todayStr}-${alarm.scheduledTime}`;
-              }
-            }
-          }
-
-          if (isDue && notifKey && !serverNotifiedLog.has(notifKey)) {
-            serverNotifiedLog.add(notifKey);
-
-            // Limit log size memory footprint
-            if (serverNotifiedLog.size > 5000) {
-              const items = Array.from(serverNotifiedLog);
-              items.slice(0, 1000).forEach((k) => serverNotifiedLog.delete(k));
-            }
-
-            const payload = JSON.stringify({
-              title: alarm.title || "TRONUS Planner",
-              body: alarm.body || `Lembrete agendado para as ${alarm.scheduledTime || "agora"}`,
-              icon: "/icon-192.png",
-              url: "/",
-              tag: `alarm-${alarm.id}`
-            });
-
-            const expiredEndpoints: string[] = [];
-            for (const sub of subs) {
-              try {
-                await webpush.sendNotification(sub, payload);
-                console.log(`[Web Push Worker] Sent background push notification for ${syncKey}: ${alarm.title}`);
-              } catch (err: any) {
-                if (err.statusCode === 404 || err.statusCode === 410) {
-                  expiredEndpoints.push(sub.endpoint);
-                }
-              }
-            }
-
-            if (expiredEndpoints.length > 0) {
-              const remaining = subs.filter((s) => !expiredEndpoints.includes(s.endpoint));
-              subscriptionsMap.set(syncKey, remaining);
-            }
-          }
-        }
-      }
-    } catch (err) {
-      console.error("[Web Push Worker] Interval error:", err);
-    }
-  }, 30000); // Check every 30 seconds
-}
+// 8. GET /api/push/status (Diagnostics endpoint conforming to Section 10)
+pushRouter.get("/status", (req, res) => {
+  const syncKey = (req.query.syncKey as string) || "GUEST";
+  const stats = getStats(syncKey);
+  res.json(stats);
+});
