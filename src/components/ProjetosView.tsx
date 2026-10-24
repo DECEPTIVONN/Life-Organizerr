@@ -63,7 +63,8 @@ import {
   ArrowUp,
   ArrowDown,
   Minus,
-  Bot
+  Bot,
+  Flag
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Project, ProjectList, ProjectCard, ProjectCardChecklist, ProjectCardComment, ProjectPrompt } from '../types';
@@ -110,6 +111,11 @@ export const PRIORITY_CONFIG: Record<string, { label: string; bg: string; text: 
 // Helper to remove legacy/raw emojis from list titles
 export const sanitizeListTitle = (title: string): string => {
   return title.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '').trim();
+};
+
+// Helper to remove legacy/raw emojis from card titles
+export const sanitizeCardTitle = (title: string): string => {
+  return title.replace(/^[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\s]+/gu, '').trim();
 };
 
 // Helper: Standard site Lucide icon for each Kanban list
@@ -215,9 +221,9 @@ export const checkAndApplyChecklistAutomation = (
     if (doneList && (card.listId !== doneList.id || !card.completed)) {
       const autoComment: ProjectCardComment = {
         id: `comm-auto-${Date.now()}`,
-        authorName: '🤖 Automação de Tarefas',
+        authorName: 'Automação de Tarefas',
         authorAvatar: '',
-        text: `100% dos checklists (${doneItems}/${totalItems}) concluídos. O cartão foi marcado como concluído e movido automaticamente para a lista "${doneList.title}".`,
+        text: `100% dos checklists (${doneItems}/${totalItems}) concluídos. O cartão foi marcado como concluído e movido automaticamente para a lista "${sanitizeListTitle(doneList.title)}".`,
         createdAt: new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
       };
 
@@ -256,6 +262,38 @@ export default function ProjetosView({
 }: ProjetosViewProps) {
   // Navigation State: null = Hub view, string = active project ID
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+
+  // Clean up legacy emojis in existing lists and cards so they conform to the site's standard Lucide icons
+  useEffect(() => {
+    setProjects(prevProjects => {
+      let changed = false;
+      const updated = prevProjects.map(proj => {
+        let projChanged = false;
+        const newLists = proj.lists.map(l => {
+          const clean = sanitizeListTitle(l.title);
+          if (clean !== l.title) {
+            projChanged = true;
+            return { ...l, title: clean };
+          }
+          return l;
+        });
+        const newCards = proj.cards.map(c => {
+          const clean = sanitizeCardTitle(c.title);
+          if (clean !== c.title && clean.length > 0) {
+            projChanged = true;
+            return { ...c, title: clean };
+          }
+          return c;
+        });
+        if (projChanged) {
+          changed = true;
+          return { ...proj, lists: newLists, cards: newCards };
+        }
+        return proj;
+      });
+      return changed ? updated : prevProjects;
+    });
+  }, []);
 
   // Hub Filters & Search
   const [hubSearch, setHubSearch] = useState('');
@@ -431,21 +469,21 @@ export default function ProjetosView({
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         lists: [
-          { id: 'l-ideias', title: 'Ideias 💡', order: 0 },
-          { id: 'l-planning', title: 'Em planejamento 📐', order: 1 },
-          { id: 'l-backlog', title: 'Backlog 📋', order: 2 },
-          { id: 'l-refinement', title: 'REFINAMENTO ⚙️', order: 3 },
-          { id: 'l-sprint', title: 'SPRINT BACKLOG 🚀', order: 4 },
-          { id: 'l-dev', title: 'Em desenvolvimento ⚡', order: 5 },
-          { id: 'l-review', title: 'Revisão de código 🔍', order: 6 },
-          { id: 'l-tests', title: 'Em testes 🧪', order: 7 },
-          { id: 'l-done', title: 'Concluído 🎆', order: 8 },
+          { id: 'l-ideias', title: 'Ideias', order: 0 },
+          { id: 'l-planning', title: 'Em planejamento', order: 1 },
+          { id: 'l-backlog', title: 'Backlog', order: 2 },
+          { id: 'l-refinement', title: 'Refinamento', order: 3 },
+          { id: 'l-sprint', title: 'Sprint Backlog', order: 4 },
+          { id: 'l-dev', title: 'Em desenvolvimento', order: 5 },
+          { id: 'l-review', title: 'Revisão de código', order: 6 },
+          { id: 'l-tests', title: 'Em testes', order: 7 },
+          { id: 'l-done', title: 'Concluído', order: 8 },
         ],
         cards: [
           {
             id: 'c-idea-1',
             listId: 'l-ideias',
-            title: '💡 Registrar Ideia: Notificações em Tempo Real com WebSocket',
+            title: 'Registrar Ideia: Notificações em Tempo Real com WebSocket',
             description: 'Explorar o uso de WebSockets ou Push Notifications para enviar alertas instantâneos de alteração no Kanban aos membros do time.',
             coverColor: '#8b5cf6',
             priority: 'media',
@@ -459,7 +497,7 @@ export default function ProjetosView({
           {
             id: 'c-plan-1',
             listId: 'l-planning',
-            title: '📐 Planejamento da Arquitetura do Banco de Dados Sync',
+            title: 'Planejamento da Arquitetura do Banco de Dados Sync',
             description: 'Mapear coleções do Firestore para sincronizar estado de gratidão, decretos e workspace diário sem conflitos.',
             coverColor: '#06b6d4',
             priority: 'alta',
@@ -705,19 +743,19 @@ export default function ProjetosView({
       let defaultLists: ProjectList[] = [];
       if (projectTemplate === 'scrum') {
         defaultLists = [
-          { id: `l-${Date.now()}-1`, title: 'Ideias 💡', order: 0 },
-          { id: `l-${Date.now()}-2`, title: 'Em planejamento 📐', order: 1 },
-          { id: `l-${Date.now()}-3`, title: 'Backlog 📋', order: 2 },
-          { id: `l-${Date.now()}-4`, title: 'REFINAMENTO ⚙️', order: 3 },
-          { id: `l-${Date.now()}-5`, title: 'SPRINT BACKLOG 🚀', order: 4 },
-          { id: `l-${Date.now()}-6`, title: 'Em desenvolvimento ⚡', order: 5 },
-          { id: `l-${Date.now()}-7`, title: 'Revisão de código 🔍', order: 6 },
-          { id: `l-${Date.now()}-8`, title: 'Concluído 🎆', order: 7 },
+          { id: `l-${Date.now()}-1`, title: 'Ideias', order: 0 },
+          { id: `l-${Date.now()}-2`, title: 'Em planejamento', order: 1 },
+          { id: `l-${Date.now()}-3`, title: 'Backlog', order: 2 },
+          { id: `l-${Date.now()}-4`, title: 'Refinamento', order: 3 },
+          { id: `l-${Date.now()}-5`, title: 'Sprint Backlog', order: 4 },
+          { id: `l-${Date.now()}-6`, title: 'Em desenvolvimento', order: 5 },
+          { id: `l-${Date.now()}-7`, title: 'Revisão de código', order: 6 },
+          { id: `l-${Date.now()}-8`, title: 'Concluído', order: 7 },
         ];
       } else if (projectTemplate === 'kanban') {
         defaultLists = [
-          { id: `l-${Date.now()}-1`, title: 'Ideias 💡', order: 0 },
-          { id: `l-${Date.now()}-2`, title: 'Em planejamento 📐', order: 1 },
+          { id: `l-${Date.now()}-1`, title: 'Ideias', order: 0 },
+          { id: `l-${Date.now()}-2`, title: 'Em planejamento', order: 1 },
           { id: `l-${Date.now()}-3`, title: 'A Fazer', order: 2 },
           { id: `l-${Date.now()}-4`, title: 'Em Progresso', order: 3 },
           { id: `l-${Date.now()}-5`, title: 'Concluído', order: 4 },
@@ -2333,7 +2371,7 @@ export default function ProjetosView({
             </div>
           </div>
 
-          {/* INTERNAL NAVBAR (Interface individual do projeto: Kanban, Tabela, Cronograma, Painel, Prompts) */}
+          {/* INTERNAL NAVBAR (Interface individual do projeto: Kanban, Prompts, Tabela, Cronograma, Painel) */}
           <nav className="internal-nav w-full max-w-4xl" aria-label="Navegação do Projeto">
             <button
               type="button"
@@ -2342,6 +2380,15 @@ export default function ProjetosView({
             >
               <FolderKanban className="h-3.5 w-3.5" />
               <span>Kanban</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveViewMode('prompts')}
+              className={`internal-nav-btn ${activeViewMode === 'prompts' ? 'active' : ''}`}
+            >
+              <Sparkles className="h-3.5 w-3.5 text-orange-400" />
+              <span>Prompts</span>
             </button>
 
             <button
@@ -2369,15 +2416,6 @@ export default function ProjetosView({
             >
               <BarChart3 className="h-3.5 w-3.5" />
               <span>Painel</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveViewMode('prompts')}
-              className={`internal-nav-btn ${activeViewMode === 'prompts' ? 'active' : ''}`}
-            >
-              <Sparkles className="h-3.5 w-3.5 text-orange-400" />
-              <span>Prompts</span>
             </button>
           </nav>
 
@@ -2510,7 +2548,7 @@ export default function ProjetosView({
                                 {/* Priority Badge with Site Standard Icon */}
                                 {card.priority && PRIORITY_CONFIG[card.priority] && (
                                   <span className={`text-[9px] font-black px-2 py-0.5 rounded-md border flex items-center gap-1 uppercase tracking-wider ${PRIORITY_CONFIG[card.priority].bg} ${PRIORITY_CONFIG[card.priority].text} ${PRIORITY_CONFIG[card.priority].border}`}>
-                                    {card.priority === 'urgente' && <Flame className="h-3 w-3 text-red-400" />}
+                                    {card.priority === 'urgente' && <AlertTriangle className="h-3 w-3 text-red-400" />}
                                     {card.priority === 'alta' && <ArrowUp className="h-3 w-3 text-orange-400" />}
                                     {card.priority === 'media' && <Minus className="h-3 w-3 text-sky-400" />}
                                     {card.priority === 'baixa' && <ArrowDown className="h-3 w-3 text-emerald-400" />}
@@ -2546,10 +2584,8 @@ export default function ProjetosView({
                                 >
                                   {dueStatus.isOverdue ? (
                                     <AlertTriangle className="h-3 w-3 text-red-400 animate-pulse" />
-                                  ) : dueStatus.isDueSoon ? (
-                                    <Flame className="h-3 w-3 text-amber-400 animate-bounce" />
                                   ) : (
-                                    <Clock className="h-3 w-3 text-orange-400" />
+                                    <Clock className={`h-3 w-3 ${dueStatus.isDueSoon ? 'text-amber-400' : 'text-orange-400'}`} />
                                   )}
                                   <span>{dueStatus.text || card.dueDate}</span>
                                 </span>
@@ -2574,7 +2610,7 @@ export default function ProjetosView({
                                 <span className={`text-xs sm:text-sm font-semibold leading-snug block ${
                                   card.completed ? 'line-through text-zinc-500' : 'text-zinc-100 group-hover:text-white'
                                 }`}>
-                                  {card.title}
+                                  {sanitizeCardTitle(card.title)}
                                 </span>
                                 {card.description && (
                                   <p className="text-[11px] text-zinc-400 line-clamp-2 leading-relaxed">
@@ -2782,7 +2818,7 @@ export default function ProjetosView({
                             className="bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1 text-xs text-orange-400 font-bold focus:outline-none cursor-pointer"
                           >
                             {activeProject.lists.map(l => (
-                              <option key={l.id} value={l.id}>{l.title}</option>
+                              <option key={l.id} value={l.id}>{sanitizeListTitle(l.title)}</option>
                             ))}
                           </select>
                         </td>
@@ -2795,7 +2831,7 @@ export default function ProjetosView({
                             }}
                             className="hover:text-orange-400 transition-colors text-left font-semibold flex items-center gap-2 cursor-pointer"
                           >
-                            <span className={card.completed ? 'line-through text-zinc-500' : ''}>{card.title}</span>
+                            <span className={card.completed ? 'line-through text-zinc-500' : ''}>{sanitizeCardTitle(card.title)}</span>
                           </button>
                         </td>
                         <td className="py-3 px-3 text-zinc-400">
@@ -2893,13 +2929,13 @@ export default function ProjetosView({
                       <div className="space-y-1 flex-1">
                         <div className="flex items-center gap-2">
                           <span className="bg-orange-500/10 text-orange-400 border border-orange-500/30 text-[10px] font-bold px-2 py-0.5 rounded font-mono uppercase">
-                            {list ? list.title : 'Lista'}
+                            {list ? sanitizeListTitle(list.title) : 'Lista'}
                           </span>
                           <h4
                             className="text-sm font-semibold text-white hover:text-orange-400 transition-colors cursor-pointer"
                             onClick={() => { setSelectedCardForDetail(card); setCardDescInput(card.description || ''); }}
                           >
-                            {card.title}
+                            {sanitizeCardTitle(card.title)}
                           </h4>
                         </div>
                         {card.description && <p className="text-xs text-zinc-400 line-clamp-1">{card.description}</p>}
@@ -3579,7 +3615,7 @@ export default function ProjetosView({
                     <h2 className={`text-xl font-black text-white tracking-tight ${
                       selectedCardForDetail.completed ? 'line-through text-zinc-500' : ''
                     }`}>
-                      {selectedCardForDetail.title}
+                      {sanitizeCardTitle(selectedCardForDetail.title)}
                     </h2>
                   </div>
 
@@ -3597,12 +3633,12 @@ export default function ProjetosView({
                           {status.isOverdue ? (
                             <AlertTriangle className="h-4 w-4 text-red-400 animate-pulse shrink-0" />
                           ) : (
-                            <Flame className="h-4 w-4 text-amber-400 animate-bounce shrink-0" />
+                            <Clock className="h-4 w-4 text-amber-400 shrink-0" />
                           )}
                           <span>
                             {status.isOverdue
-                              ? `⚠️ ATENÇÃO: Esta tarefa está ATRASADA! Prazo final era ${selectedCardForDetail.dueDate} (${status.text}).`
-                              : `🔥 ALERTA DE PRAZO PRÓXIMO: Esta tarefa vence em menos de 24h (${status.text})!`}
+                              ? `ATENÇÃO: Tarefa atrasada. Prazo final: ${selectedCardForDetail.dueDate} (${status.text}).`
+                              : `ALERTA DE PRAZO: Esta tarefa vence em menos de 24h (${status.text}).`}
                           </span>
                         </div>
                         {selectedCardForDetail.dueTime && (
@@ -3754,7 +3790,7 @@ export default function ProjetosView({
                         : 'bg-zinc-900 hover:bg-zinc-800 border-zinc-800 text-zinc-300'
                     }`}
                   >
-                    <Flame className="h-3.5 w-3.5 text-orange-400" />
+                    <Flag className="h-3.5 w-3.5 text-orange-400" />
                     <span>
                       {selectedCardForDetail.priority && PRIORITY_CONFIG[selectedCardForDetail.priority]
                         ? `Prioridade: ${PRIORITY_CONFIG[selectedCardForDetail.priority].label}`
@@ -4422,11 +4458,17 @@ export default function ProjetosView({
                     {selectedCardForDetail.comments && selectedCardForDetail.comments.length > 0 ? (
                       selectedCardForDetail.comments.map(comm => (
                         <div key={comm.id} className="flex items-start gap-2.5 bg-zinc-900/40 border border-zinc-800/60 p-3 rounded-xl text-xs">
-                          <img
-                            src={comm.authorAvatar || userPhoto}
-                            alt={comm.authorName}
-                            className="w-6 h-6 rounded-full object-cover shrink-0 mt-0.5 border border-orange-500/30"
-                          />
+                          {comm.authorName.includes('Automação') ? (
+                            <div className="w-6 h-6 rounded-full bg-orange-500/10 border border-orange-500/30 flex items-center justify-center shrink-0 mt-0.5 text-orange-400">
+                              <Bot className="h-3.5 w-3.5" />
+                            </div>
+                          ) : (
+                            <img
+                              src={comm.authorAvatar || userPhoto}
+                              alt={comm.authorName}
+                              className="w-6 h-6 rounded-full object-cover shrink-0 mt-0.5 border border-orange-500/30"
+                            />
+                          )}
                           <div className="space-y-0.5 flex-1">
                             <div className="flex items-center justify-between text-[10px] text-zinc-500 font-mono">
                               <span className="font-bold text-zinc-300">{comm.authorName}</span>
@@ -4595,7 +4637,7 @@ export default function ProjetosView({
                           className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500 cursor-pointer"
                         >
                           <option value="scrum">Scrum Completo (Backlog, Refinamento, Sprint, Dev, Revisão, Concluído)</option>
-                          <option value="kanban">Kanban Padrão (A Fazer 📋, Em Progresso ⏳, Concluído ✅)</option>
+                          <option value="kanban">Kanban Padrão (A Fazer, Em Progresso, Concluído)</option>
                           <option value="vazio">Minimalista (1 Lista Inicial)</option>
                         </select>
                       </div>
@@ -4832,7 +4874,7 @@ export default function ProjetosView({
                   </label>
                   <input
                     type="text"
-                    placeholder="Ex: Ideias 💡, Em planejamento 📐..."
+                    placeholder="Ex: Ideias, Em planejamento, A Fazer..."
                     value={newListModalTitle}
                     onChange={(e) => setNewListModalTitle(e.target.value)}
                     onKeyDown={(e) => {
@@ -4850,23 +4892,27 @@ export default function ProjetosView({
                   </span>
                   <div className="flex flex-wrap gap-1.5">
                     {[
-                      'Ideias 💡',
-                      'Em planejamento 📐',
-                      'A Fazer 📋',
-                      'Em desenvolvimento ⚡',
-                      'Revisão de código 🔍',
-                      'Em testes 🧪',
-                      'Concluído 🎆'
-                    ].map(sug => (
-                      <button
-                        key={sug}
-                        type="button"
-                        onClick={() => setNewListModalTitle(sug)}
-                        className="px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 rounded-lg text-xs font-medium transition-colors cursor-pointer"
-                      >
-                        {sug}
-                      </button>
-                    ))}
+                      { title: 'Ideias', icon: Lightbulb, color: 'text-amber-400' },
+                      { title: 'Em planejamento', icon: Compass, color: 'text-sky-400' },
+                      { title: 'A Fazer', icon: Layers, color: 'text-indigo-400' },
+                      { title: 'Em andamento', icon: Rocket, color: 'text-orange-400' },
+                      { title: 'Em desenvolvimento', icon: Code, color: 'text-emerald-400' },
+                      { title: 'Revisão e Testes', icon: Search, color: 'text-purple-400' },
+                      { title: 'Concluído', icon: CheckCircle2, color: 'text-emerald-400' }
+                    ].map(sug => {
+                      const SugIcon = sug.icon;
+                      return (
+                        <button
+                          key={sug.title}
+                          type="button"
+                          onClick={() => setNewListModalTitle(sug.title)}
+                          className="px-2.5 py-1.5 bg-zinc-900 hover:bg-zinc-850 text-zinc-300 hover:text-white border border-zinc-800 hover:border-zinc-700 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                        >
+                          <SugIcon className={`h-3 w-3 ${sug.color}`} />
+                          <span>{sug.title}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
