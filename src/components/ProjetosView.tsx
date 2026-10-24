@@ -382,6 +382,7 @@ export default function ProjetosView({
   const [cardCustomFieldValueInput, setCardCustomFieldValueInput] = useState('');
   const [cardEstimatedHoursInput, setCardEstimatedHoursInput] = useState('');
   const [cardLoggedHoursInput, setCardLoggedHoursInput] = useState('');
+  const [isCardListDropdownOpen, setIsCardListDropdownOpen] = useState(false);
 
   // Drag and Drop State for Kanban Cards and Lists
   const [draggedCardId, setDraggedCardId] = useState<string | null>(null);
@@ -2377,11 +2378,6 @@ export default function ProjetosView({
             >
               <Sparkles className="h-3.5 w-3.5 text-orange-400" />
               <span>Prompts</span>
-              {projectVisiblePrompts.length > 0 && (
-                <span className="ml-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-orange-500/15 text-orange-400 border border-orange-500/30">
-                  {projectVisiblePrompts.length}
-                </span>
-              )}
             </button>
           </nav>
 
@@ -3194,54 +3190,67 @@ export default function ProjetosView({
                     <button
                       type="button"
                       onClick={() => setPromptFilterScope('todos')}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-2 ${
                         promptFilterScope === 'todos'
-                          ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20'
-                          : 'bg-zinc-900/90 text-zinc-400 hover:text-white border border-zinc-800/80'
+                          ? 'bg-orange-500/15 text-orange-400 border border-orange-500/30'
+                          : 'bg-zinc-900/80 text-zinc-400 hover:text-white border border-zinc-800/80 hover:bg-zinc-800/50'
                       }`}
                     >
-                      Todos ({prompts.filter(p => p.isGlobal || p.projectId === activeProjectId || !p.projectId).length})
+                      <Sparkles className="h-3.5 w-3.5 text-orange-400" />
+                      <span>Todos</span>
+                      <span className="px-1.5 py-0.5 rounded-md bg-zinc-800 text-[10px] font-mono text-zinc-400">
+                        {prompts.filter(p => p.isGlobal || p.projectId === activeProjectId || !p.projectId).length}
+                      </span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => setPromptFilterScope('favoritos')}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
                         promptFilterScope === 'favoritos'
-                          ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20 font-black'
-                          : 'bg-zinc-900/90 text-zinc-400 hover:text-white border border-zinc-800/80'
+                          ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                          : 'bg-zinc-900/80 text-zinc-400 hover:text-white border border-zinc-800/80 hover:bg-zinc-800/50'
                       }`}
                     >
-                      <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                      <span>Favoritos ({prompts.filter(p => p.isFavorite && (p.isGlobal || p.projectId === activeProjectId || !p.projectId)).length})</span>
+                      <Star className={`h-3.5 w-3.5 ${promptFilterScope === 'favoritos' ? 'fill-amber-400 text-amber-400' : 'text-amber-400/70'}`} />
+                      <span>Favoritos</span>
+                      <span className="px-1.5 py-0.5 rounded-md bg-zinc-800 text-[10px] font-mono text-zinc-400">
+                        {prompts.filter(p => p.isFavorite && (p.isGlobal || p.projectId === activeProjectId || !p.projectId)).length}
+                      </span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => setPromptFilterScope('globais')}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
                         promptFilterScope === 'globais'
-                          ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20 font-black'
-                          : 'bg-zinc-900/90 text-zinc-400 hover:text-white border border-zinc-800/80'
+                          ? 'bg-sky-500/15 text-sky-400 border border-sky-500/30'
+                          : 'bg-zinc-900/80 text-zinc-400 hover:text-white border border-zinc-800/80 hover:bg-zinc-800/50'
                       }`}
                       title="Exibidos em todos os projetos"
                     >
-                      <Globe className="h-3.5 w-3.5 text-sky-400" />
-                      <span>Globais ({prompts.filter(p => p.isGlobal).length})</span>
+                      <Globe className={`h-3.5 w-3.5 ${promptFilterScope === 'globais' ? 'text-sky-400' : 'text-sky-400/70'}`} />
+                      <span>Globais</span>
+                      <span className="px-1.5 py-0.5 rounded-md bg-zinc-800 text-[10px] font-mono text-zinc-400">
+                        {prompts.filter(p => p.isGlobal).length}
+                      </span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => setPromptFilterScope('projeto')}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
                         promptFilterScope === 'projeto'
-                          ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/20 font-black'
-                          : 'bg-zinc-900/90 text-zinc-400 hover:text-white border border-zinc-800/80'
+                          ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                          : 'bg-zinc-900/80 text-zinc-400 hover:text-white border border-zinc-800/80 hover:bg-zinc-800/50'
                       }`}
                       title="Específicos deste projeto"
                     >
-                      <Folder className="h-3.5 w-3.5" />
-                      <span>Deste Projeto ({prompts.filter(p => !p.isGlobal && (p.projectId === activeProjectId || !p.projectId)).length})</span>
+                      <Folder className={`h-3.5 w-3.5 ${promptFilterScope === 'projeto' ? 'text-emerald-400' : 'text-zinc-400'}`} />
+                      <span>Deste Projeto</span>
+                      <span className="px-1.5 py-0.5 rounded-md bg-zinc-800 text-[10px] font-mono text-zinc-400">
+                        {prompts.filter(p => !p.isGlobal && (p.projectId === activeProjectId || !p.projectId)).length}
+                      </span>
                     </button>
                   </div>
 
@@ -3329,27 +3338,27 @@ export default function ProjetosView({
                               <button
                                 type="button"
                                 onClick={(e) => toggleGlobalPrompt(prompt.id, e)}
-                                className={`text-[10px] font-bold px-2 py-0.5 rounded-md border flex items-center gap-1 transition-all cursor-pointer ${
+                                className={`text-[11px] font-semibold px-2.5 py-1 rounded-xl border flex items-center gap-1.5 transition-all cursor-pointer ${
                                   prompt.isGlobal
                                     ? 'bg-sky-500/15 text-sky-400 border-sky-500/30 hover:bg-sky-500/25'
-                                    : 'bg-zinc-800/60 text-zinc-400 border-zinc-700/50 hover:text-white hover:border-zinc-600'
+                                    : 'bg-zinc-800/70 text-zinc-400 border-zinc-700/60 hover:text-white hover:border-zinc-600'
                                 }`}
                                 title={prompt.isGlobal ? 'Global: Exibido em todos os projetos (clique para tornar específico)' : 'Específico deste projeto (clique para tornar global)'}
                               >
-                                <Globe className="h-2.5 w-2.5" />
+                                <Globe className={`h-3.5 w-3.5 ${prompt.isGlobal ? 'text-sky-400' : 'text-zinc-400'}`} />
                                 <span>{prompt.isGlobal ? 'Global' : 'Deste Projeto'}</span>
                               </button>
                             </div>
 
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-1.5">
                               {/* Favorite Star Button */}
                               <button
                                 type="button"
                                 onClick={(e) => toggleFavoritePrompt(prompt.id, e)}
-                                className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
+                                className={`p-2 rounded-xl border transition-all cursor-pointer ${
                                   prompt.isFavorite
-                                    ? 'bg-amber-500/20 text-amber-400 border-amber-500/40'
-                                    : 'bg-zinc-800/60 text-zinc-500 hover:text-amber-400 border-zinc-700/50 hover:border-amber-500/30'
+                                    ? 'bg-amber-500/15 text-amber-400 border-amber-500/40'
+                                    : 'bg-zinc-800/70 text-zinc-400 hover:text-amber-400 border-zinc-700/60 hover:border-amber-500/30'
                                 }`}
                                 title={prompt.isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
                               >
@@ -3465,7 +3474,7 @@ export default function ProjetosView({
               initial={{ scale: 0.95, opacity: 0, y: 10 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 10 }}
-              className="bg-zinc-950 border border-zinc-800 rounded-2xl max-w-4xl w-full relative z-50 overflow-hidden shadow-2xl my-auto max-h-[90vh] flex flex-col"
+              className="bg-zinc-950 border border-zinc-800 rounded-2xl w-[96vw] max-w-4xl lg:max-w-6xl xl:max-w-7xl 2xl:max-w-[1500px] relative z-50 overflow-hidden shadow-2xl my-auto max-h-[92vh] flex flex-col"
             >
               {/* Optional Cover Banner Header */}
               {selectedCardForDetail.coverColor && (
@@ -3478,18 +3487,79 @@ export default function ProjetosView({
               {/* Modal Top Header Bar */}
               <div className="p-4 sm:p-6 border-b border-zinc-900 flex items-start justify-between gap-4">
                 <div className="space-y-2 flex-1">
-                  {/* List Selector Dropdown */}
-                  <div className="flex items-center gap-2">
+                  {/* List Selector Dropdown with Standard Site Design */}
+                  <div className="relative inline-flex items-center gap-2">
                     <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-mono font-bold">Em lista</span>
-                    <select
-                      value={selectedCardForDetail.listId}
-                      onChange={(e) => handleMoveCard(selectedCardForDetail.id, e.target.value)}
-                      className="bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1 text-xs text-orange-400 font-bold focus:outline-none cursor-pointer"
-                    >
-                      {activeProject.lists.map(l => (
-                        <option key={l.id} value={l.id}>{l.title}</option>
-                      ))}
-                    </select>
+                    {(() => {
+                      const currentList = activeProject.lists.find(l => l.id === selectedCardForDetail.listId) || activeProject.lists[0];
+                      const currentListIcon = currentList ? getListHeaderIcon(currentList.title) : null;
+                      const CurrentIcon = currentListIcon?.icon || FolderKanban;
+                      return (
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => setIsCardListDropdownOpen(!isCardListDropdownOpen)}
+                            className="inline-flex items-center gap-2 bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 hover:border-zinc-700 px-3 py-1.5 rounded-xl text-xs font-semibold text-zinc-200 transition-all shadow-sm group cursor-pointer"
+                          >
+                            <div className={`p-1 rounded-lg border ${currentListIcon?.bg || 'bg-zinc-800 border-zinc-700'}`}>
+                              <CurrentIcon className={`h-3.5 w-3.5 ${currentListIcon?.color || 'text-zinc-400'}`} />
+                            </div>
+                            <span className="font-bold text-white tracking-tight">{sanitizeListTitle(currentList?.title || 'Lista')}</span>
+                            <ChevronDown className={`h-3.5 w-3.5 text-zinc-400 transition-transform duration-200 ${isCardListDropdownOpen ? 'rotate-180 text-orange-400' : 'group-hover:text-zinc-300'}`} />
+                          </button>
+
+                          {isCardListDropdownOpen && (
+                            <>
+                              <div
+                                className="fixed inset-0 z-40"
+                                onClick={() => setIsCardListDropdownOpen(false)}
+                              />
+                              <div className="absolute left-0 mt-2 w-64 bg-zinc-900/95 backdrop-blur-xl border border-zinc-800 rounded-2xl shadow-2xl py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+                                <div className="px-3 py-1.5 border-b border-zinc-800/70 mb-1">
+                                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400">Mover para Lista</span>
+                                </div>
+                                <div className="max-h-60 overflow-y-auto custom-scrollbar p-1 space-y-0.5">
+                                  {activeProject.lists.map(l => {
+                                    const listIconCfg = getListHeaderIcon(l.title);
+                                    const ListIcon = listIconCfg.icon;
+                                    const isCurrent = l.id === selectedCardForDetail.listId;
+                                    const listCardsCount = activeProject.cards.filter(c => c.listId === l.id).length;
+                                    return (
+                                      <button
+                                        key={l.id}
+                                        type="button"
+                                        onClick={() => {
+                                          handleMoveCard(selectedCardForDetail.id, l.id);
+                                          setIsCardListDropdownOpen(false);
+                                        }}
+                                        className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer ${
+                                          isCurrent
+                                            ? 'bg-orange-500/15 text-orange-400 border border-orange-500/30 font-bold'
+                                            : 'text-zinc-300 hover:text-white hover:bg-zinc-800/70 border border-transparent'
+                                        }`}
+                                      >
+                                        <div className="flex items-center gap-2.5 min-w-0">
+                                          <div className={`p-1 rounded-lg border shrink-0 ${listIconCfg.bg}`}>
+                                            <ListIcon className={`h-3.5 w-3.5 ${listIconCfg.color}`} />
+                                          </div>
+                                          <span className="truncate font-semibold">{sanitizeListTitle(l.title)}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-zinc-800 text-zinc-400">
+                                            {listCardsCount}
+                                          </span>
+                                          {isCurrent && <Check className="h-3.5 w-3.5 text-orange-400" />}
+                                        </div>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Card Title Input */}
@@ -3580,7 +3650,8 @@ export default function ProjetosView({
                             }}
                             className="px-3.5 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl shadow-md shadow-purple-500/20 transition-all cursor-pointer flex items-center gap-1.5"
                           >
-                            <span>Promover p/ Planejamento 📐</span>
+                            <Compass className="h-3.5 w-3.5" />
+                            <span>Promover p/ Planejamento</span>
                           </button>
                         </div>
                       </div>
@@ -3745,7 +3816,7 @@ export default function ProjetosView({
                         }`}
                       >
                         <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-                        <span>🔥 Urgente / Crítica</span>
+                        <span>Urgente / Crítica</span>
                       </button>
                     </div>
                   )}
@@ -4952,7 +5023,7 @@ export default function ProjetosView({
               initial={{ scale: 0.95, opacity: 0, y: 10 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 10 }}
-              className="bg-zinc-950 border border-zinc-800 rounded-2xl max-w-xl w-full p-5 sm:p-6 relative z-50 shadow-2xl space-y-4 max-h-[90vh] flex flex-col"
+              className="bg-zinc-950 border border-zinc-800 rounded-2xl w-[96vw] max-w-xl md:max-w-3xl lg:max-w-5xl xl:max-w-6xl p-5 sm:p-7 relative z-50 shadow-2xl space-y-5 max-h-[92vh] flex flex-col"
             >
               <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
                 <div className="flex items-center gap-2.5">
@@ -4977,113 +5048,161 @@ export default function ProjetosView({
                 </button>
               </div>
 
-              <div className="space-y-4 overflow-y-auto custom-scrollbar flex-1 pr-1">
-                {/* Title */}
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block font-mono">
-                    Título do Prompt
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Ex: Gerador de Especificação de Feature"
-                    value={promptTitleInput}
-                    onChange={(e) => setPromptTitleInput(e.target.value)}
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500 font-medium"
-                  />
-                </div>
+              <div className="overflow-y-auto custom-scrollbar flex-1 pr-1">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+                  {/* Left Column (5 cols on Desktop): Metadata & Toggles */}
+                  <div className="lg:col-span-5 space-y-4 flex flex-col justify-between">
+                    <div className="space-y-4">
+                      {/* Title */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block font-mono">
+                          Título do Prompt
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Ex: Gerador de Especificação de Feature"
+                          value={promptTitleInput}
+                          onChange={(e) => setPromptTitleInput(e.target.value)}
+                          className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500 font-medium placeholder-zinc-500 shadow-inner"
+                        />
+                      </div>
 
-                {/* Category & Tags */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block font-mono">
-                      Categoria
-                    </label>
-                    <select
-                      value={promptCategoryInput}
-                      onChange={(e) => setPromptCategoryInput(e.target.value)}
-                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500 cursor-pointer font-medium"
-                    >
-                      <option value="Desenvolvimento">Desenvolvimento</option>
-                      <option value="Planejamento">Planejamento</option>
-                      <option value="Marketing">Marketing</option>
-                      <option value="Design">Design</option>
-                      <option value="Ideação">Ideação</option>
-                      <option value="Geral">Geral</option>
-                    </select>
-                  </div>
+                      {/* Category & Tags */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block font-mono">
+                            Categoria
+                          </label>
+                          <select
+                            value={promptCategoryInput}
+                            onChange={(e) => setPromptCategoryInput(e.target.value)}
+                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500 cursor-pointer font-medium"
+                          >
+                            <option value="Desenvolvimento">Desenvolvimento</option>
+                            <option value="Planejamento">Planejamento</option>
+                            <option value="Marketing">Marketing</option>
+                            <option value="Design">Design</option>
+                            <option value="Ideação">Ideação</option>
+                            <option value="Geral">Geral</option>
+                          </select>
+                        </div>
 
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block font-mono">
-                      Tags (separadas por vírgula)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Ex: TypeScript, SOLID, Backend"
-                      value={promptTagsInput}
-                      onChange={(e) => setPromptTagsInput(e.target.value)}
-                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500 font-mono"
-                    />
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block font-mono">
-                      Conteúdo do Prompt
-                    </label>
-                    <span className="text-[10px] text-zinc-500 font-mono">
-                      Variável opcional: [NOME_DO_PROJETO]
-                    </span>
-                  </div>
-                  <textarea
-                    rows={8}
-                    placeholder="Digite o conteúdo das instruções do prompt aqui..."
-                    value={promptContentInput}
-                    onChange={(e) => setPromptContentInput(e.target.value)}
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3 text-xs text-zinc-200 focus:outline-none focus:border-orange-500 font-mono resize-none leading-relaxed"
-                  />
-                </div>
-
-                {/* Scope & Favorite Toggles */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                  {/* Global Toggle */}
-                  <label className="flex items-start gap-2.5 p-3 rounded-xl bg-zinc-900/60 border border-zinc-800 hover:border-zinc-700 transition-colors cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={promptIsGlobalInput}
-                      onChange={(e) => setPromptIsGlobalInput(e.target.checked)}
-                      className="mt-0.5 rounded border-zinc-700 text-orange-500 focus:ring-orange-500 cursor-pointer"
-                    />
-                    <div className="space-y-0.5">
-                      <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                        <Globe className="h-3.5 w-3.5 text-sky-400" />
-                        <span>Prompt Global</span>
-                      </span>
-                      <p className="text-[10px] text-zinc-400 leading-tight">
-                        Exibir este prompt na aba Prompts de todos os projetos.
-                      </p>
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block font-mono">
+                            Tags (vírgula)
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Ex: SOLID, Backend"
+                            value={promptTagsInput}
+                            onChange={(e) => setPromptTagsInput(e.target.value)}
+                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500 font-mono placeholder-zinc-500 shadow-inner"
+                          />
+                        </div>
+                      </div>
                     </div>
-                  </label>
 
-                  {/* Favorite Toggle */}
-                  <label className="flex items-start gap-2.5 p-3 rounded-xl bg-zinc-900/60 border border-zinc-800 hover:border-zinc-700 transition-colors cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={promptIsFavoriteInput}
-                      onChange={(e) => setPromptIsFavoriteInput(e.target.checked)}
-                      className="mt-0.5 rounded border-zinc-700 text-orange-500 focus:ring-orange-500 cursor-pointer"
-                    />
-                    <div className="space-y-0.5">
-                      <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                        <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
-                        <span>Favoritar Prompt</span>
-                      </span>
-                      <p className="text-[10px] text-zinc-400 leading-tight">
-                        Fixa o prompt no topo e destaca com estrela dourada.
-                      </p>
+                    {/* Scope & Favorite Interactive Toggle Cards */}
+                    <div className="space-y-3 pt-2">
+                      {/* Global Toggle Card */}
+                      <div
+                        onClick={() => setPromptIsGlobalInput(!promptIsGlobalInput)}
+                        className={`flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer select-none group ${
+                          promptIsGlobalInput
+                            ? 'bg-sky-500/10 border-sky-500/40 shadow-sm shadow-sky-500/5'
+                            : 'bg-zinc-900/60 border-zinc-800 hover:border-zinc-700'
+                        }`}
+                      >
+                        <div className="flex items-start gap-3 min-w-0 pr-3">
+                          <div className={`p-2.5 rounded-xl border shrink-0 transition-all ${
+                            promptIsGlobalInput
+                              ? 'bg-sky-500/20 border-sky-500/40 text-sky-400'
+                              : 'bg-zinc-800/80 border-zinc-700/60 text-zinc-400 group-hover:text-zinc-200'
+                          }`}>
+                            <Globe className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <h5 className="text-xs font-bold text-white flex items-center gap-1.5">
+                              Prompt Global
+                            </h5>
+                            <p className="text-[11px] text-zinc-400 leading-tight mt-0.5">
+                              Exibir este prompt na aba Prompts de todos os projetos.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div
+                          className={`w-10 h-6 rounded-full p-0.5 transition-all shrink-0 flex items-center ${
+                            promptIsGlobalInput ? 'bg-sky-500' : 'bg-zinc-800'
+                          }`}
+                        >
+                          <div
+                            className={`w-5 h-5 rounded-full bg-white shadow-md transition-all ${
+                              promptIsGlobalInput ? 'translate-x-4' : 'translate-x-0'
+                            }`}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Favorite Toggle Card */}
+                      <div
+                        onClick={() => setPromptIsFavoriteInput(!promptIsFavoriteInput)}
+                        className={`flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer select-none group ${
+                          promptIsFavoriteInput
+                            ? 'bg-amber-500/10 border-amber-500/40 shadow-sm shadow-amber-500/5'
+                            : 'bg-zinc-900/60 border-zinc-800 hover:border-zinc-700'
+                        }`}
+                      >
+                        <div className="flex items-start gap-3 min-w-0 pr-3">
+                          <div className={`p-2.5 rounded-xl border shrink-0 transition-all ${
+                            promptIsFavoriteInput
+                              ? 'bg-amber-500/20 border-amber-500/40 text-amber-400'
+                              : 'bg-zinc-800/80 border-zinc-700/60 text-zinc-400 group-hover:text-zinc-200'
+                          }`}>
+                            <Star className={`h-4 w-4 ${promptIsFavoriteInput ? 'fill-amber-400 text-amber-400' : ''}`} />
+                          </div>
+                          <div>
+                            <h5 className="text-xs font-bold text-white flex items-center gap-1.5">
+                              Favoritar Prompt
+                            </h5>
+                            <p className="text-[11px] text-zinc-400 leading-tight mt-0.5">
+                              Fixar no topo e destacar com estrela dourada.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div
+                          className={`w-10 h-6 rounded-full p-0.5 transition-all shrink-0 flex items-center ${
+                            promptIsFavoriteInput ? 'bg-amber-500' : 'bg-zinc-800'
+                          }`}
+                        >
+                          <div
+                            className={`w-5 h-5 rounded-full bg-white shadow-md transition-all ${
+                              promptIsFavoriteInput ? 'translate-x-4' : 'translate-x-0'
+                            }`}
+                          />
+                        </div>
+                      </div>
                     </div>
-                  </label>
+                  </div>
+
+                  {/* Right Column (7 cols on Desktop): Prompt Content Instructions */}
+                  <div className="lg:col-span-7 flex flex-col space-y-1.5 pt-2 lg:pt-0">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block font-mono">
+                        Conteúdo do Prompt
+                      </label>
+                      <span className="text-[10px] text-zinc-500 font-mono">
+                        Variável: [NOME_DO_PROJETO]
+                      </span>
+                    </div>
+                    <textarea
+                      placeholder="Digite o conteúdo das instruções do prompt aqui..."
+                      value={promptContentInput}
+                      onChange={(e) => setPromptContentInput(e.target.value)}
+                      className="w-full flex-1 min-h-[260px] lg:min-h-[380px] bg-zinc-900 border border-zinc-800 rounded-xl p-3.5 text-xs text-zinc-200 focus:outline-none focus:border-orange-500 font-mono resize-none leading-relaxed shadow-inner"
+                    />
+                  </div>
                 </div>
               </div>
 
