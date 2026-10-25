@@ -36,6 +36,7 @@ import {
   RefreshCw,
   Maximize2,
   MoreHorizontal,
+  MoreVertical,
   SlidersHorizontal,
   ArrowUpDown,
   Filter,
@@ -159,6 +160,8 @@ const formatLongDate = (dateStr: string) => {
     return dateStr;
   }
 };
+
+export type AgendaViewMode = 'ano' | 'mes' | 'semana' | 'dia';
 
 export default function CalendarView({ 
   notes, 
@@ -326,10 +329,28 @@ export default function CalendarView({
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDateStr, setSelectedDateStr] = useState<string | null>(() => {
-    return localStorage.getItem('calendar_selected_date_str') || null;
+    return localStorage.getItem('calendar_selected_date_str') || getTodayDateStr();
   });
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
   const [showSaveExitConfirmModal, setShowSaveExitConfirmModal] = useState(false);
+  const [isDaySpaceModalOpen, setIsDaySpaceModalOpen] = useState(false);
+  const [isOptionsMenuOpen, setIsOptionsMenuOpen] = useState(false);
+  const [isQuickAddModalOpen, setIsQuickAddModalOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Quick Add Event Form state
+  const [quickEventTitle, setQuickEventTitle] = useState('');
+  const [quickEventDate, setQuickEventDate] = useState(() => getTodayDateStr());
+  const [quickEventStartTime, setQuickEventStartTime] = useState('09:00');
+  const [quickEventEndTime, setQuickEventEndTime] = useState('10:00');
+  const [quickEventAllDay, setQuickEventAllDay] = useState(false);
+  const [quickEventTag, setQuickEventTag] = useState('Pessoal');
+  const [quickEventSyncGoogle, setQuickEventSyncGoogle] = useState(false);
 
   useEffect(() => {
     if (selectedDateStr) {
@@ -543,14 +564,16 @@ export default function CalendarView({
     setEditingEventId(null);
     addXp(5);
   };
-  
-  const [viewMode, setViewMode] = useState<'grid' | 'weekly'>(() => {
+
+  const [viewMode, setViewMode] = useState<AgendaViewMode>(() => {
     try {
       const saved = localStorage.getItem('mbc_agenda_view_mode') || localStorage.getItem('mbc_calendar_view_mode');
-      if (saved === 'weekly' || saved === 'semanal') return 'weekly';
-      return 'grid';
+      if (saved === 'ano' || saved === 'year') return 'ano';
+      if (saved === 'semana' || saved === 'weekly' || saved === 'semanal') return 'semana';
+      if (saved === 'dia' || saved === 'day') return 'dia';
+      return 'mes';
     } catch {
-      return 'grid';
+      return 'mes';
     }
   });
 
@@ -562,6 +585,53 @@ export default function CalendarView({
       // ignore
     }
   }, [viewMode]);
+
+  const handleQuickAddEvent = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!quickEventTitle.trim() || !quickEventDate) return;
+
+    const newEv: FutureEvent = {
+      id: 'fe-' + Math.random().toString(36).substring(2, 9),
+      name: quickEventTitle.trim(),
+      date: quickEventDate,
+      tags: [quickEventTag]
+    };
+
+    setFutureEvents(prev => [...prev, newEv].sort((a, b) => a.date.localeCompare(b.date)));
+
+    if (quickEventSyncGoogle && googleToken) {
+      (async () => {
+        try {
+          const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+          const body: any = {
+            summary: quickEventTitle.trim(),
+          };
+          if (quickEventAllDay) {
+            body.start = { date: quickEventDate };
+            body.end = { date: getNextDayStr(quickEventDate) };
+          } else {
+            body.start = { dateTime: `${quickEventDate}T${quickEventStartTime}:00`, timeZone: userTimeZone };
+            body.end = { dateTime: `${quickEventDate}T${quickEventEndTime}:00`, timeZone: userTimeZone };
+          }
+          await fetch('/api/calendar/events', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${googleToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(body)
+          });
+          fetchGoogleEvents(googleToken);
+        } catch (err) {
+          console.error('Error auto-syncing to Google:', err);
+        }
+      })();
+    }
+
+    addXp(15);
+    setQuickEventTitle('');
+    setIsQuickAddModalOpen(false);
+  };
   const [dayChecklist, setDayChecklist] = useState<DailyTask[]>([]);
   const [expandedDayTasks, setExpandedDayTasks] = useState<Record<string, boolean>>({});
   const [newDayTaskText, setNewDayTaskText] = useState('');
@@ -2269,9 +2339,12 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
   }, [templateGratitude, templateDecrees, templatePrayer, setNotes]);
 
   // Handle active day selection with smooth scrolling and closing master templates
-  const handleSelectDate = (dateStr: string) => {
+  const handleSelectDate = (dateStr: string, openModal: boolean = false) => {
     setSelectedDateStr(dateStr);
     setIsEditingTemplates(false); // Close templates configuration to view day record
+    if (openModal) {
+      setIsDaySpaceModalOpen(true);
+    }
     
     // Smoothly scroll the editor panel into view
     setTimeout(() => {
@@ -2679,24 +2752,28 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
     calendarDays.push({ dateStr, dayNum: i, isCurrentMonth: false });
   }
 
-  const getWeeklyDays = () => {
-    const current = new Date(currentDate);
-    const day = current.getDay();
-    const sunday = new Date(current);
-    sunday.setDate(current.getDate() - day);
+  const getIsoWeekNumber = (d: Date) => {
+    const target = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const dayNr = target.getUTCDay() || 7;
+    target.setUTCDate(target.getUTCDate() + 4 - dayNr);
+    const yearStart = new Date(Date.UTC(target.getUTCFullYear(), 0, 1));
+    return Math.ceil((((target.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  };
 
-    const days: Array<{ dateStr: string; dayNum: number; isCurrentMonth: boolean }> = [];
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(sunday);
-      d.setDate(sunday.getDate() + i);
-      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      days.push({
-        dateStr,
-        dayNum: d.getDate(),
-        isCurrentMonth: d.getMonth() === month
-      });
-    }
-    return days;
+  const handlePrevYear = () => {
+    setCurrentDate(prev => new Date(prev.getFullYear() - 1, prev.getMonth(), 1));
+  };
+
+  const handleNextYear = () => {
+    setCurrentDate(prev => new Date(prev.getFullYear() + 1, prev.getMonth(), 1));
+  };
+
+  const handlePrevMonth = () => {
+    setCurrentDate(new Date(year, month - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setCurrentDate(new Date(year, month + 1, 1));
   };
 
   const handlePrevWeek = () => {
@@ -2715,259 +2792,128 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
     });
   };
 
-  const daysToRender = viewMode === 'grid' ? calendarDays : getWeeklyDays();
-
-  const handlePrevMonth = () => {
-    setCurrentDate(new Date(year, month - 1, 1));
+  const handleNavigatePrev = () => {
+    if (viewMode === 'ano') {
+      handlePrevYear();
+    } else if (viewMode === 'mes') {
+      handlePrevMonth();
+    } else if (viewMode === 'semana') {
+      handlePrevWeek();
+    } else if (viewMode === 'dia') {
+      const curr = selectedDateStr ? new Date(selectedDateStr + 'T12:00:00') : new Date(currentDate);
+      curr.setDate(curr.getDate() - 1);
+      const nextDateStr = `${curr.getFullYear()}-${String(curr.getMonth() + 1).padStart(2, '0')}-${String(curr.getDate()).padStart(2, '0')}`;
+      handleSelectDate(nextDateStr);
+      setCurrentDate(curr);
+    }
   };
 
-  const handleNextMonth = () => {
-    setCurrentDate(new Date(year, month + 1, 1));
+  const handleNavigateNext = () => {
+    if (viewMode === 'ano') {
+      handleNextYear();
+    } else if (viewMode === 'mes') {
+      handleNextMonth();
+    } else if (viewMode === 'semana') {
+      handleNextWeek();
+    } else if (viewMode === 'dia') {
+      const curr = selectedDateStr ? new Date(selectedDateStr + 'T12:00:00') : new Date(currentDate);
+      curr.setDate(curr.getDate() + 1);
+      const nextDateStr = `${curr.getFullYear()}-${String(curr.getMonth() + 1).padStart(2, '0')}-${String(curr.getDate()).padStart(2, '0')}`;
+      handleSelectDate(nextDateStr);
+      setCurrentDate(curr);
+    }
   };
 
-  const [isMonthDropdownOpen, setIsMonthDropdownOpen] = useState(false);
+  const getWeeklyDays = () => {
+    const current = new Date(currentDate);
+    const day = current.getDay();
+    const sunday = new Date(current);
+    sunday.setDate(current.getDate() - day);
+
+    const days: Array<{ dateStr: string; dayNum: number; isCurrentMonth: boolean; dayOfWeekName: string }> = [];
+    const dowNames = ['DOM.', 'SEG.', 'TER.', 'QUA.', 'QUI.', 'SEX.', 'SÁB.'];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(sunday);
+      d.setDate(sunday.getDate() + i);
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      days.push({
+        dateStr,
+        dayNum: d.getDate(),
+        isCurrentMonth: d.getMonth() === month,
+        dayOfWeekName: dowNames[i]
+      });
+    }
+    return days;
+  };
+
+  // Group month days into 6 weeks
+  const monthWeekRows: Array<Array<{ dateStr: string; dayNum: number; isCurrentMonth: boolean }>> = [];
+  for (let r = 0; r < 6; r++) {
+    monthWeekRows.push(calendarDays.slice(r * 7, (r + 1) * 7));
+  }
+
+  // Hours for weekly & daily grids (00:00 to 23:00)
+  const timelineHours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0') + ':00');
+
+  // Mini-months for Year view
+  const miniMonthsList = [
+    { idx: 0, name: 'Jan.' },
+    { idx: 1, name: 'Fev.' },
+    { idx: 2, name: 'Mar.' },
+    { idx: 3, name: 'Abr.' },
+    { idx: 4, name: 'Mai.' },
+    { idx: 5, name: 'Jun.' },
+    { idx: 6, name: 'Jul.' },
+    { idx: 7, name: 'Ago.' },
+    { idx: 8, name: 'Set.' },
+    { idx: 9, name: 'Out.' },
+    { idx: 10, name: 'Nov.' },
+    { idx: 11, name: 'Dez.' }
+  ];
+
+  const currentHourNum = currentTime.getHours();
+  const currentMinuteNum = currentTime.getMinutes();
+  const currentTimeFormatted = `${String(currentHourNum).padStart(2, '0')}:${String(currentMinuteNum).padStart(2, '0')}`;
+  // 60px height per hour block
+  const currentTimelineOffsetMinutes = currentHourNum * 60 + currentMinuteNum;
+  const currentTimelineTopPx = (currentTimelineOffsetMinutes / 60) * 60;
 
   return (
-    <div id="calendar-view" className="space-y-6 pb-12 relative">
+    <div id="calendar-view" className="space-y-6 pb-28 relative">
       
-      {/* Premium Header - Styled to match screenshot */}
+      {/* Top Header - Matches Screenshots with Dynamic Title, < >, +, and : buttons */}
       <div className="flex items-center justify-between border-b border-zinc-800/80 pb-4">
-        {/* Month Selector Dropdown */}
-        <div className="relative">
-          <button
-            onClick={() => setIsMonthDropdownOpen(!isMonthDropdownOpen)}
-            className="text-2xl md:text-3xl font-black text-white tracking-tight flex items-center gap-1.5 hover:text-zinc-300 transition-colors capitalize focus:outline-none select-none"
-          >
-            {months[month]} <ChevronDown className="h-5 w-5 text-zinc-500" />
-          </button>
-
-          {isMonthDropdownOpen && (
-            <div className="absolute left-0 mt-2 w-48 bg-[#0d0d10] border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden z-50">
-              <div className="max-h-60 overflow-y-auto py-1.5 scrollbar-thin">
-                {months.map((m, i) => (
-                  <button
-                    key={m}
-                    onClick={() => {
-                      setCurrentDate(new Date(year, i, 1));
-                      setIsMonthDropdownOpen(false);
-                    }}
-                    className={`w-full text-left px-4 py-2 text-xs font-bold transition-colors ${
-                      i === month
-                        ? 'bg-zinc-900 text-orange-500'
-                        : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
-                    }`}
-                  >
-                    {m}
-                  </button>
-                ))}
-              </div>
-            </div>
+        {/* Dynamic Title with chevrons */}
+        <div className="flex items-center gap-3">
+          {viewMode === 'ano' ? (
+            <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight font-mono">
+              {year}
+            </h2>
+          ) : viewMode === 'dia' ? (
+            <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight font-mono">
+              {(() => {
+                const parts = (selectedDateStr || getTodayDateStr()).split('-');
+                return `${parts[2]} / ${parts[1]} / ${parts[0]}`;
+              })()}
+            </h2>
+          ) : (
+            <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight font-mono">
+              {String(month + 1).padStart(2, '0')} / {year}
+            </h2>
           )}
-        </div>
 
-        {/* Action Controls - Search, Today, Checklist, and Profile */}
-        <div className="flex items-center gap-3.5 md:gap-5">
-          {/* Search Bar */}
-          <div className="flex items-center gap-2">
-            {isSearchOpen && (
-              <motion.div 
-                initial={{ width: 0, opacity: 0 }}
-                animate={{ width: 'auto', opacity: 1 }}
-                className="relative flex items-center bg-zinc-950 border border-zinc-900 rounded-xl px-2.5 py-1"
-              >
-                <input
-                  type="text"
-                  placeholder="Buscar eventos..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-transparent text-xs text-white placeholder-zinc-500 focus:outline-none w-28 md:w-40 font-medium"
-                />
-                {searchQuery && (
-                  <button onClick={() => setSearchQuery('')} className="text-zinc-500 hover:text-white p-0.5">
-                    <X className="h-3 w-3" />
-                  </button>
-                )}
-              </motion.div>
-            )}
+          {/* Chevrons to navigate */}
+          <div className="flex items-center gap-1 ml-1 sm:ml-2">
             <button
-              onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className={`p-1.5 rounded-lg transition-colors ${isSearchOpen ? 'text-orange-500 hover:bg-zinc-900' : 'text-zinc-400 hover:text-white hover:bg-zinc-900/60'}`}
-              title="Buscar evento"
-            >
-              <Search className="h-5 w-5" />
-            </button>
-          </div>
-
-          {/* Today Button styled as [18] */}
-          <button
-            onClick={() => {
-              setCurrentDate(new Date());
-            }}
-            className="h-7 w-7 rounded-lg border-2 border-zinc-600 hover:border-white text-zinc-400 hover:text-white flex items-center justify-center text-[10px] font-extrabold font-mono transition-all hover:scale-105 active:scale-95"
-            title="Hoje"
-          >
-            {new Date().getDate()}
-          </button>
-
-          {/* Tasks checklist quick action */}
-          <button
-            onClick={() => {
-              const todayStr = getTodayDateStr();
-              handleSelectDate(todayStr);
-              setActiveTopic('checklist');
-            }}
-            className="h-7 w-7 rounded-lg text-zinc-400 hover:text-white flex items-center justify-center hover:bg-zinc-900/60 transition-colors"
-            title="Checklist de Hoje"
-          >
-            <Check className="h-5 w-5" />
-          </button>
-
-          {/* Profile & Google Auth Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-              className="focus:outline-none block hover:scale-105 active:scale-95 transition-all"
-            >
-              {googleUser && googleUser.picture ? (
-                <img
-                  src={googleUser.picture}
-                  alt={googleUser.name}
-                  referrerPolicy="no-referrer"
-                  className="w-8 h-8 rounded-full border border-zinc-800 hover:border-zinc-500 transition-all object-cover shadow-lg"
-                />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-zinc-900 border border-zinc-800 hover:border-zinc-700 flex items-center justify-center text-zinc-400 hover:text-white transition-all shadow-lg">
-                  <User className="h-4 w-4" />
-                </div>
-              )}
-            </button>
-
-            {isProfileDropdownOpen && (
-              <div className="absolute right-0 mt-2.5 w-64 bg-[#0d0d10] border border-zinc-800 rounded-2xl shadow-2xl p-4.5 space-y-4 z-50 text-left">
-                {googleUser ? (
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={googleUser.picture}
-                        alt={googleUser.name}
-                        referrerPolicy="no-referrer"
-                        className="w-10 h-10 rounded-full border border-zinc-800"
-                      />
-                      <div className="overflow-hidden">
-                        <p className="text-xs font-bold text-white truncate">{googleUser.name}</p>
-                        <p className="text-[10px] text-zinc-500 truncate">{googleUser.email}</p>
-                      </div>
-                    </div>
-                    <div className="border-t border-zinc-900 pt-3 flex flex-col gap-2">
-                      <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 font-mono">
-                        <span className="h-1.5 w-1.5 bg-green-500 rounded-full animate-pulse" />
-                        Google Agenda Sincronizado
-                      </div>
-                      {isLoadingEvents ? (
-                        <div className="text-[10px] text-orange-500 animate-pulse font-mono">
-                          Sincronizando eventos...
-                        </div>
-                      ) : googleError ? (
-                        <div className="text-[10px] text-red-400 bg-red-950/30 border border-red-900/40 p-2.5 rounded-xl mt-1 space-y-1.5">
-                          <p className="font-bold text-red-300">Erro na Sincronização:</p>
-                          <p className="text-[9px] font-mono leading-relaxed break-all bg-zinc-950 p-1.5 rounded border border-zinc-900">{googleError}</p>
-                          {(googleError.toLowerCase().includes('api') || googleError.includes('403') || googleError.toLowerCase().includes('access_not_configured')) && (
-                            <p className="text-[9px] text-zinc-400 leading-normal border-t border-zinc-900 pt-1.5 mt-1">
-                              💡 <strong>Ação Necessária:</strong> É necessário ativar a <strong>Google Calendar API</strong> em seu projeto no Google Cloud Console.
-                            </p>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="text-[10px] text-zinc-400 font-mono mt-0.5">
-                          ✓ {googleEvents.length} {googleEvents.length === 1 ? 'evento carregado' : 'eventos carregados'}
-                        </div>
-                      )}
-                      <button
-                        onClick={handleGoogleLogout}
-                        className="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-zinc-950 hover:bg-zinc-900 border border-zinc-850 text-red-400 hover:text-red-300 text-xs font-bold rounded-xl transition-colors"
-                      >
-                        <LogOut className="h-3.5 w-3.5" /> Desconectar Google
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="text-center py-2">
-                      <Calendar className="h-8 w-8 text-orange-500 mx-auto mb-2" />
-                      <p className="text-xs font-bold text-white">Google Agenda</p>
-                      <p className="text-[10px] text-zinc-500 mt-1 leading-relaxed">
-                        Conecte sua conta do Google para visualizar seus compromissos, feriados e aniversários em tempo real na Agenda.
-                      </p>
-                    </div>
-                    <button
-                      onClick={handleGoogleLogin}
-                      className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-white hover:bg-zinc-200 text-black text-xs font-extrabold rounded-xl transition-all shadow-lg active:scale-98"
-                    >
-                      <LogIn className="h-4 w-4" /> Entrar com o Google
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Sub Toolbar - Holds additional controls nicely sorted */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-zinc-950/20 border border-zinc-900/60 p-3 rounded-2xl">
-        <div className="flex items-center gap-2">
-          {/* Grid vs Semanal Switcher */}
-          <div className="flex bg-zinc-950 p-1 rounded-xl border border-zinc-900 text-xs font-bold text-gray-400 shrink-0">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                viewMode === 'grid'
-                  ? 'bg-[#18181b] text-white shadow-lg border border-zinc-800'
-                  : 'hover:text-white border border-transparent'
-              }`}
-            >
-              Grid
-            </button>
-            <button
-              onClick={() => setViewMode('weekly')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                viewMode === 'weekly'
-                  ? 'bg-[#18181b] text-white shadow-lg border border-zinc-800'
-                  : 'hover:text-white border border-transparent'
-              }`}
-            >
-              Semanal
-            </button>
-          </div>
-
-          {/* Year selector */}
-          <select
-            value={year}
-            onChange={(e) => {
-              const newYear = parseInt(e.target.value, 10);
-              setCurrentDate(new Date(newYear, month, 1));
-            }}
-            className="bg-zinc-950 border border-zinc-900 hover:border-zinc-800 text-white rounded-xl px-3 py-1.5 text-xs font-bold font-mono focus:outline-none cursor-pointer transition-all"
-          >
-            {Array.from({ length: 27 }, (_, i) => 2024 + i).map((y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
-            ))}
-          </select>
-          
-          {/* Manual Month navigation controls */}
-          <div className="flex gap-1">
-            <button 
-              onClick={viewMode === 'grid' ? handlePrevMonth : handlePrevWeek} 
-              className="p-1.5 bg-zinc-950 hover:bg-zinc-900 border border-zinc-900 rounded-lg text-zinc-400 hover:text-white transition-colors"
+              onClick={handleNavigatePrev}
+              className="p-1.5 bg-zinc-900/60 hover:bg-zinc-800 border border-zinc-800/70 rounded-lg text-zinc-400 hover:text-white transition-colors"
               title="Anterior"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <button 
-              onClick={viewMode === 'grid' ? handleNextMonth : handleNextWeek} 
-              className="p-1.5 bg-zinc-950 hover:bg-zinc-900 border border-zinc-900 rounded-lg text-zinc-400 hover:text-white transition-colors"
+            <button
+              onClick={handleNavigateNext}
+              className="p-1.5 bg-zinc-900/60 hover:bg-zinc-800 border border-zinc-800/70 rounded-lg text-zinc-400 hover:text-white transition-colors"
               title="Próximo"
             >
               <ChevronRight className="h-4 w-4" />
@@ -2975,174 +2921,882 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Template Gear Settings */}
-          <button
-            onClick={handleOpenTemplateSettings}
-            className="flex items-center justify-center p-2.5 bg-zinc-950 hover:bg-zinc-900 text-gray-300 rounded-xl border border-zinc-900 hover:border-zinc-800 transition-colors hover:text-orange-500 shrink-0"
-            title="Modelos de Espiritualidade"
-          >
-            <Settings className="h-4 w-4 text-orange-500" />
-          </button>
-
-          {/* Monthly / Weekly Review Actions */}
-          <button
-            onClick={handleOpenReview}
-            className="flex items-center gap-1.5 px-3 py-2 bg-zinc-950 hover:bg-zinc-900 text-xs text-orange-500 hover:text-orange-400 font-bold rounded-xl border border-orange-500/10 hover:border-orange-500/30 transition-all relative"
-            title="Mês"
-          >
-            <Compass className="h-3.5 w-3.5 text-orange-500" />
-            <span className="hidden sm:inline">Mês</span>
-            {isTodayMonthlyReviewDay(reviewReminders, new Date()) && (
-              <span className="w-2 h-2 rounded-full bg-orange-400 animate-ping absolute -top-0.5 -right-0.5" />
-            )}
-          </button>
-
-          <button
-            onClick={handleOpenWeeklyReview}
-            className="flex items-center gap-1.5 px-3 py-2 bg-zinc-950 hover:bg-zinc-900 text-xs text-orange-500 hover:text-orange-400 font-bold rounded-xl border border-orange-500/10 hover:border-orange-500/30 transition-all relative"
-            title="Semana"
-          >
-            <CalendarDays className="h-3.5 w-3.5 text-orange-500" />
-            <span className="hidden sm:inline">Semana</span>
-            {isTodayWeeklyReviewDay(reviewReminders, new Date()) && (
-              <span className="w-2 h-2 rounded-full bg-orange-400 animate-ping absolute -top-0.5 -right-0.5" />
-            )}
-          </button>
-
+        {/* Right controls: + and : (MoreVertical) */}
+        <div className="flex items-center gap-2 relative">
+          {/* Quick Create Event (+) */}
           <button
             onClick={() => {
-              setReminderModalTab('all');
-              setIsReviewReminderModalOpen(true);
+              setQuickEventDate(selectedDateStr || getTodayDateStr());
+              setIsQuickAddModalOpen(true);
             }}
-            className="p-2 bg-zinc-950 hover:bg-zinc-900 text-zinc-400 hover:text-orange-400 rounded-xl border border-zinc-900 hover:border-orange-500/30 transition-all"
-            title="Configurar dia do lembrete de reviews (Semanal e Mensal)"
+            className="p-2 bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-800 text-zinc-200 hover:text-white rounded-xl transition-all hover:scale-105 active:scale-95 shadow-sm"
+            title="Novo Evento / Entrada"
           >
-            <Bell className="h-3.5 w-3.5 text-orange-500" />
+            <Plus className="h-5 w-5" />
           </button>
+
+          {/* Options Menu button (:) */}
+          <div className="relative">
+            <button
+              onClick={() => setIsOptionsMenuOpen(!isOptionsMenuOpen)}
+              className={`p-2 border rounded-xl transition-all active:scale-95 shadow-sm ${
+                isOptionsMenuOpen
+                  ? 'bg-zinc-800 border-zinc-700 text-white'
+                  : 'bg-zinc-900/80 hover:bg-zinc-800 border-zinc-800 text-zinc-200 hover:text-white'
+              }`}
+              title="Mais Opções"
+            >
+              <MoreVertical className="h-5 w-5" />
+            </button>
+
+            {/* Options Dropdown Menu */}
+            {isOptionsMenuOpen && (
+              <div 
+                className="absolute right-0 mt-2.5 w-72 bg-[#0d0d10] border border-zinc-800 rounded-2xl shadow-2xl p-2.5 z-50 text-left space-y-1"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Google Calendar status / login */}
+                <div className="p-2.5 bg-zinc-950/70 rounded-xl border border-zinc-900 mb-1">
+                  {googleUser ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        {googleUser.picture ? (
+                          <img src={googleUser.picture} alt="" className="w-6 h-6 rounded-full border border-zinc-700" />
+                        ) : (
+                          <User className="w-6 h-6 p-1 bg-zinc-800 rounded-full text-zinc-400" />
+                        )}
+                        <div className="overflow-hidden">
+                          <p className="text-[11px] font-bold text-white truncate">{googleUser.name}</p>
+                          <p className="text-[9px] text-zinc-500 truncate">{googleUser.email}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between gap-2 pt-1 border-t border-zinc-900 text-[10px]">
+                        <span className="text-emerald-400 font-mono flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Sincronizado
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={handleSyncNext5GoogleEvents}
+                            disabled={isSyncingGoogle5}
+                            className="text-zinc-400 hover:text-white text-[10px] underline"
+                          >
+                            {isSyncingGoogle5 ? 'Sync...' : 'Sincronizar'}
+                          </button>
+                          <button
+                            onClick={handleGoogleLogout}
+                            className="text-red-400 hover:text-red-300 text-[10px]"
+                          >
+                            Sair
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <p className="text-[11px] font-bold text-white">Google Agenda</p>
+                        <p className="text-[9px] text-zinc-500">Sincronize compromissos</p>
+                      </div>
+                      <button
+                        onClick={handleGoogleLogin}
+                        className="px-2.5 py-1 bg-white hover:bg-zinc-200 text-black text-[10px] font-bold rounded-lg transition-colors"
+                      >
+                        Conectar
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Modelos de Espiritualidade */}
+                <button
+                  onClick={() => {
+                    handleOpenTemplateSettings();
+                    setIsOptionsMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-zinc-300 hover:text-white hover:bg-zinc-900/80 rounded-xl transition-colors"
+                >
+                  <Settings className="h-4 w-4 text-orange-400" />
+                  Modelos de Espiritualidade
+                </button>
+
+                {/* Review Mensal */}
+                <button
+                  onClick={() => {
+                    handleOpenReview();
+                    setIsOptionsMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-zinc-300 hover:text-white hover:bg-zinc-900/80 rounded-xl transition-colors"
+                >
+                  <Compass className="h-4 w-4 text-orange-400" />
+                  Review Mensal
+                </button>
+
+                {/* Review Semanal */}
+                <button
+                  onClick={() => {
+                    handleOpenWeeklyReview();
+                    setIsOptionsMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-zinc-300 hover:text-white hover:bg-zinc-900/80 rounded-xl transition-colors"
+                >
+                  <CalendarDays className="h-4 w-4 text-orange-400" />
+                  Review Semanal
+                </button>
+
+                {/* Lembretes de Reviews */}
+                <button
+                  onClick={() => {
+                    setReminderModalTab('all');
+                    setIsReviewReminderModalOpen(true);
+                    setIsOptionsMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-zinc-300 hover:text-white hover:bg-zinc-900/80 rounded-xl transition-colors"
+                >
+                  <Bell className="h-4 w-4 text-orange-400" />
+                  Lembretes de Reviews
+                </button>
+
+                {/* Tabela de Compromissos Futuros */}
+                <button
+                  onClick={() => {
+                    setIsTagModalOpen(true);
+                    setIsOptionsMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-zinc-300 hover:text-white hover:bg-zinc-900/80 rounded-xl transition-colors"
+                >
+                  <Tag className="h-4 w-4 text-blue-400" />
+                  Gerenciar Tags
+                </button>
+
+                {/* Ir para Hoje */}
+                <button
+                  onClick={() => {
+                    const today = new Date();
+                    setCurrentDate(today);
+                    handleSelectDate(getTodayDateStr());
+                    setIsOptionsMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-zinc-300 hover:text-white hover:bg-zinc-900/80 rounded-xl transition-colors border-t border-zinc-900 pt-2"
+                >
+                  <Calendar className="h-4 w-4 text-emerald-400" />
+                  Ir para Hoje ({new Date().getDate()}/{new Date().getMonth() + 1})
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Main Grid Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        {/* Monthly Calendar Grid */}
-        <div className="lg:col-span-12 bg-[#0a0a0c]/60 rounded-2xl border border-zinc-800/80 p-5 space-y-4">
-          
-          {/* Days of week header - lowercase matching the screenshot */}
-          <div className="grid grid-cols-7 gap-1 text-center font-bold text-gray-500 text-[11px] pb-2 border-b border-zinc-800/60">
-            {daysOfWeek.map(day => (
-              <div key={day} className="py-1 lowercase font-medium">{day}</div>
-            ))}
-          </div>
-
-          {/* Calendar Day Cells */}
-          <div className="grid grid-cols-7 gap-1 bg-zinc-950/40 p-1 rounded-2xl border border-zinc-900/40">
-            {daysToRender.map((cell, idx) => {
-              const cellRecord = notes.find(n => n.date === cell.dateStr);
-              const isSelected = selectedDateStr === cell.dateStr;
-              const isToday = cell.dateStr === getTodayDateStr();
-              const isTomorrow = cell.dateStr === getTomorrowDateStr();
-              
-              const hasDiary = cellRecord && cellRecord.journalText && cellRecord.journalText.trim().length > 0;
-              const hasSpirituality = cellRecord && (
-                (cellRecord.gratitudeText && cellRecord.gratitudeText.trim().length > 0) ||
-                (cellRecord.decreesText && cellRecord.decreesText.trim().length > 0) ||
-                (cellRecord.prayerText && cellRecord.prayerText.trim().length > 0)
-              );
-
-              const events = getEventsForDay(cell.dateStr);
+      {/* =========================================================================
+          VIEW 1: ANO (Year View - 12 Mini Months 3x4 Grid - Matches image_2e6d4c89.png)
+         ========================================================================= */}
+      {viewMode === 'ano' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
+            {miniMonthsList.map(({ idx: mIdx, name: mName }) => {
+              const startDay = new Date(year, mIdx, 1).getDay();
+              const daysCount = new Date(year, mIdx + 1, 0).getDate();
+              const isCurrentViewMonth = year === currentDate.getFullYear() && mIdx === currentDate.getMonth();
 
               return (
-                <button
-                  key={idx}
-                  onClick={() => handleSelectDate(cell.dateStr)}
-                  className={`min-h-[120px] p-2.5 rounded-xl border text-left flex flex-col justify-start transition-all relative outline-none select-none ${
-                    cell.isCurrentMonth ? 'bg-[#0f0f12]/30' : 'bg-[#050507]/20 opacity-30'
-                  } ${
-                    isSelected 
-                      ? 'border-orange-500/80 bg-orange-500/5 shadow-[0_0_12px_rgba(249,115,22,0.12)]' 
-                      : isToday
-                        ? 'border-zinc-700 bg-zinc-800/10'
-                        : 'border-zinc-900/80 hover:border-zinc-800 hover:bg-zinc-900/10'
-                  }`}
+                <div
+                  key={mIdx}
+                  onClick={() => {
+                    setCurrentDate(new Date(year, mIdx, 1));
+                    setViewMode('mes');
+                  }}
+                  className="bg-[#0a0a0c]/80 hover:bg-[#101014]/90 border border-zinc-800/80 hover:border-blue-500/40 rounded-2xl p-3.5 transition-all cursor-pointer group shadow-sm flex flex-col justify-between"
                 >
-                  {/* Day Number and small indicators row */}
-                  <div className="flex justify-between items-center w-full mb-1">
-                    {isToday ? (
-                      <span className="bg-[#ccdcfd] text-[#0d1b3e] font-extrabold rounded-full text-[10px] w-5 h-5 flex items-center justify-center">
-                        {cell.dayNum}
-                      </span>
-                    ) : (
-                      <span className={`text-[11px] font-extrabold font-mono ${
-                        isTomorrow
-                          ? 'text-orange-400'
-                          : isSelected ? 'text-orange-500' : 'text-zinc-400'
-                      }`}>
-                        {cell.dayNum}
-                      </span>
-                    )}
-
-                    {/* Clean micro-dots for original features (journal, faith) */}
-                    <div className="flex gap-1 items-center">
-                      {hasDiary && (
-                        <span className="h-1.5 w-1.5 bg-blue-500 rounded-full" title="Diário registrado" />
-                      )}
-                      {hasSpirituality && (
-                        <span className="h-1.5 w-1.5 bg-purple-500 rounded-full" title="Fé registrada" />
-                      )}
-                    </div>
+                  {/* Month Name */}
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`text-sm font-black transition-colors ${
+                      isCurrentViewMonth ? 'text-blue-400 font-extrabold' : 'text-zinc-200 group-hover:text-blue-400'
+                    }`}>
+                      {mName}
+                    </span>
+                    <span className="text-[10px] text-zinc-600 font-mono">
+                      {String(mIdx + 1).padStart(2, '0')}
+                    </span>
                   </div>
 
-                  {/* Complete Events List - Rendered as beautiful horizontal blocks like Google Calendar */}
-                  <div className="flex flex-col gap-1 w-full mt-1.5 flex-1 overflow-hidden justify-start pointer-events-none">
-                    {events.slice(0, 3).map((ev) => (
-                      <div
-                        key={ev.id}
-                        className={`w-full px-1.5 py-0.5 text-[9px] font-bold rounded truncate text-left tracking-tight shadow-sm border border-black/10 transition-colors ${getEventColor(ev.name, ev.isGoogle)}`}
-                        title={`${ev.name}${ev.description ? ' - ' + ev.description : ''}`}
-                      >
-                        {ev.name}
-                      </div>
+                  {/* Mini Weekday Row (D S T Q Q S S) */}
+                  <div className="grid grid-cols-7 gap-0.5 text-center text-[9.5px] font-bold mb-1">
+                    <span className="text-blue-400">D</span>
+                    <span className="text-zinc-500">S</span>
+                    <span className="text-zinc-500">T</span>
+                    <span className="text-zinc-500">Q</span>
+                    <span className="text-zinc-500">Q</span>
+                    <span className="text-zinc-500">S</span>
+                    <span className="text-blue-400">S</span>
+                  </div>
+
+                  {/* Mini Month Days Matrix */}
+                  <div className="grid grid-cols-7 gap-0.5 text-center text-[10px] font-mono">
+                    {/* Padding blanks for previous month */}
+                    {Array.from({ length: startDay }).map((_, bIdx) => (
+                      <span key={`b-${bIdx}`} className="py-1" />
                     ))}
-                    {events.length > 3 && (
-                      <div className="text-[8px] text-zinc-500 font-bold px-1 select-none text-left">
-                        + {events.length - 3} mais
-                      </div>
-                    )}
+
+                    {/* Day numbers */}
+                    {Array.from({ length: daysCount }).map((_, dIdx) => {
+                      const dayNum = dIdx + 1;
+                      const dateStr = `${year}-${String(mIdx + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+                      const isToday = dateStr === getTodayDateStr();
+                      const isSelected = dateStr === selectedDateStr;
+                      const dayOfWeek = (startDay + dIdx) % 7;
+                      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+                      return (
+                        <button
+                          key={dayNum}
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSelectDate(dateStr);
+                            setCurrentDate(new Date(year, mIdx, dayNum));
+                            setViewMode('mes');
+                          }}
+                          className={`py-0.5 rounded-full flex items-center justify-center font-semibold transition-all ${
+                            isSelected
+                              ? 'bg-blue-600 text-white font-bold'
+                              : isToday
+                                ? 'border border-blue-400 text-blue-300 font-bold'
+                                : isWeekend
+                                  ? 'text-blue-400'
+                                  : 'text-zinc-300 hover:text-white'
+                          }`}
+                        >
+                          {dayNum}
+                        </button>
+                      );
+                    })}
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>
         </div>
+      )}
 
-        {/* Sticky floating '+' button - identical style to DailyMissionsView FAB */}
-        <button
-          type="button"
-          onClick={() => {
-            const todayStr = getTodayDateStr();
-            handleSelectDate(todayStr);
-          }}
-          className="fixed bottom-28 sm:bottom-8 right-5 sm:right-8 z-40 w-12 h-12 sm:w-13 sm:h-13 rounded-full bg-[#09090b]/80 hover:bg-[#141419]/90 active:scale-90 shadow-xl backdrop-blur-md transition-all flex items-center justify-center cursor-pointer group outline-none select-none border-0"
-          title="Nova Entrada / Evento"
-          aria-label="Nova Entrada / Evento"
-        >
-          <Plus 
-            className="w-5 h-5 sm:w-5.5 sm:h-5.5 stroke-[2.2] transition-transform duration-200 group-hover:scale-110 group-active:scale-90" 
-            style={{ 
-              color: 'var(--color-orange-500, #f97316)',
-              filter: 'drop-shadow(0 0 8px var(--accent-glow, rgba(249,115,22,0.5)))'
-            }}
-          />
-        </button>
+      {/* =========================================================================
+          VIEW 2: MÊS (Month View - Matches image_ea282644.png)
+          - Left column with week numbers (39, 40, 41, 42, 43)
+          - Weekdays header: DOM. (blue), SEG., TER., QUA., QUI., SEX., SÁB. (blue)
+          - Weekend days in blue
+          - Selected day in blue rounded badge
+          - Micro event indicator dots
+          - Drag handle bar
+          - Lower day events preview
+         ========================================================================= */}
+      {viewMode === 'mes' && (
+        <div className="space-y-4">
+          {/* Main Month Grid Container */}
+          <div className="bg-[#0a0a0c]/80 rounded-2xl border border-zinc-800/80 p-3 sm:p-5">
+            {/* Weekdays Header: 1 column for week numbers + 7 weekday columns */}
+            <div className="grid grid-cols-[36px_repeat(7,1fr)] sm:grid-cols-[44px_repeat(7,1fr)] gap-1 text-center font-bold text-[11px] pb-2 border-b border-zinc-800/60 mb-2">
+              <div className="text-zinc-600 font-mono text-[10px] self-center">SEM.</div>
+              <div className="py-1 text-blue-400 font-bold">DOM.</div>
+              <div className="py-1 text-zinc-400">SEG.</div>
+              <div className="py-1 text-zinc-400">TER.</div>
+              <div className="py-1 text-zinc-400">QUA.</div>
+              <div className="py-1 text-zinc-400">QUI.</div>
+              <div className="py-1 text-zinc-400">SEX.</div>
+              <div className="py-1 text-blue-400 font-bold">SÁB.</div>
+            </div>
+
+            {/* 6 Weeks Rows */}
+            <div className="space-y-1">
+              {monthWeekRows.map((row, rIdx) => {
+                const rowWednesday = new Date(row[3].dateStr + 'T12:00:00');
+                const weekNum = getIsoWeekNumber(rowWednesday);
+
+                return (
+                  <div key={rIdx} className="grid grid-cols-[36px_repeat(7,1fr)] sm:grid-cols-[44px_repeat(7,1fr)] gap-1 items-stretch">
+                    {/* Week Number column (e.g. 39, 40, 41, 42, 43) */}
+                    <div className="flex items-center justify-center text-zinc-500 font-mono text-[11px] sm:text-xs font-semibold select-none">
+                      {weekNum}
+                    </div>
+
+                    {/* 7 Day Cells */}
+                    {row.map((cell, cIdx) => {
+                      const isWeekend = cIdx === 0 || cIdx === 6;
+                      const isSelected = selectedDateStr === cell.dateStr;
+                      const isToday = cell.dateStr === getTodayDateStr();
+                      const cellRecord = notes.find(n => n.date === cell.dateStr);
+                      const hasDiary = cellRecord && cellRecord.journalText && cellRecord.journalText.trim().length > 0;
+                      const hasSpirituality = cellRecord && (
+                        (cellRecord.gratitudeText && cellRecord.gratitudeText.trim().length > 0) ||
+                        (cellRecord.decreesText && cellRecord.decreesText.trim().length > 0) ||
+                        (cellRecord.prayerText && cellRecord.prayerText.trim().length > 0)
+                      );
+                      const events = getEventsForDay(cell.dateStr);
+
+                      return (
+                        <button
+                          key={cell.dateStr}
+                          type="button"
+                          onClick={() => handleSelectDate(cell.dateStr)}
+                          onDoubleClick={() => handleSelectDate(cell.dateStr, true)}
+                          className={`min-h-[58px] sm:min-h-[72px] p-1 sm:p-2 rounded-xl text-center flex flex-col items-center justify-between transition-all select-none border ${
+                            cell.isCurrentMonth ? 'hover:bg-zinc-900/40' : 'opacity-25 hover:opacity-50'
+                          } ${
+                            isSelected
+                              ? 'border-blue-500/50 bg-blue-500/5'
+                              : isToday
+                                ? 'border-zinc-700 bg-zinc-800/20'
+                                : 'border-transparent'
+                          }`}
+                        >
+                          {/* Day Number Badge */}
+                          <span
+                            className={`text-xs sm:text-sm font-bold font-mono transition-all ${
+                              isSelected
+                                ? 'bg-blue-600 text-white rounded-xl sm:rounded-2xl w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center shadow-md shadow-blue-600/30'
+                                : isToday
+                                  ? 'border border-blue-400 text-blue-300 rounded-full w-7 h-7 flex items-center justify-center font-extrabold'
+                                  : isWeekend
+                                    ? 'text-blue-400'
+                                    : 'text-zinc-200'
+                            }`}
+                          >
+                            {cell.dayNum}
+                          </span>
+
+                          {/* Micro event indicator dots */}
+                          <div className="flex items-center gap-1 justify-center mt-1 min-h-[6px]">
+                            {events.slice(0, 3).map((ev, i) => (
+                              <span
+                                key={ev.id || i}
+                                className={`w-1.5 h-1.5 rounded-full ${
+                                  i === 0 ? 'bg-blue-500' : i === 1 ? 'bg-purple-500' : 'bg-orange-500'
+                                }`}
+                              />
+                            ))}
+                            {events.length === 0 && (hasDiary || hasSpirituality) && (
+                              <span className={`w-1.5 h-1.5 rounded-full ${hasDiary ? 'bg-emerald-400' : 'bg-purple-400'}`} />
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Drag Handle Bar */}
+          <div className="w-12 h-1.5 bg-zinc-700/80 rounded-full mx-auto my-3" />
+
+          {/* Selected Day Preview Section (Lower portion) */}
+          <div className="bg-[#0a0a0c]/60 rounded-2xl border border-zinc-800/80 p-4 sm:p-5 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800/60 pb-3">
+              <div>
+                <h3 className="text-base font-extrabold text-white capitalize">
+                  {formatLongDate(selectedDateStr || getTodayDateStr())}
+                </h3>
+                <p className="text-xs text-zinc-500">
+                  {getEventsForDay(selectedDateStr || getTodayDateStr()).length} eventos agendados para este dia
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setQuickEventDate(selectedDateStr || getTodayDateStr());
+                    setIsQuickAddModalOpen(true);
+                  }}
+                  className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Adicionar Evento
+                </button>
+                <button
+                  onClick={() => setIsDaySpaceModalOpen(true)}
+                  className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5"
+                >
+                  <Sparkles className="h-3.5 w-3.5" /> Abrir Espaço Diário & Fé
+                </button>
+              </div>
+            </div>
+
+            {/* Event list for the selected day */}
+            {(() => {
+              const dayEvs = getEventsForDay(selectedDateStr || getTodayDateStr());
+              if (dayEvs.length === 0) {
+                return (
+                  <div className="py-8 text-center text-zinc-500 space-y-2">
+                    <Calendar className="w-8 h-8 mx-auto text-zinc-700" />
+                    <p className="text-sm font-semibold text-zinc-400">Nenhum evento para hoje</p>
+                    <p className="text-xs text-zinc-600">
+                      Clique em "+ Adicionar Evento" para agendar ou "Abrir Espaço Diário & Fé" para diário pessoal e checklist.
+                    </p>
+                  </div>
+                );
+              }
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {dayEvs.map((ev) => (
+                    <div
+                      key={ev.id}
+                      className={`p-3 rounded-xl border flex items-center justify-between gap-3 ${getEventColor(ev.name, ev.isGoogle)}`}
+                    >
+                      <div className="overflow-hidden">
+                        <span className="text-[10px] uppercase font-bold tracking-wider opacity-80 block">{ev.tag}</span>
+                        <p className="text-xs font-bold truncate">{ev.name}</p>
+                        {ev.description && <p className="text-[10px] opacity-75 truncate">{ev.description}</p>}
+                      </div>
+                      {!ev.isGoogle && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteFutureEvent(ev.id);
+                          }}
+                          className="p-1 hover:bg-black/20 rounded text-white/70 hover:text-white transition-colors"
+                          title="Excluir evento"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          VIEW 3: SEMANA (Week View - Matches image_b9bddc79.png)
+          - Top row: week number (43) on left, 7 weekday headers with selected day highlighted
+          - All-day events row
+          - Hourly timeline grid (00:00 to 23:00)
+          - Live red horizontal current time line with red time badge (16:51)
+          - Event cards positioned inside respective columns
+         ========================================================================= */}
+      {viewMode === 'semana' && (() => {
+        const weeklyDays = getWeeklyDays();
+        const weekWed = new Date(weeklyDays[3].dateStr + 'T12:00:00');
+        const currentWeekNumber = getIsoWeekNumber(weekWed);
+        const todayStr = getTodayDateStr();
+
+        return (
+          <div className="space-y-4">
+            <div className="bg-[#0a0a0c]/80 rounded-2xl border border-zinc-800/80 overflow-hidden shadow-lg">
+              {/* Weekdays Header Bar */}
+              <div className="grid grid-cols-[48px_repeat(7,1fr)] border-b border-zinc-800/80 bg-[#0d0d10]">
+                {/* Left Week Number Column */}
+                <div className="flex flex-col items-center justify-center p-2 border-r border-zinc-800/70 text-zinc-500 font-mono text-xs font-extrabold select-none">
+                  <span className="text-[9px] uppercase tracking-wider text-zinc-600">SEM.</span>
+                  <span className="text-sm text-zinc-400">{currentWeekNumber}</span>
+                </div>
+
+                {/* 7 Weekday Columns */}
+                {weeklyDays.map((wDay, idx) => {
+                  const isWeekend = idx === 0 || idx === 6;
+                  const isSelected = selectedDateStr === wDay.dateStr;
+                  const isToday = wDay.dateStr === todayStr;
+
+                  return (
+                    <button
+                      key={wDay.dateStr}
+                      type="button"
+                      onClick={() => handleSelectDate(wDay.dateStr)}
+                      className={`p-2 text-center flex flex-col items-center justify-center border-r last:border-r-0 border-zinc-800/60 transition-colors ${
+                        isSelected ? 'bg-blue-600/10' : 'hover:bg-zinc-900/30'
+                      }`}
+                    >
+                      <span className={`text-[10px] font-bold ${isWeekend ? 'text-blue-400' : 'text-zinc-400'}`}>
+                        {wDay.dayOfWeekName}
+                      </span>
+                      <span className={`text-xs sm:text-sm font-mono font-bold mt-0.5 ${
+                        isSelected
+                          ? 'bg-blue-600 text-white rounded-xl w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center shadow-md'
+                          : isToday
+                            ? 'border border-blue-400 text-blue-300 rounded-full w-6 h-6 flex items-center justify-center'
+                            : isWeekend
+                              ? 'text-blue-400'
+                              : 'text-zinc-200'
+                      }`}>
+                        {wDay.dayNum}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* All-Day Events row */}
+              <div className="grid grid-cols-[48px_repeat(7,1fr)] border-b border-zinc-800/80 bg-zinc-950/40 text-[10px]">
+                <div className="p-1.5 border-r border-zinc-800/70 text-center text-zinc-600 font-mono text-[9px] self-center">
+                  DIA
+                </div>
+                {weeklyDays.map((wDay) => {
+                  const dayEvents = getEventsForDay(wDay.dateStr);
+                  return (
+                    <div key={wDay.dateStr} className="p-1 border-r last:border-r-0 border-zinc-800/60 min-h-[30px] flex flex-col gap-1">
+                      {dayEvents.slice(0, 1).map((ev) => (
+                        <div
+                          key={ev.id}
+                          className={`px-1 py-0.5 text-[9px] font-bold rounded truncate ${getEventColor(ev.name, ev.isGoogle)}`}
+                          title={ev.name}
+                        >
+                          {ev.name}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Hourly Schedule Timeline Grid */}
+              <div className="relative max-h-[600px] overflow-y-auto scrollbar-thin">
+                {/* Live Current Time Red Line Indicator */}
+                <div
+                  className="absolute left-0 right-0 z-20 pointer-events-none flex items-center"
+                  style={{ top: `${currentTimelineTopPx}px` }}
+                >
+                  <span className="bg-red-500 text-white font-mono text-[9px] font-extrabold px-1.5 py-0.5 rounded shadow-md shrink-0 ml-1">
+                    {currentTimeFormatted}
+                  </span>
+                  <div className="flex-1 h-[2px] bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
+                </div>
+
+                {/* 24 Hour Rows */}
+                {timelineHours.map((hourStr, hIdx) => (
+                  <div key={hourStr} className="grid grid-cols-[48px_repeat(7,1fr)] h-15 border-b border-zinc-900/60 relative">
+                    {/* Hour Label */}
+                    <div className="border-r border-zinc-800/70 text-[10px] text-zinc-500 font-mono px-1 py-1 text-right select-none">
+                      {hourStr}
+                    </div>
+
+                    {/* 7 Day Slot Columns */}
+                    {weeklyDays.map((wDay) => {
+                      const dayEvents = getEventsForDay(wDay.dateStr);
+                      // Check if any event falls near this hour
+                      const slotEvents = dayEvents.filter((ev) => {
+                        if (ev.rawGoogleEvent?.start?.dateTime) {
+                          const timePart = ev.rawGoogleEvent.start.dateTime.split('T')[1];
+                          if (timePart) {
+                            const evHour = parseInt(timePart.substring(0, 2), 10);
+                            return evHour === hIdx;
+                          }
+                        }
+                        return false;
+                      });
+
+                      return (
+                        <div
+                          key={wDay.dateStr}
+                          onClick={() => {
+                            handleSelectDate(wDay.dateStr);
+                            setQuickEventDate(wDay.dateStr);
+                            setQuickEventStartTime(hourStr);
+                          }}
+                          className="border-r last:border-r-0 border-zinc-900/40 hover:bg-zinc-900/20 transition-colors p-1 relative overflow-hidden"
+                        >
+                          {slotEvents.map((ev) => (
+                            <div
+                              key={ev.id}
+                              className={`p-1 rounded text-[9.5px] font-bold truncate ${getEventColor(ev.name, ev.isGoogle)}`}
+                            >
+                              {ev.name}
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Quick action bar */}
+            <div className="flex justify-between items-center bg-[#0a0a0c]/60 p-3 rounded-2xl border border-zinc-800/80">
+              <span className="text-xs text-zinc-400 font-medium">
+                Dia selecionado: <strong className="text-white capitalize">{formatShortDate(selectedDateStr || getTodayDateStr())}</strong>
+              </span>
+              <button
+                onClick={() => setIsDaySpaceModalOpen(true)}
+                className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5"
+              >
+                <Sparkles className="h-3.5 w-3.5" /> Abrir Espaço Diário & Fé
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* =========================================================================
+          VIEW 4: DIA (Day View - Single Day Focused Schedule)
+         ========================================================================= */}
+      {viewMode === 'dia' && (() => {
+        const activeDate = selectedDateStr || getTodayDateStr();
+        const isToday = activeDate === getTodayDateStr();
+        const dayEvents = getEventsForDay(activeDate);
+
+        return (
+          <div className="space-y-4">
+            <div className="bg-[#0a0a0c]/80 rounded-2xl border border-zinc-800/80 overflow-hidden shadow-lg p-4 sm:p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800/80 pb-3 mb-4">
+                <div>
+                  <h3 className="text-lg font-black text-white capitalize">
+                    {formatLongDate(activeDate)}
+                  </h3>
+                  <p className="text-xs text-zinc-500">
+                    {dayEvents.length} eventos no cronograma diário
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setQuickEventDate(activeDate);
+                      setIsQuickAddModalOpen(true);
+                    }}
+                    className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Novo Evento
+                  </button>
+                  <button
+                    onClick={() => setIsDaySpaceModalOpen(true)}
+                    className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" /> Abrir Espaço Diário & Fé
+                  </button>
+                </div>
+              </div>
+
+              {/* Single Day Hourly Timeline Grid */}
+              <div className="relative max-h-[600px] overflow-y-auto scrollbar-thin border border-zinc-900 rounded-xl">
+                {/* Live Current Time Red Line if today */}
+                {isToday && (
+                  <div
+                    className="absolute left-0 right-0 z-20 pointer-events-none flex items-center"
+                    style={{ top: `${currentTimelineTopPx}px` }}
+                  >
+                    <span className="bg-red-500 text-white font-mono text-[9px] font-extrabold px-1.5 py-0.5 rounded shadow-md shrink-0 ml-1">
+                      {currentTimeFormatted}
+                    </span>
+                    <div className="flex-1 h-[2px] bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
+                  </div>
+                )}
+
+                {timelineHours.map((hourStr, hIdx) => {
+                  const hourEvs = dayEvents.filter((ev) => {
+                    if (ev.rawGoogleEvent?.start?.dateTime) {
+                      const timePart = ev.rawGoogleEvent.start.dateTime.split('T')[1];
+                      if (timePart) {
+                        return parseInt(timePart.substring(0, 2), 10) === hIdx;
+                      }
+                    }
+                    return false;
+                  });
+
+                  return (
+                    <div key={hourStr} className="flex h-14 border-b border-zinc-900/60 relative">
+                      <div className="w-16 border-r border-zinc-800/70 text-[11px] text-zinc-500 font-mono px-2 py-1 text-right select-none shrink-0">
+                        {hourStr}
+                      </div>
+                      <div className="flex-1 p-1 hover:bg-zinc-900/20 transition-colors flex items-center gap-2">
+                        {hourEvs.map((ev) => (
+                          <div
+                            key={ev.id}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold shadow-sm ${getEventColor(ev.name, ev.isGoogle)}`}
+                          >
+                            {ev.name}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* =========================================================================
+          FLOATING BOTTOM CAPSULE BAR (Matches Screenshots: [ Ano | Mês | Semana | Dia ])
+         ========================================================================= */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
+        <div className="bg-[#121216]/95 backdrop-blur-xl border border-zinc-800/90 rounded-full p-1.5 shadow-2xl flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setViewMode('ano')}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all select-none cursor-pointer ${
+              viewMode === 'ano'
+                ? 'bg-zinc-800 text-white shadow-md'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            Ano
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('mes')}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all select-none cursor-pointer ${
+              viewMode === 'mes'
+                ? 'bg-zinc-800 text-white shadow-md'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            Mês
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('semana')}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all select-none cursor-pointer ${
+              viewMode === 'semana'
+                ? 'bg-zinc-800 text-white shadow-md'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            Semana
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('dia')}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all select-none cursor-pointer ${
+              viewMode === 'dia'
+                ? 'bg-zinc-800 text-white shadow-md'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            Dia
+          </button>
+        </div>
+      </div>
+
+      {/* Quick Add Event Modal */}
+      {isQuickAddModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#0f0f12] border border-zinc-800 rounded-2xl w-full max-w-md p-5 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Plus className="h-4 w-4 text-orange-500" /> Novo Evento / Compromisso
+              </h3>
+              <button
+                onClick={() => setIsQuickAddModalOpen(false)}
+                className="text-zinc-400 hover:text-white p-1 rounded-lg"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleQuickAddEvent} className="space-y-3">
+              <div>
+                <label className="text-[10px] text-zinc-400 font-bold block mb-1">Título do Evento</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: Reunião, Viagem, Aniversário..."
+                  value={quickEventTitle}
+                  onChange={(e) => setQuickEventTitle(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] text-zinc-400 font-bold block mb-1">Data</label>
+                  <input
+                    type="date"
+                    required
+                    value={quickEventDate}
+                    onChange={(e) => setQuickEventDate(e.target.value)}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-zinc-400 font-bold block mb-1">Categoria / Tag</label>
+                  <select
+                    value={quickEventTag}
+                    onChange={(e) => setQuickEventTag(e.target.value)}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                  >
+                    {TAG_OPTIONS.map((tag) => (
+                      <option key={tag} value={tag}>{tag}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="allDayCheckbox"
+                  checked={quickEventAllDay}
+                  onChange={(e) => setQuickEventAllDay(e.target.checked)}
+                  className="rounded border-zinc-700 bg-zinc-900 text-blue-600 focus:ring-0"
+                />
+                <label htmlFor="allDayCheckbox" className="text-xs text-zinc-300">Dia Inteiro</label>
+              </div>
+
+              {!quickEventAllDay && (
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] text-zinc-400 font-bold block mb-1">Hora de Início</label>
+                    <input
+                      type="time"
+                      value={quickEventStartTime}
+                      onChange={(e) => setQuickEventStartTime(e.target.value)}
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-zinc-400 font-bold block mb-1">Hora de Fim</label>
+                    <input
+                      type="time"
+                      value={quickEventEndTime}
+                      onChange={(e) => setQuickEventEndTime(e.target.value)}
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {googleUser && (
+                <div className="flex items-center gap-2 pt-1">
+                  <input
+                    type="checkbox"
+                    id="syncGoogleCheckbox"
+                    checked={quickEventSyncGoogle}
+                    onChange={(e) => setQuickEventSyncGoogle(e.target.checked)}
+                    className="rounded border-zinc-700 bg-zinc-900 text-blue-600 focus:ring-0"
+                  />
+                  <label htmlFor="syncGoogleCheckbox" className="text-xs text-zinc-300">
+                    Sincronizar com Google Agenda
+                  </label>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-zinc-800">
+                <button
+                  type="button"
+                  onClick={() => setIsQuickAddModalOpen(false)}
+                  className="px-3.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-bold rounded-xl"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow"
+                >
+                  Salvar Evento
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Fullscreen Modal Overlay for Espaço Diário & Fé or Master Templates */}
       <AnimatePresence>
-        {(selectedDateStr || isEditingTemplates) && (
+        {((selectedDateStr && isDaySpaceModalOpen) || isEditingTemplates) && (
           <div 
             onClick={() => {
-              setSelectedDateStr(null);
+              setIsDaySpaceModalOpen(false);
               setIsEditingTemplates(false);
             }}
             className="fixed inset-0 z-[9999] bg-[#040405] backdrop-blur-md flex flex-col p-0 overflow-hidden cursor-pointer"
@@ -3274,7 +3928,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                       </button>
                     )}
                     <button
-                      onClick={() => setSelectedDateStr(null)}
+                      onClick={() => setIsDaySpaceModalOpen(false)}
                       className="p-2 sm:p-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 rounded-xl transition-all shadow-sm active:scale-95 flex items-center justify-center"
                       title="Fechar Meu Dia"
                       aria-label="Fechar Meu Dia"
@@ -5488,8 +6142,6 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
           </div>
         )}
       </AnimatePresence>
-
-      </div>
 
       {/* O que vem por aí (Future Events Planner - Enhanced Notion Style) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6 text-left">
