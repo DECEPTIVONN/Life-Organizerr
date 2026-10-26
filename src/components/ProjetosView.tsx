@@ -323,6 +323,19 @@ export default function ProjetosView({
   const [boardSearch, setBoardSearch] = useState('');
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
+  // Kanban Style (Padrão vs Simplificado - inspirado na referência)
+  const [kanbanStyle, setKanbanStyle] = useState<'padrao' | 'simplificado'>(() => {
+    try {
+      const saved = localStorage.getItem('mbc_kanban_view_style');
+      if (saved === 'simplificado' || saved === 'padrao') return saved;
+    } catch (e) {}
+    return 'padrao';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('mbc_kanban_view_style', kanbanStyle);
+  }, [kanbanStyle]);
+
   // Prompts State (Global & Project-Scoped)
   const [prompts, setPrompts] = useState<ProjectPrompt[]>(() => {
     try {
@@ -2371,57 +2384,317 @@ export default function ProjetosView({
             </div>
           </div>
 
-          {/* INTERNAL NAVBAR (Interface individual do projeto: Kanban, Prompts, Tabela, Cronograma, Painel) */}
-          <nav className="internal-nav w-full max-w-4xl" aria-label="Navegação do Projeto">
-            <button
-              type="button"
-              onClick={() => setActiveViewMode('quadro')}
-              className={`internal-nav-btn ${activeViewMode === 'quadro' ? 'active' : ''}`}
-            >
-              <FolderKanban className="h-3.5 w-3.5" />
-              <span>Kanban</span>
-            </button>
+          {/* INTERNAL NAVBAR & KANBAN STYLE SWITCHER */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <nav className="internal-nav w-full sm:w-auto" aria-label="Navegação do Projeto">
+              <button
+                type="button"
+                onClick={() => setActiveViewMode('quadro')}
+                className={`internal-nav-btn ${activeViewMode === 'quadro' ? 'active' : ''}`}
+              >
+                <FolderKanban className="h-3.5 w-3.5" />
+                <span>Kanban</span>
+              </button>
 
-            <button
-              type="button"
-              onClick={() => setActiveViewMode('prompts')}
-              className={`internal-nav-btn ${activeViewMode === 'prompts' ? 'active' : ''}`}
-            >
-              <Sparkles className="h-3.5 w-3.5 text-orange-400" />
-              <span>Prompts</span>
-            </button>
+              <button
+                type="button"
+                onClick={() => setActiveViewMode('prompts')}
+                className={`internal-nav-btn ${activeViewMode === 'prompts' ? 'active' : ''}`}
+              >
+                <Sparkles className="h-3.5 w-3.5 text-orange-400" />
+                <span>Prompts</span>
+              </button>
 
-            <button
-              type="button"
-              onClick={() => setActiveViewMode('tabela')}
-              className={`internal-nav-btn ${activeViewMode === 'tabela' ? 'active' : ''}`}
-            >
-              <Table className="h-3.5 w-3.5" />
-              <span>Tabela</span>
-            </button>
+              <button
+                type="button"
+                onClick={() => setActiveViewMode('tabela')}
+                className={`internal-nav-btn ${activeViewMode === 'tabela' ? 'active' : ''}`}
+              >
+                <Table className="h-3.5 w-3.5" />
+                <span>Tabela</span>
+              </button>
 
-            <button
-              type="button"
-              onClick={() => setActiveViewMode('cronograma')}
-              className={`internal-nav-btn ${activeViewMode === 'cronograma' ? 'active' : ''}`}
-            >
-              <CalendarDays className="h-3.5 w-3.5" />
-              <span>Cronograma</span>
-            </button>
+              <button
+                type="button"
+                onClick={() => setActiveViewMode('cronograma')}
+                className={`internal-nav-btn ${activeViewMode === 'cronograma' ? 'active' : ''}`}
+              >
+                <CalendarDays className="h-3.5 w-3.5" />
+                <span>Cronograma</span>
+              </button>
 
-            <button
-              type="button"
-              onClick={() => setActiveViewMode('painel')}
-              className={`internal-nav-btn ${activeViewMode === 'painel' ? 'active' : ''}`}
-            >
-              <BarChart3 className="h-3.5 w-3.5" />
-              <span>Painel</span>
-            </button>
-          </nav>
+              <button
+                type="button"
+                onClick={() => setActiveViewMode('painel')}
+                className={`internal-nav-btn ${activeViewMode === 'painel' ? 'active' : ''}`}
+              >
+                <BarChart3 className="h-3.5 w-3.5" />
+                <span>Painel</span>
+              </button>
+            </nav>
 
-          {/* 1. KANBAN BOARD CONTAINER (Horizontal Scrollable Column Layout with Expanded Widths on Desktop) */}
+            {/* Kanban Style Selector (Padrão vs Simplificado) */}
+            {activeViewMode === 'quadro' && (
+              <div className="flex items-center gap-1 bg-zinc-950/90 border border-zinc-800/80 p-1 rounded-2xl self-start sm:self-auto shrink-0 shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => setKanbanStyle('padrao')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    kanbanStyle === 'padrao'
+                      ? 'bg-zinc-800 text-white shadow-sm'
+                      : 'text-zinc-400 hover:text-white hover:bg-zinc-900/60'
+                  }`}
+                  title="Visão Kanban Completa"
+                >
+                  <FolderKanban className="h-3.5 w-3.5" />
+                  <span>Padrão</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setKanbanStyle('simplificado')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    kanbanStyle === 'simplificado'
+                      ? 'bg-orange-500 text-white shadow-sm shadow-orange-500/20'
+                      : 'text-zinc-400 hover:text-white hover:bg-zinc-900/60'
+                  }`}
+                  title="Visão Kanban Simplificada (Minimalista)"
+                >
+                  <LayoutGrid className="h-3.5 w-3.5" />
+                  <span>Simplificado</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* 1. KANBAN BOARD CONTAINER (Horizontal Scrollable Column Layout) */}
           {activeViewMode === 'quadro' && (
-            <div className="flex items-start gap-4 overflow-x-auto horizontal-scrollbar pb-6 pt-1 min-h-[calc(100vh-270px)]">
+            kanbanStyle === 'simplificado' ? (
+              /* ======================================================= */
+              /* SIMPLIFIED KANBAN VIEW (Matching attached reference style) */
+              /* ======================================================= */
+              <div className="space-y-6 animate-fadeIn">
+                {/* Minimalist Top Header from Image */}
+                <div className="text-center py-4 px-4 space-y-1.5 max-w-2xl mx-auto">
+                  <h2 className="text-2xl sm:text-3xl font-serif tracking-tight text-white font-bold">
+                    {activeProject.title || "My Optimized Workflow"}
+                  </h2>
+                  <p className="text-xs sm:text-sm text-zinc-400 font-normal">
+                    {activeProject.description || "Show up prepared. Every single day."}
+                  </p>
+                </div>
+
+                {/* Simplified Kanban Columns */}
+                <div className="flex items-start gap-5 overflow-x-auto horizontal-scrollbar pb-8 pt-1 min-h-[calc(100vh-320px)]">
+                  {activeProject.lists.map(list => {
+                    const listCards = activeProject.cards.filter(c => {
+                      const isList = c.listId === list.id;
+                      if (!isList) return false;
+                      if (!boardSearch) return true;
+                      return c.title.toLowerCase().includes(boardSearch.toLowerCase()) ||
+                        (c.description && c.description.toLowerCase().includes(boardSearch.toLowerCase()));
+                    });
+
+                    return (
+                      <div
+                        key={list.id}
+                        onDragOver={(e) => handleListDragOver(e, list.id)}
+                        onDrop={(e) => handleListDrop(e, list.id)}
+                        className="w-72 sm:w-80 md:w-[320px] lg:w-[350px] shrink-0 flex flex-col space-y-3"
+                      >
+                        {/* Column Header: Clean serif title on left, Plus icon on right */}
+                        <div className="flex items-center justify-between px-2">
+                          <h3 className="font-serif text-base sm:text-lg text-zinc-200 tracking-wide font-medium">
+                            {sanitizeListTitle(list.title)}
+                          </h3>
+                          <button
+                            type="button"
+                            onClick={() => setAddingCardForListId(addingCardForListId === list.id ? null : list.id)}
+                            className="p-1 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800/60 transition-colors cursor-pointer"
+                            title="Adicionar cartão"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </button>
+                        </div>
+
+                        {/* Column Container: Large soft rounded card matching the image */}
+                        <div
+                          className={`rounded-3xl p-3.5 sm:p-4 min-h-[460px] flex flex-col space-y-3 transition-all ${
+                            dragOverListId === list.id
+                              ? 'bg-[#18181c] border-2 border-orange-500/80 ring-2 ring-orange-500/20'
+                              : 'bg-[#131316]/90 border border-zinc-800/60 hover:border-zinc-700/60'
+                          } backdrop-blur-md shadow-lg`}
+                        >
+                          {/* Quick inline add input */}
+                          {addingCardForListId === list.id && (
+                            <div className="bg-[#1c1c21] border border-orange-500/50 rounded-2xl p-3 space-y-2 shadow-md animate-fadeIn">
+                              <textarea
+                                placeholder="Título da tarefa..."
+                                value={newCardTitleInput}
+                                onChange={(e) => setNewCardTitleInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    handleAddCardInline(list.id);
+                                  }
+                                }}
+                                autoFocus
+                                rows={2}
+                                className="w-full bg-transparent text-xs sm:text-sm text-white placeholder-zinc-500 focus:outline-none resize-none font-medium"
+                              />
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => { setAddingCardForListId(null); setNewCardTitleInput(''); }}
+                                  className="px-2.5 py-1 text-xs text-zinc-400 hover:text-white cursor-pointer"
+                                >
+                                  Cancelar
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleAddCardInline(list.id)}
+                                  className="px-3 py-1 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer"
+                                >
+                                  Adicionar
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Cards Stack matching reference image */}
+                          {listCards.map(card => {
+                            let completedChecklistItems = 0;
+                            let totalChecklistItems = 0;
+                            if (card.checklists) {
+                              card.checklists.forEach(chk => {
+                                chk.items.forEach(it => {
+                                  totalChecklistItems++;
+                                  if (it.completed) completedChecklistItems++;
+                                  if (it.subItems) {
+                                    it.subItems.forEach(sub => {
+                                      totalChecklistItems++;
+                                      if (sub.completed) completedChecklistItems++;
+                                    });
+                                  }
+                                });
+                              });
+                            }
+
+                            const priorityDotColor = 
+                              card.priority === 'urgente' || card.priority === 'alta'
+                                ? 'bg-rose-500'
+                                : card.priority === 'media'
+                                ? 'bg-amber-500'
+                                : 'bg-emerald-500';
+
+                            const priorityLabel = 
+                              card.priority === 'urgente'
+                                ? 'Urgente'
+                                : card.priority === 'alta'
+                                ? 'High'
+                                : card.priority === 'media'
+                                ? 'Medium'
+                                : card.priority === 'baixa'
+                                ? 'Low'
+                                : 'Normal';
+
+                            return (
+                              <motion.div
+                                key={card.id}
+                                layout
+                                draggable
+                                onDragStart={(e) => handleCardDragStart(e, card.id, list.id)}
+                                onDragOver={(e) => handleCardDragOver(e, card.id)}
+                                onDrop={(e) => handleListDrop(e, list.id)}
+                                onClick={() => {
+                                  setSelectedCardForDetail(card);
+                                  setCardDescInput(card.description || '');
+                                  setCardEstimatedHoursInput(card.estimatedHours !== undefined ? card.estimatedHours.toString() : '');
+                                  setCardLoggedHoursInput(card.loggedHours !== undefined ? card.loggedHours.toString() : '');
+                                }}
+                                className={`bg-[#1c1c22]/95 hover:bg-[#23232b] border ${
+                                  draggedCardId === card.id
+                                    ? 'border-orange-500 opacity-40 scale-95'
+                                    : dragOverCardId === card.id
+                                    ? 'border-t-2 border-t-orange-500 border-zinc-800'
+                                    : card.completed
+                                    ? 'border-emerald-500/30 opacity-70'
+                                    : 'border-zinc-800/80 hover:border-zinc-700'
+                                } rounded-2xl p-4 transition-all shadow-sm hover:shadow-md cursor-grab active:cursor-grabbing group`}
+                              >
+                                <div className="flex items-start gap-3">
+                                  {/* 6-dot drag handle icon matching the image */}
+                                  <GripVertical className="h-4 w-4 text-zinc-600 group-hover:text-zinc-400 shrink-0 mt-0.5" />
+                                  
+                                  <div className="flex-1 min-w-0 space-y-2">
+                                    <h4 className={`text-xs sm:text-sm font-medium leading-snug ${
+                                      card.completed ? 'line-through text-zinc-500' : 'text-zinc-100 group-hover:text-white'
+                                    }`}>
+                                      {sanitizeCardTitle(card.title)}
+                                    </h4>
+
+                                    {/* Priority row with dot + text matching the reference image */}
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-medium">
+                                        <span className={`w-2 h-2 rounded-full shrink-0 ${priorityDotColor}`} />
+                                        <span className="capitalize">{priorityLabel}</span>
+                                      </div>
+
+                                      {totalChecklistItems > 0 && (
+                                        <span className="text-[11px] text-zinc-500 font-mono flex items-center gap-1">
+                                          <CheckSquare className="h-3 w-3" />
+                                          {completedChecklistItems}/{totalChecklistItems}
+                                        </span>
+                                      )}
+
+                                      {card.dueDate && (
+                                        <span className="text-[10px] text-zinc-500 font-mono flex items-center gap-1">
+                                          <Clock className="h-2.5 w-2.5" />
+                                          {card.dueDate}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </motion.div>
+                            );
+                          })}
+
+                          {/* Empty Column State */}
+                          {listCards.length === 0 && !addingCardForListId && (
+                            <div 
+                              onClick={() => setAddingCardForListId(list.id)}
+                              className="flex-1 flex flex-col items-center justify-center py-12 px-4 rounded-2xl border border-dashed border-zinc-800/40 text-zinc-600 hover:text-zinc-400 hover:border-zinc-700/60 cursor-pointer transition-colors"
+                            >
+                              <Plus className="h-5 w-5 mb-1 opacity-60" />
+                              <span className="text-xs font-medium">Adicionar cartão</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Add Column Button */}
+                  <div className="w-72 shrink-0 pt-8">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNewListModalTitle('');
+                        setIsAddListModalOpen(true);
+                      }}
+                      className="w-full py-4 px-4 bg-zinc-900/30 hover:bg-zinc-900/60 border border-dashed border-zinc-800 hover:border-orange-500/50 rounded-3xl text-zinc-400 hover:text-orange-400 text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm hover:shadow-orange-500/5"
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span>Adicionar Nova Lista</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* ======================================================= */
+              /* STANDARD KANBAN VIEW (Full-Featured / Expanded Columns) */
+              /* ======================================================= */
+              <div className="flex items-start gap-4 overflow-x-auto horizontal-scrollbar pb-6 pt-1 min-h-[calc(100vh-270px)]">
               {activeProject.lists.map(list => {
                 // Get cards for this list
                 const listCards = activeProject.cards.filter(c => {
@@ -2762,7 +3035,8 @@ export default function ProjetosView({
                 </button>
               </div>
             </div>
-          )}
+          )
+        )}
 
           {/* 2. TABELA VIEW */}
           {activeViewMode === 'tabela' && (
