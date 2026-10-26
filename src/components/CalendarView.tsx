@@ -2951,10 +2951,15 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
 
             {/* Options Dropdown Menu */}
             {isOptionsMenuOpen && (
-              <div 
-                className="absolute right-0 mt-2.5 w-72 bg-[#0d0d10] border border-zinc-800 rounded-2xl shadow-2xl p-2.5 z-50 text-left space-y-1"
-                onClick={(e) => e.stopPropagation()}
-              >
+              <>
+                <div 
+                  className="fixed inset-0 z-40 cursor-default" 
+                  onClick={() => setIsOptionsMenuOpen(false)} 
+                />
+                <div 
+                  className="absolute right-0 mt-2.5 w-72 bg-[#0d0d10] border border-zinc-800 rounded-2xl shadow-2xl p-2.5 z-50 text-left space-y-1"
+                  onClick={(e) => e.stopPropagation()}
+                >
                 {/* Google Calendar status / login */}
                 <div className="p-2.5 bg-zinc-950/70 rounded-xl border border-zinc-900 mb-1">
                   {googleUser ? (
@@ -3082,6 +3087,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                   Ir para Hoje ({new Date().getDate()}/{new Date().getMonth() + 1})
                 </button>
               </div>
+              </>
             )}
           </div>
         </div>
