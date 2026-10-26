@@ -74,6 +74,7 @@ import { handleAutoListKeyDown, formatTimeInput, moveCursorToEnd } from '../util
 import { calculateReadingInterval, syncBookWithYearlyBooks } from '../utils/bookUtils';
 import { getDeletedTaskIdsForDate, addDeletedTaskIdForDate } from '../utils/taskStorage';
 import { getLastAccessAfter18ForYesterday } from '../utils/userActivityTracker';
+import { THEME_PRESETS, generateThemeShades } from '../utils/themeColors';
 // @ts-ignore
 import classicalLightEngraving from '../assets/images/classical_light_engraving_1784335041654.jpg';
 
@@ -342,6 +343,41 @@ export default function CalendarView({
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
+
+  // User Chosen Theme Color State
+  const [userThemeColor, setUserThemeColor] = useState<string>(() => {
+    try {
+      const savedPreset = localStorage.getItem('mbc_theme_preset') || 'default';
+      const savedCustomHex = localStorage.getItem('mbc_custom_theme_hex') || '#3396f3';
+      if (savedPreset === 'custom' && savedCustomHex) return savedCustomHex;
+      const found = THEME_PRESETS.find(p => p.id === savedPreset);
+      if (found) return found.primaryHex;
+      return '#f97316';
+    } catch {
+      return '#f97316';
+    }
+  });
+
+  useEffect(() => {
+    const updateTheme = () => {
+      try {
+        const savedPreset = localStorage.getItem('mbc_theme_preset') || 'default';
+        const savedCustomHex = localStorage.getItem('mbc_custom_theme_hex') || '#3396f3';
+        if (savedPreset === 'custom' && savedCustomHex) {
+          setUserThemeColor(savedCustomHex);
+        } else {
+          const found = THEME_PRESETS.find(p => p.id === savedPreset);
+          if (found) setUserThemeColor(found.primaryHex);
+        }
+      } catch {}
+    };
+    window.addEventListener('storage', updateTheme);
+    return () => window.removeEventListener('storage', updateTheme);
+  }, []);
+
+  const themeShades = generateThemeShades(userThemeColor);
+  const userThemeGlow = themeShades.glow;
+  const userThemeGlowSubtle = themeShades.glowSubtle;
 
   // Quick Add Event Form state
   const [quickEventTitle, setQuickEventTitle] = useState('');
@@ -2879,10 +2915,10 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
   const currentTimelineTopPx = (currentTimelineOffsetMinutes / 60) * 60;
 
   return (
-    <div id="calendar-view" className="space-y-6 pb-28 relative">
+    <div id="calendar-view" className="space-y-6 pb-12 relative">
       
-      {/* Top Header - Matches Screenshots with Dynamic Title, < >, +, and : buttons */}
-      <div className="flex items-center justify-between border-b border-zinc-800/80 pb-4">
+      {/* Top Header - Matches layout with Date, [ Ano | Mês | Semana | Dia ], and + / : on the same line */}
+      <div className="flex flex-wrap items-center justify-between border-b border-zinc-800/80 pb-4 gap-3">
         {/* Dynamic Title with chevrons */}
         <div className="flex items-center gap-3">
           {viewMode === 'ano' ? (
@@ -2919,6 +2955,37 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>
+        </div>
+
+        {/* View Switcher Capsule Bar [ Ano | Mês | Semana | Dia ] on the same line as 3-dots and date */}
+        <div className="flex items-center bg-[#121216]/95 backdrop-blur-xl border border-zinc-800/90 rounded-full p-1 shadow-md">
+          {(['ano', 'mes', 'semana', 'dia'] as const).map((mode) => {
+            const labels = {
+              ano: 'Ano',
+              mes: 'Mês',
+              semana: 'Semana',
+              dia: 'Dia'
+            };
+            const isActive = viewMode === mode;
+            return (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setViewMode(mode)}
+                className={`px-3 sm:px-4 py-1.5 rounded-full text-xs font-bold transition-all select-none cursor-pointer ${
+                  isActive
+                    ? 'text-white shadow-sm'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+                style={isActive ? {
+                  backgroundColor: userThemeColor,
+                  boxShadow: `0 0 10px ${userThemeGlow}`
+                } : {}}
+              >
+                {labels[mode]}
+              </button>
+            );
+          })}
         </div>
 
         {/* Right controls: + and : (MoreVertical) */}
@@ -3111,13 +3178,15 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                     setCurrentDate(new Date(year, mIdx, 1));
                     setViewMode('mes');
                   }}
-                  className="bg-[#0a0a0c]/80 hover:bg-[#101014]/90 border border-zinc-800/80 hover:border-blue-500/40 rounded-2xl p-3.5 transition-all cursor-pointer group shadow-sm flex flex-col justify-between"
+                  className="bg-[#0a0a0c]/80 hover:bg-[#101014]/90 border border-zinc-800/80 rounded-2xl p-3.5 transition-all cursor-pointer group shadow-sm flex flex-col justify-between"
+                  style={{ borderColor: isCurrentViewMonth ? userThemeGlowSubtle : undefined }}
                 >
                   {/* Month Name */}
                   <div className="flex items-center justify-between mb-2">
-                    <span className={`text-sm font-black transition-colors ${
-                      isCurrentViewMonth ? 'text-blue-400 font-extrabold' : 'text-zinc-200 group-hover:text-blue-400'
-                    }`}>
+                    <span 
+                      className="text-sm font-black transition-colors"
+                      style={isCurrentViewMonth ? { color: userThemeColor, fontWeight: 900 } : { color: '#e4e4e7' }}
+                    >
                       {mName}
                     </span>
                     <span className="text-[10px] text-zinc-600 font-mono">
@@ -3127,13 +3196,13 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
 
                   {/* Mini Weekday Row (D S T Q Q S S) */}
                   <div className="grid grid-cols-7 gap-0.5 text-center text-[9.5px] font-bold mb-1">
-                    <span className="text-blue-400">D</span>
+                    <span style={{ color: userThemeColor }}>D</span>
                     <span className="text-zinc-500">S</span>
                     <span className="text-zinc-500">T</span>
                     <span className="text-zinc-500">Q</span>
                     <span className="text-zinc-500">Q</span>
                     <span className="text-zinc-500">S</span>
-                    <span className="text-blue-400">S</span>
+                    <span style={{ color: userThemeColor }}>S</span>
                   </div>
 
                   {/* Mini Month Days Matrix */}
@@ -3158,19 +3227,19 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleSelectDate(dateStr);
+                            handleSelectDate(dateStr, true);
                             setCurrentDate(new Date(year, mIdx, dayNum));
-                            setViewMode('mes');
                           }}
-                          className={`py-0.5 rounded-full flex items-center justify-center font-semibold transition-all ${
+                          className="py-0.5 rounded-full flex items-center justify-center font-semibold transition-all hover:opacity-80"
+                          style={
                             isSelected
-                              ? 'bg-blue-600 text-white font-bold'
+                              ? { backgroundColor: userThemeColor, color: '#ffffff', boxShadow: `0 0 8px ${userThemeGlow}` }
                               : isToday
-                                ? 'border border-blue-400 text-blue-300 font-bold'
+                                ? { border: `1px solid ${userThemeColor}`, color: userThemeColor }
                                 : isWeekend
-                                  ? 'text-blue-400'
-                                  : 'text-zinc-300 hover:text-white'
-                          }`}
+                                  ? { color: userThemeColor }
+                                  : { color: '#d4d4d8' }
+                          }
                         >
                           {dayNum}
                         </button>
@@ -3201,13 +3270,13 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
             {/* Weekdays Header: 1 column for week numbers + 7 weekday columns */}
             <div className="grid grid-cols-[36px_repeat(7,1fr)] sm:grid-cols-[44px_repeat(7,1fr)] gap-1 text-center font-bold text-[11px] pb-2 border-b border-zinc-800/60 mb-2">
               <div className="text-zinc-600 font-mono text-[10px] self-center">SEM.</div>
-              <div className="py-1 text-blue-400 font-bold">DOM.</div>
+              <div className="py-1 font-bold" style={{ color: userThemeColor }}>DOM.</div>
               <div className="py-1 text-zinc-400">SEG.</div>
               <div className="py-1 text-zinc-400">TER.</div>
               <div className="py-1 text-zinc-400">QUA.</div>
               <div className="py-1 text-zinc-400">QUI.</div>
               <div className="py-1 text-zinc-400">SEX.</div>
-              <div className="py-1 text-blue-400 font-bold">SÁB.</div>
+              <div className="py-1 font-bold" style={{ color: userThemeColor }}>SÁB.</div>
             </div>
 
             {/* 6 Weeks Rows */}
@@ -3241,29 +3310,30 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                         <button
                           key={cell.dateStr}
                           type="button"
-                          onClick={() => handleSelectDate(cell.dateStr)}
-                          onDoubleClick={() => handleSelectDate(cell.dateStr, true)}
+                          onClick={() => handleSelectDate(cell.dateStr, true)}
                           className={`min-h-[58px] sm:min-h-[72px] p-1 sm:p-2 rounded-xl text-center flex flex-col items-center justify-between transition-all select-none border ${
                             cell.isCurrentMonth ? 'hover:bg-zinc-900/40' : 'opacity-25 hover:opacity-50'
-                          } ${
-                            isSelected
-                              ? 'border-blue-500/50 bg-blue-500/5'
-                              : isToday
-                                ? 'border-zinc-700 bg-zinc-800/20'
-                                : 'border-transparent'
                           }`}
+                          style={
+                            isSelected
+                              ? { borderColor: userThemeColor, backgroundColor: userThemeGlowSubtle }
+                              : isToday
+                                ? { borderColor: `${userThemeColor}55`, backgroundColor: 'rgba(39, 39, 42, 0.25)' }
+                                : { borderColor: 'transparent' }
+                          }
                         >
                           {/* Day Number Badge */}
                           <span
-                            className={`text-xs sm:text-sm font-bold font-mono transition-all ${
+                            className="text-xs sm:text-sm font-bold font-mono transition-all rounded-xl sm:rounded-2xl w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center"
+                            style={
                               isSelected
-                                ? 'bg-blue-600 text-white rounded-xl sm:rounded-2xl w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center shadow-md shadow-blue-600/30'
+                                ? { backgroundColor: userThemeColor, color: '#ffffff', boxShadow: `0 0 14px ${userThemeGlow}` }
                                 : isToday
-                                  ? 'border border-blue-400 text-blue-300 rounded-full w-7 h-7 flex items-center justify-center font-extrabold'
+                                  ? { border: `1.5px solid ${userThemeColor}`, color: userThemeColor }
                                   : isWeekend
-                                    ? 'text-blue-400'
-                                    : 'text-zinc-200'
-                            }`}
+                                    ? { color: userThemeColor }
+                                    : { color: '#e4e4e7' }
+                            }
                           >
                             {cell.dayNum}
                           </span>
@@ -3318,7 +3388,8 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                 </button>
                 <button
                   onClick={() => setIsDaySpaceModalOpen(true)}
-                  className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5"
+                  className="px-3.5 py-1.5 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 hover:opacity-90"
+                  style={{ backgroundColor: userThemeColor, boxShadow: `0 0 14px ${userThemeGlow}` }}
                 >
                   <Sparkles className="h-3.5 w-3.5" /> Abrir Espaço Diário & Fé
                 </button>
@@ -3408,22 +3479,27 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                       key={wDay.dateStr}
                       type="button"
                       onClick={() => handleSelectDate(wDay.dateStr)}
-                      className={`p-2 text-center flex flex-col items-center justify-center border-r last:border-r-0 border-zinc-800/60 transition-colors ${
-                        isSelected ? 'bg-blue-600/10' : 'hover:bg-zinc-900/30'
-                      }`}
+                      className="p-2 text-center flex flex-col items-center justify-center border-r last:border-r-0 border-zinc-800/60 transition-colors hover:bg-zinc-900/30"
+                      style={isSelected ? { backgroundColor: userThemeGlowSubtle } : {}}
                     >
-                      <span className={`text-[10px] font-bold ${isWeekend ? 'text-blue-400' : 'text-zinc-400'}`}>
+                      <span
+                        className="text-[10px] font-bold"
+                        style={isWeekend ? { color: userThemeColor } : { color: '#a1a1aa' }}
+                      >
                         {wDay.dayOfWeekName}
                       </span>
-                      <span className={`text-xs sm:text-sm font-mono font-bold mt-0.5 ${
-                        isSelected
-                          ? 'bg-blue-600 text-white rounded-xl w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center shadow-md'
-                          : isToday
-                            ? 'border border-blue-400 text-blue-300 rounded-full w-6 h-6 flex items-center justify-center'
-                            : isWeekend
-                              ? 'text-blue-400'
-                              : 'text-zinc-200'
-                      }`}>
+                      <span
+                        className="text-xs sm:text-sm font-mono font-bold mt-0.5 rounded-xl w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center transition-all"
+                        style={
+                          isSelected
+                            ? { backgroundColor: userThemeColor, color: '#ffffff', boxShadow: `0 0 12px ${userThemeGlow}` }
+                            : isToday
+                              ? { border: `1.5px solid ${userThemeColor}`, color: userThemeColor }
+                              : isWeekend
+                                ? { color: userThemeColor }
+                                : { color: '#e4e4e7' }
+                        }
+                      >
                         {wDay.dayNum}
                       </span>
                     </button>
@@ -3523,7 +3599,8 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
               </span>
               <button
                 onClick={() => setIsDaySpaceModalOpen(true)}
-                className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5"
+                className="px-3.5 py-1.5 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 hover:opacity-90"
+                style={{ backgroundColor: userThemeColor, boxShadow: `0 0 12px ${userThemeGlow}` }}
               >
                 <Sparkles className="h-3.5 w-3.5" /> Abrir Espaço Diário & Fé
               </button>
@@ -3565,7 +3642,8 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                   </button>
                   <button
                     onClick={() => setIsDaySpaceModalOpen(true)}
-                    className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5"
+                    className="px-3.5 py-1.5 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 hover:opacity-90"
+                    style={{ backgroundColor: userThemeColor, boxShadow: `0 0 12px ${userThemeGlow}` }}
                   >
                     <Sparkles className="h-3.5 w-3.5" /> Abrir Espaço Diário & Fé
                   </button>
@@ -3621,58 +3699,6 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
           </div>
         );
       })()}
-
-      {/* =========================================================================
-          FLOATING BOTTOM CAPSULE BAR (Matches Screenshots: [ Ano | Mês | Semana | Dia ])
-         ========================================================================= */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
-        <div className="bg-[#121216]/95 backdrop-blur-xl border border-zinc-800/90 rounded-full p-1.5 shadow-2xl flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => setViewMode('ano')}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all select-none cursor-pointer ${
-              viewMode === 'ano'
-                ? 'bg-zinc-800 text-white shadow-md'
-                : 'text-zinc-400 hover:text-white'
-            }`}
-          >
-            Ano
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode('mes')}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all select-none cursor-pointer ${
-              viewMode === 'mes'
-                ? 'bg-zinc-800 text-white shadow-md'
-                : 'text-zinc-400 hover:text-white'
-            }`}
-          >
-            Mês
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode('semana')}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all select-none cursor-pointer ${
-              viewMode === 'semana'
-                ? 'bg-zinc-800 text-white shadow-md'
-                : 'text-zinc-400 hover:text-white'
-            }`}
-          >
-            Semana
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode('dia')}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all select-none cursor-pointer ${
-              viewMode === 'dia'
-                ? 'bg-zinc-800 text-white shadow-md'
-                : 'text-zinc-400 hover:text-white'
-            }`}
-          >
-            Dia
-          </button>
-        </div>
-      </div>
 
       {/* Quick Add Event Modal */}
       {isQuickAddModalOpen && (
