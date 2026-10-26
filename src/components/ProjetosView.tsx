@@ -23,6 +23,8 @@ import {
   Layers, 
   Sparkles, 
   LayoutGrid, 
+  Archive,
+  ArchiveRestore, 
   List, 
   AlertCircle, 
   Image as ImageIcon, 
@@ -450,6 +452,12 @@ export default function ProjetosView({
   // Edit List Modal State
   const [editingListModal, setEditingListModal] = useState<ProjectList | null>(null);
   const [editListTitleInput, setEditListTitleInput] = useState('');
+
+  // List Actions Menu & Archive/Delete Modal State
+  const [activeListMenuId, setActiveListMenuId] = useState<string | null>(null);
+  const [listToDelete, setListToDelete] = useState<ProjectList | null>(null);
+  const [listToArchive, setListToArchive] = useState<ProjectList | null>(null);
+  const [isArchivedListsModalOpen, setIsArchivedListsModalOpen] = useState(false);
 
   // New Card Inline State (per list ID)
   const [addingCardForListId, setAddingCardForListId] = useState<string | null>(null);
@@ -1050,22 +1058,59 @@ export default function ProjetosView({
     setEditListTitleInput('');
   };
 
+  const handleArchiveList = (listId: string) => {
+    if (!activeProjectId) return;
+    setProjects(prev => prev.map(p => {
+      if (p.id === activeProjectId) {
+        return {
+          ...p,
+          lists: p.lists.map(l => l.id === listId ? { ...l, archived: true } : l),
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return p;
+    }));
+    setActiveListMenuId(null);
+    setEditingListModal(null);
+    setListToArchive(null);
+  };
+
+  const handleRestoreList = (listId: string) => {
+    if (!activeProjectId) return;
+    setProjects(prev => prev.map(p => {
+      if (p.id === activeProjectId) {
+        return {
+          ...p,
+          lists: p.lists.map(l => l.id === listId ? { ...l, archived: false } : l),
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return p;
+    }));
+  };
+
+  const handleDeleteList = (listId: string) => {
+    if (!activeProjectId) return;
+    setProjects(prev => prev.map(p => {
+      if (p.id === activeProjectId) {
+        return {
+          ...p,
+          lists: p.lists.filter(l => l.id !== listId),
+          cards: p.cards.filter(c => c.listId !== listId),
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return p;
+    }));
+    setActiveListMenuId(null);
+    setEditingListModal(null);
+    setListToDelete(null);
+  };
+
   const handleDeleteListFromModal = () => {
-    if (!editingListModal || !activeProjectId) return;
-    if (window.confirm(`Excluir a lista "${editingListModal.title}" e todos os seus cartões?`)) {
-      setProjects(prev => prev.map(p => {
-        if (p.id === activeProjectId) {
-          return {
-            ...p,
-            lists: p.lists.filter(l => l.id !== editingListModal.id),
-            cards: p.cards.filter(c => c.listId !== editingListModal.id),
-            updatedAt: new Date().toISOString()
-          };
-        }
-        return p;
-      }));
-      setEditingListModal(null);
-    }
+    if (!editingListModal) return;
+    setListToDelete(editingListModal);
+    setEditingListModal(null);
   };
 
   const handleAddCardInline = (listId: string) => {
@@ -2371,6 +2416,26 @@ export default function ProjetosView({
                 <Edit3 className="h-4 w-4 text-orange-400" />
               </button>
 
+              {/* Archived Lists Button */}
+              <button
+                type="button"
+                onClick={() => setIsArchivedListsModalOpen(true)}
+                className={`px-3 py-2 bg-zinc-900/90 hover:bg-zinc-800 border rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-1.5 ${
+                  activeProject.lists.some(l => l.archived)
+                    ? 'text-amber-400 border-amber-500/40 hover:border-amber-400'
+                    : 'text-zinc-400 hover:text-white border-zinc-800 hover:border-zinc-700'
+                }`}
+                title="Ver Listas Arquivadas"
+              >
+                <Archive className="h-4 w-4" />
+                <span className="hidden md:inline">Arquivadas</span>
+                {activeProject.lists.some(l => l.archived) && (
+                  <span className="bg-amber-500/20 text-amber-300 text-[10px] font-mono font-bold px-1.5 py-0.2 rounded-full">
+                    {activeProject.lists.filter(l => l.archived).length}
+                  </span>
+                )}
+              </button>
+
               {/* Add List Icon Button */}
               <button
                 type="button"
@@ -2485,7 +2550,7 @@ export default function ProjetosView({
 
                 {/* Simplified Kanban Columns */}
                 <div className="flex items-start gap-5 overflow-x-auto horizontal-scrollbar pb-8 pt-1 min-h-[calc(100vh-320px)]">
-                  {activeProject.lists.map(list => {
+                  {activeProject.lists.filter(l => !l.archived).map(list => {
                     const listCards = activeProject.cards.filter(c => {
                       const isList = c.listId === list.id;
                       if (!isList) return false;
@@ -2501,19 +2566,81 @@ export default function ProjetosView({
                         onDrop={(e) => handleListDrop(e, list.id)}
                         className="w-72 sm:w-80 md:w-[320px] lg:w-[350px] shrink-0 flex flex-col space-y-3"
                       >
-                        {/* Column Header: Clean serif title on left, Plus icon on right */}
+                        {/* Column Header: Clean serif title on left, Plus icon & Menu on right */}
                         <div className="flex items-center justify-between px-2">
                           <h3 className="font-serif text-base sm:text-lg text-zinc-200 tracking-wide font-medium">
                             {sanitizeListTitle(list.title)}
                           </h3>
-                          <button
-                            type="button"
-                            onClick={() => setAddingCardForListId(addingCardForListId === list.id ? null : list.id)}
-                            className="p-1 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800/60 transition-colors cursor-pointer"
-                            title="Adicionar cartão"
-                          >
-                            <Plus className="h-4 w-4" />
-                          </button>
+                          <div className="flex items-center gap-1 relative">
+                            <button
+                              type="button"
+                              onClick={() => setAddingCardForListId(addingCardForListId === list.id ? null : list.id)}
+                              className="p-1 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800/60 transition-colors cursor-pointer"
+                              title="Adicionar cartão"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveListMenuId(activeListMenuId === list.id ? null : list.id);
+                              }}
+                              className="p-1 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800/60 transition-colors cursor-pointer"
+                              title="Opções da lista"
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </button>
+
+                            {/* Dropdown Menu */}
+                            {activeListMenuId === list.id && (
+                              <>
+                                <div
+                                  className="fixed inset-0 z-40"
+                                  onClick={(e) => { e.stopPropagation(); setActiveListMenuId(null); }}
+                                />
+                                <div className="absolute right-0 top-7 z-50 w-44 bg-zinc-900 border border-zinc-800 rounded-xl p-1.5 shadow-2xl space-y-1 animate-fadeIn">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setActiveListMenuId(null);
+                                      handleOpenEditListModal(list);
+                                    }}
+                                    className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-zinc-300 hover:text-white hover:bg-zinc-800/80 rounded-lg transition-colors cursor-pointer text-left"
+                                  >
+                                    <Edit3 className="h-3.5 w-3.5 text-orange-400" />
+                                    <span>Editar Nome</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setActiveListMenuId(null);
+                                      setListToArchive(list);
+                                    }}
+                                    className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-amber-300/90 hover:text-amber-200 hover:bg-amber-500/10 rounded-lg transition-colors cursor-pointer text-left"
+                                  >
+                                    <Archive className="h-3.5 w-3.5 text-amber-400" />
+                                    <span>Arquivar Lista</span>
+                                  </button>
+                                  <div className="h-[1px] bg-zinc-800 my-0.5" />
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setActiveListMenuId(null);
+                                      setListToDelete(list);
+                                    }}
+                                    className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer text-left font-medium"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                    <span>Excluir Lista</span>
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
                         </div>
 
                         {/* Column Container: Large soft rounded card matching the image */}
@@ -2695,7 +2822,7 @@ export default function ProjetosView({
               /* STANDARD KANBAN VIEW (Full-Featured / Expanded Columns) */
               /* ======================================================= */
               <div className="flex items-start gap-4 overflow-x-auto horizontal-scrollbar pb-6 pt-1 min-h-[calc(100vh-270px)]">
-              {activeProject.lists.map(list => {
+              {activeProject.lists.filter(l => !l.archived).map(list => {
                 // Get cards for this list
                 const listCards = activeProject.cards.filter(c => {
                   const isList = c.listId === list.id;
@@ -2736,7 +2863,7 @@ export default function ProjetosView({
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1 relative">
                         <button
                           type="button"
                           onClick={() => setAddingCardForListId(addingCardForListId === list.id ? null : list.id)}
@@ -2753,6 +2880,66 @@ export default function ProjetosView({
                         >
                           <Edit3 className="h-3.5 w-3.5" />
                         </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveListMenuId(activeListMenuId === list.id ? null : list.id);
+                          }}
+                          className="p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/60 rounded-lg transition-colors cursor-pointer"
+                          title="Mais opções da lista"
+                        >
+                          <MoreVertical className="h-3.5 w-3.5" />
+                        </button>
+
+                        {/* Dropdown Menu */}
+                        {activeListMenuId === list.id && (
+                          <>
+                            <div
+                              className="fixed inset-0 z-40"
+                              onClick={(e) => { e.stopPropagation(); setActiveListMenuId(null); }}
+                            />
+                            <div className="absolute right-0 top-8 z-50 w-44 bg-zinc-900 border border-zinc-800 rounded-xl p-1.5 shadow-2xl space-y-1 animate-fadeIn">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveListMenuId(null);
+                                  handleOpenEditListModal(list);
+                                }}
+                                className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-zinc-300 hover:text-white hover:bg-zinc-800/80 rounded-lg transition-colors cursor-pointer text-left"
+                              >
+                                <Edit3 className="h-3.5 w-3.5 text-orange-400" />
+                                <span>Editar Nome</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveListMenuId(null);
+                                  setListToArchive(list);
+                                }}
+                                className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-amber-300/90 hover:text-amber-200 hover:bg-amber-500/10 rounded-lg transition-colors cursor-pointer text-left"
+                              >
+                                <Archive className="h-3.5 w-3.5 text-amber-400" />
+                                <span>Arquivar Lista</span>
+                              </button>
+                              <div className="h-[1px] bg-zinc-800 my-0.5" />
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveListMenuId(null);
+                                  setListToDelete(list);
+                                }}
+                                className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer text-left font-medium"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                                <span>Excluir Lista</span>
+                              </button>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
 
@@ -3829,7 +4016,7 @@ export default function ProjetosView({
                                   <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400">Mover para Lista</span>
                                 </div>
                                 <div className="max-h-60 overflow-y-auto custom-scrollbar p-1 space-y-0.5">
-                                  {activeProject.lists.map(l => {
+                                  {activeProject.lists.filter(l => !l.archived).map(l => {
                                     const listIconCfg = getListHeaderIcon(l.title);
                                     const ListIcon = listIconCfg.icon;
                                     const isCurrent = l.id === selectedCardForDetail.listId;
@@ -5295,15 +5482,33 @@ export default function ProjetosView({
                 </div>
               </div>
 
-              <div className="pt-3 flex items-center justify-between border-t border-zinc-900">
-                <button
-                  type="button"
-                  onClick={handleDeleteListFromModal}
-                  className="px-3 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 font-bold text-xs rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  <span>Excluir Lista</span>
-                </button>
+              <div className="pt-3 flex flex-wrap items-center justify-between gap-2 border-t border-zinc-900">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (editingListModal) {
+                        setListToArchive(editingListModal);
+                        setEditingListModal(null);
+                      }
+                    }}
+                    className="px-3 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 font-bold text-xs rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
+                    title="Ocultar do quadro e salvar no arquivo"
+                  >
+                    <Archive className="h-3.5 w-3.5" />
+                    <span>Arquivar</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleDeleteListFromModal}
+                    className="px-3 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 font-bold text-xs rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
+                    title="Excluir lista permanentemente"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span>Excluir</span>
+                  </button>
+                </div>
 
                 <div className="flex items-center gap-2">
                   <button
@@ -5322,6 +5527,232 @@ export default function ProjetosView({
                     Salvar Nome
                   </button>
                 </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ------------------------------------------------------------- */}
+      {/* 5B. MODAL: ARQUIVAR LISTA (Confirmação)                        */}
+      {/* ------------------------------------------------------------- */}
+      <AnimatePresence>
+        {listToArchive && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setListToArchive(null)}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              className="bg-zinc-950 border border-zinc-800 rounded-2xl max-w-md w-full p-5 relative z-50 shadow-2xl space-y-4"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-amber-500/10 text-amber-400 rounded-2xl border border-amber-500/20 shrink-0">
+                  <Archive className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Arquivar Lista</h3>
+                  <p className="text-xs text-zinc-400">
+                    Deseja arquivar a lista <span className="text-amber-400 font-semibold">"{listToArchive.title}"</span>?
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-3 text-xs text-zinc-400 leading-relaxed space-y-1">
+                <p>
+                  Esta lista e seus cartões serão ocultados do quadro ativo.
+                </p>
+                <p className="text-[11px] text-zinc-500">
+                  Você poderá visualizá-la ou restaurá-la a qualquer momento pelo botão <span className="text-zinc-300 font-mono">"Arquivadas"</span> na barra superior do projeto.
+                </p>
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2.5 border-t border-zinc-900">
+                <button
+                  type="button"
+                  onClick={() => setListToArchive(null)}
+                  className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold text-xs rounded-xl transition-colors cursor-pointer border border-zinc-800"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleArchiveList(listToArchive.id)}
+                  className="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs rounded-xl shadow-lg shadow-amber-500/20 transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <Archive className="h-3.5 w-3.5" />
+                  <span>Arquivar Lista</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ------------------------------------------------------------- */}
+      {/* 5C. MODAL: EXCLUIR LISTA (Confirmação)                        */}
+      {/* ------------------------------------------------------------- */}
+      <AnimatePresence>
+        {listToDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setListToDelete(null)}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              className="bg-zinc-950 border border-zinc-800 rounded-2xl max-w-md w-full p-5 relative z-50 shadow-2xl space-y-4"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-red-500/10 text-red-400 rounded-2xl border border-red-500/20 shrink-0">
+                  <Trash2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Excluir Lista</h3>
+                  <p className="text-xs text-zinc-400">
+                    Excluir a lista <span className="text-red-400 font-semibold">"{listToDelete.title}"</span>?
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-xs text-red-300 leading-relaxed">
+                Atenção: A lista e todos os cartões vinculados a ela serão removidos permanentemente. Esta ação não poderá ser desfeita.
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2.5 border-t border-zinc-900">
+                <button
+                  type="button"
+                  onClick={() => setListToDelete(null)}
+                  className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold text-xs rounded-xl transition-colors cursor-pointer border border-zinc-800"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteList(listToDelete.id)}
+                  className="px-5 py-2 bg-red-500 hover:bg-red-600 text-white font-bold text-xs rounded-xl shadow-lg shadow-red-500/20 transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  <span>Excluir Permanentemente</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ------------------------------------------------------------- */}
+      {/* 5D. MODAL: LISTAS ARQUIVADAS (Gerenciador e Restauração)       */}
+      {/* ------------------------------------------------------------- */}
+      <AnimatePresence>
+        {isArchivedListsModalOpen && activeProject && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsArchivedListsModalOpen(false)}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              className="bg-zinc-950 border border-zinc-800 rounded-2xl max-w-lg w-full p-5 sm:p-6 relative z-50 shadow-2xl space-y-4 max-h-[85vh] flex flex-col"
+            >
+              <div className="flex items-center justify-between border-b border-zinc-900 pb-3 shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 bg-amber-500/10 text-amber-400 rounded-xl border border-amber-500/20">
+                    <Archive className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-bold text-white">Listas Arquivadas</h3>
+                    <p className="text-[11px] text-zinc-400">Restaure listas ao quadro Kanban ou exclua-as em definitivo.</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsArchivedListsModalOpen(false)}
+                  className="text-zinc-500 hover:text-white p-1 cursor-pointer rounded-lg hover:bg-zinc-900"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Archived List Content */}
+              <div className="flex-1 overflow-y-auto space-y-2.5 custom-scrollbar pr-1">
+                {activeProject.lists.filter(l => l.archived).length === 0 ? (
+                  <div className="py-12 text-center space-y-2">
+                    <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto text-zinc-600">
+                      <Archive className="h-6 w-6" />
+                    </div>
+                    <p className="text-sm font-medium text-zinc-300">Nenhuma lista arquivada</p>
+                    <p className="text-xs text-zinc-500 max-w-xs mx-auto">
+                      Quando você arquivar uma coluna, ela aparecerá aqui para ser restaurada a qualquer momento.
+                    </p>
+                  </div>
+                ) : (
+                  activeProject.lists.filter(l => l.archived).map(archivedList => {
+                    const cardsCount = activeProject.cards.filter(c => c.listId === archivedList.id).length;
+                    return (
+                      <div
+                        key={archivedList.id}
+                        className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-3.5 flex items-center justify-between gap-3 hover:border-zinc-700/80 transition-all"
+                      >
+                        <div className="min-w-0 space-y-1">
+                          <h4 className="text-xs sm:text-sm font-semibold text-zinc-200 truncate">
+                            {sanitizeListTitle(archivedList.title)}
+                          </h4>
+                          <span className="text-[11px] text-zinc-500 font-mono flex items-center gap-1.5">
+                            <Layers className="h-3 w-3 text-zinc-500" />
+                            {cardsCount} {cardsCount === 1 ? 'cartão' : 'cartões'}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleRestoreList(archivedList.id)}
+                            className="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
+                            title="Restaurar lista de volta ao quadro Kanban"
+                          >
+                            <ArchiveRestore className="h-3.5 w-3.5" />
+                            <span>Restaurar</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setListToDelete(archivedList)}
+                            className="p-1.5 bg-zinc-800/60 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 border border-zinc-700/60 hover:border-red-500/40 rounded-lg transition-colors cursor-pointer"
+                            title="Excluir lista em definitivo"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              <div className="pt-3 border-t border-zinc-900 flex justify-end shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsArchivedListsModalOpen(false)}
+                  className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold text-xs rounded-xl transition-colors cursor-pointer border border-zinc-800"
+                >
+                  Fechar
+                </button>
               </div>
             </motion.div>
           </div>

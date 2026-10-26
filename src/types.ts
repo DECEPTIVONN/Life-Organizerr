@@ -336,6 +336,7 @@ export interface ProjectList {
   title: string;
   color?: string;
   order: number;
+  archived?: boolean;
 }
 
 export interface ProjectPrompt {
