@@ -2918,47 +2918,47 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
     <div id="calendar-view" className="space-y-6 pb-12 relative">
       
       {/* Top Header - Matches layout with Date, [ Ano | Mês | Semana | Dia ], and + / : on the same line */}
-      <div className="flex flex-wrap items-center justify-between border-b border-zinc-800/80 pb-4 gap-3">
+      <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3 gap-2 overflow-x-auto no-scrollbar sm:overflow-visible">
         {/* Dynamic Title with chevrons */}
-        <div className="flex items-center gap-3">
+        <div className="shrink-0 flex items-center gap-1.5 sm:gap-2.5">
           {viewMode === 'ano' ? (
-            <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight font-mono">
+            <h2 className="text-lg sm:text-xl md:text-2xl font-black text-white tracking-tight font-mono">
               {year}
             </h2>
           ) : viewMode === 'dia' ? (
-            <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight font-mono">
+            <h2 className="text-lg sm:text-xl md:text-2xl font-black text-white tracking-tight font-mono">
               {(() => {
                 const parts = (selectedDateStr || getTodayDateStr()).split('-');
                 return `${parts[2]} / ${parts[1]} / ${parts[0]}`;
               })()}
             </h2>
           ) : (
-            <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight font-mono">
+            <h2 className="text-lg sm:text-xl md:text-2xl font-black text-white tracking-tight font-mono">
               {String(month + 1).padStart(2, '0')} / {year}
             </h2>
           )}
 
           {/* Chevrons to navigate */}
-          <div className="flex items-center gap-1 ml-1 sm:ml-2">
+          <div className="flex items-center gap-0.5 sm:gap-1 ml-0.5 sm:ml-1">
             <button
               onClick={handleNavigatePrev}
-              className="p-1.5 bg-zinc-900/60 hover:bg-zinc-800 border border-zinc-800/70 rounded-lg text-zinc-400 hover:text-white transition-colors"
+              className="p-1 sm:p-1.5 bg-zinc-900/60 hover:bg-zinc-800 border border-zinc-800/70 rounded-lg text-zinc-400 hover:text-white transition-colors"
               title="Anterior"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </button>
             <button
               onClick={handleNavigateNext}
-              className="p-1.5 bg-zinc-900/60 hover:bg-zinc-800 border border-zinc-800/70 rounded-lg text-zinc-400 hover:text-white transition-colors"
+              className="p-1 sm:p-1.5 bg-zinc-900/60 hover:bg-zinc-800 border border-zinc-800/70 rounded-lg text-zinc-400 hover:text-white transition-colors"
               title="Próximo"
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </button>
           </div>
         </div>
 
         {/* View Switcher Capsule Bar [ Ano | Mês | Semana | Dia ] on the same line as 3-dots and date */}
-        <div className="flex items-center bg-[#121216]/95 backdrop-blur-xl border border-zinc-800/90 rounded-full p-1 shadow-md">
+        <div className="shrink-0 flex items-center bg-[#121216]/95 backdrop-blur-xl border border-zinc-800/90 rounded-full p-0.5 sm:p-1 shadow-md">
           {(['ano', 'mes', 'semana', 'dia'] as const).map((mode) => {
             const labels = {
               ano: 'Ano',
@@ -2972,7 +2972,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                 key={mode}
                 type="button"
                 onClick={() => setViewMode(mode)}
-                className={`px-3 sm:px-4 py-1.5 rounded-full text-xs font-bold transition-all select-none cursor-pointer ${
+                className={`px-2 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-bold transition-all select-none cursor-pointer whitespace-nowrap ${
                   isActive
                     ? 'text-white shadow-sm'
                     : 'text-zinc-400 hover:text-white'
@@ -2989,31 +2989,31 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
         </div>
 
         {/* Right controls: + and : (MoreVertical) */}
-        <div className="flex items-center gap-2 relative">
+        <div className="shrink-0 flex items-center gap-1.5 relative">
           {/* Quick Create Event (+) */}
           <button
             onClick={() => {
               setQuickEventDate(selectedDateStr || getTodayDateStr());
               setIsQuickAddModalOpen(true);
             }}
-            className="p-2 bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-800 text-zinc-200 hover:text-white rounded-xl transition-all hover:scale-105 active:scale-95 shadow-sm"
+            className="p-1.5 sm:p-2 bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-800 text-zinc-200 hover:text-white rounded-xl transition-all hover:scale-105 active:scale-95 shadow-sm"
             title="Novo Evento / Entrada"
           >
-            <Plus className="h-5 w-5" />
+            <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
           </button>
 
           {/* Options Menu button (:) */}
           <div className="relative">
             <button
               onClick={() => setIsOptionsMenuOpen(!isOptionsMenuOpen)}
-              className={`p-2 border rounded-xl transition-all active:scale-95 shadow-sm ${
+              className={`p-1.5 sm:p-2 border rounded-xl transition-all active:scale-95 shadow-sm ${
                 isOptionsMenuOpen
                   ? 'bg-zinc-800 border-zinc-700 text-white'
                   : 'bg-zinc-900/80 hover:bg-zinc-800 border-zinc-800 text-zinc-200 hover:text-white'
               }`}
               title="Mais Opções"
             >
-              <MoreVertical className="h-5 w-5" />
+              <MoreVertical className="h-4 w-4 sm:h-5 sm:w-5" />
             </button>
 
             {/* Options Dropdown Menu */}
@@ -3391,7 +3391,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                   className="px-3.5 py-1.5 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 hover:opacity-90"
                   style={{ backgroundColor: userThemeColor, boxShadow: `0 0 14px ${userThemeGlow}` }}
                 >
-                  <Sparkles className="h-3.5 w-3.5" /> Abrir Espaço Diário & Fé
+                  <Sparkles className="h-3.5 w-3.5" /> Meu dia
                 </button>
               </div>
             </div>
@@ -3405,7 +3405,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                     <Calendar className="w-8 h-8 mx-auto text-zinc-700" />
                     <p className="text-sm font-semibold text-zinc-400">Nenhum evento para hoje</p>
                     <p className="text-xs text-zinc-600">
-                      Clique em "+ Adicionar Evento" para agendar ou "Abrir Espaço Diário & Fé" para diário pessoal e checklist.
+                      Clique em "+ Adicionar Evento" para agendar ou "Meu dia" para diário pessoal e checklist.
                     </p>
                   </div>
                 );
@@ -3602,7 +3602,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                 className="px-3.5 py-1.5 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 hover:opacity-90"
                 style={{ backgroundColor: userThemeColor, boxShadow: `0 0 12px ${userThemeGlow}` }}
               >
-                <Sparkles className="h-3.5 w-3.5" /> Abrir Espaço Diário & Fé
+                <Sparkles className="h-3.5 w-3.5" /> Meu dia
               </button>
             </div>
           </div>
@@ -3645,7 +3645,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                     className="px-3.5 py-1.5 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 hover:opacity-90"
                     style={{ backgroundColor: userThemeColor, boxShadow: `0 0 12px ${userThemeGlow}` }}
                   >
-                    <Sparkles className="h-3.5 w-3.5" /> Abrir Espaço Diário & Fé
+                    <Sparkles className="h-3.5 w-3.5" /> Meu dia
                   </button>
                 </div>
               </div>
