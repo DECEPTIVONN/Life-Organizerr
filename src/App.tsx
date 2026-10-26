@@ -1092,6 +1092,24 @@ export default function App() {
     }
     return [
       {
+        id: 'hab-leitura-semanal',
+        name: 'Leitura semanal',
+        type: 'good',
+        category: 'Leitura',
+        frequency: 'Diário',
+        history: {},
+        createdAt: '2026-01-01'
+      },
+      {
+        id: 'hab-leitura-biblia',
+        name: 'Leitura da Bíblia',
+        type: 'good',
+        category: 'Espiritualidade',
+        frequency: 'Diário',
+        history: {},
+        createdAt: '2026-01-01'
+      },
+      {
         id: 'hab-1',
         name: 'Caminhada matinal',
         type: 'good',
@@ -1138,6 +1156,39 @@ export default function App() {
       }
     ];
   });
+
+  // Guarantee Leitura semanal and Leitura da Bíblia are present
+  useEffect(() => {
+    setHabits(prev => {
+      let changed = false;
+      const copy = [...prev];
+      if (!copy.some(h => h.id === 'hab-leitura-semanal' || h.name.toLowerCase() === 'leitura semanal')) {
+        copy.unshift({
+          id: 'hab-leitura-semanal',
+          name: 'Leitura semanal',
+          type: 'good',
+          category: 'Leitura',
+          frequency: 'Diário',
+          history: {},
+          createdAt: '2026-01-01'
+        });
+        changed = true;
+      }
+      if (!copy.some(h => h.id === 'hab-leitura-biblia' || h.name.toLowerCase().includes('bíblia') || h.name.toLowerCase().includes('biblia'))) {
+        copy.unshift({
+          id: 'hab-leitura-biblia',
+          name: 'Leitura da Bíblia',
+          type: 'good',
+          category: 'Espiritualidade',
+          frequency: 'Diário',
+          history: {},
+          createdAt: '2026-01-01'
+        });
+        changed = true;
+      }
+      return changed ? copy : prev;
+    });
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('mbc_habits', JSON.stringify(habits));

@@ -220,6 +220,87 @@ export default function ChecklistView({
   const actualHabits = propHabits || localHabits;
   const actualSetHabits = propSetHabits || setLocalHabits;
 
+  // Guarantee that "Leitura semanal" and "Leitura da Bíblia" are registered as habits automatically
+  useEffect(() => {
+    actualSetHabits(prevHabits => {
+      let hasChanges = false;
+      let nextHabits = [...prevHabits];
+
+      // Ensure Leitura semanal exists
+      let bookHabit = nextHabits.find(h =>
+        h.id === 'hab-leitura-semanal' || h.name.toLowerCase() === 'leitura semanal'
+      );
+      if (!bookHabit) {
+        bookHabit = {
+          id: 'hab-leitura-semanal',
+          name: 'Leitura semanal',
+          type: 'good',
+          category: 'Leitura',
+          frequency: 'Diário',
+          history: {},
+          createdAt: '2026-01-01'
+        };
+        nextHabits.push(bookHabit);
+        hasChanges = true;
+      }
+
+      // Ensure Leitura da Bíblia exists
+      let bibleHabit = nextHabits.find(h =>
+        h.id === 'hab-leitura-biblia' ||
+        h.name.toLowerCase() === 'leitura da bíblia' ||
+        h.name.toLowerCase() === 'leitura da biblia' ||
+        h.name.toLowerCase() === 'leitura bíblia'
+      );
+      if (!bibleHabit) {
+        bibleHabit = {
+          id: 'hab-leitura-biblia',
+          name: 'Leitura da Bíblia',
+          type: 'good',
+          category: 'Espiritualidade',
+          frequency: 'Diário',
+          history: {},
+          createdAt: '2026-01-01'
+        };
+        nextHabits.push(bibleHabit);
+        hasChanges = true;
+      }
+
+      // Synchronize reading history from bookTracker.history
+      if (bookTracker?.history && bookTracker.history.length > 0) {
+        const bookHistory = { ...bookHabit.history };
+        let bookChanged = false;
+        bookTracker.history.forEach(item => {
+          if (item.date && item.pagesReadToday > 0 && !bookHistory[item.date]) {
+            bookHistory[item.date] = true;
+            bookChanged = true;
+          }
+        });
+        if (bookChanged) {
+          nextHabits = nextHabits.map(h => h.id === bookHabit!.id ? { ...h, history: bookHistory } : h);
+          hasChanges = true;
+        }
+      }
+
+      // Synchronize reading history from bibleTracker.history
+      if (bibleTracker?.history && bibleTracker.history.length > 0) {
+        const bibleHistory = { ...bibleHabit.history };
+        let bibleChanged = false;
+        bibleTracker.history.forEach(item => {
+          if (item.date && (item.chaptersReadToday > 0 || (item as any).chaptersRead > 0) && !bibleHistory[item.date]) {
+            bibleHistory[item.date] = true;
+            bibleChanged = true;
+          }
+        });
+        if (bibleChanged) {
+          nextHabits = nextHabits.map(h => h.id === bibleHabit!.id ? { ...h, history: bibleHistory } : h);
+          hasChanges = true;
+        }
+      }
+
+      return hasChanges ? nextHabits : prevHabits;
+    });
+  }, [bookTracker?.history, bibleTracker?.history, actualSetHabits]);
+
   const todayStr = getTodayDateStr();
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
   const isToday = selectedDate === todayStr;
@@ -1338,11 +1419,16 @@ export default function ChecklistView({
 
   const handleToggleTask = (id: string, forceRetroactive?: boolean) => {
     const isPastDate = selectedDate < todayStr || forceRetroactive;
+    let toggledTask: DailyTask | undefined;
+    let nextStatus = false;
+
     updateActiveTasks(prevTasks => {
       const task = prevTasks.find(t => t.id === id);
       if (!task) return prevTasks;
+      toggledTask = task;
 
       const updatedCompleted = !task.completed;
+      nextStatus = updatedCompleted;
       
       if (updatedCompleted) {
         addXp(task.xpReward);
@@ -1376,6 +1462,53 @@ export default function ChecklistView({
 
       return newTasks;
     });
+
+    // Synchronize with Habits Tracker
+    if (toggledTask) {
+      const task: DailyTask = toggledTask;
+      const lower = task.text.toLowerCase();
+      const isReadingTask = lower.includes('leitura') && (lower.includes('semanal') || lower.includes('livro'));
+      const isBibleTask = lower.includes('bíblia') || lower.includes('biblia');
+      const isHabitTask = Boolean(task.isHabit || task.habitId || isReadingTask || isBibleTask);
+
+      if (isHabitTask) {
+        actualSetHabits(prevHabits => {
+          const targetHabit = prevHabits.find(h =>
+            (task.habitId && h.id === task.habitId) ||
+            (isReadingTask && (h.id === 'hab-leitura-semanal' || h.name.toLowerCase() === 'leitura semanal')) ||
+            (isBibleTask && (h.id === 'hab-leitura-biblia' || h.name.toLowerCase().includes('bíblia') || h.name.toLowerCase().includes('biblia'))) ||
+            h.name.trim().toLowerCase() === task.text.trim().toLowerCase()
+          );
+
+          if (targetHabit) {
+            return prevHabits.map(h => {
+              if (h.id === targetHabit.id) {
+                const updatedHist = { ...h.history };
+                if (nextStatus) {
+                  updatedHist[selectedDate] = true;
+                } else {
+                  delete updatedHist[selectedDate];
+                }
+                return { ...h, history: updatedHist };
+              }
+              return h;
+            });
+          } else if (task.isHabit) {
+            const newHab: Habit = {
+              id: task.habitId || ('hab-' + task.id),
+              name: task.text,
+              type: 'good',
+              category: task.category || 'Geral',
+              frequency: 'Diário',
+              history: nextStatus ? { [selectedDate]: true } : {},
+              createdAt: selectedDate
+            };
+            return [...prevHabits, newHab];
+          }
+          return prevHabits;
+        });
+      }
+    }
   };
 
   const handleToggleSubtask = (taskId: string, subtaskId: string) => {
@@ -1540,6 +1673,19 @@ export default function ChecklistView({
         gainedXp += 15;
       }
       addXp(gainedXp);
+
+      // Automatically sync with "Leitura semanal" habit
+      actualSetHabits(prevHabits => {
+        return prevHabits.map(h => {
+          if (h.id === 'hab-leitura-semanal' || h.name.toLowerCase() === 'leitura semanal') {
+            return {
+              ...h,
+              history: { ...h.history, [todayStr]: true }
+            };
+          }
+          return h;
+        });
+      });
       setPagesLoggedToday('');
     }
   };
@@ -1698,6 +1844,20 @@ export default function ChecklistView({
       gainedXp += 15;
     }
     addXp(gainedXp);
+
+    // Automatically sync with "Leitura da Bíblia" habit
+    const today = getTodayDateStr();
+    actualSetHabits(prevHabits => {
+      return prevHabits.map(h => {
+        if (h.id === 'hab-leitura-biblia' || h.name.toLowerCase().includes('bíblia') || h.name.toLowerCase().includes('biblia')) {
+          return {
+            ...h,
+            history: { ...h.history, [today]: true }
+          };
+        }
+        return h;
+      });
+    });
 
     setChaptersLoggedToday('');
   };
@@ -2022,6 +2182,8 @@ export default function ChecklistView({
               setBookOpen(true);
               setBibleOpen(true);
             }}
+            habits={actualHabits}
+            setHabits={actualSetHabits}
           />
 
       {/* 4. Trackers de Leitura & Fé (Leitura Semanal e Bíblia) */}
@@ -3849,6 +4011,21 @@ export default function ChecklistView({
             habits={actualHabits}
             setHabits={actualSetHabits}
             addXp={addXp}
+            onToggleHabitSync={(habitId, habitName, dateKey, isCompleted) => {
+              if (dateKey === selectedDate) {
+                updateActiveTasks(prev => prev.map(t => {
+                  const lowerName = habitName.trim().toLowerCase();
+                  const matches = (t.habitId && t.habitId === habitId) ||
+                    t.text.trim().toLowerCase() === lowerName ||
+                    (habitId === 'hab-leitura-semanal' && t.text.toLowerCase().includes('leitura semanal')) ||
+                    (habitId === 'hab-leitura-biblia' && (t.text.toLowerCase().includes('bíblia') || t.text.toLowerCase().includes('biblia')));
+                  if (matches) {
+                    return { ...t, completed: isCompleted };
+                  }
+                  return t;
+                }));
+              }
+            }}
           />
         </div>
       ) : (

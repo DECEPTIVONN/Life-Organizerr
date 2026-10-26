@@ -22,9 +22,10 @@ import {
   Book,
   History,
   Tag as TagIcon,
-  Flame
+  Flame,
+  Zap
 } from 'lucide-react';
-import { DailyTask, SubTask, BookTracker, BibleTracker, CalendarNote } from '../types';
+import { DailyTask, SubTask, BookTracker, BibleTracker, CalendarNote, Habit } from '../types';
 import { loadStoredTags, createNewTag, TagItem, COLOR_PALETTE } from '../utils/tagStore';
 import { isTaskScheduledForDate } from '../utils/taskDateUtils';
 
@@ -49,6 +50,8 @@ interface DailyMissionsViewProps {
   setShowCompletedRoutinesModal?: (show: boolean) => void;
   handleResetForNewDay?: () => void;
   onOpenTrackers?: () => void;
+  habits?: Habit[];
+  setHabits?: React.Dispatch<React.SetStateAction<Habit[]>>;
 }
 
 export default function DailyMissionsView({
@@ -71,7 +74,9 @@ export default function DailyMissionsView({
   completedRoutineTasks = [],
   setShowCompletedRoutinesModal,
   handleResetForNewDay,
-  onOpenTrackers
+  onOpenTrackers,
+  habits,
+  setHabits
 }: DailyMissionsViewProps) {
   // Filters: Todas, Ativas, Concluídas
   const [filterStatus, setFilterStatus] = useState<'todas' | 'ativas' | 'concluidas'>('todas');
@@ -110,6 +115,7 @@ export default function DailyMissionsView({
   const [formReminderDate, setFormReminderDate] = useState(false);
   const [formRecurrence, setFormRecurrence] = useState<'none' | 'daily' | 'weekly' | 'weekends' | 'specific_days' | 'monthly'>('none');
   const [formSpecificDays, setFormSpecificDays] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [formIsHabit, setFormIsHabit] = useState(false);
 
   // Sub-modals for task creation
   const [isDatePickerModalOpen, setIsDatePickerModalOpen] = useState(false);
@@ -342,6 +348,7 @@ export default function DailyMissionsView({
     setFormReminderDate(false);
     setFormRecurrence('none');
     setFormSpecificDays([1, 2, 3, 4, 5]);
+    setFormIsHabit(false);
     setIsTaskModalOpen(true);
   };
 
@@ -376,6 +383,7 @@ export default function DailyMissionsView({
       setFormRecurrence('none');
     }
     setFormSpecificDays(task.specificDays || [1, 2, 3, 4, 5]);
+    setFormIsHabit(Boolean(task.isHabit || task.habitId));
     setIsTaskModalOpen(true);
   };
 
@@ -408,6 +416,31 @@ export default function DailyMissionsView({
 
     if (editingTask) {
       // Edit existing task
+      const targetHabitId = formIsHabit ? (editingTask.habitId || ('hab-' + editingTask.id)) : undefined;
+
+      if (formIsHabit && setHabits) {
+        setHabits(prevHabits => {
+          const existing = prevHabits.find(h => h.id === targetHabitId || h.name.toLowerCase() === formTitle.trim().toLowerCase());
+          if (existing) {
+            return prevHabits.map(h => h.id === existing.id ? {
+              ...h,
+              name: formTitle.trim(),
+              category: formTags[0] || h.category || 'Geral'
+            } : h);
+          }
+          const newHab: Habit = {
+            id: targetHabitId || ('hab-' + editingTask.id),
+            name: formTitle.trim(),
+            type: 'good',
+            category: formTags[0] || 'Geral',
+            frequency: formRecurrence === 'daily' ? 'Diário' : formRecurrence === 'weekly' ? 'Semanal' : 'Diário',
+            history: editingTask.completed ? { [selectedDate]: true } : {},
+            createdAt: selectedDate || new Date().toISOString().split('T')[0]
+          };
+          return [...prevHabits, newHab];
+        });
+      }
+
       updateActiveTasks(prev =>
         prev.map(t => {
           if (t.id === editingTask.id) {
@@ -428,7 +461,9 @@ export default function DailyMissionsView({
               recurrence: formRecurrence,
               isRecurring: isRecur,
               subtasks: mappedSubtasks.length > 0 ? mappedSubtasks : undefined,
-              specificDays: formRecurrence === 'specific_days' ? formSpecificDays : undefined
+              specificDays: formRecurrence === 'specific_days' ? formSpecificDays : undefined,
+              isHabit: formIsHabit,
+              habitId: targetHabitId
             };
           }
           return t;
@@ -436,8 +471,30 @@ export default function DailyMissionsView({
       );
     } else {
       // Create new task
+      const newTaskId = 'task-' + Math.random().toString(36).substring(2, 9);
+      const targetHabitId = formIsHabit ? ('hab-' + newTaskId) : undefined;
+
+      if (formIsHabit && setHabits) {
+        setHabits(prevHabits => {
+          const existing = prevHabits.find(h => h.name.toLowerCase() === formTitle.trim().toLowerCase());
+          if (existing) {
+            return prevHabits;
+          }
+          const newHab: Habit = {
+            id: targetHabitId || ('hab-' + newTaskId),
+            name: formTitle.trim(),
+            type: 'good',
+            category: formTags[0] || 'Geral',
+            frequency: formRecurrence === 'daily' ? 'Diário' : formRecurrence === 'weekly' ? 'Semanal' : 'Diário',
+            history: {},
+            createdAt: selectedDate || new Date().toISOString().split('T')[0]
+          };
+          return [...prevHabits, newHab];
+        });
+      }
+
       const newTask: DailyTask = {
-        id: 'task-' + Math.random().toString(36).substring(2, 9),
+        id: newTaskId,
         text: formTitle.trim(),
         description: formDescription.trim() || undefined,
         completed: false,
@@ -455,7 +512,9 @@ export default function DailyMissionsView({
         recurrence: formRecurrence,
         isRecurring: isRecur,
         subtasks: mappedSubtasks.length > 0 ? mappedSubtasks : undefined,
-        specificDays: formRecurrence === 'specific_days' ? formSpecificDays : undefined
+        specificDays: formRecurrence === 'specific_days' ? formSpecificDays : undefined,
+        isHabit: formIsHabit,
+        habitId: targetHabitId
       };
       updateActiveTasks(prev => [...prev, newTask]);
       addXp(5);
@@ -1003,17 +1062,26 @@ export default function DailyMissionsView({
                         </p>
                       )}
 
-                      {/* Badges row: tags (opcional), recorrência, hora personalizada e retroativo */}
+                      {/* Badges row: tags (opcional), hábito, recorrência, hora personalizada e retroativo */}
                       {(() => {
                         const hasTags = showTagsOnCards && ((task.tags && task.tags.length > 0) || Boolean(task.category));
+                        const hasHabit = Boolean(task.isHabit);
                         const hasRecurrence = task.recurrence && task.recurrence !== 'none';
                         const hasReminderTime = showShiftTimeOnCards && Boolean(task.reminderTime && task.timeSlot !== 'manha' && task.timeSlot !== 'tarde' && task.timeSlot !== 'noite' && task.period !== 'manha' && task.period !== 'noite');
                         const hasRetroactive = Boolean(task.isRetroactive || task.completedRetroactively);
 
-                        if (!hasTags && !hasRecurrence && !hasReminderTime && !hasRetroactive) return null;
+                        if (!hasTags && !hasHabit && !hasRecurrence && !hasReminderTime && !hasRetroactive) return null;
 
                         return (
                           <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                            {/* Habit badge */}
+                            {hasHabit && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-[11px] text-amber-300 font-semibold shadow-xs">
+                                <Zap className="w-3 h-3 text-amber-400 fill-amber-400" />
+                                <span>Hábito</span>
+                              </span>
+                            )}
+
                             {/* Tag badge (opcional pelas opções de missões) */}
                             {hasTags && (
                               task.tags && task.tags.length > 0 ? (
@@ -1613,6 +1681,41 @@ export default function DailyMissionsView({
                           {formReminderDate && <Check className="w-3 h-3 text-amber-400 stroke-[3]" />}
                         </button>
                       </div>
+                    </div>
+
+                    {/* HÁBITO Section - Assinalar como hábito para rastreamento */}
+                    <div>
+                      <label className="text-[10px] font-bold text-zinc-400 tracking-wider uppercase block mb-1.5">
+                        RASTREADOR DE HÁBITOS
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setFormIsHabit(prev => !prev)}
+                        className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-semibold flex items-center justify-between transition-all ${
+                          formIsHabit
+                            ? 'bg-amber-500/15 border-amber-500/50 text-amber-300 shadow-sm'
+                            : 'bg-zinc-950 border-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-800'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Zap className={`w-4 h-4 ${formIsHabit ? 'text-amber-400 fill-amber-400' : 'text-zinc-500'}`} />
+                          <div className="text-left">
+                            <span className="block font-medium">Rastrear como Hábito</span>
+                            <span className="text-[10px] text-zinc-400 font-normal block">
+                              Sincronizar progresso no Rastreador de Hábitos
+                            </span>
+                          </div>
+                        </div>
+                        <div
+                          className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors shrink-0 ml-2 ${
+                            formIsHabit
+                              ? 'bg-amber-500 border-amber-500 text-zinc-950'
+                              : 'border-zinc-700 bg-transparent'
+                          }`}
+                        >
+                          {formIsHabit && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                        </div>
+                      </button>
                     </div>
 
                     {/* RECORRÊNCIA Section - Only displayed when editing the task */}

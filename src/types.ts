@@ -28,6 +28,8 @@ export interface DailyTask {
   isRetroactive?: boolean;
   completedRetroactively?: boolean;
   showInDailyMissions?: boolean;
+  isHabit?: boolean;
+  habitId?: string;
 }
 
 export interface BookTracker {
