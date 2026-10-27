@@ -474,87 +474,6 @@ export default function CalendarView({
     }
   };
 
-  const handleSyncNext5GoogleEvents = async () => {
-    let tok = await getValidGoogleAccessToken();
-    if (!tok) {
-      await handleGoogleLogin();
-      return;
-    }
-    setGoogleToken(tok);
-
-    setIsSyncingGoogle5(true);
-    try {
-      const todayStr = getTodayDateStr();
-      const timeMin = new Date().toISOString();
-      let response = await fetch(`/api/calendar/events?timeMin=${encodeURIComponent(timeMin)}`, {
-        headers: { Authorization: `Bearer ${tok}` }
-      });
-
-      if (!response.ok && response.status === 401) {
-        const newToken = await refreshGoogleAccessToken();
-        if (newToken) {
-          tok = newToken;
-          setGoogleToken(newToken);
-          response = await fetch(`/api/calendar/events?timeMin=${encodeURIComponent(timeMin)}`, {
-            headers: { Authorization: `Bearer ${newToken}` }
-          });
-        }
-      }
-
-      if (!response.ok) {
-        throw new Error('Não foi possível buscar eventos do Google Agenda.');
-      }
-
-      const data = await response.json();
-      const items: any[] = data.items || [];
-      
-      const upcoming = items
-        .filter(ev => {
-          const evDate = ev.start?.date || (ev.start?.dateTime ? ev.start.dateTime.slice(0, 10) : '');
-          return evDate >= todayStr;
-        })
-        .sort((a, b) => {
-          const dateA = a.start?.date || a.start?.dateTime || '';
-          const dateB = b.start?.date || b.start?.dateTime || '';
-          return dateA.localeCompare(dateB);
-        })
-        .slice(0, 5);
-
-      if (upcoming.length === 0) {
-        alert('Nenhum evento futuro próximo encontrado no seu Google Agenda.');
-        return;
-      }
-
-      const convertedEvents: FutureEvent[] = upcoming.map(ev => ({
-        id: 'gcal-' + (ev.id || Math.random().toString(36).substring(2, 9)),
-        name: ev.summary || 'Evento Google Agenda',
-        date: ev.start?.date || (ev.start?.dateTime ? ev.start.dateTime.slice(0, 10) : todayStr),
-        tags: ['AGENDA GOOGLE']
-      }));
-
-      setFutureEvents(prev => {
-        const updated = [...prev];
-        convertedEvents.forEach(cEv => {
-          const existingIdx = updated.findIndex(e => e.name === cEv.name && e.date === cEv.date);
-          if (existingIdx >= 0) {
-            updated[existingIdx] = cEv;
-          } else {
-            updated.push(cEv);
-          }
-        });
-        return updated.sort((a, b) => a.date.localeCompare(b.date));
-      });
-
-      addXp(20);
-      alert(`${upcoming.length} próximos eventos do Google Agenda importados com sucesso!`);
-    } catch (err: any) {
-      console.error(err);
-      alert(err.message || 'Erro ao sincronizar eventos do Google Agenda.');
-    } finally {
-      setIsSyncingGoogle5(false);
-    }
-  };
-
   const handleAddFutureEvent = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!newEventName.trim() || !newEventDate) return;
@@ -1747,6 +1666,92 @@ export default function CalendarView({
 
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
+  }, [googleToken]);
+
+  const handleSyncNext5GoogleEvents = async (silent: boolean = false) => {
+    let tok = await getValidGoogleAccessToken();
+    if (!tok) {
+      if (!silent) await handleGoogleLogin();
+      return;
+    }
+    setGoogleToken(tok);
+
+    setIsSyncingGoogle5(true);
+    try {
+      const todayStr = getTodayDateStr();
+      const timeMin = new Date().toISOString();
+      let response = await fetch(`/api/calendar/events?timeMin=${encodeURIComponent(timeMin)}`, {
+        headers: { Authorization: `Bearer ${tok}` }
+      });
+
+      if (!response.ok && response.status === 401) {
+        const newToken = await refreshGoogleAccessToken();
+        if (newToken) {
+          tok = newToken;
+          setGoogleToken(newToken);
+          response = await fetch(`/api/calendar/events?timeMin=${encodeURIComponent(timeMin)}`, {
+            headers: { Authorization: `Bearer ${newToken}` }
+          });
+        }
+      }
+
+      if (!response.ok) {
+        throw new Error('Não foi possível buscar eventos do Google Agenda.');
+      }
+
+      const data = await response.json();
+      const items: any[] = data.items || [];
+      
+      const upcoming = items
+        .filter(ev => {
+          const evDate = ev.start?.date || (ev.start?.dateTime ? ev.start.dateTime.slice(0, 10) : '');
+          return evDate >= todayStr;
+        })
+        .sort((a, b) => {
+          const dateA = a.start?.date || a.start?.dateTime || '';
+          const dateB = b.start?.date || b.start?.dateTime || '';
+          return dateA.localeCompare(dateB);
+        })
+        .slice(0, 5);
+
+      const convertedEvents: FutureEvent[] = upcoming.map(ev => ({
+        id: 'gcal-' + (ev.id || Math.random().toString(36).substring(2, 9)),
+        name: ev.summary || 'Evento Google Agenda',
+        date: ev.start?.date || (ev.start?.dateTime ? ev.start.dateTime.slice(0, 10) : todayStr),
+        tags: ['AGENDA GOOGLE']
+      }));
+
+      setFutureEvents(prev => {
+        // Keep non-google events
+        const nonGoogle = prev.filter(e => !e.tags.includes('AGENDA GOOGLE') && !e.id.startsWith('gcal-'));
+        return [...nonGoogle, ...convertedEvents].sort((a, b) => a.date.localeCompare(b.date));
+      });
+
+      if (!silent && upcoming.length > 0) {
+        addXp(20);
+      }
+    } catch (err: any) {
+      if (!silent) {
+        console.error('Erro ao sincronizar eventos do Google Agenda:', err);
+      }
+    } finally {
+      setIsSyncingGoogle5(false);
+    }
+  };
+
+  // Auto-sync next 5 Google events periodically and when token changes
+  useEffect(() => {
+    let timerId: any;
+    const runAutoSync = async () => {
+      await handleSyncNext5GoogleEvents(true);
+    };
+
+    runAutoSync();
+    timerId = setInterval(runAutoSync, 60000); // 1-minute auto refresh
+
+    return () => {
+      if (timerId) clearInterval(timerId);
+    };
   }, [googleToken]);
 
   const getEventsForDay = (dateStr: string) => {
@@ -3163,9 +3168,17 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
       {/* =========================================================================
           VIEW 1: ANO (Year View - 12 Mini Months 3x4 Grid - Matches image_2e6d4c89.png)
          ========================================================================= */}
-      {viewMode === 'ano' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
+      <AnimatePresence mode="wait">
+        {viewMode === 'ano' && (
+          <motion.div
+            key="calendar-view-ano"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.22, ease: "easeInOut" }}
+            className="space-y-6"
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
             {miniMonthsList.map(({ idx: mIdx, name: mName }) => {
               const startDay = new Date(year, mIdx, 1).getDay();
               const daysCount = new Date(year, mIdx + 1, 0).getDate();
@@ -3250,22 +3263,29 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
               );
             })}
           </div>
-        </div>
-      )}
+          </motion.div>
+        )}
 
-      {/* =========================================================================
-          VIEW 2: MÊS (Month View - Matches image_ea282644.png)
-          - Left column with week numbers (39, 40, 41, 42, 43)
-          - Weekdays header: DOM. (blue), SEG., TER., QUA., QUI., SEX., SÁB. (blue)
-          - Weekend days in blue
-          - Selected day in blue rounded badge
-          - Micro event indicator dots
-          - Drag handle bar
-          - Lower day events preview
-         ========================================================================= */}
-      {viewMode === 'mes' && (
-        <div className="space-y-4">
-          {/* Main Month Grid Container */}
+        {/* =========================================================================
+            VIEW 2: MÊS (Month View - Matches image_ea282644.png)
+            - Left column with week numbers (39, 40, 41, 42, 43)
+            - Weekdays header: DOM. (blue), SEG., TER., QUA., QUI., SEX., SÁB. (blue)
+            - Weekend days in blue
+            - Selected day in blue rounded badge
+            - Micro event indicator dots
+            - Drag handle bar
+            - Lower day events preview
+           ========================================================================= */}
+        {viewMode === 'mes' && (
+          <motion.div
+            key="calendar-view-mes"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.22, ease: "easeInOut" }}
+            className="space-y-4"
+          >
+            {/* Main Month Grid Container */}
           <div className="bg-[#0a0a0c]/80 rounded-2xl border border-zinc-800/80 p-3 sm:p-5">
             {/* Weekdays Header: 1 column for week numbers + 7 weekday columns */}
             <div className="grid grid-cols-[36px_repeat(7,1fr)] sm:grid-cols-[44px_repeat(7,1fr)] gap-1 text-center font-bold text-[11px] pb-2 border-b border-zinc-800/60 mb-2">
@@ -3440,19 +3460,27 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
               );
             })()}
           </div>
-        </div>
+        </motion.div>
       )}
 
-      {/* =========================================================================
-          VIEW 3: SEMANA (Week View - Matches image_b9bddc79.png)
-          - Top row: week number (43) on left, 7 weekday headers with selected day highlighted
-          - All-day events row
-          - Hourly timeline grid (00:00 to 23:00)
-          - Live red horizontal current time line with red time badge (16:51)
-          - Event cards positioned inside respective columns
-         ========================================================================= */}
-      {viewMode === 'semana' && (() => {
-        const weeklyDays = getWeeklyDays();
+        {/* =========================================================================
+            VIEW 3: SEMANA (Week View - Matches image_b9bddc79.png)
+            - Top row: week number (43) on left, 7 weekday headers with selected day highlighted
+            - All-day events row
+            - Hourly timeline grid (00:00 to 23:00)
+            - Live red horizontal current time line with red time badge (16:51)
+            - Event cards positioned inside respective columns
+           ========================================================================= */}
+        {viewMode === 'semana' && (
+          <motion.div
+            key="calendar-view-semana"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.22, ease: "easeInOut" }}
+          >
+            {(() => {
+              const weeklyDays = getWeeklyDays();
         const weekWed = new Date(weeklyDays[3].dateStr + 'T12:00:00');
         const currentWeekNumber = getIsoWeekNumber(weekWed);
         const todayStr = getTodayDateStr();
@@ -3608,16 +3636,26 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
           </div>
         );
       })()}
+          </motion.div>
+        )}
 
-      {/* =========================================================================
-          VIEW 4: DIA (Day View - Single Day Focused Schedule)
-         ========================================================================= */}
-      {viewMode === 'dia' && (() => {
-        const activeDate = selectedDateStr || getTodayDateStr();
-        const isToday = activeDate === getTodayDateStr();
-        const dayEvents = getEventsForDay(activeDate);
+        {/* =========================================================================
+            VIEW 4: DIA (Day View - Single Day Focused Schedule)
+           ========================================================================= */}
+        {viewMode === 'dia' && (
+          <motion.div
+            key="calendar-view-dia"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.22, ease: "easeInOut" }}
+          >
+            {(() => {
+              const activeDate = selectedDateStr || getTodayDateStr();
+              const isToday = activeDate === getTodayDateStr();
+              const dayEvents = getEventsForDay(activeDate);
 
-        return (
+              return (
           <div className="space-y-4">
             <div className="bg-[#0a0a0c]/80 rounded-2xl border border-zinc-800/80 overflow-hidden shadow-lg p-4 sm:p-5">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800/80 pb-3 mb-4">
@@ -3699,6 +3737,9 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
           </div>
         );
       })()}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Quick Add Event Modal */}
       {isQuickAddModalOpen && (
@@ -6176,136 +6217,73 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
       </AnimatePresence>
 
       {/* O que vem por aí (Future Events Planner - Enhanced Notion Style) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6 text-left">
-        {/* Left Panel: Table or Cards */}
-        <div className="lg:col-span-8 bg-[#0a0a0d] border border-zinc-800/90 rounded-2xl p-5 relative overflow-hidden shadow-2xl">
-          
-          {/* Header Bar matching image design */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-800/80 pb-4 mb-4">
+      {futureEvents && futureEvents.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6 text-left animate-fadeIn">
+          {/* Left Panel: Table or Cards */}
+          <div className="lg:col-span-8 bg-[#0a0a0d] border border-zinc-800/90 rounded-2xl p-5 relative overflow-hidden shadow-2xl">
             
-            {/* Left side: View switcher tabs in dark capsule */}
-            <div className="flex items-center gap-3">
-              <div className="flex items-center bg-[#121216] border border-zinc-800/90 p-1 rounded-xl">
-                <button
-                  onClick={() => setUpcomingView('table')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                    upcomingView === 'table'
-                      ? 'bg-zinc-800/90 text-white shadow'
-                      : 'text-zinc-400 hover:text-zinc-200'
-                  }`}
-                >
-                  <Table className="h-3.5 w-3.5 text-zinc-300" />
-                  Tabela
-                </button>
-                <button
-                  onClick={() => setUpcomingView('calendar')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                    upcomingView === 'calendar'
-                      ? 'bg-zinc-800/90 text-white shadow'
-                      : 'text-zinc-400 hover:text-zinc-200'
-                  }`}
-                >
-                  <CalendarDays className="h-3.5 w-3.5 text-zinc-300" />
-                  Calendário
-                </button>
+            {/* Header Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800/80 pb-4 mb-4">
+              
+              {/* Left side: View switcher tabs in dark capsule */}
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-zinc-300 font-mono flex items-center gap-1.5">
+                  <CalendarDays className="h-4 w-4 text-orange-400" />
+                  Próximos 5 Eventos
+                </span>
+                <div className="flex items-center bg-[#121216] border border-zinc-800/90 p-1 rounded-xl">
+                  <button
+                    onClick={() => setUpcomingView('table')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      upcomingView === 'table'
+                        ? 'bg-zinc-800/90 text-white shadow'
+                        : 'text-zinc-400 hover:text-zinc-200'
+                    }`}
+                  >
+                    <Table className="h-3.5 w-3.5 text-zinc-300" />
+                    Tabela
+                  </button>
+                  <button
+                    onClick={() => setUpcomingView('calendar')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      upcomingView === 'calendar'
+                        ? 'bg-zinc-800/90 text-white shadow'
+                        : 'text-zinc-400 hover:text-zinc-200'
+                    }`}
+                  >
+                    <CalendarDays className="h-3.5 w-3.5 text-zinc-300" />
+                    Cards
+                  </button>
+                </div>
+              </div>
+
+              {/* Right side: Auto-sync live indicator (buttons from pinned image removed) */}
+              <div className="flex items-center gap-2 self-start sm:self-auto">
+                <span className="flex items-center gap-1.5 text-[11px] text-zinc-400 font-mono bg-zinc-900/80 border border-zinc-800/80 px-2.5 py-1 rounded-xl">
+                  <span className={`w-1.5 h-1.5 rounded-full ${isSyncingGoogle5 ? 'bg-orange-400 animate-ping' : 'bg-emerald-400'}`} />
+                  {isSyncingGoogle5 ? 'Atualizando eventos...' : 'Sincronizado automaticamente'}
+                </span>
               </div>
             </div>
 
-            {/* Right side: Action toolbar icons & Primary Blue Button */}
-            <div className="flex items-center gap-1.5 self-end md:self-auto">
-              <button 
-                onClick={() => setFilterTagUpcoming(filterTagUpcoming === 'Todas' ? 'ANIVERSÁRIO' : 'Todas')}
-                className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800/60 rounded-lg transition-colors"
-                title="Filtrar"
-              >
-                <Sliders className="h-4 w-4" />
-              </button>
-              <button 
-                className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800/60 rounded-lg transition-colors"
-                title="Ordenar"
-              >
-                <ArrowUpDown className="h-4 w-4" />
-              </button>
-              <button 
-                className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800/60 rounded-lg transition-colors"
-                title="Ação Rápida"
-              >
-                <Zap className="h-4 w-4" />
-              </button>
-              <button 
-                className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800/60 rounded-lg transition-colors"
-                title="Destaques AI"
-              >
-                <Sparkles className="h-4 w-4 text-amber-400/80" />
-              </button>
-              <button 
-                className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800/60 rounded-lg transition-colors"
-                title="Buscar"
-              >
-                <Search className="h-4 w-4" />
-              </button>
-              <button 
-                className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800/60 rounded-lg transition-colors"
-                title="Expandir"
-              >
-                <Maximize2 className="h-4 w-4" />
-              </button>
-              <button 
-                className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800/60 rounded-lg transition-colors"
-                title="Opções"
-              >
-                <MoreHorizontal className="h-4 w-4" />
-              </button>
+            {/* Sub-bar: Filters & Info */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-3 mb-2 text-xs border-b border-zinc-800/50">
+              <div className="flex items-center gap-2">
+                <span className="text-zinc-400 font-semibold flex items-center gap-1.5 bg-zinc-900/80 px-2.5 py-1 rounded-md border border-zinc-800">
+                  <CalendarDays className="h-3.5 w-3.5 text-zinc-400" /> Data
+                  <ChevronDown className="h-3 w-3 text-zinc-500" />
+                </span>
+                <span className="text-[11px] text-zinc-500 font-mono">
+                  {futureEvents.slice(0, 5).length} {futureEvents.slice(0, 5).length === 1 ? 'evento agendado' : 'eventos agendados'}
+                </span>
+              </div>
 
-              {/* Blue Primary Button "Nova v" */}
-              <button
-                onClick={() => {
-                  const name = prompt("Nome do novo evento:");
-                  if (name) {
-                    const date = prompt("Data do evento (AAAA-MM-DD):", getTodayDateStr());
-                    if (date) {
-                      setFutureEvents(prev => [...prev, {
-                        id: 'fe-' + Math.random().toString(36).substring(2, 9),
-                        name,
-                        date,
-                        tags: ['Viagem']
-                      }].sort((a, b) => a.date.localeCompare(b.date)));
-                    }
-                  }
-                }}
-                className="bg-[#1d4ed8] hover:bg-[#2563eb] text-white text-xs font-extrabold px-3.5 py-1.5 rounded-lg flex items-center gap-1 shadow-md shadow-blue-600/20 transition-all ml-1 cursor-pointer"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Nova
-                <ChevronDown className="h-3 w-3 ml-0.5 opacity-80" />
-              </button>
+              {freeEditMode && (
+                <span className="text-[11px] font-mono text-emerald-400/90 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded">
+                  ⚡ Edição Livre Ativa (Clique para alterar inline)
+                </span>
+              )}
             </div>
-          </div>
-
-          {/* Sub-bar: Filters & Google Agenda Sync button */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 mb-2 text-xs border-b border-zinc-800/50">
-            <div className="flex items-center gap-2">
-              <span className="text-zinc-400 font-semibold flex items-center gap-1.5 bg-zinc-900/80 px-2.5 py-1 rounded-md border border-zinc-800">
-                <CalendarDays className="h-3.5 w-3.5 text-zinc-400" /> Date
-                <ChevronDown className="h-3 w-3 text-zinc-500" />
-              </span>
-              <button 
-                onClick={handleSyncNext5GoogleEvents}
-                disabled={isSyncingGoogle5}
-                className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 font-bold text-[11px] transition-all cursor-pointer"
-                title="Buscar próximos 5 eventos do Google Agenda"
-              >
-                <RefreshCw className={`h-3.5 w-3.5 ${isSyncingGoogle5 ? 'animate-spin' : ''}`} />
-                {isSyncingGoogle5 ? 'Buscando...' : 'Puxar Próximos 5 da Agenda Google'}
-              </button>
-            </div>
-
-            {freeEditMode && (
-              <span className="text-[11px] font-mono text-emerald-400/90 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded">
-                ⚡ Edição Livre Ativa (Clique para alterar inline)
-              </span>
-            )}
-          </div>
 
           {upcomingView === 'table' ? (
             <div className="space-y-4">
@@ -6340,7 +6318,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-800/50 bg-[#0c0c0f]">
-                    {futureEvents.map(ev => {
+                    {futureEvents.slice(0, 5).map(ev => {
                       const isEditing = editingEventId === ev.id;
                       return (
                         <tr key={ev.id} className="hover:bg-zinc-900/40 transition-colors group">
@@ -6505,7 +6483,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
           ) : (
             /* Cards View */
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {futureEvents.map(ev => {
+              {futureEvents.slice(0, 5).map(ev => {
                 // Inline remaining calculation inside renderer
                 const getDaysRemaining = (targetDateStr: string) => {
                   const today = new Date();
@@ -6614,6 +6592,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
           </div>
         </div>
       </div>
+      )}
 
       {/* Future Event Detail Modal (ABRIR) */}
       <AnimatePresence>
