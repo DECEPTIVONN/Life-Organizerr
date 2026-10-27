@@ -481,6 +481,10 @@ export default function ProjetosView({
   // Card Detail Editing States
   const [editingCardDesc, setEditingCardDesc] = useState(false);
   const [cardDescInput, setCardDescInput] = useState('');
+  const [editingModalTitle, setEditingModalTitle] = useState(false);
+  const [cardTitleInput, setCardTitleInput] = useState('');
+  const [copiedCardId, setCopiedCardId] = useState<string | null>(null);
+  const [expandedCardIds, setExpandedCardIds] = useState<Record<string, boolean>>({});
   const [newChecklistItemInput, setNewChecklistItemInput] = useState('');
   const [newCommentInput, setNewCommentInput] = useState('');
   const [newLabelInput, setNewLabelInput] = useState('');
@@ -1253,6 +1257,51 @@ export default function ProjetosView({
 
     setSelectedCardForDetail(prev => prev ? { ...prev, description: cardDescInput.trim() } : null);
     setEditingCardDesc(false);
+  };
+
+  const handleCopyCardText = (e: React.MouseEvent, card: ProjectCard) => {
+    e.stopPropagation();
+    const textToCopy = card.title + (card.description ? `\n\n${card.description}` : '');
+    try {
+      navigator.clipboard.writeText(textToCopy);
+      setCopiedCardId(card.id);
+      setTimeout(() => {
+        setCopiedCardId(prev => (prev === card.id ? null : prev));
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to copy card text', err);
+    }
+  };
+
+  const toggleCardExpanded = (e: React.MouseEvent, cardId: string) => {
+    e.stopPropagation();
+    setExpandedCardIds(prev => ({
+      ...prev,
+      [cardId]: !prev[cardId]
+    }));
+  };
+
+  const handleSaveCardTitle = (newTitle: string) => {
+    if (!selectedCardForDetail || !activeProjectId || !newTitle.trim()) return;
+    const clean = newTitle.trim();
+    setProjects(prev => prev.map(p => {
+      if (p.id === activeProjectId) {
+        return {
+          ...p,
+          cards: p.cards.map(c => {
+            if (c.id === selectedCardForDetail.id) {
+              return { ...c, title: clean };
+            }
+            return c;
+          }),
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return p;
+    }));
+
+    setSelectedCardForDetail(prev => prev ? { ...prev, title: clean } : null);
+    setEditingModalTitle(false);
   };
 
   const handleAddChecklistItem = () => {
@@ -2753,6 +2802,8 @@ export default function ProjetosView({
                                 onClick={() => {
                                   setSelectedCardForDetail(card);
                                   setCardDescInput(card.description || '');
+                                  setCardTitleInput(card.title || '');
+                                  setEditingModalTitle(false);
                                   setCardEstimatedHoursInput(card.estimatedHours !== undefined ? card.estimatedHours.toString() : '');
                                   setCardLoggedHoursInput(card.loggedHours !== undefined ? card.loggedHours.toString() : '');
                                 }}
@@ -2764,18 +2815,47 @@ export default function ProjetosView({
                                     : card.completed
                                     ? 'border-emerald-500/30 opacity-70'
                                     : 'border-zinc-800/80 hover:border-zinc-700'
-                                } rounded-2xl p-4 transition-all shadow-sm hover:shadow-md cursor-grab active:cursor-grabbing group`}
+                                } rounded-2xl p-4 transition-all shadow-sm hover:shadow-md cursor-grab active:cursor-grabbing group relative`}
                               >
-                                <div className="flex items-start gap-3">
+                                <div className="flex items-start gap-2.5">
                                   {/* 6-dot drag handle icon matching the image */}
                                   <GripVertical className="h-4 w-4 text-zinc-600 group-hover:text-zinc-400 shrink-0 mt-0.5" />
                                   
                                   <div className="flex-1 min-w-0 space-y-2">
-                                    <h4 className={`text-xs sm:text-sm font-medium leading-snug ${
-                                      card.completed ? 'line-through text-zinc-500' : 'text-zinc-100 group-hover:text-white'
-                                    }`}>
-                                      {sanitizeCardTitle(card.title)}
-                                    </h4>
+                                    <div className="flex items-start justify-between gap-2">
+                                      <h4 className={`text-xs sm:text-sm font-medium leading-snug break-words [overflow-wrap:anywhere] ${
+                                        expandedCardIds[card.id] ? '' : 'line-clamp-3 sm:line-clamp-4'
+                                      } ${
+                                        card.completed ? 'line-through text-zinc-500' : 'text-zinc-100 group-hover:text-white'
+                                      }`}>
+                                        {sanitizeCardTitle(card.title)}
+                                      </h4>
+
+                                      {/* Copy Button */}
+                                      <button
+                                        type="button"
+                                        onClick={(e) => handleCopyCardText(e, card)}
+                                        className="p-1 rounded-lg text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors opacity-70 group-hover:opacity-100 shrink-0 cursor-pointer"
+                                        title={copiedCardId === card.id ? "Texto copiado!" : "Copiar texto do cartão"}
+                                      >
+                                        {copiedCardId === card.id ? (
+                                          <Check className="h-3.5 w-3.5 text-emerald-400" />
+                                        ) : (
+                                          <Copy className="h-3.5 w-3.5 hover:text-orange-400" />
+                                        )}
+                                      </button>
+                                    </div>
+
+                                    {/* Expand / Collapse toggle for long titles */}
+                                    {card.title.length > 120 && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => toggleCardExpanded(e, card.id)}
+                                        className="text-[10px] text-orange-400/80 hover:text-orange-400 font-mono font-medium transition-colors cursor-pointer inline-block"
+                                      >
+                                        {expandedCardIds[card.id] ? 'Ver menos' : 'Ver mais...'}
+                                      </button>
+                                    )}
 
                                     {/* Priority row with dot + text matching the reference image */}
                                     <div className="flex items-center gap-2 flex-wrap">
@@ -2995,6 +3075,8 @@ export default function ProjetosView({
                             onClick={() => {
                               setSelectedCardForDetail(card);
                               setCardDescInput(card.description || '');
+                              setCardTitleInput(card.title || '');
+                              setEditingModalTitle(false);
                               setCardEstimatedHoursInput(card.estimatedHours !== undefined ? card.estimatedHours.toString() : '');
                               setCardLoggedHoursInput(card.loggedHours !== undefined ? card.loggedHours.toString() : '');
                             }}
@@ -3085,13 +3167,43 @@ export default function ProjetosView({
                               </button>
 
                               <div className="flex-1 min-w-0 space-y-1">
-                                <span className={`text-xs sm:text-sm font-semibold leading-snug block ${
-                                  card.completed ? 'line-through text-zinc-500' : 'text-zinc-100 group-hover:text-white'
-                                }`}>
-                                  {sanitizeCardTitle(card.title)}
-                                </span>
+                                <div className="flex items-start justify-between gap-2">
+                                  <span className={`text-xs sm:text-sm font-semibold leading-snug block break-words [overflow-wrap:anywhere] ${
+                                    expandedCardIds[card.id] ? '' : 'line-clamp-3 sm:line-clamp-4'
+                                  } ${
+                                    card.completed ? 'line-through text-zinc-500' : 'text-zinc-100 group-hover:text-white'
+                                  }`}>
+                                    {sanitizeCardTitle(card.title)}
+                                  </span>
+
+                                  {/* Copy button */}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => handleCopyCardText(e, card)}
+                                    className="p-1 rounded-lg text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors opacity-70 group-hover:opacity-100 shrink-0 cursor-pointer"
+                                    title={copiedCardId === card.id ? "Texto copiado!" : "Copiar texto do cartão"}
+                                  >
+                                    {copiedCardId === card.id ? (
+                                      <Check className="h-3.5 w-3.5 text-emerald-400" />
+                                    ) : (
+                                      <Copy className="h-3.5 w-3.5 hover:text-orange-400" />
+                                    )}
+                                  </button>
+                                </div>
+
+                                {/* Expand / Collapse toggle for long titles */}
+                                {card.title.length > 120 && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => toggleCardExpanded(e, card.id)}
+                                    className="text-[10px] text-orange-400/80 hover:text-orange-400 font-mono font-medium transition-colors cursor-pointer inline-block"
+                                  >
+                                    {expandedCardIds[card.id] ? 'Ver menos' : 'Ver mais...'}
+                                  </button>
+                                )}
+
                                 {card.description && (
-                                  <p className="text-[11px] text-zinc-400 line-clamp-2 leading-relaxed">
+                                  <p className="text-[11px] text-zinc-400 line-clamp-2 leading-relaxed break-words [overflow-wrap:anywhere]">
                                     {card.description}
                                   </p>
                                 )}
@@ -3307,10 +3419,12 @@ export default function ProjetosView({
                             onClick={() => {
                               setSelectedCardForDetail(card);
                               setCardDescInput(card.description || '');
+                              setCardTitleInput(card.title || '');
+                              setEditingModalTitle(false);
                             }}
-                            className="hover:text-orange-400 transition-colors text-left font-semibold flex items-center gap-2 cursor-pointer"
+                            className="hover:text-orange-400 transition-colors text-left font-semibold flex items-center gap-2 cursor-pointer max-w-md"
                           >
-                            <span className={card.completed ? 'line-through text-zinc-500' : ''}>{sanitizeCardTitle(card.title)}</span>
+                            <span className={`line-clamp-2 break-words [overflow-wrap:anywhere] ${card.completed ? 'line-through text-zinc-500' : ''}`}>{sanitizeCardTitle(card.title)}</span>
                           </button>
                         </td>
                         <td className="py-3 px-3 text-zinc-400">
@@ -3366,6 +3480,8 @@ export default function ProjetosView({
                             onClick={() => {
                               setSelectedCardForDetail(card);
                               setCardDescInput(card.description || '');
+                              setCardTitleInput(card.title || '');
+                              setEditingModalTitle(false);
                             }}
                             className="p-1.5 text-zinc-400 hover:text-white bg-zinc-900 hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
                             title="Abrir Detalhes"
@@ -3411,8 +3527,13 @@ export default function ProjetosView({
                             {list ? sanitizeListTitle(list.title) : 'Lista'}
                           </span>
                           <h4
-                            className="text-sm font-semibold text-white hover:text-orange-400 transition-colors cursor-pointer"
-                            onClick={() => { setSelectedCardForDetail(card); setCardDescInput(card.description || ''); }}
+                            className="text-sm font-semibold text-white hover:text-orange-400 transition-colors cursor-pointer line-clamp-1 break-words [overflow-wrap:anywhere]"
+                            onClick={() => {
+                              setSelectedCardForDetail(card);
+                              setCardDescInput(card.description || '');
+                              setCardTitleInput(card.title || '');
+                              setEditingModalTitle(false);
+                            }}
                           >
                             {sanitizeCardTitle(card.title)}
                           </h4>
@@ -3430,7 +3551,12 @@ export default function ProjetosView({
 
                         <button
                           type="button"
-                          onClick={() => { setSelectedCardForDetail(card); setCardDescInput(card.description || ''); }}
+                          onClick={() => {
+                            setSelectedCardForDetail(card);
+                            setCardDescInput(card.description || '');
+                            setCardTitleInput(card.title || '');
+                            setEditingModalTitle(false);
+                          }}
                           className="bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-xs font-semibold text-zinc-300 px-3.5 py-1.5 rounded-xl cursor-pointer"
                         >
                           Detalhes
@@ -4077,25 +4203,109 @@ export default function ProjetosView({
                     })()}
                   </div>
 
-                  {/* Card Title Input */}
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => handleToggleCardCompleted(selectedCardForDetail.id)}
-                      className={`h-5 w-5 rounded-full border flex items-center justify-center transition-all ${
-                        selectedCardForDetail.completed
-                          ? 'bg-emerald-500 border-emerald-500 text-black'
-                          : 'border-zinc-600 hover:border-orange-500'
-                      }`}
-                    >
-                      {selectedCardForDetail.completed && <CheckCircle2 className="h-4 w-4" />}
-                    </button>
+                  {/* Card Title Header & Quick Actions */}
+                  <div className="space-y-2">
+                    {editingModalTitle ? (
+                      <div className="space-y-2 bg-zinc-900/80 p-3 rounded-xl border border-orange-500/40">
+                        <textarea
+                          value={cardTitleInput}
+                          onChange={(e) => setCardTitleInput(e.target.value)}
+                          rows={Math.min(6, Math.max(2, Math.ceil(cardTitleInput.length / 50)))}
+                          className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2.5 text-sm sm:text-base text-white focus:outline-none focus:border-orange-500 font-medium leading-relaxed resize-none custom-scrollbar"
+                          placeholder="Título ou prompt do cartão..."
+                          autoFocus
+                        />
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCardTitleInput(selectedCardForDetail.title);
+                              setEditingModalTitle(false);
+                            }}
+                            className="px-3 py-1 text-xs text-zinc-400 hover:text-white cursor-pointer"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSaveCardTitle(cardTitleInput)}
+                            className="px-3 py-1 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-lg transition-colors cursor-pointer"
+                          >
+                            Salvar Título
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-start gap-3">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleCardCompleted(selectedCardForDetail.id)}
+                          className={`h-5 w-5 rounded-full border flex items-center justify-center transition-all shrink-0 mt-1 ${
+                            selectedCardForDetail.completed
+                              ? 'bg-emerald-500 border-emerald-500 text-black'
+                              : 'border-zinc-600 hover:border-orange-500'
+                          }`}
+                          title={selectedCardForDetail.completed ? "Marcar como pendente" : "Marcar como concluído"}
+                        >
+                          {selectedCardForDetail.completed && <CheckCircle2 className="h-4 w-4" />}
+                        </button>
 
-                    <h2 className={`text-xl font-black text-white tracking-tight ${
-                      selectedCardForDetail.completed ? 'line-through text-zinc-500' : ''
-                    }`}>
-                      {sanitizeCardTitle(selectedCardForDetail.title)}
-                    </h2>
+                        <div className="flex-1 min-w-0">
+                          <div className={`rounded-xl transition-all ${
+                            selectedCardForDetail.title.length > 80 
+                              ? 'bg-zinc-900/60 border border-zinc-800/80 p-3 max-h-48 overflow-y-auto custom-scrollbar' 
+                              : ''
+                          }`}>
+                            <h2 className={`${
+                              selectedCardForDetail.title.length > 120
+                                ? 'text-xs sm:text-sm md:text-base font-semibold leading-relaxed'
+                                : selectedCardForDetail.title.length > 60
+                                ? 'text-sm sm:text-base md:text-lg font-bold leading-snug'
+                                : 'text-base sm:text-lg md:text-xl font-black tracking-tight'
+                            } text-white break-words [overflow-wrap:anywhere] ${
+                              selectedCardForDetail.completed ? 'line-through text-zinc-500' : ''
+                            }`}>
+                              {sanitizeCardTitle(selectedCardForDetail.title)}
+                            </h2>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
+                          {/* Copy Button */}
+                          <button
+                            type="button"
+                            onClick={(e) => handleCopyCardText(e, selectedCardForDetail)}
+                            className="px-2.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-white rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                            title="Copiar texto do cartão"
+                          >
+                            {copiedCardId === selectedCardForDetail.id ? (
+                              <>
+                                <Check className="h-3.5 w-3.5 text-emerald-400" />
+                                <span className="text-emerald-400">Copiado!</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="h-3.5 w-3.5 text-orange-400" />
+                                <span className="hidden sm:inline">Copiar</span>
+                              </>
+                            )}
+                          </button>
+
+                          {/* Edit Title Button */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCardTitleInput(selectedCardForDetail.title);
+                              setEditingModalTitle(true);
+                            }}
+                            className="p-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-zinc-400 hover:text-white rounded-xl transition-all cursor-pointer"
+                            title="Editar Título"
+                          >
+                            <Edit3 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Due Warning Banner if due soon or overdue */}
