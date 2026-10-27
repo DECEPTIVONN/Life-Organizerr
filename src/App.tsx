@@ -8,7 +8,8 @@ import {
   Award,
   Maximize2,
   Cloud,
-  AlertTriangle
+  AlertTriangle,
+  ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -4015,11 +4016,19 @@ export default function App() {
       <AnimatePresence>
         {showSyncToast && (
           <motion.div
-            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            initial={{ opacity: 0, y: 30, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
-            className="fixed bottom-6 right-6 z-50 max-w-sm w-[calc(100vw-3rem)] bg-[#070709] rounded-2xl p-4 backdrop-blur-md"
+            exit={{ opacity: 0, x: 100, scale: 0.95 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            drag="x"
+            dragConstraints={{ left: 0, right: 250 }}
+            dragElastic={{ left: 0, right: 0.6 }}
+            onDragEnd={(_e, info) => {
+              if (info.offset.x > 50 || info.velocity.x > 250) {
+                setShowSyncToast(false);
+              }
+            }}
+            className="fixed bottom-3 right-3 sm:bottom-6 sm:right-6 z-50 max-w-[270px] sm:max-w-sm w-[calc(100vw-1.5rem)] sm:w-auto bg-[#070709]/95 rounded-xl sm:rounded-2xl p-2 sm:p-4 backdrop-blur-md cursor-grab active:cursor-grabbing select-none"
             style={{
               borderColor: 'var(--color-orange-500, #f97316)',
               borderWidth: '1.5px',
@@ -4027,9 +4036,9 @@ export default function App() {
               boxShadow: '0 0 25px var(--accent-glow, rgba(249, 115, 22, 0.3))'
             }}
           >
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2.5 sm:gap-4">
               <div 
-                className="p-2.5 rounded-xl text-white flex items-center justify-center shrink-0"
+                className="p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl text-white flex items-center justify-center shrink-0"
                 style={{
                   backgroundColor: 'var(--accent-glow-subtle, rgba(249, 115, 22, 0.15))',
                   borderColor: 'var(--color-orange-400, #fb923c)',
@@ -4039,24 +4048,34 @@ export default function App() {
                 }}
               >
                 <Cloud 
-                  className="h-5 w-5 animate-pulse" 
+                  className="h-3.5 w-3.5 sm:h-5 sm:w-5 animate-pulse" 
                   style={{ color: 'var(--color-orange-400, #fb923c)' }}
                 />
               </div>
               <div className="flex-1 min-w-0">
-                <h4 className="text-xs font-black text-white tracking-widest uppercase font-sans">
+                <h4 className="text-[10px] sm:text-xs font-black text-white tracking-wider sm:tracking-widest uppercase font-sans">
                   DISPOSITIVO SINCRONIZADO
                 </h4>
-                <p className="text-[11px] text-zinc-400 mt-0.5 leading-relaxed">
+                <p className="text-[9px] sm:text-[11px] text-zinc-400 mt-0.5 leading-tight sm:leading-relaxed truncate sm:whitespace-normal">
                   Mudanças recebidas em tempo real de outro dispositivo.
                 </p>
               </div>
+              {/* Desktop close button */}
               <button
                 onClick={() => setShowSyncToast(false)}
-                className="text-zinc-500 hover:text-zinc-300 p-1 rounded-lg transition-colors shrink-0 cursor-pointer"
+                className="hidden sm:flex text-zinc-500 hover:text-zinc-300 p-1 rounded-lg transition-colors shrink-0 cursor-pointer"
+                title="Fechar aviso"
               >
                 <X className="h-4 w-4" />
               </button>
+              {/* Mobile swipe indicator */}
+              <div 
+                className="sm:hidden flex items-center gap-0.5 text-[8px] text-zinc-500 font-mono tracking-tighter shrink-0 pl-1"
+                title="Deslize para a direita para fechar"
+              >
+                <span>deslize</span>
+                <ChevronRight className="h-3 w-3 text-orange-400 animate-pulse" />
+              </div>
             </div>
           </motion.div>
         )}

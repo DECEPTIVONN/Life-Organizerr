@@ -338,6 +338,21 @@ export default function ProjetosView({
     localStorage.setItem('mbc_kanban_view_style', kanbanStyle);
   }, [kanbanStyle]);
 
+  useEffect(() => {
+    const handleStyleChange = (e: any) => {
+      const saved = e.detail || localStorage.getItem('mbc_kanban_view_style');
+      if (saved === 'simplificado' || saved === 'padrao') {
+        setKanbanStyle(saved);
+      }
+    };
+    window.addEventListener('mbc_kanban_style_changed', handleStyleChange);
+    window.addEventListener('storage', handleStyleChange);
+    return () => {
+      window.removeEventListener('mbc_kanban_style_changed', handleStyleChange);
+      window.removeEventListener('storage', handleStyleChange);
+    };
+  }, []);
+
   // Prompts State (Global & Project-Scoped)
   const [prompts, setPrompts] = useState<ProjectPrompt[]>(() => {
     try {
@@ -404,7 +419,7 @@ export default function ProjetosView({
 
   // Prompts UI State
   const [promptSearch, setPromptSearch] = useState('');
-  const [promptFilterScope, setPromptFilterScope] = useState<'todos' | 'favoritos' | 'globais' | 'projeto'>('todos');
+  const [promptFilterScope, setPromptFilterScope] = useState<'todos' | 'favoritos' | 'globais' | 'projeto'>('projeto');
   const [promptFilterCategory, setPromptFilterCategory] = useState<string>('Todos');
   const [copiedPromptId, setCopiedPromptId] = useState<string | null>(null);
 
@@ -2463,7 +2478,10 @@ export default function ProjetosView({
 
               <button
                 type="button"
-                onClick={() => setActiveViewMode('prompts')}
+                onClick={() => {
+                  setActiveViewMode('prompts');
+                  setPromptFilterScope('projeto');
+                }}
                 className={`internal-nav-btn ${activeViewMode === 'prompts' ? 'active' : ''}`}
               >
                 <Sparkles className="h-3.5 w-3.5 text-orange-400" />

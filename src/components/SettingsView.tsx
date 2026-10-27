@@ -41,7 +41,8 @@ import {
   Fingerprint,
   Clipboard,
   Database,
-  Play
+  Play,
+  FolderKanban
 } from 'lucide-react';
 import { subscribeToMutationQueue, processMutationQueue, clearAllMutations, QueueStatus } from '../lib/indexedDbQueue';
 import { isPlatformAuthenticatorAvailable, verifyBiometric } from '../utils/biometricAuth';
@@ -260,6 +261,22 @@ export default function SettingsView({
   
   // Theme Color Scheme Modal State
   const [isColorSchemeModalOpen, setIsColorSchemeModalOpen] = useState(false);
+
+  // Kanban Default View Style State (Padrão vs Simplificado)
+  const [kanbanDefaultStyle, setKanbanDefaultStyle] = useState<'padrao' | 'simplificado'>(() => {
+    try {
+      const saved = localStorage.getItem('mbc_kanban_view_style');
+      if (saved === 'simplificado' || saved === 'padrao') return saved;
+    } catch (e) {}
+    return 'padrao';
+  });
+
+  const handleSetKanbanDefaultStyle = (style: 'padrao' | 'simplificado') => {
+    setKanbanDefaultStyle(style);
+    localStorage.setItem('mbc_kanban_view_style', style);
+    window.dispatchEvent(new CustomEvent('mbc_kanban_style_changed', { detail: style }));
+    addXp(10);
+  };
 
   // Biometric device support check
   const [isBiometricSupported, setIsBiometricSupported] = useState(false);
@@ -2805,6 +2822,56 @@ export default function SettingsView({
               >
                 {freeEditMode ? 'Ativo' : 'Inativo (Padrão)'}
               </button>
+            </div>
+
+            {/* Modo Padrão do Kanban (Projetos) */}
+            <div className="p-4 bg-zinc-950 border border-zinc-900 rounded-2xl space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-xs font-bold text-zinc-200">Modo Padrão do Kanban (Projetos)</h4>
+                    <span className="text-[8px] font-bold text-orange-400 bg-orange-500/10 border border-orange-500/20 px-2 py-0.5 rounded-full font-mono uppercase">
+                      {kanbanDefaultStyle === 'simplificado' ? 'Simplificado' : 'Padrão'}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-zinc-500 font-mono leading-normal">
+                    Escolha se o quadro Kanban dos projetos deve abrir por padrão no modelo padrão ou simplificado.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => handleSetKanbanDefaultStyle('padrao')}
+                  className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-bold font-mono transition-all cursor-pointer ${
+                    kanbanDefaultStyle === 'padrao'
+                      ? 'bg-orange-500/15 text-orange-400 border border-orange-500/30 shadow-[0_0_15px_rgba(249,115,22,0.15)]'
+                      : 'bg-zinc-900/60 border border-zinc-800/80 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                  }`}
+                >
+                  <FolderKanban className="w-4 h-4" />
+                  <span>Padrão</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSetKanbanDefaultStyle('simplificado')}
+                  className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-bold font-mono transition-all cursor-pointer ${
+                    kanbanDefaultStyle === 'simplificado'
+                      ? 'bg-orange-500/15 text-orange-400 border border-orange-500/30 shadow-[0_0_15px_rgba(249,115,22,0.15)]'
+                      : 'bg-zinc-900/60 border border-zinc-800/80 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                  }`}
+                >
+                  <Sliders className="w-4 h-4" />
+                  <span>Simplificado</span>
+                </button>
+              </div>
+
+              <p className="text-[11px] text-zinc-500 font-mono">
+                {kanbanDefaultStyle === 'simplificado'
+                  ? '• Modo Simplificado: visual minimalista com cartões compactos e foco na leitura rápida.'
+                  : '• Modo Padrão: exibe detalhes completos, badges, contadores de tarefas e ferramentas estendidas.'}
+              </p>
             </div>
 
             {/* Toggle Fullscreen behavior */}
