@@ -2156,8 +2156,17 @@ export default function ChecklistView({
         </button>
       </nav>
 
-      {activeTab === 'checklist' ? (
-        <>
+      {/* Subtabs content with smooth transitions */}
+      <AnimatePresence mode="wait">
+        {activeTab === 'checklist' && (
+          <motion.div
+            key="subtab-checklist"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="space-y-6"
+          >
           <DailyMissionsView
             dailyTasks={dailyTasks}
             activeTasks={activeTasks}
@@ -3092,9 +3101,18 @@ export default function ChecklistView({
           </motion.div>
         </div>
       )}
-      </>
-      ) : activeTab === 'rotina' ? (
-        <div className="space-y-6">
+    </motion.div>
+  )}
+
+        {activeTab === 'rotina' && (
+          <motion.div
+            key="subtab-rotina"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="space-y-6"
+          >
           {/* Header Card */}
           <div className="bg-zinc-950 border border-zinc-900 p-6 rounded-2xl space-y-6 shadow-xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
@@ -4004,9 +4022,18 @@ export default function ChecklistView({
               </div>
             )}
           </AnimatePresence>
-        </div>
-      ) : activeTab === 'habitos' ? (
-        <div className="space-y-6">
+        </motion.div>
+      )}
+
+      {activeTab === 'habitos' && (
+        <motion.div
+          key="subtab-habitos"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+          className="space-y-6"
+        >
           <HabitsTrackerView 
             habits={actualHabits}
             setHabits={actualSetHabits}
@@ -4027,9 +4054,18 @@ export default function ChecklistView({
               }
             }}
           />
-        </div>
-      ) : (
-        <div className="space-y-6">
+        </motion.div>
+      )}
+
+      {(activeTab === 'rotina-semanal' || (!['checklist', 'rotina', 'habitos'].includes(activeTab as any))) && (
+        <motion.div
+          key="subtab-rotina-semanal"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+          className="space-y-6"
+        >
           <RoutineView 
             routine={propRoutine || []}
             setRoutine={propSetRoutine || (() => {})}
@@ -4043,8 +4079,9 @@ export default function ChecklistView({
             notes={calendarNotes || []}
             setNotes={setCalendarNotes}
           />
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
 
       {/* Modal 1: Editar Tarefa Diária */}
       <AnimatePresence>

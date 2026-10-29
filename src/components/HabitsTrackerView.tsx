@@ -1188,14 +1188,22 @@ export default function HabitsTrackerView({ habits, setHabits, addXp, onToggleHa
                           <td key={dayIdx} className="py-4 px-2 text-center">
                             <button
                               onClick={() => handleToggleHabitDay(habit.id, dateKey)}
-                              className={`w-8 h-8 rounded-full border-2 flex items-center justify-center mx-auto transition-all duration-200 focus:outline-none ${
+                              className={`w-8 h-8 rounded-full border-2 flex items-center justify-center mx-auto transition-all duration-200 focus:outline-none cursor-pointer ${
                                 isChecked
                                   ? activeColor
-                                  : `border-zinc-800 bg-zinc-950/40 text-transparent ${checkGlowColor}`
+                                  : `border-zinc-800/80 bg-zinc-950/60 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700 ${checkGlowColor}`
                               }`}
-                              title={isBad ? "Sucesso em evitar este hábito!" : "Marcar como concluído!"}
+                              title={
+                                isChecked
+                                  ? isBad ? "Sucesso em evitar este hábito!" : "Hábito concluído!"
+                                  : isBad ? "Não registrado (Clique para marcar que evitou)" : "Não feito (Clique para marcar como concluído)"
+                              }
                             >
-                              <Check className="h-4.5 w-4.5 stroke-[3]" />
+                              {isChecked ? (
+                                <Check className="h-4.5 w-4.5 stroke-[3]" />
+                              ) : (
+                                <X className="h-4 w-4 text-zinc-500 hover:text-zinc-300 stroke-[2.5]" />
+                              )}
                             </button>
                           </td>
                         );
@@ -1318,16 +1326,20 @@ export default function HabitsTrackerView({ habits, setHabits, addXp, onToggleHa
                           <td key={k} className="py-3 px-0.5 text-center">
                             <button
                               onClick={() => handleToggleHabitDay(habit.id, k)}
-                              className={`w-6 h-6 rounded-md flex items-center justify-center mx-auto transition-all ${
+                              className={`w-6 h-6 rounded-md flex items-center justify-center mx-auto transition-all cursor-pointer ${
                                 isChecked
                                   ? isBad ? 'bg-rose-500 text-white shadow-sm' : 'bg-orange-500 text-black shadow-sm font-bold'
                                   : isToday 
-                                  ? 'border border-orange-500/50 bg-orange-500/5 hover:bg-orange-500/10'
-                                  : 'bg-zinc-950/60 hover:bg-zinc-900 border border-zinc-850/60'
+                                  ? 'border border-orange-500/50 bg-orange-500/5 hover:bg-orange-500/10 text-zinc-400'
+                                  : 'bg-zinc-950/60 hover:bg-zinc-900 border border-zinc-850/60 text-zinc-500'
                               }`}
-                              title={`${date.toLocaleDateString('pt-BR')}: ${isChecked ? 'Concluído' : 'Não feito'}`}
+                              title={`${date.toLocaleDateString('pt-BR')}: ${isChecked ? 'Concluído' : 'Não feito (Clique para marcar)'}`}
                             >
-                              {isChecked ? <Check className="h-3.5 w-3.5 stroke-[3]" /> : <span className="w-1 h-1 rounded-full bg-zinc-800" />}
+                              {isChecked ? (
+                                <Check className="h-3.5 w-3.5 stroke-[3]" />
+                              ) : (
+                                <X className="h-3 w-3 text-zinc-500 hover:text-zinc-300 stroke-[2.5]" />
+                              )}
                             </button>
                           </td>
                         );
@@ -1546,7 +1558,7 @@ export default function HabitsTrackerView({ habits, setHabits, addXp, onToggleHa
                   <div className="flex items-center justify-between pt-3 border-t border-zinc-900 mt-2">
                     <button
                       onClick={() => handleToggleHabitDay(habit.id, todayKey)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                         isCheckedToday
                           ? isBad 
                             ? 'bg-rose-500 text-white shadow-md' 
@@ -1554,7 +1566,11 @@ export default function HabitsTrackerView({ habits, setHabits, addXp, onToggleHa
                           : 'bg-zinc-900 hover:bg-zinc-850 text-zinc-300 border border-zinc-800'
                       }`}
                     >
-                      <Check className="h-3.5 w-3.5 stroke-[3]" />
+                      {isCheckedToday ? (
+                        <Check className="h-3.5 w-3.5 stroke-[3]" />
+                      ) : (
+                        <X className="h-3.5 w-3.5 text-zinc-500 stroke-[2.5]" />
+                      )}
                       <span>{isCheckedToday ? 'Concluído Hoje' : 'Marcar Hoje'}</span>
                     </button>
 
@@ -1645,14 +1661,18 @@ export default function HabitsTrackerView({ habits, setHabits, addXp, onToggleHa
                           <td key={dIdx} className="py-3 px-1 text-center">
                             <button
                               onClick={() => handleToggleHabitDay(habit.id, k)}
-                              className={`w-6 h-6 rounded-md flex items-center justify-center mx-auto transition-all ${
+                              className={`w-6 h-6 rounded-md flex items-center justify-center mx-auto transition-all cursor-pointer ${
                                 isChecked
-                                  ? isBad ? 'bg-rose-500 text-white' : 'bg-orange-500 text-black font-bold'
-                                  : 'bg-zinc-950 hover:bg-zinc-900 border border-zinc-850'
+                                  ? isBad ? 'bg-rose-500 text-white shadow-sm' : 'bg-orange-500 text-black shadow-sm font-bold'
+                                  : 'bg-zinc-950/60 hover:bg-zinc-900 border border-zinc-850/60 text-zinc-500'
                               }`}
-                              title={`${date.toLocaleDateString('pt-BR')}: ${isChecked ? 'Concluído' : 'Não feito'}`}
+                              title={`${date.toLocaleDateString('pt-BR')}: ${isChecked ? 'Concluído' : 'Não feito (Clique para marcar)'}`}
                             >
-                              {isChecked ? <Check className="h-3 w-3 stroke-[3]" /> : <span className="w-1 h-1 rounded-full bg-zinc-800" />}
+                              {isChecked ? (
+                                <Check className="h-3 w-3 stroke-[3]" />
+                              ) : (
+                                <X className="h-3 w-3 text-zinc-500 hover:text-zinc-300 stroke-[2.5]" />
+                              )}
                             </button>
                           </td>
                         );

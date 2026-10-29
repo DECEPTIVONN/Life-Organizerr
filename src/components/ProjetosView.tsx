@@ -297,6 +297,17 @@ export default function ProjetosView({
     });
   }, []);
 
+  // Guarantee immediate local storage persistence for all project alterations (cards, lists, checklists, titles)
+  useEffect(() => {
+    if (projects && projects.length > 0) {
+      try {
+        localStorage.setItem('mbc_projects', JSON.stringify(projects));
+      } catch (e) {
+        console.error('Failed to save mbc_projects from ProjetosView:', e);
+      }
+    }
+  }, [projects]);
+
   // Hub Filters & Search
   const [hubSearch, setHubSearch] = useState('');
   const [hubCategory, setHubCategory] = useState('Todos');
@@ -2182,9 +2193,17 @@ export default function ProjetosView({
       {/* ------------------------------------------------------------- */}
       {/* 1. INITIAL PROJECTS HUB VIEW (When no active project selected)  */}
       {/* ------------------------------------------------------------- */}
-      {!activeProject ? (
-        <div className="space-y-6 animate-fadeIn">
-          {/* Hub Header */}
+      <AnimatePresence mode="wait">
+        {!activeProject ? (
+          <motion.div
+            key="projects-hub"
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -14 }}
+            transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+            className="space-y-6"
+          >
+            {/* Hub Header */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-zinc-950/80 border border-zinc-900 rounded-2xl p-6 backdrop-blur-md shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-orange-500/10 via-amber-500/5 to-transparent rounded-full blur-2xl pointer-events-none" />
             
@@ -2402,12 +2421,19 @@ export default function ProjetosView({
               })
             )}
           </div>
-        </div>
+        </motion.div>
       ) : (
         /* ------------------------------------------------------------- */
         /* 2. DEDICATED PROJECT KANBAN BOARD VIEW (Matching Reference Images) */
         /* ------------------------------------------------------------- */
-        <div className="space-y-4 animate-fadeIn">
+        <motion.div
+          key={`project-detail-${activeProject.id}`}
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -14 }}
+          transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+          className="space-y-4"
+        >
           {/* Top Breadcrumb & Action Header Bar */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 rounded-2xl p-3.5 shadow-xl">
             <div className="flex items-center gap-3">
@@ -2565,42 +2591,50 @@ export default function ProjetosView({
               </button>
             </nav>
 
-            {/* Kanban Style Selector (Padrão vs Simplificado) */}
+            {/* Kanban Style Selector (Padrão vs Simplificado - Icon-only) */}
             {activeViewMode === 'quadro' && (
               <div className="flex items-center gap-1 bg-zinc-950/90 border border-zinc-800/80 p-1 rounded-2xl self-start sm:self-auto shrink-0 shadow-sm">
                 <button
                   type="button"
                   onClick={() => setKanbanStyle('padrao')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                  className={`p-2 rounded-xl transition-all flex items-center justify-center cursor-pointer ${
                     kanbanStyle === 'padrao'
                       ? 'bg-zinc-800 text-white shadow-sm'
                       : 'text-zinc-400 hover:text-white hover:bg-zinc-900/60'
                   }`}
-                  title="Visão Kanban Completa"
+                  title="Visão Padrão"
+                  aria-label="Visão Padrão"
                 >
-                  <FolderKanban className="h-3.5 w-3.5" />
-                  <span>Padrão</span>
+                  <FolderKanban className="h-4 w-4" />
                 </button>
                 <button
                   type="button"
                   onClick={() => setKanbanStyle('simplificado')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                  className={`p-2 rounded-xl transition-all flex items-center justify-center cursor-pointer ${
                     kanbanStyle === 'simplificado'
                       ? 'bg-orange-500 text-white shadow-sm shadow-orange-500/20'
                       : 'text-zinc-400 hover:text-white hover:bg-zinc-900/60'
                   }`}
-                  title="Visão Kanban Simplificada (Minimalista)"
+                  title="Visão Simplificada"
+                  aria-label="Visão Simplificada"
                 >
-                  <LayoutGrid className="h-3.5 w-3.5" />
-                  <span>Simplificado</span>
+                  <LayoutGrid className="h-4 w-4" />
                 </button>
               </div>
             )}
           </div>
 
-          {/* 1. KANBAN BOARD CONTAINER (Horizontal Scrollable Column Layout) */}
-          {activeViewMode === 'quadro' && (
-            kanbanStyle === 'simplificado' ? (
+          {/* Subviews with smooth animated transitions */}
+          <AnimatePresence mode="wait">
+            {activeViewMode === 'quadro' && (
+              <motion.div
+                key="subview-quadro"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+              >
+                {kanbanStyle === 'simplificado' ? (
               /* ======================================================= */
               /* SIMPLIFIED KANBAN VIEW (Matching attached reference style) */
               /* ======================================================= */
@@ -3352,12 +3386,20 @@ export default function ProjetosView({
                 </button>
               </div>
             </div>
-          )
-        )}
+          )}
+        </motion.div>
+      )}
 
-          {/* 2. TABELA VIEW */}
-          {activeViewMode === 'tabela' && (
-            <div className="bg-zinc-900/40 backdrop-blur-md border border-zinc-800/60 rounded-2xl p-4 shadow-xl space-y-4 overflow-x-auto horizontal-scrollbar">
+            {/* 2. TABELA VIEW */}
+            {activeViewMode === 'tabela' && (
+              <motion.div
+                key="subview-tabela"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="bg-zinc-900/40 backdrop-blur-md border border-zinc-800/60 rounded-2xl p-4 shadow-xl space-y-4 overflow-x-auto horizontal-scrollbar"
+              >
               <div className="flex items-center justify-between pb-3 border-b border-zinc-800/60">
                 <h3 className="text-xs font-bold text-white uppercase font-sans tracking-wider flex items-center gap-2">
                   <Table className="h-4 w-4 text-orange-400" />
@@ -3502,12 +3544,19 @@ export default function ProjetosView({
                   })}
                 </tbody>
               </table>
-            </div>
+            </motion.div>
           )}
 
           {/* 3. CRONOGRAMA / TIMELINE VIEW */}
           {activeViewMode === 'cronograma' && (
-            <div className="bg-zinc-900/40 backdrop-blur-md border border-zinc-800/60 rounded-2xl p-5 shadow-xl space-y-4">
+            <motion.div
+              key="subview-cronograma"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="bg-zinc-900/40 backdrop-blur-md border border-zinc-800/60 rounded-2xl p-5 shadow-xl space-y-4"
+            >
               <div className="flex items-center justify-between pb-3 border-b border-zinc-800/60">
                 <div className="flex items-center gap-2">
                   <CalendarDays className="h-4 w-4 text-orange-400" />
@@ -3566,12 +3615,19 @@ export default function ProjetosView({
                   );
                 })}
               </div>
-            </div>
+            </motion.div>
           )}
 
           {/* 4. PAINEL / DASHBOARD VIEW */}
           {activeViewMode === 'painel' && (
-            <div className="space-y-6">
+            <motion.div
+              key="subview-painel"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="space-y-6"
+            >
               {/* Stat Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-zinc-900/40 backdrop-blur-md border border-zinc-800/60 rounded-2xl p-4 space-y-1">
@@ -3788,12 +3844,19 @@ export default function ProjetosView({
                   })}
                 </div>
               </div>
-            </div>
+            </motion.div>
           )}
 
           {/* 5. PROMPTS VIEW (Biblioteca de Prompts do Projeto e Globais) */}
           {activeViewMode === 'prompts' && (
-            <div className="space-y-5 animate-fadeIn">
+            <motion.div
+              key="subview-prompts"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="space-y-5"
+            >
               {/* Prompts Top Control Bar */}
               <div className="bg-zinc-900/40 backdrop-blur-md border border-zinc-800/60 rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-800/60">
@@ -4092,10 +4155,12 @@ export default function ProjetosView({
                   })}
                 </div>
               )}
-            </div>
+            </motion.div>
           )}
-        </div>
+          </AnimatePresence>
+        </motion.div>
       )}
+    </AnimatePresence>
 
       {/* ------------------------------------------------------------- */}
       {/* 3. DETAILED CARD MODAL OVERLAY (Matching Reference Image 3)    */}

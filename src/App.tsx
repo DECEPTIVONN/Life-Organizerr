@@ -2101,7 +2101,7 @@ export default function App() {
         reminders: data.reminders !== undefined ? data.reminders : current.reminders,
         masterTemplates: data.masterTemplates !== undefined ? data.masterTemplates : (current as any).masterTemplates,
         dailyWorkspaceSettings: data.dailyWorkspaceSettings !== undefined ? data.dailyWorkspaceSettings : (current as any).dailyWorkspaceSettings,
-        projects: Array.isArray(data.projects) ? data.projects : (data.projects !== undefined ? data.projects : current.projects),
+        projects: (Array.isArray(data.projects) && data.projects.length > 0) ? data.projects : (current.projects && current.projects.length > 0 ? current.projects : (data.projects || [])),
         lastDailyResetDate: data.lastDailyResetDate !== undefined ? data.lastDailyResetDate : current.lastDailyResetDate,
         bankAccounts: data.bankAccounts !== undefined ? data.bankAccounts : current.bankAccounts,
         creditCards: data.creditCards !== undefined ? data.creditCards : current.creditCards,
@@ -2162,7 +2162,9 @@ export default function App() {
       setLifeSummary(incomingData.lifeSummary);
       setFutureEvents(incomingData.futureEvents);
       setHabits(incomingData.habits);
-      setProjects(incomingData.projects || []);
+      if (Array.isArray(incomingData.projects) && incomingData.projects.length > 0) {
+        setProjects(incomingData.projects);
+      }
       if (incomingData.reminders) setReminders(incomingData.reminders);
       if (incomingData.customCards) setCustomCards(incomingData.customCards);
       if (incomingData.gridRoutine !== undefined) setGridRoutine(cleanupExpiredGridRoutine(incomingData.gridRoutine).cleaned);
@@ -2222,7 +2224,9 @@ export default function App() {
       localStorage.setItem('mbc_life_summary_v1', JSON.stringify(incomingData.lifeSummary));
       localStorage.setItem('mbc_futureEvents', JSON.stringify(incomingData.futureEvents));
       localStorage.setItem('mbc_habits', JSON.stringify(incomingData.habits));
-      localStorage.setItem('mbc_projects', JSON.stringify(incomingData.projects || []));
+      if (Array.isArray(incomingData.projects) && incomingData.projects.length > 0) {
+        localStorage.setItem('mbc_projects', JSON.stringify(incomingData.projects));
+      }
       localStorage.setItem('mbc_reminders', JSON.stringify(incomingData.reminders || []));
       if (incomingData.customCards) localStorage.setItem('dashboard_custom_cards', JSON.stringify(incomingData.customCards));
       if (incomingData.gridRoutine !== undefined) localStorage.setItem('mbc_grid_routine', JSON.stringify(incomingData.gridRoutine));
@@ -2269,7 +2273,7 @@ export default function App() {
 
       setTimeout(() => {
         isApplyingRemoteUpdateRef.current = false;
-      }, 1200);
+      }, 150);
     };
 
     async function checkRemoteData(isInitial = false) {
@@ -2509,7 +2513,7 @@ export default function App() {
     const currentSerialized = safeStringify(currentData);
 
     // If current state matches the last synced state, do not push (prevents loops)
-    if (currentSerialized === lastSyncedStateRef.current || !lastSyncedStateRef.current) {
+    if (currentSerialized === lastSyncedStateRef.current) {
       return;
     }
 

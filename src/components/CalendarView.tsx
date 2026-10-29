@@ -3741,128 +3741,174 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
         )}
       </AnimatePresence>
 
-      {/* Quick Add Event Modal */}
-      {isQuickAddModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#0f0f12] border border-zinc-800 rounded-2xl w-full max-w-md p-5 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Plus className="h-4 w-4 text-orange-500" /> Novo Evento / Compromisso
-              </h3>
-              <button
-                onClick={() => setIsQuickAddModalOpen(false)}
-                className="text-zinc-400 hover:text-white p-1 rounded-lg"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
+      {/* Quick Add Event Modal with smooth transitions */}
+      <AnimatePresence>
+        {isQuickAddModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setIsQuickAddModalOpen(false)}
+              className="fixed inset-0 bg-black/75 backdrop-blur-sm cursor-pointer"
+            />
 
-            <form onSubmit={handleQuickAddEvent} className="space-y-3">
-              <div>
-                <label className="text-[10px] text-zinc-400 font-bold block mb-1">Título do Evento</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ex: Reunião, Viagem, Aniversário..."
-                  value={quickEventTitle}
-                  onChange={(e) => setQuickEventTitle(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-[10px] text-zinc-400 font-bold block mb-1">Data</label>
-                  <input
-                    type="date"
-                    required
-                    value={quickEventDate}
-                    onChange={(e) => setQuickEventDate(e.target.value)}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] text-zinc-400 font-bold block mb-1">Categoria / Tag</label>
-                  <select
-                    value={quickEventTag}
-                    onChange={(e) => setQuickEventTag(e.target.value)}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500"
-                  >
-                    {TAG_OPTIONS.map((tag) => (
-                      <option key={tag} value={tag}>{tag}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 pt-1">
-                <input
-                  type="checkbox"
-                  id="allDayCheckbox"
-                  checked={quickEventAllDay}
-                  onChange={(e) => setQuickEventAllDay(e.target.checked)}
-                  className="rounded border-zinc-700 bg-zinc-900 text-blue-600 focus:ring-0"
-                />
-                <label htmlFor="allDayCheckbox" className="text-xs text-zinc-300">Dia Inteiro</label>
-              </div>
-
-              {!quickEventAllDay && (
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-[10px] text-zinc-400 font-bold block mb-1">Hora de Início</label>
-                    <input
-                      type="time"
-                      value={quickEventStartTime}
-                      onChange={(e) => setQuickEventStartTime(e.target.value)}
-                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-zinc-400 font-bold block mb-1">Hora de Fim</label>
-                    <input
-                      type="time"
-                      value={quickEventEndTime}
-                      onChange={(e) => setQuickEventEndTime(e.target.value)}
-                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {googleUser && (
-                <div className="flex items-center gap-2 pt-1">
-                  <input
-                    type="checkbox"
-                    id="syncGoogleCheckbox"
-                    checked={quickEventSyncGoogle}
-                    onChange={(e) => setQuickEventSyncGoogle(e.target.checked)}
-                    className="rounded border-zinc-700 bg-zinc-900 text-blue-600 focus:ring-0"
-                  />
-                  <label htmlFor="syncGoogleCheckbox" className="text-xs text-zinc-300">
-                    Sincronizar com Google Agenda
-                  </label>
-                </div>
-              )}
-
-              <div className="flex justify-end gap-2 pt-3 border-t border-zinc-800">
+            {/* Modal Box */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94, y: 14 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.94, y: 14 }}
+              transition={{ type: 'spring', damping: 26, stiffness: 320 }}
+              className="bg-[#0f0f12] border border-zinc-800 rounded-2xl w-full max-w-md p-5 space-y-4 shadow-2xl relative z-10"
+            >
+              <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Plus className="h-4 w-4 text-orange-500" /> Novo Evento / Compromisso
+                </h3>
                 <button
                   type="button"
                   onClick={() => setIsQuickAddModalOpen(false)}
-                  className="px-3.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-bold rounded-xl"
+                  className="text-zinc-400 hover:text-white p-1 rounded-lg hover:bg-zinc-800 transition-colors cursor-pointer"
                 >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow"
-                >
-                  Salvar Evento
+                  <X className="h-4 w-4" />
                 </button>
               </div>
-            </form>
+
+              <form onSubmit={handleQuickAddEvent} className="space-y-3.5">
+                <div>
+                  <label className="text-[10px] text-zinc-400 font-bold block mb-1">Título do Evento</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ex: Reunião, Viagem, Aniversário..."
+                    value={quickEventTitle}
+                    onChange={(e) => setQuickEventTitle(e.target.value)}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500 transition-colors"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] text-zinc-400 font-bold block mb-1">Data</label>
+                    <input
+                      type="date"
+                      required
+                      value={quickEventDate}
+                      onChange={(e) => setQuickEventDate(e.target.value)}
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-orange-500 transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-zinc-400 font-bold block mb-1">Categoria / Tag</label>
+                    <select
+                      value={quickEventTag}
+                      onChange={(e) => setQuickEventTag(e.target.value)}
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-orange-500 transition-colors"
+                    >
+                      {TAG_OPTIONS.map((tag) => (
+                        <option key={tag} value={tag}>{tag}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Enhanced Checkbox: Dia Inteiro */}
+                <div 
+                  onClick={() => setQuickEventAllDay(!quickEventAllDay)}
+                  className="flex items-center gap-2.5 pt-1 cursor-pointer select-none group"
+                >
+                  <div className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-all ${
+                    quickEventAllDay
+                      ? 'bg-orange-500 border-orange-500 text-white shadow-[0_0_12px_rgba(249,115,22,0.4)]'
+                      : 'bg-zinc-950 border-zinc-700 group-hover:border-zinc-500'
+                  }`}>
+                    {quickEventAllDay && (
+                      <motion.div
+                        initial={{ scale: 0.5, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ duration: 0.15 }}
+                      >
+                        <Check className="h-3.5 w-3.5 stroke-[3]" />
+                      </motion.div>
+                    )}
+                  </div>
+                  <label className="text-xs font-medium text-zinc-300 cursor-pointer group-hover:text-white transition-colors">
+                    Dia Inteiro
+                  </label>
+                </div>
+
+                {!quickEventAllDay && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] text-zinc-400 font-bold block mb-1">Hora de Início</label>
+                      <input
+                        type="time"
+                        value={quickEventStartTime}
+                        onChange={(e) => setQuickEventStartTime(e.target.value)}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-zinc-400 font-bold block mb-1">Hora de Fim</label>
+                      <input
+                        type="time"
+                        value={quickEventEndTime}
+                        onChange={(e) => setQuickEventEndTime(e.target.value)}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Enhanced Checkbox: Sincronizar com Google Agenda */}
+                {googleUser && (
+                  <div 
+                    onClick={() => setQuickEventSyncGoogle(!quickEventSyncGoogle)}
+                    className="flex items-center gap-2.5 pt-1 cursor-pointer select-none group"
+                  >
+                    <div className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-all ${
+                      quickEventSyncGoogle
+                        ? 'bg-blue-600 border-blue-500 text-white shadow-[0_0_12px_rgba(37,99,235,0.4)]'
+                        : 'bg-zinc-950 border-zinc-700 group-hover:border-zinc-500'
+                    }`}>
+                      {quickEventSyncGoogle && (
+                        <motion.div
+                          initial={{ scale: 0.5, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ duration: 0.15 }}
+                        >
+                          <Check className="h-3.5 w-3.5 stroke-[3]" />
+                        </motion.div>
+                      )}
+                    </div>
+                    <label className="text-xs font-medium text-zinc-300 cursor-pointer group-hover:text-white transition-colors">
+                      Sincronizar com Google Agenda
+                    </label>
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-2 pt-3 border-t border-zinc-800">
+                  <button
+                    type="button"
+                    onClick={() => setIsQuickAddModalOpen(false)}
+                    className="px-3.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-xl shadow-[0_0_12px_rgba(249,115,22,0.3)] transition-colors cursor-pointer"
+                  >
+                    Salvar Evento
+                  </button>
+                </div>
+              </form>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
 
       {/* Fullscreen Modal Overlay for Espaço Diário & Fé or Master Templates */}
       <AnimatePresence>

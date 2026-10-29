@@ -855,16 +855,17 @@ export default function Sidebar({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              transition={{ duration: 0.25, ease: 'easeInOut' }}
               onClick={() => setMobileMenuOpen(false)}
             />
 
             {/* Sidebar content */}
             <motion.div 
-              className="relative flex flex-col w-64 h-full bg-[#09090b] border-r border-zinc-900 z-50 p-5 pt-8"
+              className="relative flex flex-col w-64 h-full bg-[#09090b] border-r border-zinc-900 z-50 p-5 pt-8 shadow-2xl"
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 240, mass: 0.8 }}
             >
               {/* Drawer Header with Close Button */}
               <div className="flex items-center justify-end pb-4 border-b border-zinc-900/60 mb-6">
@@ -2059,7 +2060,7 @@ export default function Sidebar({
             title="Buscar"
           >
             <Search className="h-4.5 w-4.5 text-zinc-500 group-hover:text-orange-500 transition-colors flex-shrink-0" />
-            <div className={`text-left transition-all duration-300 ${isExpanded ? 'ml-3 opacity-100 block' : 'ml-0 opacity-0 hidden w-0 h-0 overflow-hidden'}`}>
+            <div className={`text-left transition-all duration-300 overflow-hidden whitespace-nowrap ${isExpanded ? 'ml-3 opacity-100 max-w-[160px]' : 'ml-0 opacity-0 max-w-0 pointer-events-none'}`}>
               <div className="text-[11px] font-bold leading-none">Buscar Geral</div>
             </div>
           </button>
@@ -2087,7 +2088,7 @@ export default function Sidebar({
 
                 <Icon className={`h-4.5 w-4.5 transition-colors flex-shrink-0 ${isActive ? 'text-orange-500' : 'text-zinc-500 group-hover:text-white'}`} />
                 
-                <div className={`text-left transition-all duration-300 ${isExpanded ? 'ml-3 opacity-100 block' : 'ml-0 opacity-0 hidden w-0 h-0 overflow-hidden'}`}>
+                <div className={`text-left transition-all duration-300 overflow-hidden whitespace-nowrap ${isExpanded ? 'ml-3 opacity-100 max-w-[160px]' : 'ml-0 opacity-0 max-w-0 pointer-events-none'}`}>
                   <div className="text-[11px] font-bold leading-none">{item.label}</div>
                   <div className="text-[8px] text-zinc-500 mt-1 font-mono">{item.desc}</div>
                 </div>
@@ -2112,7 +2113,7 @@ export default function Sidebar({
               ) : (
                 <Maximize className="h-4 w-4 text-zinc-500 group-hover:text-white flex-shrink-0 group-hover:scale-110 transition-all" />
               )}
-              <span className={`text-[11px] font-bold leading-none transition-all duration-300 ${isExpanded ? 'opacity-100 block' : 'opacity-0 hidden w-0 overflow-hidden'}`}>
+              <span className={`text-[11px] font-bold leading-none transition-all duration-300 overflow-hidden whitespace-nowrap ${isExpanded ? 'opacity-100 max-w-[160px]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
                 {isFullscreen ? 'Sair de Tela' : 'Tela Cheia'}
               </span>
             </button>
@@ -2128,14 +2129,14 @@ export default function Sidebar({
                 <div className="p-1 bg-orange-500/10 rounded-lg border border-orange-500/20 group-hover:bg-orange-500/20 group-hover:border-orange-500/40 transition-all flex items-center justify-center flex-shrink-0 shadow-[0_0_8px_rgba(249,115,22,0.15)]">
                   <Lock className="h-3.5 w-3.5 text-orange-400 group-hover:scale-110 transition-all" />
                 </div>
-                <span className={`text-[11px] font-bold leading-none transition-all duration-300 ${isExpanded ? 'opacity-100 block' : 'opacity-0 hidden w-0 overflow-hidden'}`}>
+                <span className={`text-[11px] font-bold leading-none transition-all duration-300 overflow-hidden whitespace-nowrap ${isExpanded ? 'opacity-100 max-w-[160px]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
                   Trancar App
                 </span>
               </button>
             )}
           </div>
 
-          <div className={`text-center mt-2 transition-all duration-300 ${isExpanded ? 'opacity-100 block' : 'opacity-0 hidden h-0'}`}>
+          <div className={`text-center mt-2 transition-all duration-300 overflow-hidden ${isExpanded ? 'opacity-100 max-h-6' : 'opacity-0 max-h-0'}`}>
             <span className="text-[8px] text-zinc-600 font-mono uppercase block">TRONUS SYSTEMS</span>
           </div>
         </div>

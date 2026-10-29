@@ -698,10 +698,19 @@ export default function DailyMissionsView({
               onClick={() => setIsInlineCalendarOpen(prev => !prev)}
               className="group flex flex-col items-start px-1 text-left"
             >
-              <div className="flex items-center gap-1.5">
-                <span className="text-xl sm:text-2xl font-bold text-white tracking-tight group-hover:text-zinc-200 transition-colors">
-                  {getDateHeaderLabel(selectedDate)}
-                </span>
+              <div className="flex items-center gap-1.5 overflow-hidden">
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={`header-date-${selectedDate}`}
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 4 }}
+                    transition={{ duration: 0.18, ease: "easeOut" }}
+                    className="text-xl sm:text-2xl font-bold text-white tracking-tight group-hover:text-zinc-200 transition-colors inline-block"
+                  >
+                    {getDateHeaderLabel(selectedDate)}
+                  </motion.span>
+                </AnimatePresence>
               </div>
               <span className="text-xs text-zinc-400 font-medium">
                 {completedCount}/{totalCount} concluídas
@@ -960,7 +969,16 @@ export default function DailyMissionsView({
       {/* ======================================================== */}
       {/* 4. TASK CARDS LIST (IMAGES 2, 3, 10, 11, 12)             */}
       {/* ======================================================== */}
-      {filteredTasks.length === 0 ? (
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={`missions-day-${selectedDate}-${filterStatus}-${selectedTagFilter || 'all'}`}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+          className="w-full space-y-2.5"
+        >
+          {filteredTasks.length === 0 ? (
         /* Empty State (Image 9) */
         <div className="py-16 text-center flex flex-col items-center justify-center">
           <div className="w-14 h-14 bg-zinc-800/70 rounded-2xl flex items-center justify-center text-zinc-400 mb-3 border border-zinc-700/40">
@@ -1235,6 +1253,8 @@ export default function DailyMissionsView({
           })}
         </div>
       )}
+        </motion.div>
+      </AnimatePresence>
 
       {/* ======================================================== */}
       {/* 5. FLOATING ACTION BUTTON (FAB) (+)                      */}
