@@ -15,12 +15,19 @@ import { motion, AnimatePresence } from 'motion/react';
 
 // Subcomponents
 import Sidebar from './components/Sidebar';
-import LockScreen from './components/LockScreen';
 import AppLoadingScreen from './components/AppLoadingScreen';
-import { AuthModal } from './components/AuthModal';
 import { AuthUser } from './lib/auth';
 import { syncAndRegisterCurrentDevice } from './lib/devices';
+import { THEME_PRESETS, applyThemeColor } from './utils/themeColors';
+import { getValidGoogleAccessToken, clearGoogleOAuthSession } from './utils/googleToken';
+import { type LifeSummaryState, defaultState, mergeWithDefaults } from './utils/lifeSummaryDefaults';
+import { DynamicNotch, NotchNotification } from './components/DynamicNotch';
+import { AutoPromptSchedule, AgentConversation } from './types';
+
+// All primary views preloaded so that tab switching is 100% instant without loading states
 import DashboardView from './components/DashboardView';
+import LockScreen from './components/LockScreen';
+import { AuthModal } from './components/AuthModal';
 import ChecklistView from './components/ChecklistView';
 import FinancesView from './components/FinancesView';
 import RoutineView from './components/RoutineView';
@@ -30,13 +37,12 @@ import DocumentsView from './components/DocumentsView';
 import NotesView from './components/NotesView';
 import SettingsView from './components/SettingsView';
 import ProfileView from './components/ProfileView';
-import { THEME_PRESETS, applyThemeColor } from './utils/themeColors';
-import { getValidGoogleAccessToken, clearGoogleOAuthSession } from './utils/googleToken';
-import LifeSummaryView, { LifeSummaryState, defaultState, mergeWithDefaults } from './components/LifeSummaryView';
+import LifeSummaryView from './components/LifeSummaryView';
 import HabitsTrackerView from './components/HabitsTrackerView';
 import AnuaisView from './components/AnuaisView';
 import RemindersView from './components/RemindersView';
 import ProjetosView from './components/ProjetosView';
+import { AgentesView } from './components/AgentesView';
 import StreakHubModal from './components/StreakHubModal';
 import { LeagueRankingModal } from './components/LeagueRankingModal';
 import { LeagueRankingView } from './components/LeagueRankingView';
@@ -65,8 +71,8 @@ import {
 import { normalizeCardIconName } from './utils/cardIconUtils';
 import { sendSystemNotification, syncAlarmsToServiceWorker } from './lib/notificationHelper';
 
-import { DEFAULT_VISION_BOARD_CARDS } from './components/VisionBoard';
-import { BankAccount, CreditCardItem, DebtItem, BudgetLimit } from './components/FinancesView';
+import { DEFAULT_VISION_BOARD_CARDS } from './utils/visionBoardDefaults';
+import type { BankAccount, CreditCardItem, DebtItem, BudgetLimit } from './components/FinancesView';
 import { cleanupExpiredGridRoutine, cleanupExpiredRoutineItems } from './utils/routineUtils';
 import { getDeletedTaskIdsForDate } from './utils/taskStorage';
 import { initUserActivityTracker } from './utils/userActivityTracker';
@@ -364,6 +370,196 @@ export default function App() {
     }
   }, [projects]);
 
+  const [autoPrompts, setAutoPrompts] = useState<AutoPromptSchedule[]>(() => {
+    try {
+      const saved = localStorage.getItem('mbc_auto_prompts');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error('Error loading auto prompts:', e);
+    }
+    return [
+      {
+        id: 'prompt_weather_sp',
+        title: 'Previsão do Tempo SP',
+        prompt: 'pesquise e informe a temperatura e previsão do tempo para São Paulo hoje',
+        rawInput: '(todo dias as 15hrs) pesquise e informe a temperatura e previsão do tempo para São Paulo',
+        date: new Date().toISOString().split('T')[0],
+        time: '15:00',
+        recurrence: 'daily',
+        active: true,
+        runCount: 0,
+        createdAt: new Date().toISOString(),
+      }
+    ];
+  });
+
+  const [agentConversations, setAgentConversations] = useState<AgentConversation[]>(() => {
+    try {
+      const saved = localStorage.getItem('mbc_agent_conversations');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error('Error loading agent conversations:', e);
+    }
+    return [
+      {
+        id: 'conv_welcome',
+        title: 'Assistente Inteligente',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        messages: [
+          {
+            id: 'msg_welcome',
+            role: 'assistant',
+            content: 'Olá! Sou seu Agente Inteligente. Posso executar prompts programados automaticamente (como previsões de tempo, lembretes de aniversário ou compras) e exibir avisos no entalhe superior da tela.',
+            timestamp: new Date().toISOString()
+          }
+        ],
+        isAutomatedPrompt: false
+      }
+    ];
+  });
+
+  const [currentNotchNotification, setCurrentNotchNotification] = useState<NotchNotification | null>(null);
+  const [selectedAgentConvId, setSelectedAgentConvId] = useState<string>('conv_welcome');
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('mbc_auto_prompts', JSON.stringify(autoPrompts));
+    } catch (e) {
+      console.error('Error saving auto prompts:', e);
+    }
+  }, [autoPrompts]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('mbc_agent_conversations', JSON.stringify(agentConversations));
+    } catch (e) {
+      console.error('Error saving agent conversations:', e);
+    }
+  }, [agentConversations]);
+
+  // Execute an automated prompt (by scheduler or manually)
+  const executeAutomatedPrompt = async (schedule: AutoPromptSchedule) => {
+    try {
+      const res = await fetch('/api/agent/prompt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: schedule.prompt })
+      });
+      const data = await res.json();
+      const responseText = data.response || 'Prompt processado com sucesso.';
+
+      // Create a new conversation in the agent tab WITHOUT opening it ("sem abri-la")
+      const newConv: AgentConversation = {
+        id: 'conv_auto_' + Date.now(),
+        title: schedule.title || schedule.prompt.slice(0, 36),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        messages: [
+          {
+            id: 'msg_user_' + Date.now(),
+            role: 'user',
+            content: schedule.prompt,
+            timestamp: new Date().toISOString(),
+          },
+          {
+            id: 'msg_agent_' + (Date.now() + 1),
+            role: 'assistant',
+            content: responseText,
+            timestamp: new Date().toISOString(),
+          }
+        ],
+        isAutomatedPrompt: true,
+        automatedPromptId: schedule.id,
+      };
+
+      setAgentConversations(prev => [newConv, ...prev]);
+
+      // Calculate next scheduled date based on recurrence
+      setAutoPrompts(prev => prev.map(item => {
+        if (item.id !== schedule.id) return item;
+
+        let nextDate = item.date;
+        let stillActive = item.active;
+
+        if (item.recurrence === 'none') {
+          stillActive = false;
+        } else if (item.recurrence === 'daily') {
+          const d = new Date();
+          d.setDate(d.getDate() + 1);
+          nextDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        } else if (item.recurrence === 'weekly') {
+          const d = new Date();
+          d.setDate(d.getDate() + 7);
+          nextDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        } else if (item.recurrence === 'monthly') {
+          const d = new Date();
+          d.setMonth(d.getMonth() + 1);
+          nextDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        } else if (item.recurrence === 'yearly') {
+          const d = new Date();
+          d.setFullYear(d.getFullYear() + 1);
+          nextDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+
+        return {
+          ...item,
+          active: stillActive,
+          date: nextDate,
+          lastRunAt: new Date().toISOString(),
+          lastResponse: responseText,
+          runCount: (item.runCount || 0) + 1,
+        };
+      }));
+
+      // Display response in the Notch (Entalhe) formatted as: "Agent: (resposta)"
+      setCurrentNotchNotification({
+        id: 'notch_' + Date.now(),
+        type: 'agent',
+        message: `Agent: ${responseText}`,
+        conversationId: newConv.id,
+        timestamp: Date.now(),
+        durationMs: 16000
+      });
+
+      sendSystemNotification(`Agent: ${responseText.slice(0, 90)}...`, {
+        body: responseText,
+        icon: '/favicon.ico'
+      });
+    } catch (err: any) {
+      console.error('Error executing automated prompt:', err);
+    }
+  };
+
+  // Automated Prompts background checker (runs every 15s)
+  useEffect(() => {
+    const checkScheduledPrompts = () => {
+      const now = new Date();
+      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const currentHours = String(now.getHours()).padStart(2, '0');
+      const currentMinutes = String(now.getMinutes()).padStart(2, '0');
+      const currentTimeStr = `${currentHours}:${currentMinutes}`;
+
+      for (const schedule of autoPrompts) {
+        if (!schedule.active) continue;
+
+        // Matches if date is reached and time has arrived
+        if (schedule.date <= todayStr && schedule.time <= currentTimeStr) {
+          const lastRunTime = schedule.lastRunAt ? new Date(schedule.lastRunAt).getTime() : 0;
+          // Guard against running multiple times within 2 minutes
+          if (Date.now() - lastRunTime > 120000) {
+            executeAutomatedPrompt(schedule);
+          }
+        }
+      }
+    };
+
+    const interval = setInterval(checkScheduledPrompts, 15000);
+    checkScheduledPrompts();
+    return () => clearInterval(interval);
+  }, [autoPrompts]);
+
+
 
   // --- Lifted Navigation Sub-States ---
   const [checklistActiveTab, setChecklistActiveTab] = useState<'checklist' | 'rotina' | 'rotina-semanal' | 'habitos'>('checklist');
@@ -378,7 +574,9 @@ export default function App() {
   const TAB_ORDER: Record<string, number> = {
     calendario: 0,
     dashboard: 1,
+    agentes: 1.5,
     checklist: 2,
+    projetos: 2.5,
     notas: 3,
     rotina: 4,
     habitos: 5,
@@ -587,15 +785,19 @@ export default function App() {
     let lastActive = Date.now();
 
     const handleActivity = () => {
-      lastActive = Date.now();
+      const now = Date.now();
+      if (now - lastActive > 2000) {
+        lastActive = now;
+      }
     };
 
-    // User activity listeners
-    window.addEventListener('mousemove', handleActivity);
-    window.addEventListener('mousedown', handleActivity);
-    window.addEventListener('keydown', handleActivity);
-    window.addEventListener('scroll', handleActivity);
-    window.addEventListener('touchstart', handleActivity);
+    // User activity listeners (throttled + passive for peak rendering smoothness)
+    const listenerOpts = { passive: true };
+    window.addEventListener('mousemove', handleActivity, listenerOpts);
+    window.addEventListener('mousedown', handleActivity, listenerOpts);
+    window.addEventListener('keydown', handleActivity, listenerOpts);
+    window.addEventListener('scroll', handleActivity, listenerOpts);
+    window.addEventListener('touchstart', handleActivity, listenerOpts);
 
     // Dynamic inactivity checker
     const interval = setInterval(() => {
@@ -2396,12 +2598,12 @@ export default function App() {
       }
     }
 
-    // 4. Ultra-responsive active polling (every 3.5 seconds while tab is active)
+    // 4. Efficient background polling (every 20s as fallback while tab is active - realtime channels handle instant changes)
     const pollingInterval = setInterval(() => {
       if (isSubscribed && document.visibilityState === 'visible') {
         checkRemoteData(false);
       }
-    }, 3500);
+    }, 20000);
 
     // 5. Instant check on window focus, online event, or visibility change
     const handleFocusOrOnline = () => {
@@ -2417,7 +2619,7 @@ export default function App() {
     let lastInteractionCheckTime = 0;
     const handleUserInteraction = () => {
       const now = Date.now();
-      if (now - lastInteractionCheckTime > 3000 && isSubscribed && document.visibilityState === 'visible') {
+      if (now - lastInteractionCheckTime > 12000 && isSubscribed && document.visibilityState === 'visible') {
         lastInteractionCheckTime = now;
         checkRemoteData(false);
       }
@@ -3737,6 +3939,18 @@ export default function App() {
             }}
           />
         );
+      case 'agentes':
+        return (
+          <AgentesView
+            autoPrompts={autoPrompts}
+            setAutoPrompts={setAutoPrompts}
+            conversations={agentConversations}
+            setConversations={setAgentConversations}
+            onExecutePromptNow={executeAutomatedPrompt}
+            selectedConversationId={selectedAgentConvId}
+            setSelectedConversationId={setSelectedAgentConvId}
+          />
+        );
       default:
         return <div className="text-white text-center py-12">Tab não encontrada.</div>;
     }
@@ -3832,6 +4046,16 @@ export default function App() {
 
   return (
     <div id="main-app-container" className="flex flex-col lg:flex-row min-h-screen bg-[#040405] text-zinc-300 font-sans">
+      {/* Dynamic Notch (Entalhe) for Agent prompt notifications & system alerts */}
+      <DynamicNotch
+        currentNotification={currentNotchNotification}
+        onDismiss={() => setCurrentNotchNotification(null)}
+        onOpenConversation={(id) => {
+          if (id) setSelectedAgentConvId(id);
+          setActiveTab('agentes');
+        }}
+      />
+
       {/* PWA Offline / Reconnected Banner */}
       <OfflineNotificationBanner />
       
@@ -4086,32 +4310,38 @@ export default function App() {
       </AnimatePresence>
 
       {/* Central de Ofensivas & Congelamento Modal (Sugestões 1 & 2) */}
-      <StreakHubModal
-        isOpen={isStreakHubOpen}
-        onClose={() => setIsStreakHubOpen(false)}
-        masterStreak={streak}
-        onUpdateMasterStreak={setStreak}
-        onNavigateToTab={(tabId) => setActiveTab(tabId)}
-        xpTotal={xpTotal}
-        addXp={addXp}
-      />
+      {isStreakHubOpen && (
+        <StreakHubModal
+          isOpen={isStreakHubOpen}
+          onClose={() => setIsStreakHubOpen(false)}
+          masterStreak={streak}
+          onUpdateMasterStreak={setStreak}
+          onNavigateToTab={(tabId) => setActiveTab(tabId)}
+          xpTotal={xpTotal}
+          addXp={addXp}
+        />
+      )}
 
       {/* Central de Ligas e Classificação (Duolingo Style Ranking) */}
-      <LeagueRankingModal
-        isOpen={isRankingModalOpen}
-        onClose={() => setIsRankingModalOpen(false)}
-        xpTotal={xpTotal}
-        level={level}
-        userName={userName}
-        addXp={addXp}
-      />
+      {isRankingModalOpen && (
+        <LeagueRankingModal
+          isOpen={isRankingModalOpen}
+          onClose={() => setIsRankingModalOpen(false)}
+          xpTotal={xpTotal}
+          level={level}
+          userName={userName}
+          addXp={addXp}
+        />
+      )}
 
       {/* Central de Configuração de Lembretes de Reviews */}
-      <ReviewReminderModal
-        isOpen={isAppReminderModalOpen}
-        onClose={() => setIsAppReminderModalOpen(false)}
-        initialTab={appReminderModalTab}
-      />
+      {isAppReminderModalOpen && (
+        <ReviewReminderModal
+          isOpen={isAppReminderModalOpen}
+          onClose={() => setIsAppReminderModalOpen(false)}
+          initialTab={appReminderModalTab}
+        />
+      )}
     </div>
   );
 }

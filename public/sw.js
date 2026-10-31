@@ -1,5 +1,5 @@
 // Service Worker for Life Organizer PWA (Offline & Background Notification/Alarm Support)
-const CACHE_NAME = 'life-organizer-pwa-v7';
+const CACHE_NAME = 'life-organizer-pwa-v8';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -430,6 +430,25 @@ self.addEventListener('fetch', (event) => {
         .catch(() => {
           return caches.match('/index.html').then((cached) => cached || caches.match(event.request));
         })
+    );
+    return;
+  }
+
+  // Cache-first strategy for fingerprinted assets (/assets/) for instant zero-latency loading
+  if (event.request.url.includes('/assets/')) {
+    event.respondWith(
+      caches.match(event.request).then((cachedResponse) => {
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        return fetch(event.request).then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache));
+          }
+          return networkResponse;
+        });
+      })
     );
     return;
   }

@@ -44,8 +44,8 @@ export default function AppLoadingScreen({
   // Smooth progress animation & sync countdown
   useEffect(() => {
     const startTime = Date.now();
-    const intervalTime = 30;
-    const totalSteps = Math.max(30, Math.floor(minDurationMs / intervalTime));
+    const intervalTime = 50;
+    const totalSteps = Math.max(10, Math.floor(minDurationMs / intervalTime));
     let currentStep = 0;
 
     const timer = setInterval(() => {
@@ -56,7 +56,7 @@ export default function AppLoadingScreen({
       if (rawProgress >= 100) {
         clearInterval(timer);
         const elapsed = Date.now() - startTime;
-        const remaining = Math.max(120, minDurationMs - elapsed);
+        const remaining = Math.max(40, minDurationMs - elapsed);
         setTimeout(() => {
           onComplete();
         }, remaining);

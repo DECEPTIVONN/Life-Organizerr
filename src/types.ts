@@ -378,3 +378,39 @@ export interface CustomCard {
   emoji?: string;
 }
 
+export interface AgentMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+}
+
+export interface AgentConversation {
+  id: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+  messages: AgentMessage[];
+  isAutomatedPrompt?: boolean;
+  automatedPromptId?: string;
+}
+
+export interface AutoPromptSchedule {
+  id: string;
+  title?: string;
+  prompt: string;
+  rawInput?: string;
+  date: string; // YYYY-MM-DD
+  time: string; // HH:mm
+  recurrence: 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly';
+  active: boolean;
+  lastRunAt?: string;
+  nextRunAt?: string;
+  runCount: number;
+  createdAt: string;
+  category?: string;
+  lastResponse?: string;
+  lastError?: string;
+}
+
+

@@ -42,7 +42,8 @@ import {
   Bell,
   Timer,
   LogOut,
-  FolderKanban
+  FolderKanban,
+  Bot
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { QuickReminder } from '../types';
@@ -81,7 +82,7 @@ interface SearchResult {
   tab: string;
 }
 
-export default function Sidebar({ 
+function Sidebar({ 
   activeTab, 
   setActiveTab, 
   xpTotal, 
@@ -524,6 +525,7 @@ export default function Sidebar({
     { id: 'calendario', label: 'Agenda', desc: 'Diário & Fé', icon: Calendar },
     { id: 'resumo', label: 'Vida em resumo', desc: 'Painel holístico', icon: Compass },
     { id: 'projetos', label: 'Projetos', desc: 'Quadros Kanban & Hub', icon: FolderKanban },
+    { id: 'agentes', label: 'Agentes & IA', desc: 'Prompts automáticos e chat', icon: Bot },
     { id: 'metas', label: 'Metas', desc: 'Evolução pessoal', icon: Target },
     { id: 'financas', label: 'Finanças', desc: 'Gestão de capital', icon: DollarSign },
     { id: 'anuais', label: 'Anuais', desc: 'Pastas, diários & livros', icon: Layers },
@@ -562,6 +564,16 @@ export default function Sidebar({
       icon: FolderKanban,
       action: () => {
         setActiveTab('projetos');
+        setMobileMenuOpen(false);
+      }
+    },
+    {
+      id: 'agentes',
+      label: 'Agentes & IA',
+      desc: 'Prompts automáticos e chat',
+      icon: Bot,
+      action: () => {
+        setActiveTab('agentes');
         setMobileMenuOpen(false);
       }
     },
@@ -2349,3 +2361,5 @@ export default function Sidebar({
     </>
   );
 }
+
+export default React.memo(Sidebar);

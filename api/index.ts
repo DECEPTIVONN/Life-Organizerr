@@ -420,6 +420,68 @@ app.delete(["/api/calendar/events/:id", "/calendar/events/:id"], async (req, res
   }
 });
 
+// Agent Automated Prompts & Chat endpoint powered by Gemini 3.8 Flash
+app.post(["/api/agent/prompt", "/agent/prompt", "/api/agent/chat", "/agent/chat"], async (req, res) => {
+  const { prompt, conversationHistory = [] } = req.body || {};
+  if (!prompt || typeof prompt !== 'string') {
+    return res.status(400).json({ error: "O campo 'prompt' é obrigatório." });
+  }
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return res.json({
+      response: `Prompt recebido: "${prompt}". Lembrete/tarefa registrada pelo agente. (Dica: adicione GEMINI_API_KEY para respostas enriquecidas com IA)`,
+      success: true,
+      simulated: true,
+    });
+  }
+
+  try {
+    const { GoogleGenAI } = await import("@google/genai");
+    const ai = new GoogleGenAI({
+      apiKey,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        }
+      }
+    });
+
+    let contents: any = prompt;
+    if (Array.isArray(conversationHistory) && conversationHistory.length > 0) {
+      contents = [
+        ...conversationHistory.map((msg: any) => ({
+          role: msg.role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: String(msg.content) }]
+        })),
+        {
+          role: 'user',
+          parts: [{ text: prompt }]
+        }
+      ];
+    }
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.8-flash",
+      contents,
+      config: {
+        systemInstruction: "Você é um agente assistente inteligente, prestativo, objetivo e claro em português. Se solicitado previsão do tempo, datas ou pesquisa externa, forneça dados objetivos e diretos.",
+        tools: [{ googleSearch: {} }]
+      }
+    });
+
+    const text = response.text || "Prompt processado com sucesso.";
+    res.json({ response: text, success: true });
+  } catch (err: any) {
+    console.error("[Planner Server] Agent prompt execution error:", err);
+    res.json({
+      response: `Nota do Agente: Não foi possível conectar à rede de IA externa (${err.message}). O lembrete do prompt "${prompt}" foi registrado.`,
+      success: true,
+      error: err.message
+    });
+  }
+});
+
 // Global Error Handler for Vercel Serverless Function Execution
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error("[Planner Server Unhandled Error]:", err);

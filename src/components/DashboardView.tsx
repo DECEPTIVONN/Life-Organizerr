@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   Flame, 
   Zap, 
@@ -162,7 +162,7 @@ interface DashboardViewProps {
   cardGlowEnabled?: boolean;
 }
 
-export default function DashboardView({
+function DashboardView({
   userName,
   setUserName,
   xpTotal,
@@ -481,30 +481,39 @@ export default function DashboardView({
   };
 
   // Calculate Average progress of goals
-  const averageGoalProgress = goals.length > 0 
-    ? Math.round((goals.reduce((acc, g) => acc + (g.actionsDone / g.actionsTotal), 0) / goals.length) * 100) 
-    : 0;
+  const averageGoalProgress = useMemo(() => {
+    if (!goals.length) return 0;
+    return Math.round((goals.reduce((acc, g) => acc + (g.actionsDone / (g.actionsTotal || 1)), 0) / goals.length) * 100);
+  }, [goals]);
 
   // Filter daily tasks for today
-  const dNow = new Date();
-  const todayDateStr = `${dNow.getFullYear()}-${String(dNow.getMonth() + 1).padStart(2, '0')}-${String(dNow.getDate()).padStart(2, '0')}`;
-  const todayTasks = dailyTasks.filter(t => t.isRecurring !== false || !t.createdDate || t.createdDate === todayDateStr);
+  const todayTasks = useMemo(() => {
+    const dNow = new Date();
+    const todayDateStr = `${dNow.getFullYear()}-${String(dNow.getMonth() + 1).padStart(2, '0')}-${String(dNow.getDate()).padStart(2, '0')}`;
+    return dailyTasks.filter(t => t.isRecurring !== false || !t.createdDate || t.createdDate === todayDateStr);
+  }, [dailyTasks]);
 
   // Calculate Checklist completion rate for today
-  const completedChecklistCount = todayTasks.filter(t => t.completed).length;
-  const checklistPercent = todayTasks.length > 0 
-    ? Math.round((completedChecklistCount / todayTasks.length) * 100) 
-    : 0;
+  const completedChecklistCount = useMemo(() => {
+    return todayTasks.filter(t => t.completed).length;
+  }, [todayTasks]);
+
+  const checklistPercent = useMemo(() => {
+    return todayTasks.length > 0 ? Math.round((completedChecklistCount / todayTasks.length) * 100) : 0;
+  }, [completedChecklistCount, todayTasks.length]);
 
   // Calculate Habits completed today
-  const habitsTodayCount = habits.filter(h => !!h.history[todayKey]).length;
-  const habitsPercent = habits.length > 0
-    ? Math.round((habitsTodayCount / habits.length) * 100)
-    : 0;
+  const habitsTodayCount = useMemo(() => {
+    return habits.filter(h => !!h.history[todayKey]).length;
+  }, [habits, todayKey]);
+
+  const habitsPercent = useMemo(() => {
+    return habits.length > 0 ? Math.round((habitsTodayCount / habits.length) * 100) : 0;
+  }, [habitsTodayCount, habits.length]);
 
   // Calculate Habits weekly efficiency
-  const getPast7DaysKeys = () => {
-    const keys = [];
+  const habitsWeeklyPercent = useMemo(() => {
+    const keys: string[] = [];
     for (let i = 0; i < 7; i++) {
       const d = new Date();
       d.setDate(d.getDate() - i);
@@ -513,37 +522,62 @@ export default function DashboardView({
       const day = String(d.getDate()).padStart(2, '0');
       keys.push(`${year}-${month}-${day}`);
     }
-    return keys;
-  };
-  const past7Days = getPast7DaysKeys();
-  let totalHabitSlots = habits.length * 7;
-  let completedHabitSlots = 0;
-  habits.forEach(h => {
-    past7Days.forEach(dateKey => {
-      if (h.history[dateKey]) completedHabitSlots++;
-    });
-  });
-  const habitsWeeklyPercent = totalHabitSlots > 0 ? Math.round((completedHabitSlots / totalHabitSlots) * 100) : 0;
+    const totalHabitSlots = habits.length * 7;
+    if (totalHabitSlots === 0) return 0;
+    let completedSlots = 0;
+    for (const h of habits) {
+      for (const dateKey of keys) {
+        if (h.history[dateKey]) completedSlots++;
+      }
+    }
+    return Math.round((completedSlots / totalHabitSlots) * 100);
+  }, [habits]);
 
   // Financial Calculations
-  const totalIncome = finances.filter(f => f.type === 'income').reduce((sum, f) => sum + f.amount, 0);
-  const totalExpense = finances.filter(f => f.type === 'expense').reduce((sum, f) => sum + f.amount, 0);
-  const totalInvestment = finances.filter(f => f.type === 'investment').reduce((sum, f) => sum + f.amount, 0);
-  const availableBalance = totalIncome - totalExpense;
-  const netSavingsRate = totalIncome > 0 ? Math.max(0, Math.min(100, Math.round(((totalIncome - totalExpense - totalInvestment) / totalIncome) * 100))) : 0;
+  const { totalIncome, totalExpense, totalInvestment, availableBalance, netSavingsRate } = useMemo(() => {
+    let income = 0;
+    let expense = 0;
+    let investment = 0;
+    for (const f of finances) {
+      if (f.type === 'income') income += f.amount;
+      else if (f.type === 'expense') expense += f.amount;
+      else if (f.type === 'investment') investment += f.amount;
+    }
+    const balance = income - expense;
+    const rate = income > 0 ? Math.max(0, Math.min(100, Math.round(((income - expense - investment) / income) * 100))) : 0;
+    return {
+      totalIncome: income,
+      totalExpense: expense,
+      totalInvestment: investment,
+      availableBalance: balance,
+      netSavingsRate: rate
+    };
+  }, [finances]);
 
   // Routine for today
-  const todayDayIdx = new Date().getDay(); // 0 = Sunday, 1 = Monday, etc.
-  const todayRoutines = routine.filter(r => r.dayOfWeek === todayDayIdx || r.dayOfWeek === -1 || r.isEveryDay);
-  const completedTodayRoutines = todayRoutines.filter(r => r.completedDays?.includes(todayDayIdx) || r.completed).length;
-  const routinePercent = todayRoutines.length > 0 ? Math.round((completedTodayRoutines / todayRoutines.length) * 100) : 0;
+  const { todayRoutines, completedTodayRoutines, routinePercent } = useMemo(() => {
+    const todayDayIdx = new Date().getDay();
+    const list = routine.filter(r => r.dayOfWeek === todayDayIdx || r.dayOfWeek === -1 || r.isEveryDay);
+    const completed = list.filter(r => r.completedDays?.includes(todayDayIdx) || r.completed).length;
+    const percent = list.length > 0 ? Math.round((completed / list.length) * 100) : 0;
+    return {
+      todayRoutines: list,
+      completedTodayRoutines: completed,
+      routinePercent: percent
+    };
+  }, [routine]);
 
   // Level progress
-  const xpInCurrentLevel = xpTotal % 1000;
-  const progressPercent = (xpInCurrentLevel / 1000) * 100;
+  const { xpInCurrentLevel, progressPercent } = useMemo(() => {
+    const current = xpTotal % 1000;
+    return {
+      xpInCurrentLevel: current,
+      progressPercent: (current / 1000) * 100
+    };
+  }, [xpTotal]);
 
   // Os 6 Pilares do Planner (REAL DATA LINKED)
-  const pilares = [
+  const pilares = useMemo(() => [
     {
       id: 'checklist',
       title: 'Checklist Diário',
@@ -592,7 +626,21 @@ export default function DashboardView({
       icon: Calendar,
       color: 'from-orange-500 to-red-600'
     }
-  ];
+  ], [
+    completedChecklistCount,
+    todayTasks.length,
+    checklistPercent,
+    habitsTodayCount,
+    habits.length,
+    habitsPercent,
+    completedTodayRoutines,
+    todayRoutines.length,
+    routinePercent,
+    activeGoalsCount,
+    averageGoalProgress,
+    netSavingsRate,
+    goals
+  ]);
 
   // Current Date Formatter
   const formattedDate = new Date().toLocaleDateString('pt-BR', {
@@ -870,6 +918,8 @@ export default function DashboardView({
               <img
                 src={card.imageUrl}
                 alt={card.title}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 referrerPolicy="no-referrer"
               />
@@ -1969,3 +2019,5 @@ export default function DashboardView({
     </div>
   );
 }
+
+export default React.memo(DashboardView);
