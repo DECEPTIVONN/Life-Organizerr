@@ -21,7 +21,8 @@ import {
   AlertCircle,
   Pencil,
   Bell,
-  ListTodo
+  ListTodo,
+  FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { RoutineItem, MonthlyReview, CalendarNote, WeeklyReview, SubTask } from '../types';
@@ -127,6 +128,7 @@ export default function RoutineView({
   const [reviewMonth, setReviewMonth] = useState(new Date().getMonth());
   
   const [reviewOneSentence, setReviewOneSentence] = useState('');
+  const [reviewResumo, setReviewResumo] = useState('');
   const [reviewMemorableMoments, setReviewMemorableMoments] = useState<string[]>([]);
   const [reviewLearnings, setReviewLearnings] = useState<string[]>([]);
   const [reviewImprovements, setReviewImprovements] = useState<string[]>([]);
@@ -141,11 +143,13 @@ export default function RoutineView({
     const existing = monthlyReviews.find(r => r.year === reviewYear && r.month === reviewMonth);
     if (existing) {
       setReviewOneSentence(existing.oneSentence || '');
+      setReviewResumo(existing.resumo || '');
       setReviewMemorableMoments(existing.memorableMoments || []);
       setReviewLearnings(existing.learnings || []);
       setReviewImprovements(existing.improvements || []);
     } else {
       setReviewOneSentence('');
+      setReviewResumo('');
       setReviewMemorableMoments([]);
       setReviewLearnings([]);
       setReviewImprovements([]);
@@ -204,6 +208,7 @@ export default function RoutineView({
   const [reviewWeekNumber, setReviewWeekNumber] = useState(() => getWeekNumber(new Date()));
   
   const [weekReviewOneSentence, setWeekReviewOneSentence] = useState('');
+  const [weekReviewResumo, setWeekReviewResumo] = useState('');
   const [weekReviewMemorableMoments, setWeekReviewMemorableMoments] = useState<string[]>([]);
   const [weekReviewLearnings, setWeekReviewLearnings] = useState<string[]>([]);
   const [weekReviewImprovements, setWeekReviewImprovements] = useState<string[]>([]);
@@ -218,11 +223,13 @@ export default function RoutineView({
     const existing = weeklyReviews.find(r => r.year === reviewWeekYear && r.weekNumber === reviewWeekNumber);
     if (existing) {
       setWeekReviewOneSentence(existing.oneSentence || '');
+      setWeekReviewResumo(existing.resumo || '');
       setWeekReviewMemorableMoments(existing.memorableMoments || []);
       setWeekReviewLearnings(existing.learnings || []);
       setWeekReviewImprovements(existing.improvements || []);
     } else {
       setWeekReviewOneSentence('');
+      setWeekReviewResumo('');
       setWeekReviewMemorableMoments([]);
       setWeekReviewLearnings([]);
       setWeekReviewImprovements([]);
@@ -244,6 +251,7 @@ export default function RoutineView({
       year: reviewWeekYear,
       weekNumber: reviewWeekNumber,
       oneSentence: weekReviewOneSentence,
+      resumo: weekReviewResumo,
       memorableMoments: weekReviewMemorableMoments,
       learnings: weekReviewLearnings,
       improvements: weekReviewImprovements
@@ -324,6 +332,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
       year: reviewYear,
       month: reviewMonth,
       oneSentence: reviewOneSentence,
+      resumo: reviewResumo,
       memorableMoments: reviewMemorableMoments,
       learnings: reviewLearnings,
       improvements: reviewImprovements
@@ -1400,6 +1409,22 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                     />
                   </div>
 
+                  {/* Resumo da Semana */}
+                  <div className="space-y-2 bg-[#0d0d10]/40 border border-zinc-900 rounded-2xl p-4">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <FileText className="h-4 w-4 text-orange-500" />
+                      Resumo da Semana
+                    </label>
+                    <p className="text-[10px] text-zinc-500">Faça um resumo detalhado dos acontecimentos, metas e aprendizados desta semana.</p>
+                    <textarea
+                      value={weekReviewResumo}
+                      onChange={(e) => setWeekReviewResumo(e.target.value)}
+                      onKeyDown={(e) => handleAutoListKeyDown(e, weekReviewResumo, setWeekReviewResumo)}
+                      placeholder="Escreva um resumo conciso sobre os principais fatos e conclusões da semana..."
+                      className="w-full min-h-[85px] bg-zinc-950/60 border border-zinc-850 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-y font-sans leading-relaxed"
+                    />
+                  </div>
+
                   {/* Memoráveis */}
                   <div className="space-y-3 bg-[#0d0d10]/40 border border-zinc-900 rounded-2xl p-4">
                     <label className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -1772,6 +1797,22 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                       onKeyDown={(e) => handleAutoListKeyDown(e, reviewOneSentence, setReviewOneSentence)}
                       placeholder="Ex: Um mês de muito foco profissional, superação física e consolidação de hábitos matinais..."
                       className="w-full min-h-[60px] bg-zinc-950/60 border border-zinc-850 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-none font-sans leading-relaxed"
+                    />
+                  </div>
+
+                  {/* Resumo do Mês */}
+                  <div className="space-y-2 bg-[#0d0d10]/40 border border-zinc-900 rounded-2xl p-4">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <FileText className="h-4 w-4 text-orange-500" />
+                      Resumo do Mês
+                    </label>
+                    <p className="text-[10px] text-zinc-500">Faça um resumo completo dos acontecimentos, projetos e conclusões do mês.</p>
+                    <textarea
+                      value={reviewResumo}
+                      onChange={(e) => setReviewResumo(e.target.value)}
+                      onKeyDown={(e) => handleAutoListKeyDown(e, reviewResumo, setReviewResumo)}
+                      placeholder="Escreva um resumo detalhado sobre o balanço geral deste mês..."
+                      className="w-full min-h-[85px] bg-zinc-950/60 border border-zinc-850 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-y font-sans leading-relaxed"
                     />
                   </div>
 

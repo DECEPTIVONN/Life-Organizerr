@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   FileText, 
   CalendarDays, 
@@ -55,7 +55,7 @@ import { CalendarNote, DailyTask, MonthlyReview, WeeklyReview, YearlyBook, SubTa
 import { calculateReadingInterval, formatDateBR } from '../utils/bookUtils';
 import { handleAutoListKeyDown, formatTimeInput, moveCursorToEnd } from '../utils/listUtils';
 import { getDeletedTaskIdsForDate, addDeletedTaskIdForDate } from '../utils/taskStorage';
-import { getLastAccessAfter18ForYesterday } from '../utils/userActivityTracker';
+import { getLastAccessAfter18ForYesterday, getAutoBedTimeForDate, getAutoWakeTimeForDate } from '../utils/userActivityTracker';
 
 interface AnuaisViewProps {
   notes: CalendarNote[];
@@ -88,7 +88,7 @@ interface AnuaisViewProps {
   freeEditMode?: boolean;
   masterTemplates?: { gratitude: string; decrees: string; prayer: string };
   setMasterTemplates?: React.Dispatch<React.SetStateAction<{ gratitude: string; decrees: string; prayer: string }>>;
-  targetReviewRequest?: { type: 'weekly' | 'monthly'; timestamp: number } | null;
+  targetReviewRequest?: { type: 'weekly' | 'monthly'; year?: number; weekNumber?: number; month?: number; timestamp: number } | null;
 }
 
 export default function AnuaisView({
@@ -121,7 +121,7 @@ export default function AnuaisView({
   freeEditMode = false,
   targetReviewRequest = null
 }: AnuaisViewProps) {
-  const [selectedYear, setSelectedYear] = useState(() => Math.max(2026, new Date().getFullYear()));
+  const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
   const [selectedMonthIndex, setSelectedMonthIndex] = useState<number>(() => new Date().getMonth()); // 0-11 for months, -1 for "Livros"
 
   const isBookInMonthAndYear = (bk: YearlyBook, yr: number, monthIdx: number) => {
@@ -267,19 +267,27 @@ export default function AnuaisView({
   };
 
   // Dynamic Year List State & New Year addition states
+  // Dynamic Year List State & New Year addition states (capped at current calendar year)
+  const currentRealYear = new Date().getFullYear();
+
   const [localOverviewYears, setLocalOverviewYears] = useState<number[]>(() => {
+    const defaultYears = [2024, 2025, currentRealYear].filter(y => y <= currentRealYear);
     const saved = localStorage.getItem('mbc_overview_years');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.sort((a, b) => a - b);
+          const filtered = parsed.filter(y => typeof y === 'number' && y <= currentRealYear);
+          if (!filtered.includes(currentRealYear)) {
+            filtered.push(currentRealYear);
+          }
+          return Array.from(new Set<number>(filtered)).sort((a: number, b: number) => a - b);
         }
       } catch (e) {
         console.error(e);
       }
     }
-    return [2024, 2025, 2026, 2027, 2028, 2029, 2030];
+    return Array.from(new Set<number>(defaultYears)).sort((a: number, b: number) => a - b);
   });
 
   const overviewYears = propOverviewYears !== undefined ? propOverviewYears : localOverviewYears;
@@ -287,6 +295,22 @@ export default function AnuaisView({
     if (propSetOverviewYears) propSetOverviewYears(action);
     setLocalOverviewYears(action);
   };
+
+  // Only years up to current real calendar year are visible; current year is guaranteed present
+  const visibleOverviewYears = useMemo(() => {
+    const list = overviewYears.filter(yr => yr <= currentRealYear);
+    if (!list.includes(currentRealYear)) {
+      list.push(currentRealYear);
+    }
+    return Array.from(new Set<number>(list)).sort((a: number, b: number) => a - b);
+  }, [overviewYears, currentRealYear]);
+
+  // Ensure selectedYear is not pointing to an invalid future year
+  useEffect(() => {
+    if (selectedYear > currentRealYear) {
+      setSelectedYear(currentRealYear);
+    }
+  }, [selectedYear, currentRealYear]);
 
   const [isEditingMonthlyReview, setIsEditingMonthlyReview] = useState(false);
 
@@ -298,12 +322,14 @@ export default function AnuaisView({
       setMonthlyMemorableMoments(r.memorableMoments || []);
       setMonthlyLearnings(r.learnings || []);
       setMonthlyImprovements(r.improvements || []);
+      setMonthlyResumo(r.resumo || '');
       setIsEditingMonthlyReview(false);
     } else {
       setMonthlyOneSentence('');
       setMonthlyMemorableMoments([]);
       setMonthlyLearnings([]);
       setMonthlyImprovements([]);
+      setMonthlyResumo('');
       setIsEditingMonthlyReview(true);
     }
     setNewMoment('');
@@ -367,15 +393,19 @@ export default function AnuaisView({
   const handleAddYear = () => {
     setAddYearError('');
     const yr = parseInt(newYearInput.trim(), 10);
-    if (isNaN(yr) || yr < 1900 || yr > 2100) {
-      setAddYearError('Ano inválido (1900-2100)');
+    if (isNaN(yr) || yr < 1900) {
+      setAddYearError('Ano inválido');
       return;
     }
-    if (overviewYears.includes(yr)) {
-      setAddYearError('Este ano já existe!');
+    if (yr > currentRealYear) {
+      setAddYearError(`A Central de Anuais só vai até o ano atual (${currentRealYear}). O ano ${yr} aparecerá automaticamente no dia 1º de janeiro de ${yr}.`);
       return;
     }
-    setOverviewYears(prev => [...prev, yr].sort((a, b) => a - b));
+    if (visibleOverviewYears.includes(yr)) {
+      setAddYearError('Este ano já está presente na Central!');
+      return;
+    }
+    setOverviewYears(prev => [...prev.filter(y => y <= currentRealYear), yr].sort((a, b) => a - b));
     setNewYearInput('');
     setIsAddingYear(false);
     addXp(50);
@@ -494,6 +524,7 @@ export default function AnuaisView({
   // Monthly Review Form states (for the selected month in the selected year)
   const [isMonthlyReviewModalOpen, setIsMonthlyReviewModalOpen] = useState(false);
   const [monthlyOneSentence, setMonthlyOneSentence] = useState('');
+  const [monthlyResumo, setMonthlyResumo] = useState('');
   const [monthlyMemorableMoments, setMonthlyMemorableMoments] = useState<string[]>([]);
   const [monthlyLearnings, setMonthlyLearnings] = useState<string[]>([]);
   const [monthlyImprovements, setMonthlyImprovements] = useState<string[]>([]);
@@ -506,6 +537,7 @@ export default function AnuaisView({
   const [isWeeklyReviewModalOpen, setIsWeeklyReviewModalOpen] = useState(false);
   const [selectedWeekNum, setSelectedWeekNum] = useState<number | null>(null);
   const [weeklyOneSentence, setWeeklyOneSentence] = useState('');
+  const [weeklyResumo, setWeeklyResumo] = useState('');
   const [weeklyMemorableMoments, setWeeklyMemorableMoments] = useState<string[]>([]);
   const [weeklyLearnings, setWeeklyLearnings] = useState<string[]>([]);
   const [weeklyImprovements, setWeeklyImprovements] = useState<string[]>([]);
@@ -526,11 +558,13 @@ export default function AnuaisView({
     const existing = monthlyReviews.find(r => r.year === selectedYear && r.month === selectedMonthIndex);
     if (existing) {
       setMonthlyOneSentence(existing.oneSentence || '');
+      setMonthlyResumo(existing.resumo || '');
       setMonthlyMemorableMoments(existing.memorableMoments || []);
       setMonthlyLearnings(existing.learnings || []);
       setMonthlyImprovements(existing.improvements || []);
     } else {
       setMonthlyOneSentence('');
+      setMonthlyResumo('');
       setMonthlyMemorableMoments([]);
       setMonthlyLearnings([]);
       setMonthlyImprovements([]);
@@ -549,6 +583,7 @@ export default function AnuaisView({
       year: selectedYear,
       month: selectedMonthIndex,
       oneSentence: monthlyOneSentence,
+      resumo: monthlyResumo,
       memorableMoments: monthlyMemorableMoments,
       learnings: monthlyLearnings,
       improvements: monthlyImprovements
@@ -630,12 +665,14 @@ export default function AnuaisView({
     const existing = weeklyReviews.find(r => r.year === selectedYear && r.weekNumber === wkNum);
     if (existing) {
       setWeeklyOneSentence(existing.oneSentence || '');
+      setWeeklyResumo(existing.resumo || '');
       setWeeklyMemorableMoments(existing.memorableMoments || []);
       setWeeklyLearnings(existing.learnings || []);
       setWeeklyImprovements(existing.improvements || []);
       setWeeklyReadings(existing.readings || '');
     } else {
       setWeeklyOneSentence('');
+      setWeeklyResumo('');
       setWeeklyMemorableMoments([]);
       setWeeklyLearnings([]);
       setWeeklyImprovements([]);
@@ -656,6 +693,7 @@ export default function AnuaisView({
       year: selectedYear,
       weekNumber: selectedWeekNum,
       oneSentence: weeklyOneSentence,
+      resumo: weeklyResumo,
       memorableMoments: weeklyMemorableMoments,
       learnings: weeklyLearnings,
       improvements: weeklyImprovements,
@@ -685,26 +723,17 @@ export default function AnuaisView({
     }, 500);
   };
 
-  // Handle external redirect to latest review (e.g. from ReviewReminderBanner)
+  // Handle external redirect to targeted review (e.g. from ReviewReminderBanner or Notification)
   useEffect(() => {
     if (!targetReviewRequest) return;
 
     if (targetReviewRequest.type === 'weekly') {
       const now = new Date();
-      let targetYear = now.getFullYear();
-      let targetWeek = getWeekNumber(now);
+      // Target specific week and year provided, or current week
+      const targetYear = targetReviewRequest.year ?? now.getFullYear();
+      const targetWeek = targetReviewRequest.weekNumber ?? getWeekNumber(now);
 
-      // Look for the latest weekly review by year and weekNumber
-      if (weeklyReviews && weeklyReviews.length > 0) {
-        const sorted = [...weeklyReviews].sort((a, b) => {
-          if (a.year !== b.year) return b.year - a.year;
-          return b.weekNumber - a.weekNumber;
-        });
-        targetYear = sorted[0].year;
-        targetWeek = sorted[0].weekNumber;
-      }
-
-      // Find the month containing this week
+      // Find the month containing this target week
       let targetMonth = now.getMonth();
       for (let m = 0; m < 12; m++) {
         const weeks = getWeeksForMonth(targetYear, m);
@@ -719,41 +748,41 @@ export default function AnuaisView({
       setIsWeeklyReviewsOpen(true);
       setExpandedWeekNum(targetWeek);
 
+      // Open the specific weekly review form modal immediately
+      handleOpenWeeklyReview(targetWeek);
+
       setTimeout(() => {
-        handleOpenWeeklyReview(targetWeek);
         const el = document.getElementById(`expanded-week-detail-${targetWeek}`) || document.getElementById('weekly-reviews-section');
         if (el) {
           el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
-      }, 150);
+      }, 100);
     } else if (targetReviewRequest.type === 'monthly') {
       const now = new Date();
-      let targetYear = now.getFullYear();
-      let targetMonth = now.getMonth();
-
-      if (monthlyReviews && monthlyReviews.length > 0) {
-        const sorted = [...monthlyReviews].sort((a, b) => {
-          if (a.year !== b.year) return b.year - a.year;
-          return b.month - a.month;
-        });
-        targetYear = sorted[0].year;
-        targetMonth = sorted[0].month;
-      } else {
-        const target = getTargetReviewMonthAndYear(reviewReminderSettings, now);
-        targetYear = target.year;
-        targetMonth = target.month;
-      }
+      const targetInfo = getTargetReviewMonthAndYear(reviewReminderSettings, now);
+      const targetYear = targetReviewRequest.year ?? targetInfo.year;
+      const targetMonth = targetReviewRequest.month ?? targetInfo.month;
 
       setSelectedYear(targetYear);
       setSelectedMonthIndex(targetMonth);
       setIsMonthlyReviewOpen(true);
 
+      // If review is not filled yet, open editor view directly
+      const existing = monthlyReviews.find(r => r.year === targetYear && r.month === targetMonth);
+      if (!existing) {
+        setIsEditingMonthlyReview(true);
+      }
+
       setTimeout(() => {
         const el = document.getElementById('monthly-review-section');
         if (el) {
           el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          el.classList.add('ring-2', 'ring-orange-500', 'ring-offset-2', 'ring-offset-black');
+          setTimeout(() => {
+            el.classList.remove('ring-2', 'ring-orange-500', 'ring-offset-2', 'ring-offset-black');
+          }, 2500);
         }
-      }, 150);
+      }, 100);
     }
   }, [targetReviewRequest]);
 
@@ -884,9 +913,10 @@ export default function AnuaisView({
       setGratitudeText(existing.gratitudeText || templateGratitude);
       setDecreesText(existing.decreesText || templateDecrees);
       setPrayerText(existing.prayerText || templatePrayer);
-      const inferredBedTime = (!existing.sleepBedTime) ? (getLastAccessAfter18ForYesterday(dateStr) || '') : '';
+      const inferredBedTime = (!existing.sleepBedTime) ? (getAutoBedTimeForDate(dateStr) || getLastAccessAfter18ForYesterday(dateStr) || '') : '';
       setSleepBedTime(existing.sleepBedTime || inferredBedTime);
-      setSleepWakeTime(existing.sleepWakeTime || '');
+      const inferredWakeTime = (!existing.sleepWakeTime) ? (getAutoWakeTimeForDate(dateStr) || '') : '';
+      setSleepWakeTime(existing.sleepWakeTime || inferredWakeTime);
       setFoodMorning(existing.foodMorning || '');
       setFoodAfternoon(existing.foodAfternoon || '');
       setFoodNight(existing.foodNight || '');
@@ -942,9 +972,10 @@ export default function AnuaisView({
       setGratitudeText(templateGratitude);
       setDecreesText(templateDecrees);
       setPrayerText(templatePrayer);
-      const inferredBedTime = getLastAccessAfter18ForYesterday(dateStr) || '';
+      const inferredBedTime = getAutoBedTimeForDate(dateStr) || getLastAccessAfter18ForYesterday(dateStr) || '';
       setSleepBedTime(inferredBedTime);
-      setSleepWakeTime('');
+      const inferredWakeTime = getAutoWakeTimeForDate(dateStr) || '';
+      setSleepWakeTime(inferredWakeTime);
       setFoodMorning('');
       setFoodAfternoon('');
       setFoodNight('');
@@ -1381,9 +1412,9 @@ export default function AnuaisView({
               </div>
             </div>
 
-            {/* Years Grid */}
+            {/* Years Grid (only up to current real calendar year) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {overviewYears.map((year) => {
+          {visibleOverviewYears.map((year) => {
             const coverImage = yearlyImages[year] || 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?q=80&w=1000';
 
             // Stats calculation for the card
@@ -2161,6 +2192,19 @@ export default function AnuaisView({
                                 </button>
                               </div>
 
+                              {/* Resumo do Mês Card (se preenchido) */}
+                              {r.resumo && (
+                                <div className="p-5 bg-zinc-950/60 border border-zinc-900 rounded-2xl space-y-2">
+                                  <div className="flex items-center gap-2 text-orange-400 pb-1.5 border-b border-zinc-900/80">
+                                    <FileText className="h-4 w-4" />
+                                    <h4 className="text-[10px] font-black uppercase tracking-wider">Resumo do Mês</h4>
+                                  </div>
+                                  <p className="text-xs text-zinc-200 whitespace-pre-wrap leading-relaxed font-sans pt-1">
+                                    {r.resumo}
+                                  </p>
+                                </div>
+                              )}
+
                               {/* Highlights Grids */}
                               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 {/* Momentos Marcantes */}
@@ -2276,6 +2320,18 @@ export default function AnuaisView({
                                   }}
                                   placeholder="Ex: Um ciclo de intensa superação de metas e progresso em hábitos."
                                   className="w-full bg-zinc-950 border border-zinc-900 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-orange-500/50 font-medium"
+                                />
+                              </div>
+
+                              {/* Resumo do Mês */}
+                              <div className="space-y-1.5">
+                                <label className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider block">Resumo do Mês:</label>
+                                <textarea
+                                  value={monthlyResumo}
+                                  onChange={(e) => setMonthlyResumo(e.target.value)}
+                                  onKeyDown={(e) => handleAutoListKeyDown(e, monthlyResumo, setMonthlyResumo)}
+                                  placeholder="Faça um resumo geral dos acontecimentos, projetos desenvolvidos, desafios e reflexões deste mês..."
+                                  className="w-full min-h-[90px] bg-zinc-950 border border-zinc-900 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-y font-sans leading-relaxed"
                                 />
                               </div>
 
@@ -2580,6 +2636,17 @@ export default function AnuaisView({
                                       <p className="text-xs font-serif italic text-white leading-relaxed bg-zinc-950/40 p-3 rounded-xl border border-zinc-900">
                                         "{existingWr.oneSentence}"
                                       </p>
+                                    )}
+                                    {existingWr.resumo && (
+                                      <div className="p-3 bg-zinc-950/40 border border-zinc-900 rounded-xl space-y-1">
+                                        <div className="flex items-center gap-1.5 text-orange-400">
+                                          <FileText className="h-3.5 w-3.5" />
+                                          <span className="text-[9px] font-bold uppercase tracking-wider">Resumo da Semana:</span>
+                                        </div>
+                                        <p className="text-xs text-zinc-300 whitespace-pre-wrap leading-relaxed font-sans pt-0.5">
+                                          {existingWr.resumo}
+                                        </p>
+                                      </div>
                                     )}
                                     <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-1 text-[10.5px]">
                                       <div className="space-y-1.5">
@@ -3448,6 +3515,18 @@ export default function AnuaisView({
                   />
                 </div>
 
+                {/* Resumo da Semana */}
+                <div className="space-y-1">
+                  <label className="text-[10px] text-zinc-400 font-bold block uppercase tracking-wider">Resumo da Semana:</label>
+                  <textarea
+                    value={weeklyResumo}
+                    onChange={(e) => setWeeklyResumo(e.target.value)}
+                    onKeyDown={(e) => handleAutoListKeyDown(e, weeklyResumo, setWeeklyResumo)}
+                    placeholder="Faça um resumo dos principais fatos, rotinas e acontecimentos da sua semana..."
+                    className="w-full min-h-[85px] bg-zinc-950 border border-zinc-900 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-orange-500/50 resize-y font-sans leading-relaxed"
+                  />
+                </div>
+
                 {/* Week moments */}
                 <div className="space-y-2">
                   <label className="text-[10px] text-zinc-400 font-bold block uppercase tracking-wider">Principais Vitórias & Momentos:</label>
@@ -3752,10 +3831,10 @@ export default function AnuaisView({
                   <input
                     type="number"
                     min="1900"
-                    max="2100"
+                    max={currentRealYear}
                     value={newYearInput}
                     onChange={(e) => setNewYearInput(e.target.value)}
-                    placeholder="Ex: 2027"
+                    placeholder={`Ex: ${currentRealYear}`}
                     className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-orange-500/50 font-mono text-center font-bold"
                     autoFocus
                     onKeyDown={(e) => {
@@ -3765,6 +3844,9 @@ export default function AnuaisView({
                       }
                     }}
                   />
+                  <p className="text-[10px] text-zinc-500 font-mono text-center">
+                    Permitido até o ano atual ({currentRealYear}). Anos futuros aparecem automaticamente no dia 1º de janeiro.
+                  </p>
                   {addYearError && (
                     <span className="text-[10px] text-rose-500 font-mono block text-center mt-1">{addYearError}</span>
                   )}

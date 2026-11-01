@@ -173,6 +173,7 @@ export interface MonthlyReview {
   memorableMoments: string[];
   learnings: string[];
   improvements: string[];
+  resumo?: string;
 }
 
 export interface WeeklyReview {
@@ -184,6 +185,7 @@ export interface WeeklyReview {
   learnings: string[];
   improvements: string[];
   readings?: string;
+  resumo?: string;
 }
 
 export interface FutureEvent {

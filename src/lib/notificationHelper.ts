@@ -53,7 +53,16 @@ export async function sendSystemNotification(
 
   // Fallback to standard window Notification
   try {
-    new Notification(resolvedTitle, defaultOptions);
+    const notif = new Notification(resolvedTitle, defaultOptions);
+    notif.onclick = () => {
+      try {
+        window.focus();
+        const customData = (options as any)?.data;
+        if (customData?.openReview) {
+          window.dispatchEvent(new CustomEvent('mbc_navigate_review', { detail: { type: customData.openReview } }));
+        }
+      } catch {}
+    };
     return true;
   } catch (err) {
     console.error('Window Notification error:', err);

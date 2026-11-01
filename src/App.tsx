@@ -1742,16 +1742,33 @@ export default function App() {
   }, [yearlyImages]);
 
   const [overviewYears, setOverviewYears] = useState<number[]>(() => {
+    const currentYear = new Date().getFullYear();
+    const defaultYears = [2024, 2025, currentYear].filter(y => y <= currentYear);
     try {
       const saved = localStorage.getItem('mbc_overview_years');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const filtered = parsed.filter(y => typeof y === 'number' && y <= currentYear);
+          if (!filtered.includes(currentYear)) {
+            filtered.push(currentYear);
+          }
+          return Array.from(new Set<number>(filtered)).sort((a: number, b: number) => a - b);
+        }
+      }
     } catch (e) {
       console.error("Failed to parse mbc_overview_years", e);
     }
-    return [2026, 2027, 2028, 2029, 2030];
+    return Array.from(new Set<number>(defaultYears)).sort((a: number, b: number) => a - b);
   });
   useEffect(() => {
-    localStorage.setItem('mbc_overview_years', JSON.stringify(overviewYears));
+    const currentYear = new Date().getFullYear();
+    const sanitized = overviewYears.filter(y => y <= currentYear);
+    if (!sanitized.includes(currentYear)) {
+      sanitized.push(currentYear);
+    }
+    const result = Array.from(new Set<number>(sanitized)).sort((a: number, b: number) => a - b);
+    localStorage.setItem('mbc_overview_years', JSON.stringify(result));
   }, [overviewYears]);
 
   const [isMonthlyReviewOpen, setIsMonthlyReviewOpen] = useState<boolean>(() => {
@@ -1770,7 +1787,7 @@ export default function App() {
 
   const [isAppReminderModalOpen, setIsAppReminderModalOpen] = useState<boolean>(false);
   const [appReminderModalTab, setAppReminderModalTab] = useState<'weekly' | 'monthly' | 'all'>('all');
-  const [targetReviewRequest, setTargetReviewRequest] = useState<{ type: 'weekly' | 'monthly'; timestamp: number } | null>(null);
+  const [targetReviewRequest, setTargetReviewRequest] = useState<{ type: 'weekly' | 'monthly'; year?: number; weekNumber?: number; month?: number; timestamp: number } | null>(null);
 
   const [userBio, setUserBio] = useState<string>(() => {
     return localStorage.getItem('mbc_userBio') || 'Construindo um império de disciplina diária. Foco na jornada e maestria contínua.';
@@ -2220,8 +2237,9 @@ export default function App() {
             if (!hasCompletedWeeklyReview(weeklyReviews, getWeekNumber(now), now.getFullYear())) {
               sendSystemNotification('⏰ Hora da Review Semanal!', {
                 body: 'Hoje é o seu dia agendado para a Review Semanal. Registre suas vitórias, aprendizados e planeje seu próximo ciclo!',
-                tag: 'weekly-review-reminder'
-              });
+                tag: 'weekly-review-reminder',
+                data: { url: '/?openReview=weekly', openReview: 'weekly' }
+              } as any);
             }
           }
         }
@@ -2237,8 +2255,9 @@ export default function App() {
             if (!hasCompletedMonthlyReview(monthlyReviews, targetMonthInfo.month, targetMonthInfo.year)) {
               sendSystemNotification('🌟 Hora da Review Mensal!', {
                 body: 'Hoje é o seu dia agendado para a Review Mensal. Faça o balanço do mês e renove suas metas!',
-                tag: 'monthly-review-reminder'
-              });
+                tag: 'monthly-review-reminder',
+                data: { url: '/?openReview=monthly', openReview: 'monthly' }
+              } as any);
             }
           }
         }
@@ -2250,6 +2269,73 @@ export default function App() {
 
     return () => clearInterval(interval);
   }, [routine, notes, calendarNotes, dailyTasks, weeklyReviews, monthlyReviews]);
+
+  // Handle direct navigation to review (from notifications, URL query, or SW messages)
+  useEffect(() => {
+    const handleReviewTrigger = (type: 'weekly' | 'monthly') => {
+      const now = new Date();
+      setActiveTab('anuais');
+      if (type === 'weekly') {
+        setIsWeeklyReviewsOpen(true);
+        setTargetReviewRequest({
+          type: 'weekly',
+          year: now.getFullYear(),
+          weekNumber: getWeekNumber(now),
+          timestamp: Date.now()
+        });
+      } else {
+        const target = getTargetReviewMonthAndYear(getReviewRemindersSettings(), now);
+        setIsMonthlyReviewOpen(true);
+        setTargetReviewRequest({
+          type: 'monthly',
+          year: target.year,
+          month: target.month,
+          timestamp: Date.now()
+        });
+      }
+    };
+
+    try {
+      const searchParams = new URLSearchParams(window.location.search);
+      const openReview = searchParams.get('openReview');
+      if (openReview === 'weekly' || openReview === 'monthly') {
+        handleReviewTrigger(openReview);
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    } catch {}
+
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data?.type === 'NAVIGATE' && typeof e.data?.url === 'string') {
+        if (e.data.url.includes('openReview=weekly')) {
+          handleReviewTrigger('weekly');
+        } else if (e.data.url.includes('openReview=monthly')) {
+          handleReviewTrigger('monthly');
+        }
+      }
+    };
+
+    const handleCustomNav = (e: any) => {
+      if (e.detail?.type) {
+        handleReviewTrigger(e.detail.type);
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('mbc_navigate_review', handleCustomNav);
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.addEventListener('message', handleMessage);
+      }
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('mbc_navigate_review', handleCustomNav);
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.removeEventListener('message', handleMessage);
+        }
+      }
+    };
+  }, []);
 
   // Initial load & Realtime / Periodic Sync from Cloud (Firestore + Supabase + CrossTab)
   useEffect(() => {
@@ -4114,14 +4200,29 @@ export default function App() {
               weeklyReviews={weeklyReviews}
               monthlyReviews={monthlyReviews}
               onOpenWeeklyReview={() => {
+                const now = new Date();
+                const currentYear = now.getFullYear();
+                const currentWeek = getWeekNumber(now);
                 setActiveTab('anuais');
                 setIsWeeklyReviewsOpen(true);
-                setTargetReviewRequest({ type: 'weekly', timestamp: Date.now() });
+                setTargetReviewRequest({
+                  type: 'weekly',
+                  year: currentYear,
+                  weekNumber: currentWeek,
+                  timestamp: Date.now()
+                });
               }}
               onOpenMonthlyReview={() => {
+                const now = new Date();
+                const targetMonthInfo = getTargetReviewMonthAndYear(getReviewRemindersSettings(), now);
                 setActiveTab('anuais');
                 setIsMonthlyReviewOpen(true);
-                setTargetReviewRequest({ type: 'monthly', timestamp: Date.now() });
+                setTargetReviewRequest({
+                  type: 'monthly',
+                  year: targetMonthInfo.year,
+                  month: targetMonthInfo.month,
+                  timestamp: Date.now()
+                });
               }}
               onConfigureReminders={(tab) => {
                 setAppReminderModalTab(tab);
