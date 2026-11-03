@@ -108,6 +108,7 @@ interface CalendarViewProps {
   masterTemplates?: { gratitude: string; decrees: string; prayer: string };
   setMasterTemplates?: React.Dispatch<React.SetStateAction<{ gratitude: string; decrees: string; prayer: string }>>;
   cardGlowEnabled?: boolean;
+  themeMode?: 'dark' | 'light';
 }
 
 const DEFAULT_GRATITUDE_TEMPLATE = `Sou profundamente grato(a) hoje por:
@@ -193,7 +194,8 @@ export default function CalendarView({
   freeEditMode = false,
   masterTemplates,
   setMasterTemplates,
-  cardGlowEnabled = true
+  cardGlowEnabled = true,
+  themeMode = 'dark'
 }: CalendarViewProps) {
   const BIBLE_TOTAL_CHAPTERS = 1189;
 
@@ -3256,12 +3258,16 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                           className="py-0.5 rounded-full flex items-center justify-center font-semibold transition-all hover:opacity-80"
                           style={
                             isSelected
-                              ? { backgroundColor: userThemeColor, color: '#ffffff', boxShadow: `0 0 8px ${userThemeGlow}` }
+                              ? (themeMode === 'light'
+                                  ? { backgroundColor: '#2563eb', color: '#ffffff', boxShadow: '0 0 8px rgba(37,99,235,0.3)' }
+                                  : { backgroundColor: userThemeColor, color: '#ffffff', boxShadow: `0 0 8px ${userThemeGlow}` })
                               : isToday
-                                ? { border: `1px solid ${userThemeColor}`, color: userThemeColor }
+                                ? (themeMode === 'light'
+                                    ? { border: '1.5px solid #2563eb', color: '#2563eb' }
+                                    : { border: `1px solid ${userThemeColor}`, color: userThemeColor })
                                 : isWeekend
-                                  ? { color: userThemeColor }
-                                  : { color: '#d4d4d8' }
+                                  ? { color: themeMode === 'light' ? '#2563eb' : userThemeColor }
+                                  : { color: themeMode === 'light' ? '#09090b' : '#d4d4d8' }
                           }
                         >
                           {dayNum}
@@ -3354,15 +3360,21 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                         >
                           {/* Day Number Badge */}
                           <span
-                            className="text-xs sm:text-sm font-bold font-mono transition-all rounded-xl sm:rounded-2xl w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center"
+                            className={`text-xs sm:text-sm font-bold font-mono transition-all rounded-xl sm:rounded-2xl w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center ${
+                              !cell.isCurrentMonth && themeMode === 'light' ? 'text-slate-300' : ''
+                            }`}
                             style={
                               isSelected
-                                ? { backgroundColor: userThemeColor, color: '#ffffff', boxShadow: `0 0 14px ${userThemeGlow}` }
+                                ? (themeMode === 'light'
+                                    ? { border: '2px solid #2563eb', backgroundColor: '#ffffff', color: '#09090b', boxShadow: '0 2px 8px rgba(37,99,235,0.2)' }
+                                    : { backgroundColor: userThemeColor, color: '#ffffff', boxShadow: `0 0 14px ${userThemeGlow}` })
                                 : isToday
-                                  ? { border: `1.5px solid ${userThemeColor}`, color: userThemeColor }
+                                  ? (themeMode === 'light'
+                                      ? { border: '1.5px solid #2563eb', color: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.08)' }
+                                      : { border: `1.5px solid ${userThemeColor}`, color: userThemeColor })
                                   : isWeekend
-                                    ? { color: userThemeColor }
-                                    : { color: '#e4e4e7' }
+                                    ? { color: themeMode === 'light' ? '#2563eb' : userThemeColor }
+                                    : { color: themeMode === 'light' ? (cell.isCurrentMonth ? '#09090b' : '#cbd5e1') : '#e4e4e7' }
                             }
                           >
                             {cell.dayNum}
@@ -3522,7 +3534,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                     >
                       <span
                         className="text-[10px] font-bold"
-                        style={isWeekend ? { color: userThemeColor } : { color: '#a1a1aa' }}
+                        style={isWeekend ? { color: themeMode === 'light' ? '#2563eb' : userThemeColor } : { color: themeMode === 'light' ? '#64748b' : '#a1a1aa' }}
                       >
                         {wDay.dayOfWeekName}
                       </span>
@@ -3530,12 +3542,16 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                         className="text-xs sm:text-sm font-mono font-bold mt-0.5 rounded-xl w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center transition-all"
                         style={
                           isSelected
-                            ? { backgroundColor: userThemeColor, color: '#ffffff', boxShadow: `0 0 12px ${userThemeGlow}` }
+                            ? (themeMode === 'light'
+                                ? { border: '2px solid #2563eb', backgroundColor: '#ffffff', color: '#09090b', boxShadow: '0 2px 8px rgba(37,99,235,0.2)' }
+                                : { backgroundColor: userThemeColor, color: '#ffffff', boxShadow: `0 0 12px ${userThemeGlow}` })
                             : isToday
-                              ? { border: `1.5px solid ${userThemeColor}`, color: userThemeColor }
+                              ? (themeMode === 'light'
+                                  ? { border: '1.5px solid #2563eb', color: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.08)' }
+                                  : { border: `1.5px solid ${userThemeColor}`, color: userThemeColor })
                               : isWeekend
-                                ? { color: userThemeColor }
-                                : { color: '#e4e4e7' }
+                                ? { color: themeMode === 'light' ? '#2563eb' : userThemeColor }
+                                : { color: themeMode === 'light' ? '#09090b' : '#e4e4e7' }
                         }
                       >
                         {wDay.dayNum}

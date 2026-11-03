@@ -89,6 +89,7 @@ interface AnuaisViewProps {
   masterTemplates?: { gratitude: string; decrees: string; prayer: string };
   setMasterTemplates?: React.Dispatch<React.SetStateAction<{ gratitude: string; decrees: string; prayer: string }>>;
   targetReviewRequest?: { type: 'weekly' | 'monthly'; year?: number; weekNumber?: number; month?: number; timestamp: number } | null;
+  themeMode?: 'dark' | 'light';
 }
 
 export default function AnuaisView({
@@ -119,7 +120,8 @@ export default function AnuaisView({
   isWeeklyReviewsOpen: propIsWeeklyReviewsOpen,
   setIsWeeklyReviewsOpen: propSetIsWeeklyReviewsOpen,
   freeEditMode = false,
-  targetReviewRequest = null
+  targetReviewRequest = null,
+  themeMode = 'dark'
 }: AnuaisViewProps) {
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
   const [selectedMonthIndex, setSelectedMonthIndex] = useState<number>(() => new Date().getMonth()); // 0-11 for months, -1 for "Livros"

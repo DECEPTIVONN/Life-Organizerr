@@ -3843,6 +3843,7 @@ export default function App() {
             setIsEntriesOpen={setIsFinancesEntriesOpen}
             sheetOverrides={sheetOverrides}
             setSheetOverrides={setSheetOverrides}
+            themeMode={themeMode}
           />
         );
       case 'calendario':
@@ -3877,6 +3878,7 @@ export default function App() {
             masterTemplates={masterTemplates}
             setMasterTemplates={setMasterTemplates}
             cardGlowEnabled={cardGlowEnabled}
+            themeMode={themeMode}
           />
         );
       case 'anuais':
@@ -3913,6 +3915,7 @@ export default function App() {
             overviewYears={overviewYears}
             setOverviewYears={setOverviewYears}
             targetReviewRequest={targetReviewRequest}
+            themeMode={themeMode}
           />
         );
       case 'projetos':
@@ -3970,6 +3973,7 @@ export default function App() {
             setAreaImages={setAreaImages}
             activeArea={lifeSummaryActiveArea}
             setActiveArea={setLifeSummaryActiveArea}
+            themeMode={themeMode}
           />
         );
       case 'perfil':

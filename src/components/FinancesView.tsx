@@ -92,6 +92,7 @@ interface FinancesProps {
   setIsBudgetOpen?: (open: boolean) => void;
   isEntriesOpen?: boolean;
   setIsEntriesOpen?: (open: boolean) => void;
+  themeMode?: 'dark' | 'light';
 }
 
 export interface BudgetLimit {
@@ -292,7 +293,8 @@ export default function FinancesView({
   isBudgetOpen: propIsBudgetOpen,
   setIsBudgetOpen: propSetIsBudgetOpen,
   isEntriesOpen: propIsEntriesOpen,
-  setIsEntriesOpen: propSetIsEntriesOpen
+  setIsEntriesOpen: propSetIsEntriesOpen,
+  themeMode = 'dark'
 }: FinancesProps) {
   // Main Sub-Tab State (6 sub-tabs)
   const [localActiveTab, setLocalActiveTab] = useState<'dashboard' | 'extrato' | 'planejamento' | 'investimentos' | 'contas' | 'dividas'>(() => {

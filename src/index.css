@@ -842,5 +842,270 @@ body.light-mode {
   border: 1px solid #e2e8f0 !important;
 }
 
+/* ========================================================
+   1. DESKTOP SIDEBAR & MOBILE NAVBAR (LIGHT MODE)
+   ======================================================== */
+.light-mode #sidebarHUD,
+.light-mode aside#sidebarHUD {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  border-right-color: rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.03) !important;
+}
+
+.light-mode #sidebarHUD .border-zinc-900,
+.light-mode #sidebarHUD .border-zinc-900\/60,
+.light-mode #sidebarHUD .border-zinc-800,
+.light-mode #sidebarHUD .border-zinc-800\/40,
+.light-mode #sidebarHUD .border-zinc-800\/60 {
+  border-color: rgba(0, 0, 0, 0.065) !important;
+}
+
+.light-mode #sidebarHUD .bg-\[\#07070a\]\/40,
+.light-mode #sidebarHUD .bg-\[\#050507\]\/60 {
+  background-color: #f8f8f6 !important;
+}
+
+.light-mode #sidebarHUD button:hover {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+}
+
+.light-mode #sidebarHUD .text-white {
+  color: #09090b !important;
+}
+
+.light-mode #sidebarHUD .text-gray-400,
+.light-mode #sidebarHUD .text-zinc-400,
+.light-mode #sidebarHUD .text-zinc-500 {
+  color: #71717a !important;
+}
+
+/* Mobile Top Header in Light Mode */
+.light-mode .lg\:hidden.fixed.top-0,
+.light-mode [class*="lg:hidden"][class*="fixed top-0"] {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  border-bottom-color: rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 1px 10px rgba(0, 0, 0, 0.03) !important;
+}
+
+.light-mode .lg\:hidden.fixed.top-0 button,
+.light-mode [class*="lg:hidden"][class*="fixed top-0"] button {
+  background-color: #f4f4f5 !important;
+  border-color: #e4e4e7 !important;
+  color: #3f3f46 !important;
+}
+
+.light-mode .lg\:hidden.fixed.top-0 button:hover,
+.light-mode [class*="lg:hidden"][class*="fixed top-0"] button:hover {
+  background-color: #e4e4e7 !important;
+  color: #09090b !important;
+}
+
+/* Mobile Bottom Navigation in Light Mode (Reta / Straight) */
+.light-mode .lg\:hidden.fixed.bottom-0 .bg-\[\#0a0a0f\]\/95 {
+  background-color: rgba(255, 255, 255, 0.97) !important;
+  border-top-color: rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06) !important;
+}
+
+.light-mode .lg\:hidden.fixed.bottom-0 button .text-zinc-500,
+.light-mode .lg\:hidden.fixed.bottom-0 button .text-zinc-400 {
+  color: #71717a !important;
+}
+
+.light-mode .lg\:hidden.fixed.bottom-0 button:hover .text-zinc-500,
+.light-mode .lg\:hidden.fixed.bottom-0 button:hover .text-zinc-400 {
+  color: #09090b !important;
+}
+
+/* Mobile Bottom Navigation in Light Mode (Curved / Oval) */
+.light-mode .lg\:hidden.fixed.bottom-0 svg path[fill="#09090b"] {
+  fill: #ffffff !important;
+}
+
+.light-mode .lg\:hidden.fixed.bottom-0 svg {
+  filter: drop-shadow(0 -4px 16px rgba(0, 0, 0, 0.08)) !important;
+}
+
+/* Mobile Drawer Menu in Light Mode */
+.light-mode .fixed.inset-0.lg\:hidden .bg-\[\#09090b\] {
+  background-color: #ffffff !important;
+  border-right-color: rgba(0, 0, 0, 0.08) !important;
+  color: #09090b !important;
+}
+
+.light-mode .fixed.inset-0.lg\:hidden .bg-zinc-950 {
+  background-color: #f8f8f6 !important;
+  border-color: #e4e4e7 !important;
+}
+
+.light-mode .fixed.inset-0.lg\:hidden button:hover {
+  background-color: #f4f4f5 !important;
+}
+
+/* ========================================================
+   2. CALENDÁRIO LIGHT MODE (INSPIRADO EM IMAGE 80E4BA43)
+   ======================================================== */
+.light-mode .bg-\[\#0a0a0c\]\/80,
+.light-mode .bg-\[\#0a0a0c\],
+.light-mode .bg-\[\#0d0d10\] {
+  background-color: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.075) !important;
+  box-shadow: 0 10px 30px -4px rgba(0, 0, 0, 0.04), 0 2px 6px -1px rgba(0, 0, 0, 0.02) !important;
+}
+
+/* Calendar Header & View Switcher */
+.light-mode .bg-\[\#121216\]\/95 {
+  background-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+}
+
+.light-mode .bg-\[\#121216\]\/95 button {
+  color: #64748b !important;
+}
+
+.light-mode .bg-\[\#121216\]\/95 button:hover {
+  color: #0f172a !important;
+}
+
+/* Weekday Headers matching image 80e4ba43 */
+.light-mode .border-b.border-zinc-800\/60 .text-zinc-400 {
+  color: #64748b !important;
+}
+
+/* Week numbers column (SEM. 39, 40, 41, 42, 43) */
+.light-mode .font-mono.text-zinc-500,
+.light-mode .font-mono.text-zinc-600 {
+  color: #94a3b8 !important;
+}
+
+/* Day hover and empty states */
+.light-mode button.min-h-\[58px\]:hover,
+.light-mode button.min-h-\[72px\]:hover {
+  background-color: #f8fafc !important;
+}
+
+.light-mode .drag-handle-pill,
+.light-mode [class*="h-1"][class*="rounded-full"][class*="bg-zinc"] {
+  background-color: #e2e8f0 !important;
+}
+
+/* "Nenhum evento para hoje" */
+.light-mode .text-sm.font-semibold.text-zinc-400 {
+  color: #94a3b8 !important;
+}
+
+/* Calendar options dropdown */
+.light-mode .bg-\[\#0d0d10\] {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.1) !important;
+}
+
+.light-mode .bg-\[\#0d0d10\] button:hover {
+  background-color: #f1f5f9 !important;
+}
+
+/* ========================================================
+   3. VIDA EM RESUMO - ÁREAS DA VIDA (LIGHT MODE)
+   ======================================================== */
+.light-mode .bg-zinc-950\/50,
+.light-mode .bg-zinc-950\/40,
+.light-mode .bg-zinc-950\/20 {
+  background-color: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 10px 30px -4px rgba(0, 0, 0, 0.04), 0 2px 6px -1px rgba(0, 0, 0, 0.02) !important;
+}
+
+/* 6 Areas of Life Cards Overlays */
+.light-mode .bg-gradient-to-t.from-zinc-950 {
+  background: linear-gradient(to top, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.85) 50%, rgba(255, 255, 255, 0.35) 100%) !important;
+}
+
+/* Area Cards Inner Elements */
+.light-mode .bg-zinc-900 {
+  background-color: #f8f8f6 !important;
+  border-color: #e4e4e7 !important;
+}
+
+.light-mode .bg-zinc-950 {
+  background-color: #ffffff !important;
+  border-color: #e4e4e7 !important;
+}
+
+/* Rating Cell Bar in Light Mode */
+.light-mode .bg-zinc-900\/80 {
+  background-color: #f4f4f5 !important;
+  border-color: #e4e4e7 !important;
+}
+
+/* Pontos que merecem atenção items */
+.light-mode .bg-zinc-950\/60,
+.light-mode .bg-zinc-950\/50,
+.light-mode .bg-zinc-950\/40 {
+  background-color: #fafafa !important;
+  border-color: #e4e4e7 !important;
+}
+
+/* ========================================================
+   4. FINANÇAS ANUAIS & EXTRATO ANUAL (LIGHT MODE)
+   ======================================================== */
+.light-mode table {
+  background-color: #ffffff !important;
+  border-color: #e4e4e7 !important;
+}
+
+.light-mode th {
+  background-color: #f8f8f6 !important;
+  color: #09090b !important;
+  border-color: #e4e4e7 !important;
+  font-weight: 700 !important;
+}
+
+.light-mode td {
+  background-color: #ffffff !important;
+  color: #18181b !important;
+  border-color: #e4e4e7 !important;
+}
+
+.light-mode tr:nth-child(even) td {
+  background-color: #fafaf9 !important;
+}
+
+.light-mode tr:hover td {
+  background-color: #f4f4f5 !important;
+}
+
+/* Annual Finance Summary & Metric Cards */
+.light-mode .bg-zinc-950.border.border-zinc-900,
+.light-mode .bg-zinc-900\/60.border.border-zinc-800 {
+  background-color: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03) !important;
+}
+
+/* Financial Health Score Box in Light Mode */
+.light-mode .bg-gradient-to-br.from-zinc-950.via-zinc-900.to-black {
+  background: linear-gradient(135deg, #ffffff 0%, #fafaf9 60%, #f4f4f5 100%) !important;
+  border-color: rgba(249, 115, 22, 0.3) !important;
+  box-shadow: 0 10px 30px -4px rgba(0, 0, 0, 0.05) !important;
+}
+
+.light-mode .bg-zinc-900\/40 {
+  background-color: #fafaf9 !important;
+  border-color: #e4e4e7 !important;
+}
+
+/* Filters & Type Switcher Pills in Finances */
+.light-mode button.bg-zinc-900.border-zinc-800 {
+  background-color: #f4f4f5 !important;
+  border-color: #e4e4e7 !important;
+  color: #52525b !important;
+}
+
+.light-mode button.bg-zinc-900.border-zinc-800:hover {
+  background-color: #e4e4e7 !important;
+  color: #09090b !important;
+}
+
 
 

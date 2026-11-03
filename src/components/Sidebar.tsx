@@ -1209,7 +1209,7 @@ function Sidebar({
           {/* SVG background with neon glowing stroke and dark filled area */}
           <div className="absolute inset-0 pointer-events-auto">
             <svg 
-              className="w-full h-full filter drop-shadow-[0_-8px_16px_rgba(249,115,22,0.25)]" 
+              className={`w-full h-full filter ${themeMode === 'light' ? 'drop-shadow-[0_-4px_16px_rgba(0,0,0,0.08)]' : 'drop-shadow-[0_-8px_16px_rgba(249,115,22,0.25)]'}`} 
               viewBox="0 0 100 100" 
               preserveAspectRatio="none"
             >
@@ -1217,13 +1217,13 @@ function Sidebar({
               <path 
                 d="M 0 30 Q 50 0 100 30 L 100 100 L 0 100 Z" 
                 fill="none" 
-                stroke="var(--color-orange-500, #f97316)" 
+                stroke={themeMode === 'light' ? 'rgba(0, 0, 0, 0.08)' : 'var(--color-orange-500, #f97316)'} 
                 strokeWidth="1.5" 
               />
               {/* Main curved path background */}
               <path 
                 d="M 0 30 Q 50 0 100 30 L 100 100 L 0 100 Z" 
-                fill="#09090b" 
+                fill={themeMode === 'light' ? '#ffffff' : '#09090b'} 
                 opacity="0.98"
               />
             </svg>

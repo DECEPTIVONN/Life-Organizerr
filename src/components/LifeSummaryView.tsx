@@ -72,6 +72,7 @@ export interface LifeSummaryViewProps {
   setAreaImages?: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   activeArea?: any;
   setActiveArea?: (area: any) => void;
+  themeMode?: 'dark' | 'light';
 }
 
 const AREA_DETAILS = {
@@ -890,7 +891,8 @@ export default function LifeSummaryView({
   areaImages,
   setAreaImages = () => {},
   activeArea: propActiveArea,
-  setActiveArea: propSetActiveArea
+  setActiveArea: propSetActiveArea,
+  themeMode = 'dark'
 }: LifeSummaryViewProps) {
   const [localActiveArea, setLocalActiveArea] = useState<ActiveAreaKey>(null);
 
