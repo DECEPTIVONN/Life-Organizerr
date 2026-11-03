@@ -46,6 +46,7 @@ import { AgentesView } from './components/AgentesView';
 import StreakHubModal from './components/StreakHubModal';
 import { LeagueRankingModal } from './components/LeagueRankingModal';
 import { LeagueRankingView } from './components/LeagueRankingView';
+import { CinematicBackground, BackgroundAtmosphereMode, BackgroundAtmosphereIntensity } from './components/CinematicBackground';
 import { saveToSupabase, loadFromSupabase, loadMetadataFromSupabase, getSupabaseClient, subscribeToCrossTabSync } from './lib/supabase';
 import { getOrCreateDeviceId } from './lib/devices';
 import { 
@@ -256,6 +257,62 @@ export default function App() {
   const [customThemeHex, setCustomThemeHex] = useState<string>(() => {
     return localStorage.getItem('mbc_custom_theme_hex') || '#3396f3';
   });
+
+  // Cinematic Luxury Background Atmosphere States
+  const [backgroundAtmosphere, setBackgroundAtmosphere] = useState<BackgroundAtmosphereMode>(() => {
+    return (localStorage.getItem('mbc_background_atmosphere') as BackgroundAtmosphereMode) || 'cinematic';
+  });
+
+  const [backgroundIntensity, setBackgroundIntensity] = useState<BackgroundAtmosphereIntensity>(() => {
+    return (localStorage.getItem('mbc_background_intensity') as BackgroundAtmosphereIntensity) || 'subtle';
+  });
+
+  const [backgroundGridEnabled, setBackgroundGridEnabled] = useState<boolean>(() => {
+    return localStorage.getItem('mbc_background_grid_enabled') !== 'false';
+  });
+
+  const [backgroundAnimated, setBackgroundAnimated] = useState<boolean>(() => {
+    return localStorage.getItem('mbc_background_animated') !== 'false';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('mbc_background_atmosphere', backgroundAtmosphere);
+    if (backgroundAtmosphere === 'amoled') {
+      document.documentElement.classList.add('amoled-mode');
+    } else {
+      document.documentElement.classList.remove('amoled-mode');
+    }
+  }, [backgroundAtmosphere]);
+
+  useEffect(() => {
+    localStorage.setItem('mbc_background_intensity', backgroundIntensity);
+  }, [backgroundIntensity]);
+
+  useEffect(() => {
+    localStorage.setItem('mbc_background_grid_enabled', String(backgroundGridEnabled));
+  }, [backgroundGridEnabled]);
+
+  useEffect(() => {
+    localStorage.setItem('mbc_background_animated', String(backgroundAnimated));
+  }, [backgroundAnimated]);
+
+  // System Theme Mode (Dark vs Light - Architectural Mode)
+  const [themeMode, setThemeMode] = useState<'dark' | 'light'>(() => {
+    return (localStorage.getItem('mbc_theme_mode') as 'dark' | 'light') || 'dark';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('mbc_theme_mode', themeMode);
+    if (themeMode === 'light') {
+      document.documentElement.classList.add('light-mode');
+      document.documentElement.classList.remove('dark');
+      document.body.classList.add('light-mode');
+    } else {
+      document.documentElement.classList.remove('light-mode');
+      document.documentElement.classList.add('dark');
+      document.body.classList.remove('light-mode');
+    }
+  }, [themeMode]);
 
   // Custom Loading / Splash Screen Images (Vertical for mobile/portrait, Horizontal for desktop/landscape)
   const [loadingScreenVerticalImage, setLoadingScreenVerticalImage] = useState<string>(() => {
@@ -3660,6 +3717,8 @@ export default function App() {
             setLastDailyResetDate={setLastDailyResetDate}
             habits={habits}
             setHabits={setHabits}
+            userName={userName}
+            themeMode={themeMode}
           />
         );
       case 'rotina':
@@ -3694,6 +3753,8 @@ export default function App() {
             setLastDailyResetDate={setLastDailyResetDate}
             habits={habits}
             setHabits={setHabits}
+            userName={userName}
+            themeMode={themeMode}
           />
         );
       case 'habitos':
@@ -3728,6 +3789,8 @@ export default function App() {
             setLastDailyResetDate={setLastDailyResetDate}
             habits={habits}
             setHabits={setHabits}
+            userName={userName}
+            themeMode={themeMode}
           />
         );
       case 'metas':
@@ -4023,6 +4086,16 @@ export default function App() {
               if (img) localStorage.setItem('mbc_lock_screen_mobile_image', img);
               else localStorage.removeItem('mbc_lock_screen_mobile_image');
             }}
+            backgroundAtmosphere={backgroundAtmosphere}
+            setBackgroundAtmosphere={setBackgroundAtmosphere}
+            backgroundIntensity={backgroundIntensity}
+            setBackgroundIntensity={setBackgroundIntensity}
+            backgroundGridEnabled={backgroundGridEnabled}
+            setBackgroundGridEnabled={setBackgroundGridEnabled}
+            backgroundAnimated={backgroundAnimated}
+            setBackgroundAnimated={setBackgroundAnimated}
+            themeMode={themeMode}
+            setThemeMode={setThemeMode}
           />
         );
       case 'agentes':
@@ -4131,7 +4204,7 @@ export default function App() {
   }
 
   return (
-    <div id="main-app-container" className="flex flex-col lg:flex-row min-h-screen bg-[#040405] text-zinc-300 font-sans">
+    <div id="main-app-container" className={`flex flex-col lg:flex-row min-h-screen font-sans transition-colors duration-500 ${themeMode === 'light' ? 'bg-[#f8f8f6] text-zinc-800' : 'bg-[#040405] text-zinc-300'}`}>
       {/* Dynamic Notch (Entalhe) for Agent prompt notifications & system alerts */}
       <DynamicNotch
         currentNotification={currentNotchNotification}
@@ -4172,18 +4245,26 @@ export default function App() {
         onOpenRankingModal={() => setIsRankingModalOpen(true)}
         mobileNavbarMode={mobileNavbarMode}
         mobileNavbarShape={mobileNavbarShape}
+        themeMode={themeMode}
+        onToggleThemeMode={() => setThemeMode(prev => prev === 'light' ? 'dark' : 'light')}
       />
 
       {/* 2. Main Workspace Area (responsive margin/padding for the fixed desktop HUD and mobile header) */}
       <main 
         id="workspace-area" 
-        className={`flex-1 overflow-x-hidden min-h-screen pt-16 pb-28 lg:pt-8 lg:pb-8 transition-all duration-300 ${
+        className={`flex-1 overflow-x-hidden min-h-screen pt-16 pb-28 lg:pt-8 lg:pb-8 transition-all duration-300 relative ${
           sidebarPinned ? 'lg:pl-64' : 'lg:pl-[76px]'
         }`}
       >
-        {/* Background visual orange glow circles (matches the sleek premium layout) */}
-        <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-orange-600/5 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-1/4 left-1/4 w-[400px] h-[400px] bg-amber-600/5 rounded-full blur-[100px] pointer-events-none" />
+        {/* Cinematic Luxury Background Architecture (Zenith Light, Masked Precision Grid & Organic Film Grain) */}
+        <CinematicBackground 
+          activeTab={activeTab}
+          mode={backgroundAtmosphere}
+          intensity={backgroundIntensity}
+          gridEnabled={backgroundGridEnabled}
+          animated={backgroundAnimated}
+          themeMode={themeMode}
+        />
 
         <div 
           className={`mx-auto py-8 relative overflow-x-hidden transition-all duration-300 ${

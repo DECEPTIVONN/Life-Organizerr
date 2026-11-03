@@ -42,7 +42,11 @@ import {
   Clipboard,
   Database,
   Play,
-  FolderKanban
+  FolderKanban,
+  Layers,
+  Grid,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { subscribeToMutationQueue, processMutationQueue, clearAllMutations, QueueStatus } from '../lib/indexedDbQueue';
 import { isPlatformAuthenticatorAvailable, verifyBiometric } from '../utils/biometricAuth';
@@ -58,6 +62,7 @@ import {
 import defaultLockBg from '../assets/images/1271888.jpg';
 import ColorSchemeModal from './ColorSchemeModal';
 import { THEME_PRESETS, applyThemeColor, applyDarkBackgroundStyle } from '../utils/themeColors';
+import type { BackgroundAtmosphereMode, BackgroundAtmosphereIntensity } from './CinematicBackground';
 import { motion, AnimatePresence } from 'motion/react';
 import QRCode from 'qrcode';
 import { setSupabaseConfig, testSupabaseConnection } from '../lib/supabase';
@@ -122,6 +127,20 @@ interface SettingsViewProps {
   setActiveThemePreset?: (preset: string) => void;
   customThemeHex?: string;
   setCustomThemeHex?: (hex: string) => void;
+
+  // System Theme Mode (Dark vs Light - Architectural Mode)
+  themeMode?: 'dark' | 'light';
+  setThemeMode?: (mode: 'dark' | 'light') => void;
+
+  // Cinematic Luxury Background Atmosphere
+  backgroundAtmosphere?: BackgroundAtmosphereMode;
+  setBackgroundAtmosphere?: (mode: BackgroundAtmosphereMode) => void;
+  backgroundIntensity?: BackgroundAtmosphereIntensity;
+  setBackgroundIntensity?: (intensity: BackgroundAtmosphereIntensity) => void;
+  backgroundGridEnabled?: boolean;
+  setBackgroundGridEnabled?: (enabled: boolean) => void;
+  backgroundAnimated?: boolean;
+  setBackgroundAnimated?: (animated: boolean) => void;
   
   // Account Status
   setAccountDeactivated: (deactivated: boolean) => void;
@@ -242,6 +261,16 @@ export default function SettingsView({
   setActiveThemePreset,
   customThemeHex = '#3396f3',
   setCustomThemeHex,
+  themeMode = 'dark',
+  setThemeMode,
+  backgroundAtmosphere: propBackgroundAtmosphere,
+  setBackgroundAtmosphere: propSetBackgroundAtmosphere,
+  backgroundIntensity: propBackgroundIntensity,
+  setBackgroundIntensity: propSetBackgroundIntensity,
+  backgroundGridEnabled: propBackgroundGridEnabled,
+  setBackgroundGridEnabled: propSetBackgroundGridEnabled,
+  backgroundAnimated: propBackgroundAnimated,
+  setBackgroundAnimated: propSetBackgroundAnimated,
   language: propLanguage,
   setLanguage: propSetLanguage,
   backgroundNotificationsEnabled: propBackgroundNotificationsEnabled,
@@ -503,6 +532,58 @@ export default function SettingsView({
   const [darkBackgroundStyle, setDarkBackgroundStyle] = useState<'padrao' | 'amoled'>(() => {
     return (typeof window !== 'undefined' ? (localStorage.getItem('mbc_dark_background_style') as 'padrao' | 'amoled') : 'padrao') || 'padrao';
   });
+
+  // Cinematic Luxury Background Atmosphere States
+  const [localBackgroundAtmosphere, setLocalBackgroundAtmosphere] = useState<BackgroundAtmosphereMode>(() => {
+    return (localStorage.getItem('mbc_background_atmosphere') as BackgroundAtmosphereMode) || 'cinematic';
+  });
+  const backgroundAtmosphere = propBackgroundAtmosphere !== undefined ? propBackgroundAtmosphere : localBackgroundAtmosphere;
+  const handleSelectBackgroundAtmosphere = (mode: BackgroundAtmosphereMode) => {
+    if (propSetBackgroundAtmosphere) propSetBackgroundAtmosphere(mode);
+    setLocalBackgroundAtmosphere(mode);
+    localStorage.setItem('mbc_background_atmosphere', mode);
+    if (mode === 'amoled') {
+      applyDarkBackgroundStyle('amoled');
+      setDarkBackgroundStyle('amoled');
+    } else {
+      applyDarkBackgroundStyle('padrao');
+      setDarkBackgroundStyle('padrao');
+    }
+    addXp(15);
+  };
+
+  const [localBackgroundIntensity, setLocalBackgroundIntensity] = useState<BackgroundAtmosphereIntensity>(() => {
+    return (localStorage.getItem('mbc_background_intensity') as BackgroundAtmosphereIntensity) || 'subtle';
+  });
+  const backgroundIntensity = propBackgroundIntensity !== undefined ? propBackgroundIntensity : localBackgroundIntensity;
+  const handleSelectBackgroundIntensity = (intensity: BackgroundAtmosphereIntensity) => {
+    if (propSetBackgroundIntensity) propSetBackgroundIntensity(intensity);
+    setLocalBackgroundIntensity(intensity);
+    localStorage.setItem('mbc_background_intensity', intensity);
+    addXp(10);
+  };
+
+  const [localBackgroundGridEnabled, setLocalBackgroundGridEnabled] = useState<boolean>(() => {
+    return localStorage.getItem('mbc_background_grid_enabled') !== 'false';
+  });
+  const backgroundGridEnabled = propBackgroundGridEnabled !== undefined ? propBackgroundGridEnabled : localBackgroundGridEnabled;
+  const handleToggleBackgroundGrid = (enabled: boolean) => {
+    if (propSetBackgroundGridEnabled) propSetBackgroundGridEnabled(enabled);
+    setLocalBackgroundGridEnabled(enabled);
+    localStorage.setItem('mbc_background_grid_enabled', String(enabled));
+    addXp(10);
+  };
+
+  const [localBackgroundAnimated, setLocalBackgroundAnimated] = useState<boolean>(() => {
+    return localStorage.getItem('mbc_background_animated') !== 'false';
+  });
+  const backgroundAnimated = propBackgroundAnimated !== undefined ? propBackgroundAnimated : localBackgroundAnimated;
+  const handleToggleBackgroundAnimated = (anim: boolean) => {
+    if (propSetBackgroundAnimated) propSetBackgroundAnimated(anim);
+    setLocalBackgroundAnimated(anim);
+    localStorage.setItem('mbc_background_animated', String(anim));
+    addXp(10);
+  };
 
   // Função para gerar uma nova sessão de QR Code de 5 minutos
   const generateNewDeviceQr = async () => {
@@ -3144,78 +3225,414 @@ export default function SettingsView({
               </div>
             </div>
 
-            {/* Estilo de Fundo Preto (Preto Padrão vs Preto AMOLED) */}
-            <div className="p-4 bg-zinc-950 border border-zinc-900 rounded-2xl space-y-3">
-              <div className="flex items-center justify-between">
+            {/* Tema do Sistema: Modo Claro vs Modo Escuro */}
+            <div className="p-5 bg-zinc-950 border border-zinc-900 rounded-2xl space-y-4">
+              <div className="flex items-center justify-between border-b border-zinc-900/80 pb-3">
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
-                    <Palette className="w-4 h-4 text-orange-400" />
-                    <h4 className="text-xs font-bold text-zinc-200">Estilo de Fundo Preto</h4>
-                    <span className="text-[8px] font-bold text-orange-400 bg-orange-500/10 border border-orange-500/20 px-2 py-0.5 rounded-full font-mono uppercase">
-                      Display
+                    <Sun className="w-4 h-4 text-amber-400" />
+                    <h4 className="text-xs font-bold text-zinc-100">Tema do Sistema: Modo Claro vs Modo Escuro</h4>
+                    <span className="text-[8px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full font-mono uppercase">
+                      Visual
                     </span>
                   </div>
-                  <p className="text-[10px] text-zinc-500 font-mono leading-normal">
-                    Selecione entre o preto padrão atual (tons profundos de obsidiana) e o preto AMOLED (preto puro #000000 para economia de bateria e telas OLED).
+                  <p className="text-[10px] text-zinc-400 font-mono leading-normal">
+                    Alterne entre a estética arquitetural clara inspirada em estúdio minimalista ou a experiência noturna cinemática.
                   </p>
                 </div>
               </div>
 
-              <div className="space-y-2 pt-1">
-                <div className="grid grid-cols-2 gap-3">
-                  {/* PRETO PADRÃO */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* 1. MODO CLARO ARQUITETURAL */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (setThemeMode) {
+                      setThemeMode('light');
+                    }
+                    localStorage.setItem('mbc_theme_mode', 'light');
+                    document.documentElement.classList.add('light-mode');
+                    document.documentElement.classList.remove('dark');
+                    document.body.classList.add('light-mode');
+                    addXp(15);
+                  }}
+                  className={`relative p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between overflow-hidden group ${
+                    themeMode === 'light'
+                      ? 'bg-amber-500/10 border-amber-500/80 shadow-[0_0_25px_rgba(245,158,11,0.2)]'
+                      : 'bg-zinc-950/60 border-zinc-850 hover:border-zinc-700 hover:bg-zinc-900/40'
+                  }`}
+                >
+                  {/* Miniature preview for Light Mode */}
+                  <div className="w-full h-12 rounded-lg bg-[#f8f8f6] border border-zinc-300 relative overflow-hidden mb-2.5 flex items-center justify-center p-2 shadow-inner">
+                    <div 
+                      className="absolute inset-0 opacity-70"
+                      style={{
+                        backgroundImage: 'radial-gradient(circle, rgba(0,0,0,0.12) 1px, transparent 1px)',
+                        backgroundSize: '10px 10px',
+                        WebkitMaskImage: 'radial-gradient(ellipse 60% 50% at 50% 50%, black 20%, transparent 80%)'
+                      }}
+                    />
+                    <div className="relative z-10 px-3 py-1 rounded-md bg-white border border-black/10 shadow-sm flex items-center gap-1.5">
+                      <div className="w-2 h-2 rounded-full bg-amber-500" />
+                      <span className="text-[9px] font-mono text-zinc-800 font-bold">Studio Marfim</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <h5 className="text-xs font-bold text-white">Modo Claro (Arquiteto)</h5>
+                        <span className="text-[8px] font-mono px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 font-bold">
+                          Design Referência
+                        </span>
+                      </div>
+                      <p className="text-[9.5px] text-zinc-400 font-mono mt-0.5">
+                        Canvas marfim suave (#F8F8F6), cartões brancos, micro-trama de 32px e estética de museu.
+                      </p>
+                    </div>
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 border ml-2 ${
+                      themeMode === 'light'
+                        ? 'bg-amber-500 border-amber-400 text-zinc-950 shadow-sm'
+                        : 'border-zinc-700 bg-zinc-900/40 text-transparent'
+                    }`}>
+                      <Check className="w-3 h-3 stroke-[3]" />
+                    </div>
+                  </div>
+                </button>
+
+                {/* 2. MODO ESCURO CINEMÁTICO */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (setThemeMode) {
+                      setThemeMode('dark');
+                    }
+                    localStorage.setItem('mbc_theme_mode', 'dark');
+                    document.documentElement.classList.remove('light-mode');
+                    document.documentElement.classList.add('dark');
+                    document.body.classList.remove('light-mode');
+                    addXp(15);
+                  }}
+                  className={`relative p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between overflow-hidden group ${
+                    themeMode === 'dark'
+                      ? 'bg-zinc-900/90 border-orange-500/80 shadow-[0_0_25px_rgba(249,115,22,0.18)]'
+                      : 'bg-zinc-950/60 border-zinc-850 hover:border-zinc-700 hover:bg-zinc-900/40'
+                  }`}
+                >
+                  {/* Miniature preview for Dark Mode */}
+                  <div className="w-full h-12 rounded-lg bg-[#040405] border border-zinc-800 relative overflow-hidden mb-2.5 flex items-center justify-center p-2">
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(249,115,22,0.45),transparent_70%)]" />
+                    <div 
+                      className="absolute inset-0 opacity-40"
+                      style={{
+                        backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.2) 1px, transparent 1px)',
+                        backgroundSize: '8px 8px',
+                        WebkitMaskImage: 'radial-gradient(ellipse 60% 50% at 50% 50%, black 20%, transparent 80%)'
+                      }}
+                    />
+                    <div className="relative z-10 px-3 py-1 rounded-md bg-zinc-900/90 border border-zinc-700 flex items-center gap-1.5">
+                      <div className="w-2 h-2 rounded-full bg-orange-500" />
+                      <span className="text-[9px] font-mono text-zinc-300 font-bold">Obsidian Zênite</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <h5 className="text-xs font-bold text-white">Modo Escuro (Cinemático)</h5>
+                        <span className="text-[8px] font-mono px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-400 border border-zinc-700 font-bold">
+                          Original
+                        </span>
+                      </div>
+                      <p className="text-[9.5px] text-zinc-400 font-mono mt-0.5">
+                        Luz de estúdio cenográfica, contraste preto puro obsidian e suporte a painel AMOLED.
+                      </p>
+                    </div>
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 border ml-2 ${
+                      themeMode === 'dark'
+                        ? 'bg-orange-500 border-orange-400 text-white shadow-sm'
+                        : 'border-zinc-700 bg-zinc-900/40 text-transparent'
+                    }`}>
+                      <Check className="w-3 h-3 stroke-[3]" />
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Atmosfera de Fundo & Iluminação Cinemática */}
+            <div className="p-5 bg-zinc-950 border border-zinc-900 rounded-2xl space-y-4">
+              <div className="flex items-center justify-between border-b border-zinc-900/80 pb-3">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-orange-400" />
+                    <h4 className="text-xs font-bold text-zinc-100">Atmosfera de Fundo & Iluminação Cinemática</h4>
+                    <span className="text-[8px] font-bold text-orange-400 bg-orange-500/10 border border-orange-500/20 px-2 py-0.5 rounded-full font-mono uppercase">
+                      Premium
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-zinc-400 font-mono leading-normal">
+                    Luz cenográfica de zênite, micro-trama arquitetural mascarada com decaimento suave e subtons profundos que acompanham cada aba.
+                  </p>
+                </div>
+              </div>
+
+              {/* 4 Modos de Atmosfera */}
+              <div className="space-y-2">
+                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider font-mono block">
+                  Modo de Iluminação
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* 1. CINEMÁTICO DE LUXO */}
                   <button
                     type="button"
-                    onClick={() => {
-                      setDarkBackgroundStyle('padrao');
-                      applyDarkBackgroundStyle('padrao');
-                      addXp(10);
-                    }}
-                    className={`flex flex-col items-center justify-center gap-2 py-4 rounded-2xl transition-all cursor-pointer font-mono font-bold text-xs uppercase tracking-wider ${
-                      darkBackgroundStyle === 'padrao'
-                        ? 'bg-zinc-800 border-2 border-orange-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.25)]'
-                        : 'bg-zinc-900/60 border border-zinc-800/80 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                    onClick={() => handleSelectBackgroundAtmosphere('cinematic')}
+                    className={`relative p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between overflow-hidden group ${
+                      backgroundAtmosphere === 'cinematic'
+                        ? 'bg-zinc-900/90 border-orange-500/80 shadow-[0_0_25px_rgba(249,115,22,0.18)]'
+                        : 'bg-zinc-950/60 border-zinc-850 hover:border-zinc-700 hover:bg-zinc-900/40'
                     }`}
                   >
-                    <div className="w-7 h-7 rounded-xl bg-[#040405] border border-zinc-600 flex items-center justify-center shadow-inner">
-                      {darkBackgroundStyle === 'padrao' && (
-                        <Check className="w-4 h-4 text-orange-400 stroke-[3]" />
-                      )}
+                    {/* Visual miniature preview */}
+                    <div className="w-full h-10 rounded-lg bg-[#040405] border border-zinc-800 relative overflow-hidden mb-2.5 flex items-center justify-center">
+                      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(249,115,22,0.45),transparent_70%)]" />
+                      <div 
+                        className="absolute inset-0 opacity-40" 
+                        style={{
+                          backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.2) 1px, transparent 1px)',
+                          backgroundSize: '8px 8px',
+                          WebkitMaskImage: 'radial-gradient(ellipse 60% 50% at 50% 50%, black 20%, transparent 80%)'
+                        }} 
+                      />
+                      <span className="text-[9px] font-mono text-zinc-400 font-bold relative z-10">Zênite + Grid</span>
                     </div>
-                    <span>Preto Padrão</span>
-                    <span className="text-[9px] font-normal text-zinc-400 font-mono lowercase">atual (obsidiana)</span>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <h5 className="text-xs font-bold text-white">Cinemático de Luxo</h5>
+                          <span className="text-[8px] font-mono px-1.5 py-0.2 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20 font-bold">
+                            Recomendado
+                          </span>
+                        </div>
+                        <p className="text-[9.5px] text-zinc-400 font-mono mt-0.5">
+                          Luz de estúdio, micro-trama técnica e subtons líquidos por aba.
+                        </p>
+                      </div>
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 border ml-2 ${
+                        backgroundAtmosphere === 'cinematic' 
+                          ? 'bg-orange-500 border-orange-400 text-white shadow-sm' 
+                          : 'border-zinc-700 bg-zinc-900/40 text-transparent'
+                      }`}>
+                        <Check className="w-3 h-3 stroke-[3]" />
+                      </div>
+                    </div>
                   </button>
 
-                  {/* PRETO AMOLED */}
+                  {/* 2. ESTÚDIO SUAVE */}
                   <button
                     type="button"
-                    onClick={() => {
-                      setDarkBackgroundStyle('amoled');
-                      applyDarkBackgroundStyle('amoled');
-                      addXp(10);
-                    }}
-                    className={`flex flex-col items-center justify-center gap-2 py-4 rounded-2xl transition-all cursor-pointer font-mono font-bold text-xs uppercase tracking-wider ${
-                      darkBackgroundStyle === 'amoled'
-                        ? 'bg-black border-2 border-orange-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.35)]'
-                        : 'bg-zinc-900/60 border border-zinc-800/80 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                    onClick={() => handleSelectBackgroundAtmosphere('studio')}
+                    className={`relative p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between overflow-hidden group ${
+                      backgroundAtmosphere === 'studio'
+                        ? 'bg-zinc-900/90 border-orange-500/80 shadow-[0_0_25px_rgba(249,115,22,0.18)]'
+                        : 'bg-zinc-950/60 border-zinc-850 hover:border-zinc-700 hover:bg-zinc-900/40'
                     }`}
                   >
-                    <div className="w-7 h-7 rounded-xl bg-black border border-zinc-700 flex items-center justify-center shadow-inner">
-                      {darkBackgroundStyle === 'amoled' && (
-                        <Check className="w-4 h-4 text-orange-400 stroke-[3]" />
-                      )}
+                    {/* Visual miniature preview */}
+                    <div className="w-full h-10 rounded-lg bg-[#040405] border border-zinc-800 relative overflow-hidden mb-2.5 flex items-center justify-center">
+                      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(16,185,129,0.4),transparent_70%)]" />
+                      <span className="text-[9px] font-mono text-zinc-400 font-bold relative z-10">Luz Suave</span>
                     </div>
-                    <span>Preto AMOLED</span>
-                    <span className="text-[9px] font-normal text-zinc-400 font-mono lowercase">puro #000000 (oled)</span>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h5 className="text-xs font-bold text-white">Estúdio Suave</h5>
+                        <p className="text-[9.5px] text-zinc-400 font-mono mt-0.5">
+                          Iluminação cenográfica de museu com transição por aba, sem o micro-grid.
+                        </p>
+                      </div>
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 border ml-2 ${
+                        backgroundAtmosphere === 'studio' 
+                          ? 'bg-orange-500 border-orange-400 text-white shadow-sm' 
+                          : 'border-zinc-700 bg-zinc-900/40 text-transparent'
+                      }`}>
+                        <Check className="w-3 h-3 stroke-[3]" />
+                      </div>
+                    </div>
+                  </button>
+
+                  {/* 3. MINIMALISTA PURO */}
+                  <button
+                    type="button"
+                    onClick={() => handleSelectBackgroundAtmosphere('minimalista')}
+                    className={`relative p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between overflow-hidden group ${
+                      backgroundAtmosphere === 'minimalista'
+                        ? 'bg-zinc-900/90 border-orange-500/80 shadow-[0_0_25px_rgba(249,115,22,0.18)]'
+                        : 'bg-zinc-950/60 border-zinc-850 hover:border-zinc-700 hover:bg-zinc-900/40'
+                    }`}
+                  >
+                    {/* Visual miniature preview */}
+                    <div className="w-full h-10 rounded-lg bg-[#08080a] border border-zinc-800 relative overflow-hidden mb-2.5 flex items-center justify-center">
+                      <span className="text-[9px] font-mono text-zinc-500 font-bold">Grafite Neutro</span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h5 className="text-xs font-bold text-white">Minimalista Puro</h5>
+                        <p className="text-[9.5px] text-zinc-400 font-mono mt-0.5">
+                          Tonalidade escura grafite contínua, sem gradientes coloridos ou texturas.
+                        </p>
+                      </div>
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 border ml-2 ${
+                        backgroundAtmosphere === 'minimalista' 
+                          ? 'bg-orange-500 border-orange-400 text-white shadow-sm' 
+                          : 'border-zinc-700 bg-zinc-900/40 text-transparent'
+                      }`}>
+                        <Check className="w-3 h-3 stroke-[3]" />
+                      </div>
+                    </div>
+                  </button>
+
+                  {/* 4. PRETO AMOLED */}
+                  <button
+                    type="button"
+                    onClick={() => handleSelectBackgroundAtmosphere('amoled')}
+                    className={`relative p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between overflow-hidden group ${
+                      backgroundAtmosphere === 'amoled'
+                        ? 'bg-zinc-900/90 border-orange-500/80 shadow-[0_0_25px_rgba(249,115,22,0.18)]'
+                        : 'bg-zinc-950/60 border-zinc-850 hover:border-zinc-700 hover:bg-zinc-900/40'
+                    }`}
+                  >
+                    {/* Visual miniature preview */}
+                    <div className="w-full h-10 rounded-lg bg-black border border-zinc-850 relative overflow-hidden mb-2.5 flex items-center justify-center">
+                      <span className="text-[9px] font-mono text-zinc-600 font-bold">#000000 Puro</span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h5 className="text-xs font-bold text-white">Preto AMOLED</h5>
+                        <p className="text-[9.5px] text-zinc-400 font-mono mt-0.5">
+                          Preto absoluto #000000 (desliga pixels em telas OLED para máxima economia de energia).
+                        </p>
+                      </div>
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 border ml-2 ${
+                        backgroundAtmosphere === 'amoled' 
+                          ? 'bg-orange-500 border-orange-400 text-white shadow-sm' 
+                          : 'border-zinc-700 bg-zinc-900/40 text-transparent'
+                      }`}>
+                        <Check className="w-3 h-3 stroke-[3]" />
+                      </div>
+                    </div>
                   </button>
                 </div>
-
-                <p className="text-xs text-zinc-400 font-sans">
-                  {darkBackgroundStyle === 'amoled'
-                    ? 'Modo AMOLED ativado: pixels totalmente pretos (#000000) economizando energia em telas OLED/AMOLED.'
-                    : 'Modo Padrão ativado: tonalidade suave e escura padrão da interface.'}
-                </p>
               </div>
+
+              {/* Controles de Ajuste Fino (quando não for AMOLED) */}
+              {backgroundAtmosphere !== 'amoled' && (
+                <div className="pt-3 border-t border-zinc-900/80 space-y-4">
+                  {/* Intensidade da Luz Cenográfica */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider font-mono">
+                        Intensidade da Luz Cenográfica
+                      </span>
+                      <span className="text-[9px] font-mono text-orange-400">
+                        {backgroundIntensity === 'discrete' ? 'Discreta (55%)' : backgroundIntensity === 'vibrant' ? 'Vibrante (150%)' : 'Sutil (100% - Padrão de Luxo)'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleSelectBackgroundIntensity('discrete')}
+                        className={`py-2 px-3 rounded-xl text-center text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                          backgroundIntensity === 'discrete'
+                            ? 'bg-orange-500/20 text-orange-400 border border-orange-500/40 shadow-sm'
+                            : 'bg-zinc-900/60 border border-zinc-850 text-zinc-400 hover:text-white'
+                        }`}
+                      >
+                        Discreta
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSelectBackgroundIntensity('subtle')}
+                        className={`py-2 px-3 rounded-xl text-center text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                          backgroundIntensity === 'subtle'
+                            ? 'bg-orange-500/20 text-orange-400 border border-orange-500/40 shadow-sm'
+                            : 'bg-zinc-900/60 border border-zinc-850 text-zinc-400 hover:text-white'
+                        }`}
+                      >
+                        Sutil (Padrão)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSelectBackgroundIntensity('vibrant')}
+                        className={`py-2 px-3 rounded-xl text-center text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                          backgroundIntensity === 'vibrant'
+                            ? 'bg-orange-500/20 text-orange-400 border border-orange-500/40 shadow-sm'
+                            : 'bg-zinc-900/60 border border-zinc-850 text-zinc-400 hover:text-white'
+                        }`}
+                      >
+                        Vibrante
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Alternador do Micro-Grid (disponível no modo Cinemático) */}
+                  {backgroundAtmosphere === 'cinematic' && (
+                    <div className="flex items-center justify-between p-3.5 bg-zinc-900/40 border border-zinc-850 rounded-xl">
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <Grid className="w-3.5 h-3.5 text-zinc-400" />
+                          <h6 className="text-xs font-bold text-zinc-200">Micro-Trama Arquitetural Mascarada</h6>
+                        </div>
+                        <p className="text-[9.5px] text-zinc-400 font-mono">
+                          Malha de micropontos com máscara radial que se dissolve suavemente nas bordas.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleBackgroundGrid(!backgroundGridEnabled)}
+                        className={`w-9 h-5 rounded-full p-0.5 transition-all cursor-pointer shrink-0 ml-3 ${
+                          backgroundGridEnabled ? 'bg-orange-500/40' : 'bg-zinc-800'
+                        }`}
+                      >
+                        <div className={`w-4 h-4 rounded-full transition-all ${
+                          backgroundGridEnabled ? 'translate-x-4 bg-orange-400' : 'translate-x-0 bg-zinc-500'
+                        }`} />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Animações Suaves do Fundo */}
+                  <div className="flex items-center justify-between p-3.5 bg-zinc-900/40 border border-zinc-850 rounded-xl">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-3.5 h-3.5 text-orange-400" />
+                        <h6 className="text-xs font-bold text-zinc-200">Animações Dinâmicas Suaves</h6>
+                        <span className="text-[8px] font-mono px-1.5 py-0.2 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20 font-bold uppercase">
+                          Fluida
+                        </span>
+                      </div>
+                      <p className="text-[9.5px] text-zinc-400 font-mono">
+                        Respiração orgânica do zênite (14s), orbs em deriva suave e varredura de horizonte nos cartões.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleBackgroundAnimated(!backgroundAnimated)}
+                      className={`w-9 h-5 rounded-full p-0.5 transition-all cursor-pointer shrink-0 ml-3 ${
+                        backgroundAnimated ? 'bg-orange-500/40' : 'bg-zinc-800'
+                      }`}
+                    >
+                      <div className={`w-4 h-4 rounded-full transition-all ${
+                        backgroundAnimated ? 'translate-x-4 bg-orange-400' : 'translate-x-0 bg-zinc-500'
+                      }`} />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Esquema de Cores e Personalização */}

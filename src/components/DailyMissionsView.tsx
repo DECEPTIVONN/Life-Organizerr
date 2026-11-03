@@ -10,6 +10,7 @@ import {
   X,
   Clock,
   Sun,
+  Sunrise,
   Sunset,
   Moon,
   Bell,
@@ -52,6 +53,8 @@ interface DailyMissionsViewProps {
   onOpenTrackers?: () => void;
   habits?: Habit[];
   setHabits?: React.Dispatch<React.SetStateAction<Habit[]>>;
+  userName?: string;
+  themeMode?: 'dark' | 'light';
 }
 
 export default function DailyMissionsView({
@@ -76,7 +79,9 @@ export default function DailyMissionsView({
   handleResetForNewDay,
   onOpenTrackers,
   habits,
-  setHabits
+  setHabits,
+  userName = 'Yudi',
+  themeMode = 'dark'
 }: DailyMissionsViewProps) {
   // Filters: Todas, Ativas, Concluídas
   const [filterStatus, setFilterStatus] = useState<'todas' | 'ativas' | 'concluidas'>('todas');
@@ -331,6 +336,56 @@ export default function DailyMissionsView({
     return dates;
   }, [dailyTasks, activeTasks, calendarNotes]);
 
+  // Reception greeting (Image 2: "Boa tarde, Yudi")
+  const greeting = useMemo(() => {
+    const currentHour = new Date().getHours();
+    if (currentHour >= 5 && currentHour < 12) return 'Bom dia';
+    if (currentHour >= 12 && currentHour < 18) return 'Boa tarde';
+    return 'Boa noite';
+  }, []);
+
+  // Formatted full date (Image 2: "Sexta-feira, 9 de outubro")
+  const fullDateHeaderLabel = useMemo(() => {
+    try {
+      const [y, m, d] = selectedDate.split('-').map(Number);
+      const dateObj = new Date(y, m - 1, d, 12, 0, 0);
+      const weekday = dateObj.toLocaleDateString('pt-BR', { weekday: 'long' });
+      const day = dateObj.getDate();
+      const month = dateObj.toLocaleDateString('pt-BR', { month: 'long' });
+      const capitalizedWeekday = weekday.charAt(0).toUpperCase() + weekday.slice(1);
+      return `${capitalizedWeekday}, ${day} de ${month}`;
+    } catch {
+      return selectedDate;
+    }
+  }, [selectedDate]);
+
+  // Period groups (Image 2: Manhã, Tarde, Noite, Geral)
+  const taskGroups = useMemo(() => {
+    const manha: DailyTask[] = [];
+    const tarde: DailyTask[] = [];
+    const noite: DailyTask[] = [];
+    const geral: DailyTask[] = [];
+
+    filteredTasks.forEach(task => {
+      if (task.timeSlot === 'manha' || task.period === 'manha') {
+        manha.push(task);
+      } else if (task.timeSlot === 'tarde') {
+        tarde.push(task);
+      } else if (task.timeSlot === 'noite' || task.period === 'noite') {
+        noite.push(task);
+      } else {
+        geral.push(task);
+      }
+    });
+
+    return [
+      { id: 'manha', title: 'Manhã', icon: 'sunrise', tasks: manha, badgeClass: 'badge-period-morning' },
+      { id: 'tarde', title: 'Tarde', icon: 'sun', tasks: tarde, badgeClass: 'badge-period-afternoon' },
+      { id: 'noite', title: 'Noite', icon: 'moon', tasks: noite, badgeClass: 'badge-period-night' },
+      { id: 'geral', title: 'Outras Tarefas', icon: 'list', tasks: geral, badgeClass: 'badge-period-night' }
+    ].filter(group => group.tasks.length > 0);
+  }, [filteredTasks]);
+
   // Open task modal for CREATE
   const handleOpenCreateTask = () => {
     setEditingTask(null);
@@ -386,6 +441,29 @@ export default function DailyMissionsView({
     setFormIsHabit(Boolean(task.isHabit || task.habitId));
     setIsTaskModalOpen(true);
   };
+
+  // Keyboard shortcut listener for key 'N' (Image 2: [+ Adicionar tarefa  N])
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      if ((e.key === 'n' || e.key === 'N') && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        if (!isTaskModalOpen) {
+          e.preventDefault();
+          handleOpenCreateTask();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isTaskModalOpen]);
 
   // Save Task (Create or Edit)
   const handleSaveTask = (e?: React.FormEvent) => {
@@ -677,6 +755,30 @@ export default function DailyMissionsView({
 
   return (
     <div className="w-full space-y-4 pb-20 relative">
+      {/* ======================================================== */}
+      {/* RECEPTION GREETING & ACTION HEADER (IMAGE 2)             */}
+      {/* ======================================================== */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-1 pt-1 pb-1">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white greeting-heading">
+            {greeting}, {userName}
+          </h1>
+          <p className="text-xs sm:text-sm text-zinc-400 capitalize mt-0.5">
+            {fullDateHeaderLabel}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={handleOpenCreateTask}
+          className="btn-dark-pill self-start sm:self-auto cursor-pointer"
+          title="Criar nova tarefa (atalho N)"
+        >
+          <Plus className="w-4 h-4 stroke-[2.5]" />
+          <span>Adicionar tarefa</span>
+          <span className="key-shortcut">N</span>
+        </button>
+      </div>
+
       {/* ======================================================== */}
       {/* 1. TOP HEADER: < Data >  📅              🗂  ⚙️       */}
       {/* ======================================================== */}
@@ -976,9 +1078,9 @@ export default function DailyMissionsView({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
-          className="w-full space-y-2.5"
+          className="w-full space-y-6"
         >
-          {filteredTasks.length === 0 ? (
+          {taskGroups.length === 0 ? (
         /* Empty State (Image 9) */
         <div className="py-16 text-center flex flex-col items-center justify-center">
           <div className="w-14 h-14 bg-zinc-800/70 rounded-2xl flex items-center justify-center text-zinc-400 mb-3 border border-zinc-700/40">
@@ -992,38 +1094,57 @@ export default function DailyMissionsView({
           </p>
         </div>
       ) : (
-        <div className="space-y-2.5">
-          {filteredTasks.map(task => {
-            const hasSubtasks = task.subtasks && task.subtasks.length > 0;
-            const isExpanded = !!expandedTasks[task.id];
+        <div className="space-y-6">
+          {taskGroups.map(group => (
+            <div key={group.id} className="space-y-2.5">
+              {/* Period Section Header (Image 2) */}
+              <div className="flex items-center gap-2 px-1 pt-2 pb-0.5">
+                <span className={group.badgeClass}>
+                  {group.id === 'manha' && <Sunrise className="w-3.5 h-3.5 text-amber-600" />}
+                  {group.id === 'tarde' && <Sun className="w-3.5 h-3.5 text-orange-600" />}
+                  {group.id === 'noite' && <Moon className="w-3.5 h-3.5 text-indigo-500" />}
+                  {group.id === 'geral' && <Calendar className="w-3.5 h-3.5 text-zinc-500" />}
+                </span>
+                <h3 className="text-sm font-bold text-zinc-200 section-period-title tracking-tight">
+                  {group.title}
+                </h3>
+                <span className="text-xs text-zinc-400 font-semibold">
+                  {group.tasks.length}
+                </span>
+              </div>
 
-            // Priority dot
-            const pDotClass = getPriorityDot(task.priority);
+              <div className="space-y-2.5">
+                {group.tasks.map(task => {
+                  const hasSubtasks = task.subtasks && task.subtasks.length > 0;
+                  const isExpanded = !!expandedTasks[task.id];
 
-            return (
-              <motion.div
-                key={task.id}
-                layout
-                className="bg-[#18181b] hover:bg-[#1f1f23] transition-colors rounded-2xl p-4 border border-zinc-800/50 shadow-sm relative group"
-              >
-                {/* Top Row: Checkbox + Priority Dot + Title + Chevron/Actions */}
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-3 flex-1 min-w-0">
-                    {/* Checkbox */}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleToggleTask(task.id);
-                      }}
-                      className={`w-5 h-5 mt-0.5 rounded-lg flex items-center justify-center transition-all shrink-0 cursor-pointer ${
-                        task.completed
-                          ? 'bg-white border-white text-zinc-950 shadow-sm'
-                          : 'border border-zinc-600 hover:border-zinc-400 bg-transparent'
-                      }`}
+                  // Priority dot
+                  const pDotClass = getPriorityDot(task.priority);
+
+                  return (
+                    <motion.div
+                      key={task.id}
+                      layout
+                      className="bg-[#18181b] hover:bg-[#1f1f23] transition-colors rounded-2xl p-4 border border-zinc-800/50 shadow-sm relative group"
                     >
-                      {task.completed && <Check className="w-3.5 h-3.5 stroke-[3]" />}
-                    </button>
+                      {/* Top Row: Checkbox + Priority Dot + Title + Chevron/Actions */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          {/* Checkbox */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleTask(task.id);
+                            }}
+                            className={`w-5 h-5 mt-0.5 rounded-lg flex items-center justify-center transition-all shrink-0 cursor-pointer ${
+                              task.completed
+                                ? 'bg-zinc-900 dark:bg-white border-zinc-900 dark:border-white text-white dark:text-zinc-950 shadow-sm'
+                                : 'border border-zinc-300 dark:border-zinc-600 hover:border-zinc-400 bg-transparent'
+                            }`}
+                          >
+                            {task.completed && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                          </button>
 
                     {/* Content area */}
                     <div
@@ -1248,9 +1369,12 @@ export default function DailyMissionsView({
                     )}
                   </AnimatePresence>
                 )}
-              </motion.div>
-            );
-          })}
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       )}
         </motion.div>

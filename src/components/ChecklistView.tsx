@@ -84,6 +84,8 @@ interface ChecklistViewProps {
   onOpenStreakHub?: () => void;
   lastDailyResetDate?: string;
   setLastDailyResetDate?: React.Dispatch<React.SetStateAction<string>>;
+  userName?: string;
+  themeMode?: 'dark' | 'light';
 }
 
 // Bible total chapters standard (1189 is standard for Protestant bible)
@@ -197,7 +199,9 @@ export default function ChecklistView({
   lastDailyResetDate,
   setLastDailyResetDate,
   habits: propHabits,
-  setHabits: propSetHabits
+  setHabits: propSetHabits,
+  userName = 'Yudi',
+  themeMode = 'dark'
 }: ChecklistViewProps) {
   const [localBooks, setLocalBooks] = useState<YearlyBook[]>([]);
   const actualBooks = propBooks || localBooks;
@@ -2193,6 +2197,8 @@ export default function ChecklistView({
             }}
             habits={actualHabits}
             setHabits={actualSetHabits}
+            userName={userName}
+            themeMode={themeMode}
           />
 
       {/* 4. Trackers de Leitura & Fé (Leitura Semanal e Bíblia) */}
