@@ -379,10 +379,10 @@ export default function DailyMissionsView({
     });
 
     return [
-      { id: 'manha', title: 'Manhã', icon: 'sunrise', tasks: manha, badgeClass: 'badge-period-morning' },
-      { id: 'tarde', title: 'Tarde', icon: 'sun', tasks: tarde, badgeClass: 'badge-period-afternoon' },
-      { id: 'noite', title: 'Noite', icon: 'moon', tasks: noite, badgeClass: 'badge-period-night' },
-      { id: 'geral', title: 'Outras Tarefas', icon: 'list', tasks: geral, badgeClass: 'badge-period-night' }
+      { id: 'manha', title: 'Manhã', icon: 'sunrise', tasks: manha },
+      { id: 'tarde', title: 'Tarde', icon: 'sun', tasks: tarde },
+      { id: 'noite', title: 'Noite', icon: 'moon', tasks: noite },
+      { id: 'geral', title: 'Outras Tarefas', icon: 'list', tasks: geral }
     ].filter(group => group.tasks.length > 0);
   }, [filteredTasks]);
 
@@ -770,12 +770,11 @@ export default function DailyMissionsView({
         <button
           type="button"
           onClick={handleOpenCreateTask}
-          className="btn-dark-pill self-start sm:self-auto cursor-pointer"
+          className="btn-add-task self-start sm:self-auto cursor-pointer"
           title="Criar nova tarefa (atalho N)"
         >
           <Plus className="w-4 h-4 stroke-[2.5]" />
           <span>Adicionar tarefa</span>
-          <span className="key-shortcut">N</span>
         </button>
       </div>
 
@@ -833,7 +832,7 @@ export default function DailyMissionsView({
           <button
             type="button"
             onClick={() => setIsInlineCalendarOpen(prev => !prev)}
-            className={`p-2 rounded-xl border transition-all ${
+            className={`square-btn-34 p-2 rounded-xl border transition-all ${
               isInlineCalendarOpen
                 ? 'bg-zinc-100 text-zinc-950 border-zinc-200 shadow-sm'
                 : 'bg-zinc-900/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700'
@@ -850,7 +849,7 @@ export default function DailyMissionsView({
             <button
               type="button"
               onClick={onOpenStreakHub}
-              className="flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/20 hover:border-orange-500/40 hover:bg-orange-500/20 px-2.5 py-1.5 rounded-xl text-xs text-orange-400 font-bold transition-all cursor-pointer group"
+              className="streak-chip flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/20 hover:border-orange-500/40 hover:bg-orange-500/20 px-2.5 py-1.5 rounded-xl text-xs text-orange-400 font-bold transition-all cursor-pointer group"
               title="Abrir Central de Ofensivas"
             >
               <Flame className="w-3.5 h-3.5 text-orange-500 fill-orange-500/20 group-hover:scale-110 transition-transform" />
@@ -861,7 +860,7 @@ export default function DailyMissionsView({
           <button
             type="button"
             onClick={() => setIsArchiveDrawerOpen(true)}
-            className="p-2 bg-zinc-900/80 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-xl border border-zinc-800 transition-colors"
+            className="square-btn-34 p-2 bg-zinc-900/80 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-xl border border-zinc-800 transition-colors"
             title="Visão Geral & Trackers"
           >
             <Archive className="w-4 h-4 text-amber-400" />
@@ -996,9 +995,9 @@ export default function DailyMissionsView({
         <button
           type="button"
           onClick={() => setFilterStatus('todas')}
-          className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap ${
+          className={`filter-pill px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap ${
             filterStatus === 'todas'
-              ? 'bg-white text-zinc-950 shadow-sm'
+              ? 'active bg-white text-zinc-950 shadow-sm'
               : 'bg-zinc-900/90 text-zinc-400 hover:text-zinc-200 border border-zinc-800/80'
           }`}
         >
@@ -1009,9 +1008,9 @@ export default function DailyMissionsView({
         <button
           type="button"
           onClick={() => setFilterStatus('ativas')}
-          className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap ${
+          className={`filter-pill px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap ${
             filterStatus === 'ativas'
-              ? 'bg-white text-zinc-950 shadow-sm'
+              ? 'active bg-white text-zinc-950 shadow-sm'
               : 'bg-zinc-900/90 text-zinc-400 hover:text-zinc-200 border border-zinc-800/80'
           }`}
         >
@@ -1022,9 +1021,9 @@ export default function DailyMissionsView({
         <button
           type="button"
           onClick={() => setFilterStatus('concluidas')}
-          className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap ${
+          className={`filter-pill px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap ${
             filterStatus === 'concluidas'
-              ? 'bg-white text-zinc-950 shadow-sm'
+              ? 'active bg-white text-zinc-950 shadow-sm'
               : 'bg-zinc-900/90 text-zinc-400 hover:text-zinc-200 border border-zinc-800/80'
           }`}
         >
@@ -1042,9 +1041,9 @@ export default function DailyMissionsView({
               key={tag.name}
               type="button"
               onClick={() => setSelectedTagFilter(prev => (prev?.toLowerCase() === tag.name.toLowerCase() ? null : tag.name))}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap ${
+              className={`filter-pill flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap ${
                 isSelected
-                  ? 'bg-zinc-100 text-zinc-950 shadow-sm'
+                  ? 'active bg-zinc-100 text-zinc-950 shadow-sm'
                   : 'bg-zinc-900/90 text-zinc-400 hover:text-zinc-200 border border-zinc-800/80'
               }`}
             >
@@ -1061,10 +1060,10 @@ export default function DailyMissionsView({
         <button
           type="button"
           onClick={() => setIsSettingsModalOpen(true)}
-          className="p-1.5 rounded-full text-zinc-400 hover:text-white bg-zinc-900/70 hover:bg-zinc-800 border border-zinc-800 transition-all shrink-0 ml-auto flex items-center justify-center"
+          className="square-btn-34 p-1.5 rounded-xl text-zinc-400 hover:text-white bg-zinc-900/70 hover:bg-zinc-800 border border-zinc-800 transition-all shrink-0 ml-auto flex items-center justify-center"
           title="Opções de missões"
         >
-          <Settings className="w-3.5 h-3.5 text-zinc-400" />
+          <Settings className="w-4 h-4 text-zinc-400" />
         </button>
       </div>
 
@@ -1097,18 +1096,18 @@ export default function DailyMissionsView({
         <div className="space-y-6">
           {taskGroups.map(group => (
             <div key={group.id} className="space-y-2.5">
-              {/* Period Section Header (Image 2) */}
+              {/* Period Section Header */}
               <div className="flex items-center gap-2 px-1 pt-2 pb-0.5">
-                <span className={group.badgeClass}>
-                  {group.id === 'manha' && <Sunrise className="w-3.5 h-3.5 text-amber-600" />}
-                  {group.id === 'tarde' && <Sun className="w-3.5 h-3.5 text-orange-600" />}
-                  {group.id === 'noite' && <Moon className="w-3.5 h-3.5 text-indigo-500" />}
-                  {group.id === 'geral' && <Calendar className="w-3.5 h-3.5 text-zinc-500" />}
+                <span className="flex items-center justify-center shrink-0">
+                  {group.id === 'manha' && <Sunrise className="w-4 h-4 text-amber-500 dark:text-amber-400 stroke-[2.2]" />}
+                  {group.id === 'tarde' && <Sun className="w-4 h-4 text-orange-500 dark:text-orange-400 stroke-[2.2]" />}
+                  {group.id === 'noite' && <Moon className="w-4 h-4 text-indigo-500 dark:text-indigo-400 stroke-[2.2]" />}
+                  {group.id === 'geral' && <Calendar className="w-4 h-4 text-slate-500 dark:text-slate-400 stroke-[2.2]" />}
                 </span>
-                <h3 className="text-sm font-bold text-zinc-200 section-period-title tracking-tight">
+                <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-200 section-period-title tracking-tight">
                   {group.title}
                 </h3>
-                <span className="text-xs text-zinc-400 font-semibold">
+                <span className="section-period-counter text-xs text-zinc-500 dark:text-zinc-400 font-semibold px-2 py-0.5 rounded-full bg-black/[0.05] dark:bg-zinc-800">
                   {group.tasks.length}
                 </span>
               </div>
@@ -1125,11 +1124,11 @@ export default function DailyMissionsView({
                     <motion.div
                       key={task.id}
                       layout
-                      className="bg-[#18181b] hover:bg-[#1f1f23] transition-colors rounded-2xl p-4 border border-zinc-800/50 shadow-sm relative group"
+                      className="task-card-layered bg-[#18181b] hover:bg-[#1f1f23] transition-colors rounded-[18px] px-4 py-3 sm:py-3.5 border border-zinc-800/50 shadow-sm relative group"
                     >
                       {/* Top Row: Checkbox + Priority Dot + Title + Chevron/Actions */}
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
                           {/* Checkbox */}
                           <button
                             type="button"
@@ -1137,9 +1136,9 @@ export default function DailyMissionsView({
                               e.stopPropagation();
                               handleToggleTask(task.id);
                             }}
-                            className={`w-5 h-5 mt-0.5 rounded-lg flex items-center justify-center transition-all shrink-0 cursor-pointer ${
+                            className={`task-checkbox w-5 h-5 rounded-md flex items-center justify-center transition-all shrink-0 cursor-pointer ${
                               task.completed
-                                ? 'bg-zinc-900 dark:bg-white border-zinc-900 dark:border-white text-white dark:text-zinc-950 shadow-sm'
+                                ? 'task-completed bg-zinc-900 dark:bg-white border-zinc-900 dark:border-white text-white dark:text-zinc-950 shadow-sm'
                                 : 'border border-zinc-300 dark:border-zinc-600 hover:border-zinc-400 bg-transparent'
                             }`}
                           >
@@ -1171,24 +1170,24 @@ export default function DailyMissionsView({
                         {showShiftTimeOnCards && (
                           (task.timeSlot === 'manha' || task.period === 'manha') ? (
                             <span
-                              className="inline-flex items-center justify-center p-1 rounded-full bg-zinc-800/80 border border-zinc-700/60 text-amber-400 shrink-0"
+                              className="inline-flex items-center justify-center w-5.5 h-5.5 rounded-full bg-amber-500/10 dark:bg-amber-500/20 border border-amber-500/25 dark:border-amber-500/30 text-amber-500 dark:text-amber-400 shrink-0"
                               title="Manhã"
                             >
-                              <Sun className="w-3.5 h-3.5" />
+                              <Sun className="w-3.5 h-3.5 stroke-[2.2]" />
                             </span>
                           ) : task.timeSlot === 'tarde' ? (
                             <span
-                              className="inline-flex items-center justify-center p-1 rounded-full bg-zinc-800/80 border border-zinc-700/60 text-sky-400 shrink-0"
+                              className="inline-flex items-center justify-center w-5.5 h-5.5 rounded-full bg-orange-500/10 dark:bg-orange-500/20 border border-orange-500/25 dark:border-orange-500/30 text-orange-500 dark:text-orange-400 shrink-0"
                               title="Tarde"
                             >
-                              <Sunset className="w-3.5 h-3.5" />
+                              <Sun className="w-3.5 h-3.5 stroke-[2.2]" />
                             </span>
                           ) : (task.timeSlot === 'noite' || task.period === 'noite') ? (
                             <span
-                              className="inline-flex items-center justify-center p-1 rounded-full bg-zinc-800/80 border border-zinc-700/60 text-indigo-400 shrink-0"
+                              className="inline-flex items-center justify-center w-5.5 h-5.5 rounded-full bg-indigo-500/10 dark:bg-indigo-500/20 border border-indigo-500/25 dark:border-indigo-500/30 text-indigo-500 dark:text-indigo-400 shrink-0"
                               title="Noite"
                             >
-                              <Moon className="w-3.5 h-3.5" />
+                              <Moon className="w-3.5 h-3.5 stroke-[2.2]" />
                             </span>
                           ) : null
                         )}
@@ -1386,15 +1385,11 @@ export default function DailyMissionsView({
       <button
         type="button"
         onClick={handleOpenCreateTask}
-        className="fixed bottom-28 sm:bottom-8 right-5 sm:right-8 z-40 w-12 h-12 sm:w-13 sm:h-13 rounded-full bg-[#09090b]/80 hover:bg-[#141419]/90 active:scale-90 shadow-xl backdrop-blur-md transition-all flex items-center justify-center cursor-pointer group outline-none select-none border-0"
+        className="fab-circular-add fixed bottom-28 sm:bottom-8 right-5 sm:right-8 z-40 w-[52px] h-[52px] rounded-full bg-[#09090b]/80 hover:bg-[#141419]/90 active:scale-95 shadow-xl backdrop-blur-md transition-all flex items-center justify-center cursor-pointer group outline-none select-none border-0"
         aria-label="Nova tarefa"
       >
         <Plus 
-          className="w-5 h-5 sm:w-5.5 sm:h-5.5 stroke-[2.2] transition-transform duration-200 group-hover:scale-110 group-active:scale-90" 
-          style={{ 
-            color: 'var(--color-orange-500, #f97316)',
-            filter: 'drop-shadow(0 0 8px var(--accent-glow, rgba(249,115,22,0.5)))'
-          }}
+          className="w-6 h-6 stroke-[2.5] text-white transition-transform duration-200 group-hover:scale-110 group-active:scale-90" 
         />
       </button>
 

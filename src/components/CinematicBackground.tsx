@@ -185,81 +185,103 @@ export const CinematicBackground: React.FC<CinematicBackgroundProps> = ({
       aria-hidden="true"
       className="fixed inset-0 pointer-events-none z-0 overflow-hidden select-none transition-colors duration-1000"
       style={{
-        backgroundColor: isLight ? '#f8f8f6' : '#040405',
+        background: isLight 
+          ? 'linear-gradient(180deg, #F5F2ED 0%, #EFEBE4 100%)' 
+          : '#040405',
       }}
     >
-      {/* 1. CAMPO DE FUNDO FLUIDO E ORGÂNICO (Liquid Atmospheric Field / Zenith Wash) */}
-      {!isMinimal && (
-        <motion.div
-          key={`ambient-bloom-${activeTab}-${themeMode}`}
-          initial={{ opacity: 0.5 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-          className="absolute inset-0 overflow-hidden pointer-events-none"
-        >
-          {/* ONDA A: AURORA ZÊNITE LÍQUIDA (Amorphous Morphing Light Field) */}
+      {/* Modo Claro Signature Ambient Blooms (ModoClaro.md Item 3) */}
+      {isLight ? (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {/* Brilho vermelho: canto superior direito */}
           <div
-            className={`absolute -top-32 left-1/2 w-[140vw] max-w-[1500px] h-[520px] blur-[140px] pointer-events-none ${
-              animated ? 'animate-fluid-aurora' : '-translate-x-1/2'
-            }`}
+            className="absolute inset-0 pointer-events-none transition-opacity duration-1000"
             style={{
-              background: `radial-gradient(ellipse 65% 50% at 50% 35%, ${activeCore} 0%, ${activeHalo} 55%, transparent 80%)`,
-              opacity: isLight ? multiplier * 0.9 : multiplier,
-              transition: 'background 1.1s cubic-bezier(0.16, 1, 0.3, 1)',
+              background: 'radial-gradient(ellipse 55% 45% at 92% -5%, rgba(225, 29, 72, 0.13), transparent 70%)',
             }}
           />
+          {/* Brilho âmbar: canto inferior direito */}
+          <div
+            className="absolute inset-0 pointer-events-none transition-opacity duration-1000"
+            style={{
+              background: 'radial-gradient(ellipse 45% 40% at 100% 100%, rgba(245, 158, 11, 0.10), transparent 70%)',
+            }}
+          />
+        </div>
+      ) : (
+        /* Modo Escuro Campo de Fundo Fluido */
+        !isMinimal && (
+          <motion.div
+            key={`ambient-bloom-${activeTab}-${themeMode}`}
+            initial={{ opacity: 0.5 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute inset-0 overflow-hidden pointer-events-none"
+          >
+            {/* ONDA A: AURORA ZÊNITE LÍQUIDA */}
+            <div
+              className={`absolute -top-32 left-1/2 w-[140vw] max-w-[1500px] h-[520px] blur-[140px] pointer-events-none ${
+                animated ? 'animate-fluid-aurora' : '-translate-x-1/2'
+              }`}
+              style={{
+                background: `radial-gradient(ellipse 65% 50% at 50% 35%, ${activeCore} 0%, ${activeHalo} 55%, transparent 80%)`,
+                opacity: multiplier,
+                transition: 'background 1.1s cubic-bezier(0.16, 1, 0.3, 1)',
+              }}
+            />
 
-          {/* ONDA B: DERIVA DE LUZ SECUNDÁRIA (Fluid Ambient Diffuser) */}
-          <div
-            className={`absolute top-0 right-[15%] w-[650px] h-[450px] blur-[150px] pointer-events-none ${
-              animated ? 'animate-fluid-drift' : ''
-            }`}
-            style={{
-              background: isLight 
-                ? `radial-gradient(circle, rgba(251, 146, 60, 0.035) 0%, rgba(245, 158, 11, 0.015) 50%, transparent 75%)`
-                : `radial-gradient(circle, ${palette.orb1} 0%, ${palette.accent} 50%, transparent 75%)`,
-              opacity: multiplier * 0.85,
-              transition: 'background 1.1s cubic-bezier(0.16, 1, 0.3, 1)',
-            }}
-          />
+            {/* ONDA B: DERIVA DE LUZ SECUNDÁRIA */}
+            <div
+              className={`absolute top-0 right-[15%] w-[650px] h-[450px] blur-[150px] pointer-events-none ${
+                animated ? 'animate-fluid-drift' : ''
+              }`}
+              style={{
+                background: `radial-gradient(circle, ${palette.orb1} 0%, ${palette.accent} 50%, transparent 75%)`,
+                opacity: multiplier * 0.85,
+                transition: 'background 1.1s cubic-bezier(0.16, 1, 0.3, 1)',
+              }}
+            />
 
-          {/* ONDA C: ECO PROFUNDO INFERIOR (Velvety Lower Fill) */}
-          <div
-            className="absolute -bottom-36 left-[8%] w-[600px] h-[450px] blur-[160px] pointer-events-none opacity-70"
-            style={{
-              background: isLight 
-                ? `radial-gradient(circle, rgba(217, 119, 6, 0.02) 0%, transparent 70%)`
-                : `radial-gradient(circle, ${palette.orb2} 0%, transparent 70%)`,
-              opacity: multiplier * 0.7,
-              transition: 'background 1.1s cubic-bezier(0.16, 1, 0.3, 1)',
-            }}
-          />
-        </motion.div>
+            {/* ONDA C: ECO PROFUNDO INFERIOR */}
+            <div
+              className="absolute -bottom-36 left-[8%] w-[600px] h-[450px] blur-[160px] pointer-events-none opacity-70"
+              style={{
+                background: `radial-gradient(circle, ${palette.orb2} 0%, transparent 70%)`,
+                opacity: multiplier * 0.7,
+                transition: 'background 1.1s cubic-bezier(0.16, 1, 0.3, 1)',
+              }}
+            />
+          </motion.div>
+        )
       )}
 
-      {/* 2. VINHETA PERIMÉTRICA DE ESTÚDIO (Studio Perimeter Falloff) */}
+      {/* 2. VINHETA PERIMÉTRICA DE ESTÚDIO */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background: isLight
-            ? 'radial-gradient(ellipse 95% 85% at 50% 20%, transparent 50%, rgba(235, 233, 227, 0.35) 80%, #f4f3ef 100%)'
+            ? 'radial-gradient(ellipse 95% 85% at 50% 20%, transparent 60%, rgba(220, 215, 206, 0.25) 85%, #EFEBE4 100%)'
             : 'radial-gradient(ellipse 95% 85% at 50% 20%, transparent 40%, rgba(4, 4, 6, 0.70) 78%, #040405 100%)',
         }}
       />
 
-      {/* 3. 📐 MICRO-TRAMA ARQUITETURAL MASCARADA (Architectural Precision Grid - Reference Image 1) */}
+      {/* 3. 📐 MICRO-TRAMA ARQUITETURAL MASCARADA (Architectural Precision Grid - ModoClaro.md Item 3) */}
       {showGrid && (
         <div
           className="absolute inset-0 transition-opacity duration-700 pointer-events-none"
           style={{
             backgroundImage: isLight
-              ? `radial-gradient(circle, rgba(0, 0, 0, 0.065) 1px, transparent 1px)`
+              ? `radial-gradient(circle, rgba(15, 23, 42, 0.9) 1px, transparent 1.4px)`
               : `radial-gradient(circle, rgba(255, 255, 255, 0.07) 1px, transparent 1px)`,
             backgroundSize: '32px 32px',
-            backgroundPosition: 'center top',
-            opacity: multiplier > 1 ? 0.95 : multiplier < 1 ? 0.45 : 0.75,
-            WebkitMaskImage: 'radial-gradient(ellipse 70% 60% at 50% 32%, black 20%, transparent 80%)',
-            maskImage: 'radial-gradient(ellipse 70% 60% at 50% 32%, black 20%, transparent 80%)',
+            backgroundPosition: isLight ? '16px 16px' : 'center top',
+            opacity: isLight ? 0.11 : (multiplier > 1 ? 0.95 : multiplier < 1 ? 0.45 : 0.75),
+            WebkitMaskImage: isLight
+              ? 'radial-gradient(ellipse 62% 58% at 56% 48%, #000 0%, rgba(0,0,0,.55) 45%, transparent 80%)'
+              : 'radial-gradient(ellipse 70% 60% at 50% 32%, black 20%, transparent 80%)',
+            maskImage: isLight
+              ? 'radial-gradient(ellipse 62% 58% at 56% 48%, #000 0%, rgba(0,0,0,.55) 45%, transparent 80%)'
+              : 'radial-gradient(ellipse 70% 60% at 50% 32%, black 20%, transparent 80%)',
           }}
         />
       )}

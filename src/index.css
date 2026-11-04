@@ -129,6 +129,30 @@ input[type=number] {
    ==================================== */
 
 :root {
+  /* Modo Claro: Diretrizes de Design Tokens */
+  --paper:    #F3F0EA;  /* fundo base (papel quente) */
+  --surface:  #FDFCFA;  /* cards, botões, filtros */
+  --surface2: #F8F6F2;  /* camadas secundárias */
+
+  /* Texto */
+  --ink:   #0F172A;     /* títulos, ícones, bordas fortes */
+  --muted: #5B6472;     /* datas, legendas, subtítulos */
+
+  /* Bordas */
+  --hair:  rgba(15, 23, 42, .13);  /* divisórias suaves */
+  --hair2: rgba(15, 23, 42, .22);  /* contorno de cards e botões */
+
+  /* Marca */
+  --red:      #E11D48;
+  --red2:     #BE123C;  /* texto sobre fundo vermelho claro */
+  --redsoft:  #FDECEF;  /* fundo de chips e item ativo */
+  --redline:  #F5B3C1;  /* borda de chips e item ativo */
+
+  /* Acentos de categoria */
+  --amber:  #D97706;    /* Manhã, arquivo, modo claro ativo */
+  --indigo: #4F46E5;    /* Noite */
+  --slate:  #475569;    /* Outras tarefas */
+
   --theme-primary-rgb: 249, 115, 22;
   --theme-nav-border: rgba(249, 115, 22, 0.3);
   --theme-nav-hover: rgba(249, 115, 22, 0.12);
@@ -635,50 +659,71 @@ body.light-mode {
   color: #18181b !important;
 }
 
-/* Light Mode Cards & Glass Panels */
+/* ========================================================
+   LUCIDE ICONS HARMONY & CONTRAST IN LIGHT MODE
+   - Thicker, crisper stroke (2.2px) for high visibility
+   - Perfect visual balance with bold typographic hierarchy
+   ======================================================== */
+.light-mode svg.lucide,
+.light-mode svg[class*="lucide"] {
+  stroke-width: 2.2px !important;
+}
+
+/* Micro icons retain crisp geometric balance */
+.light-mode .text-\[9px\] svg.lucide,
+.light-mode .text-\[10px\] svg.lucide,
+.light-mode .h-3 svg.lucide,
+.light-mode .w-3 svg.lucide,
+.light-mode .h-3\.5 svg.lucide,
+.light-mode .w-3\.5 svg.lucide {
+  stroke-width: 2.25px !important;
+}
+
+/* Light Mode Cards & Glass Panels with Crisp 1.5px Architectural Borders */
 .light-mode .card-cinematic,
 .light-mode .glass-panel {
-  background: rgba(255, 255, 255, 0.94) !important;
+  background: rgba(255, 255, 255, 0.96) !important;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(0, 0, 0, 0.065) !important;
-  box-shadow: 0 10px 30px -4px rgba(0, 0, 0, 0.04), 0 2px 6px -1px rgba(0, 0, 0, 0.02), inset 0 1px 0 0 rgba(255, 255, 255, 0.9) !important;
+  border: 1.5px solid #e4e4e7 !important;
+  box-shadow: 0 10px 30px -4px rgba(0, 0, 0, 0.05), 0 2px 6px -1px rgba(0, 0, 0, 0.02), inset 0 1px 0 0 #ffffff !important;
 }
 
 .light-mode .card-cinematic:hover,
 .light-mode .glass-panel:hover {
-  border-color: rgba(0, 0, 0, 0.12) !important;
-  box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.06), 0 4px 12px -2px rgba(0, 0, 0, 0.03), inset 0 1px 0 0 #ffffff !important;
+  border-color: #d4d4d8 !important;
+  box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.08), 0 4px 12px -2px rgba(0, 0, 0, 0.04), inset 0 1px 0 0 #ffffff !important;
 }
 
 /* Sidebar & Navigation in Light Mode */
 .light-mode aside#sidebarHUD {
-  background: rgba(255, 255, 255, 0.94) !important;
-  border-right-color: rgba(0, 0, 0, 0.07) !important;
-  box-shadow: 4px 0 24px -2px rgba(0, 0, 0, 0.03) !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  border-right: 1.5px solid #e4e4e7 !important;
+  box-shadow: 4px 0 24px -2px rgba(0, 0, 0, 0.04) !important;
 }
 
 .light-mode aside#sidebarHUD .border-zinc-900,
 .light-mode aside#sidebarHUD .border-zinc-900\/60,
 .light-mode aside#sidebarHUD .border-zinc-800 {
-  border-color: rgba(0, 0, 0, 0.06) !important;
+  border-color: #e4e4e7 !important;
 }
 
 .light-mode aside#sidebarHUD .bg-\[\#07070a\]\/40 {
-  background-color: rgba(248, 248, 246, 0.6) !important;
+  background-color: rgba(248, 248, 246, 0.75) !important;
 }
 
 /* Mobile Header & Bottom Navbar in Light Mode */
 .light-mode .lg\:hidden.fixed.top-0 {
-  background: rgba(255, 255, 255, 0.95) !important;
-  border-bottom-color: rgba(0, 0, 0, 0.07) !important;
+  background: rgba(255, 255, 255, 0.97) !important;
+  border-bottom: 1.5px solid #e4e4e7 !important;
+  box-shadow: 0 1px 12px rgba(0, 0, 0, 0.04) !important;
 }
 
 .light-mode .lg\:hidden.fixed.bottom-0,
 .light-mode .mobile-floating-bar {
-  background: rgba(255, 255, 255, 0.96) !important;
-  border-top-color: rgba(0, 0, 0, 0.07) !important;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.04) !important;
+  background: rgba(255, 255, 255, 0.98) !important;
+  border-top: 1.5px solid #e4e4e7 !important;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.06) !important;
 }
 
 /* Light Mode Containers & Panels Overrides */
@@ -692,7 +737,7 @@ body.light-mode {
 .light-mode .bg-zinc-950\/30,
 .light-mode .bg-zinc-950\/20 {
   background-color: #ffffff !important;
-  border-color: rgba(0, 0, 0, 0.07) !important;
+  border-color: #e4e4e7 !important;
 }
 
 .light-mode .bg-zinc-900,
@@ -703,7 +748,7 @@ body.light-mode {
 .light-mode .bg-zinc-900\/30,
 .light-mode .bg-zinc-900\/20 {
   background-color: #f7f7f8 !important;
-  border-color: rgba(0, 0, 0, 0.06) !important;
+  border-color: #e4e4e7 !important;
 }
 
 .light-mode .bg-\[\#18181b\],
@@ -712,10 +757,10 @@ body.light-mode {
 .light-mode .bg-\[\#0a0a0c\],
 .light-mode .bg-\[\#0a0a0d\] {
   background-color: #ffffff !important;
-  border-color: rgba(0, 0, 0, 0.07) !important;
+  border-color: #e4e4e7 !important;
 }
 
-/* Light Mode Borders */
+/* Light Mode Architectural Defined Borders (Crisp 1.5px) */
 .light-mode .border-zinc-900,
 .light-mode .border-zinc-900\/80,
 .light-mode .border-zinc-900\/60,
@@ -729,34 +774,40 @@ body.light-mode {
 .light-mode .border-zinc-800\/30,
 .light-mode .border-zinc-750,
 .light-mode .border-zinc-700 {
-  border-color: rgba(0, 0, 0, 0.07) !important;
+  border-color: #e4e4e7 !important;
 }
 
-/* Light Mode Typography Adjustments */
+/* High-Definition Premium Typography (Thicker & Authoritative Black Text) */
 .light-mode h1,
 .light-mode h2,
 .light-mode h3,
 .light-mode h4,
 .light-mode h5,
 .light-mode h6 {
-  color: #09090b;
+  color: #09090b !important;
+  font-weight: 750 !important;
+  letter-spacing: -0.02em;
 }
 
 .light-mode .text-white:not(.keep-white) {
   color: #09090b !important;
+  font-weight: 600;
 }
 
 .light-mode .text-zinc-100:not(.keep-white),
 .light-mode .text-zinc-200:not(.keep-white) {
-  color: #18181b !important;
+  color: #09090b !important;
+  font-weight: 600;
 }
 
 .light-mode .text-zinc-300:not(.keep-white) {
-  color: #27272a !important;
+  color: #18181b !important;
+  font-weight: 550;
 }
 
 .light-mode .text-zinc-400:not(.keep-white) {
   color: #52525b !important;
+  font-weight: 500;
 }
 
 .light-mode .text-zinc-500:not(.keep-white) {
@@ -765,6 +816,7 @@ body.light-mode {
 
 .light-mode .text-gray-400:not(.keep-white) {
   color: #52525b !important;
+  font-weight: 500;
 }
 
 .light-mode .text-gray-500:not(.keep-white) {
@@ -772,84 +824,519 @@ body.light-mode {
 }
 
 .light-mode .text-gray-300:not(.keep-white) {
-  color: #27272a !important;
+  color: #18181b !important;
+  font-weight: 550;
 }
 
-/* Inputs & Form Elements in Light Mode */
+.light-mode .font-medium {
+  font-weight: 600 !important;
+}
+
+.light-mode .font-semibold {
+  font-weight: 700 !important;
+}
+
+.light-mode .font-bold {
+  font-weight: 750 !important;
+}
+
+.light-mode .font-extrabold,
+.light-mode .font-black {
+  font-weight: 850 !important;
+}
+
+/* ========================================================
+   INPUTS & FORM CONTROLS IN LIGHT MODE
+   - Defined 1.5px architectural border (#d4d4d8)
+   - Deep ink focus ring (#09090b) with subtle elevation
+   ======================================================== */
 .light-mode input[type="text"],
 .light-mode input[type="number"],
 .light-mode input[type="password"],
 .light-mode input[type="email"],
 .light-mode input[type="time"],
 .light-mode input[type="date"],
+.light-mode input[type="search"],
+.light-mode input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]),
 .light-mode textarea,
 .light-mode select {
   background-color: #ffffff !important;
   color: #09090b !important;
-  border-color: #e4e4e7 !important;
+  border: 1.5px solid #d4d4d8 !important;
+  font-weight: 550 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease !important;
+}
+
+.light-mode input:hover:not(:focus),
+.light-mode textarea:hover:not(:focus),
+.light-mode select:hover:not(:focus) {
+  border-color: #a1a1aa !important;
+}
+
+.light-mode input:focus,
+.light-mode textarea:focus,
+.light-mode select:focus {
+  background-color: #ffffff !important;
+  border-color: #09090b !important;
+  box-shadow: 0 0 0 1px #09090b, 0 2px 6px rgba(0, 0, 0, 0.08) !important;
+  outline: none !important;
 }
 
 .light-mode input::placeholder,
 .light-mode textarea::placeholder {
-  color: #a1a1aa !important;
+  color: #71717a !important;
+  font-weight: 450 !important;
 }
 
-/* Internal Nav Tabs in Light Mode */
+.light-mode input[type="checkbox"],
+.light-mode input[type="radio"] {
+  border: 1.5px solid #71717a !important;
+  background-color: #ffffff !important;
+}
+
+.light-mode input[type="checkbox"]:checked,
+.light-mode input[type="radio"]:checked {
+  background-color: #09090b !important;
+  border-color: #09090b !important;
+}
+
+/* ========================================================
+   ACTIVE BUTTON STATES & SEGMENTED CONTROLS (LIGHT MODE)
+   ======================================================== */
+/* Default neutral button appearance in light mode */
+.light-mode button.bg-zinc-900:not(.btn-dark-pill):not(.active):not([data-active="true"]):not([aria-selected="true"]):not(.btn-accent),
+.light-mode button.bg-zinc-950:not(.btn-dark-pill):not(.active):not([data-active="true"]):not([aria-selected="true"]):not(.btn-accent) {
+  background-color: #ffffff !important;
+  border: 1.5px solid #e4e4e7 !important;
+  color: #27272a !important;
+  font-weight: 600 !important;
+  transition: all 0.15s ease;
+}
+
+.light-mode button.bg-zinc-900:hover:not(.btn-dark-pill):not(.active):not([data-active="true"]):not([aria-selected="true"]),
+.light-mode button.bg-zinc-950:hover:not(.btn-dark-pill):not(.active):not([data-active="true"]):not([aria-selected="true"]) {
+  background-color: #f4f4f5 !important;
+  border-color: #d4d4d8 !important;
+  color: #09090b !important;
+}
+
+/* Active solid dark state (Deep Ink / #09090b) */
+.light-mode button.active,
+.light-mode button[data-active="true"],
+.light-mode button[aria-selected="true"],
+.light-mode .btn-active {
+  background-color: #09090b !important;
+  color: #ffffff !important;
+  border: 1.5px solid #09090b !important;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 8px rgba(9, 9, 11, 0.18) !important;
+}
+
+.light-mode button.active svg.lucide,
+.light-mode button[data-active="true"] svg.lucide,
+.light-mode button[aria-selected="true"] svg.lucide,
+.light-mode .btn-active svg.lucide {
+  stroke: #ffffff !important;
+  color: #ffffff !important;
+}
+
+/* ========================================================
+   MODO CLARO (MODOCLARO.MD): INTERNAL-NAV (ABAS)
+   - Calha rebaixada: #E6E1D9 -> #ECE8E1
+   - Sombra interna: inset 0 2px 5px rgba(15,23,42,.13)
+   - Filete branco de 1px
+   - Raio de 16px. Texto inativo: #3B4452, 10px, letter-spacing 1.7px, peso 700
+   - Aba ativa: #F43F5E -> #E11D48 -> #BE123C, sombra vermelha
+   ======================================================== */
 .light-mode .internal-nav {
-  background: #f4f4f5 !important;
-  border-color: #e4e4e7 !important;
+  background: linear-gradient(180deg, #E6E1D9 0%, #ECE8E1 100%) !important;
+  border: 1px solid #ffffff !important;
+  box-shadow: inset 0 2px 5px rgba(15, 23, 42, 0.13), 0 0 0 1px #ffffff !important;
+  border-radius: 16px !important;
+  padding: 4px !important;
+  display: flex !important;
+  gap: 4px !important;
+  flex-wrap: wrap !important;
 }
 
 .light-mode .internal-nav-btn {
-  color: #71717a !important;
+  color: #3B4452 !important;
+  font-size: 10px !important;
+  letter-spacing: 1.7px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  border-radius: 12px !important;
+  border: none !important;
+  background: transparent !important;
+  padding: 9px 18px !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
 }
 
 .light-mode .internal-nav-btn:hover {
-  color: #18181b !important;
-  background: rgba(0, 0, 0, 0.04) !important;
+  color: #0F172A !important;
+  background: rgba(255, 255, 255, 0.4) !important;
 }
 
-.light-mode .internal-nav-btn.active {
-  background: #ffffff !important;
-  color: #09090b !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
-}
-
-/* Action Dark Button (e.g. "+ Adicionar tarefa [N]" as shown in Image 2) */
-.btn-dark-pill {
-  background-color: #09090b !important;
+.light-mode .internal-nav-btn.active,
+.light-mode .internal-nav-btn[data-state="active"],
+.light-mode .internal-nav-btn[aria-selected="true"] {
+  background: linear-gradient(135deg, #F43F5E 0%, #E11D48 50%, #BE123C 100%) !important;
   color: #ffffff !important;
-  box-shadow: 0 4px 12px rgba(9, 9, 11, 0.15) !important;
-}
-.btn-dark-pill:hover {
-  background-color: #18181b !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 18px -6px rgba(225, 29, 72, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+  font-weight: 700 !important;
+  border: none !important;
 }
 
-/* Time of Day Badges (Image 2) */
+.light-mode .internal-nav-btn.active svg,
+.light-mode .internal-nav-btn.active svg.lucide {
+  stroke: #ffffff !important;
+  color: #ffffff !important;
+}
+
+/* Secondary Nav Tabs */
+.light-mode .internal-nav-secondary-btn {
+  color: #5B6472 !important;
+  font-weight: 600 !important;
+}
+
+.light-mode .internal-nav-secondary-btn:hover {
+  color: #0F172A !important;
+  background-color: #f4f4f5 !important;
+}
+
+.light-mode .internal-nav-secondary-btn.active {
+  background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 750 !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.25) !important;
+}
+
+.light-mode .internal-nav-secondary-btn.active svg.lucide {
+  stroke: #ffffff !important;
+  color: #ffffff !important;
+}
+
+/* ========================================================
+   MODO CLARO (MODOCLARO.MD): BOTÃO ADICIONAR TAREFA & FAB
+   - Degradê #F43F5E -> #D01545
+   - Raio 11px
+   - Sombra vermelha: box-shadow 0 4px 14px rgba(225, 29, 72, 0.35)
+   - Texto branco, ícone + em SVG
+   ======================================================== */
+.btn-add-task {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border-radius: 11px;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: -0.1px;
+  background-color: #18181b;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.btn-add-task:hover {
+  background-color: #27272a;
+  transform: translateY(-1px);
+}
+
+.light-mode .btn-add-task,
+.light-mode .btn-dark-pill {
+  background: linear-gradient(135deg, #F43F5E 0%, #D01545 100%) !important;
+  color: #ffffff !important;
+  border-radius: 11px !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(225, 29, 72, 0.35) !important;
+  font-weight: 700 !important;
+  padding: 8px 16px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  font-size: 13px !important;
+  letter-spacing: -0.1px !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.light-mode .btn-add-task:hover,
+.light-mode .btn-dark-pill:hover {
+  background: linear-gradient(135deg, #fb516e 0%, #dd184c 100%) !important;
+  box-shadow: 0 6px 20px rgba(225, 29, 72, 0.45) !important;
+  transform: translateY(-1px) !important;
+}
+
+.light-mode .btn-add-task svg,
+.light-mode .btn-add-task svg.lucide,
+.light-mode .btn-dark-pill svg,
+.light-mode .btn-dark-pill svg.lucide {
+  stroke: #ffffff !important;
+  color: #ffffff !important;
+}
+
+/* FAB circular 52px */
+.light-mode .fab-circular-add {
+  width: 52px !important;
+  height: 52px !important;
+  background: linear-gradient(135deg, #F43F5E 0%, #D01545 100%) !important;
+  box-shadow: 0 8px 24px rgba(225, 29, 72, 0.45) !important;
+  border-radius: 9999px !important;
+  border: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.light-mode .fab-circular-add:hover {
+  background: linear-gradient(135deg, #fb516e 0%, #dd184c 100%) !important;
+  box-shadow: 0 10px 28px rgba(225, 29, 72, 0.55) !important;
+  transform: scale(1.05) !important;
+}
+
+.light-mode .fab-circular-add svg,
+.light-mode .fab-circular-add svg.lucide {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+  filter: none !important;
+}
+
+/* ========================================================
+   MODO CLARO (MODOCLARO.MD): CARDS DE TAREFA EM CAMADAS
+   - Efeito físico de papel empilhado APENAS na parte inferior (zero nas laterais)
+   - Fiel a image_ed0f657b.png
+   ======================================================== */
+.light-mode .task-card-layered {
+  position: relative !important;
+  border-radius: 18px !important;
+  background-color: #ffffff !important;
+  border: 1px solid rgba(15, 23, 42, 0.12) !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03) !important;
+  margin-bottom: 15px !important;
+  z-index: 5 !important;
+}
+
+/* Camada 1: APENAS na parte inferior (recuo de 24px nas laterais, sem bordas laterais) */
+.light-mode .task-card-layered::before {
+  content: "" !important;
+  position: absolute !important;
+  top: 10px !important;
+  bottom: -3.5px !important;
+  left: 24px !important;
+  right: 24px !important;
+  background-color: #F4F1EA !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08) !important;
+  border-radius: 0 0 12px 12px !important;
+  z-index: -1 !important;
+  pointer-events: none !important;
+}
+
+/* Camada 2: APENAS na parte inferior (recuo de 48px nas laterais, 7px abaixo) */
+.light-mode .task-card-layered::after {
+  content: "" !important;
+  position: absolute !important;
+  top: 10px !important;
+  bottom: -7px !important;
+  left: 48px !important;
+  right: 48px !important;
+  background-color: #EBE5D8 !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06) !important;
+  border-radius: 0 0 10px 10px !important;
+  box-shadow: 0 6px 14px -3px rgba(15, 23, 42, 0.08) !important;
+  z-index: -2 !important;
+  pointer-events: none !important;
+}
+
+.light-mode .task-card-layered h4 {
+  color: #0F172A !important;
+  font-weight: 700 !important;
+  font-size: 15px !important;
+}
+
+/* ========================================================
+   MODO CLARO (MODOCLARO.MD): CHECKBOX
+   - 20x20px, raio 6px, fundo branco
+   - Borda preta 2px (--ink)
+   ======================================================== */
+.light-mode .task-checkbox {
+  width: 20px !important;
+  height: 20px !important;
+  border-radius: 6px !important;
+  background-color: #ffffff !important;
+  border: 2px solid #0F172A !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  transition: all 0.15s ease !important;
+}
+
+.light-mode .task-checkbox:hover {
+  border-color: #0F172A !important;
+  background-color: #fafaf9 !important;
+}
+
+.light-mode .task-checkbox.task-completed {
+  background-color: #0F172A !important;
+  border-color: #0F172A !important;
+  color: #ffffff !important;
+}
+
+.light-mode .task-checkbox.task-completed svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+/* ========================================================
+   MODO CLARO (MODOCLARO.MD): BOTÕES QUADRADOS 34x34 & FILTROS
+   ======================================================== */
+.square-btn-34,
+.light-mode .square-btn-34 {
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 10px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  flex-shrink: 0 !important;
+}
+
+.light-mode .square-btn-34 {
+  background-color: #FDFCFA !important;
+  border: 1px solid rgba(15, 23, 42, 0.22) !important;
+  box-shadow: 0 2px 5px rgba(15, 23, 42, 0.06) !important;
+  color: #0F172A !important;
+  transition: all 0.15s ease !important;
+}
+
+.light-mode .square-btn-34:hover {
+  background-color: #F8F6F2 !important;
+  border-color: rgba(15, 23, 42, 0.35) !important;
+  color: #0F172A !important;
+}
+
+.light-mode .square-btn-34 svg {
+  stroke-width: 2px !important;
+}
+
+/* Filtros em pílula de 30px */
+.filter-pill {
+  transition: all 0.15s ease;
+}
+
+.light-mode .filter-pill {
+  height: 30px !important;
+  padding: 0 14px !important;
+  border-radius: 9999px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  background-color: #FDFCFA !important;
+  border: 1px solid rgba(15, 23, 42, 0.22) !important;
+  color: #0F172A !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.light-mode .filter-pill:hover {
+  background-color: #F8F6F2 !important;
+  border-color: rgba(15, 23, 42, 0.35) !important;
+}
+
+.light-mode .filter-pill.active {
+  background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.25) !important;
+}
+
+/* ========================================================
+   MODO CLARO (MODOCLARO.MD): CHIP DE OFENSIVA
+   - Fundo --redsoft, borda --redline, texto --red2, peso 700
+   ======================================================== */
+.light-mode .streak-chip {
+  background-color: #FDECEF !important;
+  border: 1px solid #F5B3C1 !important;
+  color: #BE123C !important;
+  font-weight: 700 !important;
+  border-radius: 10px !important;
+  box-shadow: 0 2px 6px rgba(225, 29, 72, 0.08) !important;
+}
+
+.light-mode .streak-chip svg {
+  color: #E11D48 !important;
+  fill: rgba(225, 29, 72, 0.2) !important;
+}
+
+/* ========================================================
+   MODO CLARO (MODOCLARO.MD): CABEÇALHOS DE SEÇÃO
+   ======================================================== */
+.light-mode .section-period-title {
+  color: #0F172A !important;
+  font-weight: 700 !important;
+}
+
+.light-mode .section-period-counter {
+  background-color: rgba(15, 23, 42, 0.07) !important;
+  color: #5B6472 !important;
+  border-radius: 9999px !important;
+  padding: 1px 7px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+}
+
+/* Time of Day Badges (Image 2) - Crisp 1.5px Borders & Heavy Font */
 .badge-period-morning {
   background-color: #fef3c7 !important;
   color: #92400e !important;
-  border: 1px solid #fde68a !important;
+  border: 1.5px solid #fde68a !important;
+  font-weight: 750 !important;
 }
 .badge-period-afternoon {
   background-color: #fff7ed !important;
   color: #9a3412 !important;
-  border: 1px solid #ffedd5 !important;
+  border: 1.5px solid #ffedd5 !important;
+  font-weight: 750 !important;
 }
 .badge-period-night {
   background-color: #f1f5f9 !important;
   color: #334155 !important;
-  border: 1px solid #e2e8f0 !important;
+  border: 1.5px solid #cbd5e1 !important;
+  font-weight: 750 !important;
 }
 
 /* ========================================================
-   1. DESKTOP SIDEBAR & MOBILE NAVBAR (LIGHT MODE)
+   MODO CLARO (MODOCLARO.MD): 4.1 BARRA LATERAL DESKTOP
+   - Fundo linear-gradient(180deg, #FBF9F6, #F5F2EC)
+   - Borda direita --hair e sombra lateral suave
+   - Ícones em --ink (traço 1.8px)
+   - Item ativo: ícone vermelho, fundo --redsoft, borda --redline, sombra vermelha suave
+   - Logo: anel vermelho de 1.5px com leve brilho
    ======================================================== */
 .light-mode #sidebarHUD,
 .light-mode aside#sidebarHUD {
-  background-color: rgba(255, 255, 255, 0.96) !important;
-  border-right-color: rgba(0, 0, 0, 0.08) !important;
-  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.03) !important;
+  background: linear-gradient(180deg, #FBF9F6 0%, #F5F2EC 100%) !important;
+  border-right: 1px solid rgba(15, 23, 42, 0.13) !important;
+  box-shadow: 4px 0 24px rgba(15, 23, 42, 0.04) !important;
 }
 
 .light-mode #sidebarHUD .border-zinc-900,
@@ -857,26 +1344,78 @@ body.light-mode {
 .light-mode #sidebarHUD .border-zinc-800,
 .light-mode #sidebarHUD .border-zinc-800\/40,
 .light-mode #sidebarHUD .border-zinc-800\/60 {
-  border-color: rgba(0, 0, 0, 0.065) !important;
+  border-color: rgba(15, 23, 42, 0.13) !important;
 }
 
 .light-mode #sidebarHUD .bg-\[\#07070a\]\/40,
 .light-mode #sidebarHUD .bg-\[\#050507\]\/60 {
-  background-color: #f8f8f6 !important;
+  background: rgba(245, 242, 236, 0.7) !important;
+  border-color: rgba(15, 23, 42, 0.13) !important;
 }
 
 .light-mode #sidebarHUD button:hover {
-  background-color: rgba(0, 0, 0, 0.04) !important;
+  background-color: rgba(15, 23, 42, 0.04) !important;
+}
+
+/* Inactive Sidebar Navigation Items */
+.light-mode #sidebarHUD nav button {
+  color: #0F172A !important;
+}
+
+.light-mode #sidebarHUD nav button svg.lucide {
+  stroke: #0F172A !important;
+  stroke-width: 1.8px !important;
+  color: #0F172A !important;
+}
+
+.light-mode #sidebarHUD nav button:hover svg.lucide {
+  stroke: #0F172A !important;
+}
+
+/* Active Sidebar Navigation Item: fundo --redsoft, borda --redline, ícone vermelho, glow */
+.light-mode #sidebarHUD nav button.text-orange-500,
+.light-mode #sidebarHUD nav button[class*="text-orange-500"],
+.light-mode #sidebarHUD nav button.bg-orange-500\/5,
+.light-mode #sidebarHUD nav button[class*="bg-orange-500"] {
+  background-color: #FDECEF !important;
+  border: 1px solid #F5B3C1 !important;
+  box-shadow: 0 4px 14px rgba(225, 29, 72, 0.16) !important;
+  border-radius: 12px !important;
+}
+
+.light-mode #sidebarHUD nav button.text-orange-500 svg.lucide,
+.light-mode #sidebarHUD nav button[class*="text-orange-500"] svg.lucide,
+.light-mode #sidebarHUD nav button[class*="bg-orange-500"] svg.lucide {
+  stroke: #E11D48 !important;
+  color: #E11D48 !important;
+}
+
+.light-mode #sidebarHUD nav button.text-orange-500 [class*="w-\[3px\]"],
+.light-mode #sidebarHUD nav button[class*="text-orange-500"] [class*="w-\[3px\]"] {
+  background-color: #E11D48 !important;
+  box-shadow: 0 0 8px rgba(225, 29, 72, 0.8) !important;
+}
+
+/* Sidebar Logo & Progress Bar */
+.light-mode #sidebarHUD img {
+  border: 1.5px solid #E11D48 !important;
+  box-shadow: 0 0 10px rgba(225, 29, 72, 0.35) !important;
+}
+
+.light-mode #sidebarHUD .bg-orange-500,
+.light-mode #sidebarHUD [class*="bg-gradient-to-r from-orange-500"] {
+  background: #E11D48 !important;
+  box-shadow: 0 0 6px rgba(225, 29, 72, 0.4) !important;
 }
 
 .light-mode #sidebarHUD .text-white {
-  color: #09090b !important;
+  color: #0F172A !important;
 }
 
 .light-mode #sidebarHUD .text-gray-400,
 .light-mode #sidebarHUD .text-zinc-400,
 .light-mode #sidebarHUD .text-zinc-500 {
-  color: #71717a !important;
+  color: #5B6472 !important;
 }
 
 /* Mobile Top Header in Light Mode */
@@ -1095,17 +1634,64 @@ body.light-mode {
   border-color: #e4e4e7 !important;
 }
 
-/* Filters & Type Switcher Pills in Finances */
+/* Filters & Type Switcher Pills in Finances & Across the App */
 .light-mode button.bg-zinc-900.border-zinc-800 {
-  background-color: #f4f4f5 !important;
-  border-color: #e4e4e7 !important;
-  color: #52525b !important;
+  background-color: #ffffff !important;
+  border: 1.5px solid #e4e4e7 !important;
+  color: #3f3f46 !important;
+  font-weight: 600 !important;
 }
 
 .light-mode button.bg-zinc-900.border-zinc-800:hover {
-  background-color: #e4e4e7 !important;
+  background-color: #f4f4f5 !important;
+  border-color: #d4d4d8 !important;
   color: #09090b !important;
 }
+
+.light-mode button.bg-zinc-900.border-zinc-800.active,
+.light-mode button.bg-zinc-900.border-zinc-800[data-active="true"] {
+  background-color: #09090b !important;
+  border-color: #09090b !important;
+  color: #ffffff !important;
+  font-weight: 750 !important;
+}
+
+.light-mode button.bg-zinc-900.border-zinc-800.active svg.lucide,
+.light-mode button.bg-zinc-900.border-zinc-800[data-active="true"] svg.lucide {
+  stroke: #ffffff !important;
+  color: #ffffff !important;
+}
+
+/* Modals & Popovers Form Controls & Active States */
+.light-mode [role="dialog"],
+.light-mode .fixed.inset-0 .bg-\[\#0f0f12\],
+.light-mode .fixed.inset-0 .bg-\[\#0a0a0c\] {
+  background-color: #ffffff !important;
+  border: 1.5px solid #e4e4e7 !important;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.12) !important;
+}
+
+.light-mode [role="dialog"] input,
+.light-mode [role="dialog"] textarea,
+.light-mode [role="dialog"] select,
+.light-mode .fixed.inset-0 input,
+.light-mode .fixed.inset-0 textarea,
+.light-mode .fixed.inset-0 select {
+  background-color: #ffffff !important;
+  border: 1.5px solid #d4d4d8 !important;
+  color: #09090b !important;
+}
+
+.light-mode [role="dialog"] input:focus,
+.light-mode [role="dialog"] textarea:focus,
+.light-mode [role="dialog"] select:focus,
+.light-mode .fixed.inset-0 input:focus,
+.light-mode .fixed.inset-0 textarea:focus,
+.light-mode .fixed.inset-0 select:focus {
+  border-color: #09090b !important;
+  box-shadow: 0 0 0 1px #09090b, 0 2px 6px rgba(0, 0, 0, 0.08) !important;
+}
+
 
 
 

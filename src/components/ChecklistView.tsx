@@ -2105,8 +2105,8 @@ export default function ChecklistView({
       <div className="flex flex-row items-center justify-between gap-3 w-full border-b border-zinc-900/60 pb-4">
         <div className="min-w-0">
           <h1 className="text-lg sm:text-2xl font-black text-white tracking-tight flex items-center gap-1.5 sm:gap-2 truncate">
-            <CheckSquare className="h-5 sm:h-6 w-5 sm:w-6 text-orange-500 shrink-0" />
-            <span className="truncate">Missões <span className="text-orange-500 uppercase">Diárias</span></span>
+            <CheckSquare className="h-5 sm:h-6 w-5 sm:w-6 text-[#E11D48] dark:text-orange-500 shrink-0" />
+            <span className="truncate">Missões <span className="text-[#E11D48] dark:text-orange-500 uppercase">Diárias</span></span>
           </h1>
           <p className="text-gray-500 text-[10px] sm:text-xs capitalize mt-0.5 sm:mt-1 truncate">
             {formattedDate}
@@ -2116,7 +2116,7 @@ export default function ChecklistView({
         {/* Streak Indicator */}
         <button
           onClick={onOpenStreakHub}
-          className="flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/20 hover:border-orange-500/40 hover:bg-orange-500/20 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs text-orange-400 font-bold shrink-0 transition-all cursor-pointer group"
+          className="streak-chip flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/20 hover:border-orange-500/40 hover:bg-orange-500/20 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs text-orange-400 font-bold shrink-0 transition-all cursor-pointer group"
           title="Abrir Central de Ofensivas & Congelamento"
         >
           <Flame className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-orange-500 fill-orange-500/20 group-hover:scale-110 transition-transform" />
