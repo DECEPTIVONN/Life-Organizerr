@@ -1722,9 +1722,9 @@ export default function DailyMissionsView({
                       </label>
                       <div className="grid grid-cols-3 gap-2">
                         {[
-                          { id: 'baixa' as const, label: 'Baixa', dot: 'bg-emerald-500', activeClass: 'border-emerald-500/60 bg-emerald-500/10 text-emerald-400' },
-                          { id: 'media' as const, label: 'Média', dot: 'bg-amber-400', activeClass: 'border-amber-400 bg-amber-500/10 text-amber-300' },
-                          { id: 'alta' as const, label: 'Alta', dot: 'bg-rose-500', activeClass: 'border-rose-500/60 bg-rose-500/10 text-rose-400' }
+                          { id: 'baixa' as const, label: 'Baixa', dot: 'bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.2)]', activeClass: 'border-emerald-500/60 bg-emerald-500/10 text-emerald-400' },
+                          { id: 'media' as const, label: 'Média', dot: 'bg-amber-400 shadow-[0_0_0_3px_rgba(245,158,11,0.2)]', activeClass: 'border-amber-400 bg-amber-500/10 text-amber-300' },
+                          { id: 'alta' as const, label: 'Alta', dot: 'bg-rose-500 shadow-[0_0_0_3px_rgba(225,29,72,0.2)]', activeClass: 'border-rose-500/60 bg-rose-500/10 text-rose-400' }
                         ].map(p => {
                           const isSel = formPriority === p.id;
                           return (
@@ -1732,9 +1732,9 @@ export default function DailyMissionsView({
                               key={p.id}
                               type="button"
                               onClick={() => setFormPriority(p.id)}
-                              className={`py-2 px-2.5 rounded-xl border text-center transition-all flex items-center justify-center gap-1.5 text-xs font-semibold ${
+                              className={`h-[34px] px-2.5 rounded-xl border text-center transition-all flex items-center justify-center gap-2 text-xs font-semibold ${
                                 isSel
-                                  ? p.activeClass
+                                  ? `${p.activeClass} priority-btn-selected`
                                   : 'bg-zinc-950 border-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-800'
                               }`}
                             >

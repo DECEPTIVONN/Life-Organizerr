@@ -3305,14 +3305,14 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
           <div className="bg-[#0a0a0c]/80 rounded-2xl border border-zinc-800/80 p-3 sm:p-5">
             {/* Weekdays Header: 1 column for week numbers + 7 weekday columns */}
             <div className="grid grid-cols-[36px_repeat(7,1fr)] sm:grid-cols-[44px_repeat(7,1fr)] gap-1 text-center font-bold text-[11px] pb-2 border-b border-zinc-800/60 mb-2">
-              <div className="text-zinc-600 font-mono text-[10px] self-center">SEM.</div>
-              <div className="py-1 font-bold" style={{ color: userThemeColor }}>DOM.</div>
-              <div className="py-1 text-zinc-400">SEG.</div>
-              <div className="py-1 text-zinc-400">TER.</div>
-              <div className="py-1 text-zinc-400">QUA.</div>
-              <div className="py-1 text-zinc-400">QUI.</div>
-              <div className="py-1 text-zinc-400">SEX.</div>
-              <div className="py-1 font-bold" style={{ color: userThemeColor }}>SÁB.</div>
+              <div className="text-zinc-600 font-mono text-[9px] sm:text-[10px] self-center">SEM.</div>
+              <div className="py-1 font-bold font-mono" style={{ color: themeMode === 'light' ? '#E11D48' : userThemeColor }}>DOM.</div>
+              <div className="py-1 text-zinc-400 font-mono">SEG.</div>
+              <div className="py-1 text-zinc-400 font-mono">TER.</div>
+              <div className="py-1 text-zinc-400 font-mono">QUA.</div>
+              <div className="py-1 text-zinc-400 font-mono">QUI.</div>
+              <div className="py-1 text-zinc-400 font-mono">SEX.</div>
+              <div className="py-1 font-bold font-mono" style={{ color: themeMode === 'light' ? '#E11D48' : userThemeColor }}>SÁB.</div>
             </div>
 
             {/* 6 Weeks Rows */}
@@ -3348,33 +3348,39 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                           type="button"
                           onClick={() => handleSelectDate(cell.dateStr, true)}
                           className={`min-h-[58px] sm:min-h-[72px] p-1 sm:p-2 rounded-xl text-center flex flex-col items-center justify-between transition-all select-none border ${
-                            cell.isCurrentMonth ? 'hover:bg-zinc-900/40' : 'opacity-25 hover:opacity-50'
+                            cell.isCurrentMonth ? 'hover:bg-zinc-900/40' : 'opacity-30 hover:opacity-60'
                           }`}
                           style={
-                            isSelected
-                              ? { borderColor: userThemeColor, backgroundColor: userThemeGlowSubtle }
-                              : isToday
-                                ? { borderColor: `${userThemeColor}55`, backgroundColor: 'rgba(39, 39, 42, 0.25)' }
-                                : { borderColor: 'transparent' }
+                            themeMode === 'light'
+                              ? (isSelected
+                                  ? { borderColor: '#E11D48', background: 'linear-gradient(180deg, #FFF1F4, #FDE3E9)', boxShadow: '0 4px 14px rgba(225, 29, 72, 0.2)' }
+                                  : isToday
+                                    ? { borderColor: '#F5B3C1', backgroundColor: '#FFFFFF' }
+                                    : { borderColor: 'transparent' }
+                                )
+                              : (isSelected
+                                  ? { borderColor: userThemeColor, backgroundColor: userThemeGlowSubtle }
+                                  : isToday
+                                    ? { borderColor: `${userThemeColor}55`, backgroundColor: 'rgba(39, 39, 42, 0.25)' }
+                                    : { borderColor: 'transparent' }
+                                )
                           }
                         >
                           {/* Day Number Badge */}
                           <span
-                            className={`text-xs sm:text-sm font-bold font-mono transition-all rounded-xl sm:rounded-2xl w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center ${
-                              !cell.isCurrentMonth && themeMode === 'light' ? 'text-slate-300' : ''
-                            }`}
+                            className="text-xs sm:text-sm font-bold font-mono transition-all rounded-full w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center"
                             style={
                               isSelected
                                 ? (themeMode === 'light'
-                                    ? { border: '2px solid #2563eb', backgroundColor: '#ffffff', color: '#09090b', boxShadow: '0 2px 8px rgba(37,99,235,0.2)' }
+                                    ? { background: 'linear-gradient(135deg, #F43F5E, #BE123C)', color: '#ffffff', boxShadow: '0 2px 10px rgba(225, 29, 72, 0.35)' }
                                     : { backgroundColor: userThemeColor, color: '#ffffff', boxShadow: `0 0 14px ${userThemeGlow}` })
                                 : isToday
                                   ? (themeMode === 'light'
-                                      ? { border: '1.5px solid #2563eb', color: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.08)' }
+                                      ? { border: '1.5px solid #E11D48', color: '#E11D48' }
                                       : { border: `1.5px solid ${userThemeColor}`, color: userThemeColor })
                                   : isWeekend
-                                    ? { color: themeMode === 'light' ? '#2563eb' : userThemeColor }
-                                    : { color: themeMode === 'light' ? (cell.isCurrentMonth ? '#09090b' : '#cbd5e1') : '#e4e4e7' }
+                                    ? { color: themeMode === 'light' ? (cell.isCurrentMonth ? '#E11D48' : '#F0A9B8') : userThemeColor }
+                                    : { color: themeMode === 'light' ? (cell.isCurrentMonth ? '#0F172A' : '#B7BCC6') : '#e4e4e7' }
                             }
                           >
                             {cell.dayNum}
@@ -3386,12 +3392,12 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                               <span
                                 key={ev.id || i}
                                 className={`w-1.5 h-1.5 rounded-full ${
-                                  i === 0 ? 'bg-blue-500' : i === 1 ? 'bg-purple-500' : 'bg-orange-500'
+                                  i === 0 ? 'bg-emerald-500 shadow-[0_0_0_2px_rgba(16,185,129,0.15)]' : i === 1 ? 'bg-purple-500 shadow-[0_0_0_2px_rgba(139,92,246,0.15)]' : 'bg-rose-500 shadow-[0_0_0_2px_rgba(225,29,72,0.15)]'
                                 }`}
                               />
                             ))}
                             {events.length === 0 && (hasDiary || hasSpirituality) && (
-                              <span className={`w-1.5 h-1.5 rounded-full ${hasDiary ? 'bg-emerald-400' : 'bg-purple-400'}`} />
+                              <span className={`w-1.5 h-1.5 rounded-full ${hasDiary ? 'bg-emerald-500 shadow-[0_0_0_2px_rgba(16,185,129,0.15)]' : 'bg-purple-500 shadow-[0_0_0_2px_rgba(139,92,246,0.15)]'}`} />
                             )}
                           </div>
                         </button>

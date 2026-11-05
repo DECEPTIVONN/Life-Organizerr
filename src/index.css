@@ -1396,6 +1396,12 @@ body.light-mode {
   box-shadow: 0 0 8px rgba(225, 29, 72, 0.8) !important;
 }
 
+.light-mode #sidebarHUD nav button.text-orange-500 .text-\[11px\],
+.light-mode #sidebarHUD nav button[class*="text-orange-500"] .text-\[11px\] {
+  color: #0F172A !important;
+  font-weight: 700 !important;
+}
+
 /* Sidebar Logo & Progress Bar */
 .light-mode #sidebarHUD img {
   border: 1.5px solid #E11D48 !important;
@@ -1416,6 +1422,16 @@ body.light-mode {
 .light-mode #sidebarHUD .text-zinc-400,
 .light-mode #sidebarHUD .text-zinc-500 {
   color: #5B6472 !important;
+}
+
+/* Sidebar Footer: Modo Escuro (caixa âmbar), Tela Cheia (sem caixa), Trancar App (caixa --redsoft com ícone --red) */
+.light-mode #sidebarHUD .p-1.bg-orange-500\/10 {
+  background-color: #FDECEF !important;
+  border-color: #F5B3C1 !important;
+}
+
+.light-mode #sidebarHUD .p-1.bg-orange-500\/10 svg {
+  color: #E11D48 !important;
 }
 
 /* Mobile Top Header in Light Mode */
@@ -1482,215 +1498,635 @@ body.light-mode {
 }
 
 /* ========================================================
-   2. CALENDÁRIO LIGHT MODE (INSPIRADO EM IMAGE 80E4BA43)
+   2. CALENDÁRIO LIGHT MODE (SEÇÕES 7.1, 7.2, 7.3 & IMAGEM DE REFERÊNCIA)
    ======================================================== */
 .light-mode .bg-\[\#0a0a0c\]\/80,
 .light-mode .bg-\[\#0a0a0c\],
 .light-mode .bg-\[\#0d0d10\] {
-  background-color: #ffffff !important;
-  border-color: rgba(0, 0, 0, 0.075) !important;
-  box-shadow: 0 10px 30px -4px rgba(0, 0, 0, 0.04), 0 2px 6px -1px rgba(0, 0, 0, 0.02) !important;
+  background: linear-gradient(180deg, #FFFFFF, #FDFCFA) !important;
+  border-color: rgba(15, 23, 42, 0.15) !important;
+  box-shadow: inset 0 1px 0 #fff, 0 12px 26px -12px rgba(15, 23, 42, 0.22), 0 2px 6px rgba(15, 23, 42, 0.04) !important;
+  border-radius: 22px !important;
 }
 
-/* Calendar Header & View Switcher */
-.light-mode .bg-\[\#121216\]\/95 {
-  background-color: #f1f5f9 !important;
-  border-color: #e2e8f0 !important;
+/* 7.1 Seletor segmentado (Ano / Mês / Semana / Dia) */
+.light-mode .bg-\[\#121216\]\/95,
+.light-mode .calendar-view-switcher {
+  background: linear-gradient(180deg, #E6E1D9, #ECE8E1) !important;
+  box-shadow: inset 0 2px 5px rgba(15, 23, 42, 0.13) !important;
+  border: 1px solid rgba(255, 255, 255, 0.85) !important;
+  border-radius: 16px !important;
+  height: 32px !important;
+  padding: 2px !important;
 }
 
-.light-mode .bg-\[\#121216\]\/95 button {
-  color: #64748b !important;
+.light-mode .bg-\[\#121216\]\/95 button,
+.light-mode .calendar-view-switcher button {
+  color: #3B4452 !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
 }
 
-.light-mode .bg-\[\#121216\]\/95 button:hover {
-  color: #0f172a !important;
+.light-mode .bg-\[\#121216\]\/95 button:hover,
+.light-mode .calendar-view-switcher button:hover {
+  color: #0F172A !important;
 }
 
-/* Weekday Headers matching image 80e4ba43 */
+.light-mode .bg-\[\#121216\]\/95 button.shadow-sm,
+.light-mode .calendar-view-switcher button.active,
+.light-mode .bg-\[\#121216\]\/95 button[style*="background-color"],
+.light-mode .bg-\[\#121216\]\/95 button.text-white {
+  background: linear-gradient(135deg, #F43F5E, #BE123C) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 14px rgba(225, 29, 72, 0.45) !important;
+  border-radius: 9999px !important;
+  font-weight: 700 !important;
+}
+
+/* 7.2 Botões quadrados (adicionar, menu, setas, fechar, lixeira) */
+.light-mode button.bg-zinc-900\/60.border-zinc-800\/70,
+.light-mode button.bg-zinc-900.border-zinc-800,
+.light-mode button.calendar-nav-btn {
+  background: #FDFCFA !important;
+  border: 1px solid rgba(15, 23, 42, 0.22) !important;
+  box-shadow: inset 0 1px 0 #fff, 0 4px 10px -4px rgba(15, 23, 42, 0.25) !important;
+  color: #0F172A !important;
+  border-radius: 10px !important;
+}
+
+.light-mode button.bg-zinc-900\/60.border-zinc-800\/70:hover,
+.light-mode button.bg-zinc-900.border-zinc-800:hover {
+  background: #F6F3EE !important;
+  border-color: rgba(15, 23, 42, 0.35) !important;
+  color: #0F172A !important;
+}
+
+.light-mode button.bg-zinc-900\/60.border-zinc-800\/70 svg,
+.light-mode button.bg-zinc-900.border-zinc-800 svg {
+  stroke: #0F172A !important;
+}
+
+/* 7.3 Calendário (visão mensal): Título, cabeçalhos e números */
+.light-mode .calendar-month-title {
+  font-family: var(--font-mono) !important;
+  font-size: 22px !important;
+  font-weight: 600 !important;
+  color: #0F172A !important;
+}
+
+/* Weekday Headers: Sunday & Saturday in --red (#E11D48), Weekdays in mono 11px 700, SEM in 9px #8A93A1 */
+.light-mode .border-b.border-zinc-800\/60 {
+  border-bottom-color: rgba(15, 23, 42, 0.18) !important;
+}
+
+.light-mode .border-b.border-zinc-800\/60 .text-zinc-600,
+.light-mode .border-b.border-zinc-800\/60 .font-mono:first-child {
+  color: #8A93A1 !important;
+  font-size: 9px !important;
+  font-weight: 700 !important;
+}
+
 .light-mode .border-b.border-zinc-800\/60 .text-zinc-400 {
-  color: #64748b !important;
+  color: #5B6472 !important;
+  font-family: var(--font-mono) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.8px !important;
 }
 
-/* Week numbers column (SEM. 39, 40, 41, 42, 43) */
-.light-mode .font-mono.text-zinc-500,
-.light-mode .font-mono.text-zinc-600 {
-  color: #94a3b8 !important;
+/* Domingos e Sábados no cabeçalho */
+.light-mode .border-b.border-zinc-800\/60 [style*="color"]:first-of-type,
+.light-mode .border-b.border-zinc-800\/60 [style*="color"]:last-of-type,
+.light-mode .border-b.border-zinc-800\/60 .font-bold:not(.text-zinc-400):not(.text-zinc-600) {
+  color: #E11D48 !important;
+  font-family: var(--font-mono) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.8px !important;
 }
 
-/* Day hover and empty states */
+/* Coluna SEM. números (39, 40, 41, 42, 43) */
+.light-mode .grid .text-zinc-500.font-mono {
+  color: #8A93A1 !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+}
+
+/* Células de dia */
+.light-mode button.min-h-\[58px\],
+.light-mode button.min-h-\[72px\] {
+  background-color: transparent;
+  transition: all 0.2s ease;
+}
+
 .light-mode button.min-h-\[58px\]:hover,
 .light-mode button.min-h-\[72px\]:hover {
-  background-color: #f8fafc !important;
+  background-color: rgba(245, 242, 236, 0.7) !important;
+}
+
+/* Dia selecionado: célula com fundo #FFF1F4 → #FDE3E9, borda --red, sombra vermelha */
+.light-mode button.min-h-\[58px\][style*="border-color"],
+.light-mode button.min-h-\[72px\][style*="border-color"] {
+  border-radius: 14px !important;
 }
 
 .light-mode .drag-handle-pill,
-.light-mode [class*="h-1"][class*="rounded-full"][class*="bg-zinc"] {
-  background-color: #e2e8f0 !important;
+.light-mode [class*="h-1\.5"][class*="rounded-full"][class*="bg-zinc"] {
+  background-color: #D4CEBE !important;
 }
 
 /* "Nenhum evento para hoje" */
 .light-mode .text-sm.font-semibold.text-zinc-400 {
-  color: #94a3b8 !important;
+  color: #5B6472 !important;
 }
 
 /* Calendar options dropdown */
 .light-mode .bg-\[\#0d0d10\] {
-  background-color: #ffffff !important;
-  border-color: #e2e8f0 !important;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.1) !important;
+  background-color: #FFFFFF !important;
+  border-color: rgba(15, 23, 42, 0.16) !important;
+  box-shadow: 0 12px 36px rgba(15, 23, 42, 0.12) !important;
 }
 
 .light-mode .bg-\[\#0d0d10\] button:hover {
-  background-color: #f1f5f9 !important;
+  background-color: #F6F3EE !important;
 }
 
 /* ========================================================
-   3. VIDA EM RESUMO - ÁREAS DA VIDA (LIGHT MODE)
+   3. SEÇÃO 7.4 & 10.5: MODAIS (MEU DIA & EDITAR TAREFA)
    ======================================================== */
-.light-mode .bg-zinc-950\/50,
-.light-mode .bg-zinc-950\/40,
-.light-mode .bg-zinc-950\/20 {
-  background-color: #ffffff !important;
-  border-color: rgba(0, 0, 0, 0.08) !important;
-  box-shadow: 0 10px 30px -4px rgba(0, 0, 0, 0.04), 0 2px 6px -1px rgba(0, 0, 0, 0.02) !important;
+/* Backdrop: Fundo opaco e fosco (#D9D5CD → #CFCBC3), sem camada preta translúcida pesada */
+.light-mode .fixed.inset-0.bg-black\/80,
+.light-mode .fixed.inset-0.bg-black\/70,
+.light-mode .fixed.inset-0.bg-\[\#040405\],
+.light-mode .fixed.inset-0.backdrop-blur-md,
+.light-mode .fixed.inset-0.backdrop-blur-sm {
+  background: rgba(217, 213, 205, 0.88) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
 }
 
-/* 6 Areas of Life Cards Overlays */
-.light-mode .bg-gradient-to-t.from-zinc-950 {
-  background: linear-gradient(to top, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.85) 50%, rgba(255, 255, 255, 0.35) 100%) !important;
-}
-
-/* Area Cards Inner Elements */
-.light-mode .bg-zinc-900 {
-  background-color: #f8f8f6 !important;
-  border-color: #e4e4e7 !important;
-}
-
-.light-mode .bg-zinc-950 {
-  background-color: #ffffff !important;
-  border-color: #e4e4e7 !important;
-}
-
-/* Rating Cell Bar in Light Mode */
-.light-mode .bg-zinc-900\/80 {
-  background-color: #f4f4f5 !important;
-  border-color: #e4e4e7 !important;
-}
-
-/* Pontos que merecem atenção items */
-.light-mode .bg-zinc-950\/60,
-.light-mode .bg-zinc-950\/50,
-.light-mode .bg-zinc-950\/40 {
-  background-color: #fafafa !important;
-  border-color: #e4e4e7 !important;
-}
-
-/* ========================================================
-   4. FINANÇAS ANUAIS & EXTRATO ANUAL (LIGHT MODE)
-   ======================================================== */
-.light-mode table {
-  background-color: #ffffff !important;
-  border-color: #e4e4e7 !important;
-}
-
-.light-mode th {
-  background-color: #f8f8f6 !important;
-  color: #09090b !important;
-  border-color: #e4e4e7 !important;
-  font-weight: 700 !important;
-}
-
-.light-mode td {
-  background-color: #ffffff !important;
-  color: #18181b !important;
-  border-color: #e4e4e7 !important;
-}
-
-.light-mode tr:nth-child(even) td {
-  background-color: #fafaf9 !important;
-}
-
-.light-mode tr:hover td {
-  background-color: #f4f4f5 !important;
-}
-
-/* Annual Finance Summary & Metric Cards */
-.light-mode .bg-zinc-950.border.border-zinc-900,
-.light-mode .bg-zinc-900\/60.border.border-zinc-800 {
-  background-color: #ffffff !important;
-  border-color: rgba(0, 0, 0, 0.08) !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03) !important;
-}
-
-/* Financial Health Score Box in Light Mode */
-.light-mode .bg-gradient-to-br.from-zinc-950.via-zinc-900.to-black {
-  background: linear-gradient(135deg, #ffffff 0%, #fafaf9 60%, #f4f4f5 100%) !important;
-  border-color: rgba(249, 115, 22, 0.3) !important;
-  box-shadow: 0 10px 30px -4px rgba(0, 0, 0, 0.05) !important;
-}
-
-.light-mode .bg-zinc-900\/40 {
-  background-color: #fafaf9 !important;
-  border-color: #e4e4e7 !important;
-}
-
-/* Filters & Type Switcher Pills in Finances & Across the App */
-.light-mode button.bg-zinc-900.border-zinc-800 {
-  background-color: #ffffff !important;
-  border: 1.5px solid #e4e4e7 !important;
-  color: #3f3f46 !important;
-  font-weight: 600 !important;
-}
-
-.light-mode button.bg-zinc-900.border-zinc-800:hover {
-  background-color: #f4f4f5 !important;
-  border-color: #d4d4d8 !important;
-  color: #09090b !important;
-}
-
-.light-mode button.bg-zinc-900.border-zinc-800.active,
-.light-mode button.bg-zinc-900.border-zinc-800[data-active="true"] {
-  background-color: #09090b !important;
-  border-color: #09090b !important;
-  color: #ffffff !important;
-  font-weight: 750 !important;
-}
-
-.light-mode button.bg-zinc-900.border-zinc-800.active svg.lucide,
-.light-mode button.bg-zinc-900.border-zinc-800[data-active="true"] svg.lucide {
-  stroke: #ffffff !important;
-  color: #ffffff !important;
-}
-
-/* Modals & Popovers Form Controls & Active States */
+/* Modal Content Card Container */
 .light-mode [role="dialog"],
-.light-mode .fixed.inset-0 .bg-\[\#0f0f12\],
-.light-mode .fixed.inset-0 .bg-\[\#0a0a0c\] {
-  background-color: #ffffff !important;
-  border: 1.5px solid #e4e4e7 !important;
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.12) !important;
+.light-mode .fixed.inset-0 .bg-black,
+.light-mode .fixed.inset-0 .bg-\[\#0a0a0c\],
+.light-mode .fixed.inset-0 .bg-\[\#0f0f12\] {
+  background: linear-gradient(180deg, #FDFCFA 0%, #F5F2ED 100%) !important;
+  border: 1.5px solid rgba(15, 23, 42, 0.16) !important;
+  box-shadow: 0 40px 90px -24px rgba(15, 23, 42, 0.45) !important;
+  color: #0F172A !important;
 }
 
+/* Modal Header: Title, ESC badge, close button */
+.light-mode [role="dialog"] h3,
+.light-mode .fixed.inset-0 h3 {
+  color: #0F172A !important;
+  font-weight: 800 !important;
+}
+
+.light-mode .fixed.inset-0 .bg-zinc-950.border-zinc-900,
+.light-mode .fixed.inset-0 span[class*="ESC para fechar"] {
+  background: #FFFFFF !important;
+  border-color: rgba(15, 23, 42, 0.14) !important;
+  color: #5B6472 !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05) !important;
+}
+
+/* Modal Inputs & Textareas: Rebaixados (#F6F3EE → #FBFAF7, sombra interna) */
 .light-mode [role="dialog"] input,
 .light-mode [role="dialog"] textarea,
 .light-mode [role="dialog"] select,
 .light-mode .fixed.inset-0 input,
 .light-mode .fixed.inset-0 textarea,
 .light-mode .fixed.inset-0 select {
-  background-color: #ffffff !important;
-  border: 1.5px solid #d4d4d8 !important;
-  color: #09090b !important;
+  background: linear-gradient(180deg, #F6F3EE, #FBFAF7) !important;
+  border: 1px solid rgba(15, 23, 42, 0.18) !important;
+  box-shadow: inset 0 2px 6px rgba(15, 23, 42, 0.10) !important;
+  color: #0F172A !important;
+  border-radius: 14px !important;
+}
+
+.light-mode [role="dialog"] input::placeholder,
+.light-mode [role="dialog"] textarea::placeholder,
+.light-mode .fixed.inset-0 input::placeholder,
+.light-mode .fixed.inset-0 textarea::placeholder {
+  color: #7A8392 !important;
 }
 
 .light-mode [role="dialog"] input:focus,
 .light-mode [role="dialog"] textarea:focus,
-.light-mode [role="dialog"] select:focus,
 .light-mode .fixed.inset-0 input:focus,
-.light-mode .fixed.inset-0 textarea:focus,
-.light-mode .fixed.inset-0 select:focus {
-  border-color: #09090b !important;
-  box-shadow: 0 0 0 1px #09090b, 0 2px 6px rgba(0, 0, 0, 0.08) !important;
+.light-mode .fixed.inset-0 textarea:focus {
+  border-color: #E11D48 !important;
+  box-shadow: inset 0 2px 6px rgba(15, 23, 42, 0.10), 0 0 0 1.5px rgba(225, 29, 72, 0.35) !important;
 }
+
+/* Rótulos de campo: mono, 9.5px, letter-spacing: 1.3px, peso 600, #5B6472, caixa alta */
+.light-mode .fixed.inset-0 label {
+  color: #5B6472 !important;
+  font-family: var(--font-mono) !important;
+  font-size: 9.5px !important;
+  letter-spacing: 1.3px !important;
+  font-weight: 600 !important;
+}
+
+/* Chips de data e lembretes */
+.light-mode .fixed.inset-0 button.bg-zinc-950.border-zinc-900,
+.light-mode .fixed.inset-0 button.bg-zinc-900.border-zinc-800 {
+  background: #FFFFFF !important;
+  border: 1px solid rgba(15, 23, 42, 0.18) !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05) !important;
+  color: #0F172A !important;
+}
+
+/* Botões de Prioridade (Seção 10.5):
+   A opção selecionada ganha borda #F59E0B de 1.5px, fundo #FFF8E6 → #FFF1CC, texto #92400E peso 800 e sombra âmbar */
+.light-mode .fixed.inset-0 button[class*="border-amber-400"],
+.light-mode .fixed.inset-0 button[class*="bg-amber-500/10"],
+.light-mode .fixed.inset-0 button[class*="text-amber-300"] {
+  background: linear-gradient(180deg, #FFF8E6, #FFF1CC) !important;
+  border: 1.5px solid #F59E0B !important;
+  color: #92400E !important;
+  font-weight: 800 !important;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25) !important;
+}
+
+/* Tags: chips elevados de 30px com bolinha colorida */
+.light-mode .fixed.inset-0 button.rounded-full {
+  background: #FFFFFF !important;
+  border: 1px solid rgba(15, 23, 42, 0.16) !important;
+  color: #0F172A !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05) !important;
+}
+
+/* ========================================================
+   4. SEÇÃO 7.5: CARDS DE CATEGORIA (VIDA EM RESUMO)
+   ======================================================== */
+.light-mode .bg-zinc-950\/50,
+.light-mode .bg-zinc-950\/40,
+.light-mode .bg-zinc-950\/20 {
+  background-color: #FFFFFF !important;
+  border-color: rgba(15, 23, 42, 0.14) !important;
+  box-shadow: inset 0 1px 0 #fff, 0 12px 26px -12px rgba(15, 23, 42, 0.20), 0 2px 6px rgba(15, 23, 42, 0.04) !important;
+  border-radius: 20px !important;
+}
+
+/* Véu claro de no mínimo 85% sobre as fotos de capa */
+.light-mode .bg-gradient-to-t.from-zinc-950 {
+  background: linear-gradient(to top, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.90) 60%, rgba(255, 255, 255, 0.85) 100%) !important;
+}
+
+/* Elementos internos dos cards de área */
+.light-mode .bg-zinc-900 {
+  background-color: #F8F6F2 !important;
+  border-color: rgba(15, 23, 42, 0.14) !important;
+}
+
+.light-mode .bg-zinc-950 {
+  background-color: #FFFFFF !important;
+  border-color: rgba(15, 23, 42, 0.14) !important;
+}
+
+/* Títulos, citações e barras de progresso nos cards de área */
+.light-mode .lg\:col-span-8 h3,
+.light-mode .lg\:col-span-8 .text-white {
+  color: #0F172A !important;
+}
+
+.light-mode .lg\:col-span-8 .text-\[10px\].italic.text-zinc-400 {
+  color: #334155 !important;
+  border-left-color: rgba(15, 23, 42, 0.22) !important;
+  border-left-width: 1.5px !important;
+  font-size: 11px !important;
+}
+
+.light-mode .lg\:col-span-8 .bg-zinc-900\/60.h-1 {
+  background-color: rgba(15, 23, 42, 0.10) !important;
+  height: 4px !important;
+}
+
+/* Borda e brilho por categoria (Seção 7.5):
+   Espiritualidade: #D97706, Corpo: #059669, Mente: #2563EB, Social: #E11D48, Finanças: #CA8A04, Lazer: #7C3AED */
+.light-mode .border-amber-500\/20 {
+  border-color: rgba(217, 119, 6, 0.40) !important;
+  background-image: radial-gradient(circle at 100% 0%, rgba(217, 119, 6, 0.10), transparent 70%) !important;
+}
+.light-mode .border-amber-500\/20 svg {
+  color: #D97706 !important;
+}
+
+.light-mode .border-emerald-500\/20 {
+  border-color: rgba(5, 150, 105, 0.40) !important;
+  background-image: radial-gradient(circle at 100% 0%, rgba(5, 150, 105, 0.10), transparent 70%) !important;
+}
+.light-mode .border-emerald-500\/20 svg {
+  color: #059669 !important;
+}
+
+.light-mode .border-blue-500\/20 {
+  border-color: rgba(37, 99, 235, 0.40) !important;
+  background-image: radial-gradient(circle at 100% 0%, rgba(37, 99, 235, 0.10), transparent 70%) !important;
+}
+.light-mode .border-blue-500\/20 svg {
+  color: #2563EB !important;
+}
+
+.light-mode .border-pink-500\/20 {
+  border-color: rgba(225, 29, 72, 0.40) !important;
+  background-image: radial-gradient(circle at 100% 0%, rgba(225, 29, 72, 0.10), transparent 70%) !important;
+}
+.light-mode .border-pink-500\/20 svg {
+  color: #E11D48 !important;
+}
+
+.light-mode .border-yellow-500\/20 {
+  border-color: rgba(202, 138, 4, 0.40) !important;
+  background-image: radial-gradient(circle at 100% 0%, rgba(202, 138, 4, 0.10), transparent 70%) !important;
+}
+.light-mode .border-yellow-500\/20 svg {
+  color: #CA8A04 !important;
+}
+
+.light-mode .border-purple-500\/20 {
+  border-color: rgba(124, 58, 237, 0.40) !important;
+  background-image: radial-gradient(circle at 100% 0%, rgba(124, 58, 237, 0.10), transparent 70%) !important;
+}
+.light-mode .border-purple-500\/20 svg {
+  color: #7C3AED !important;
+}
+
+/* Barra de preenchimento (Seção 7.5): degradê vermelho com brilho */
+.light-mode .lg\:col-span-8 .h-full.bg-gradient-to-r {
+  background: linear-gradient(90deg, #F43F5E, #E11D48) !important;
+  box-shadow: 0 0 8px rgba(225, 29, 72, 0.4) !important;
+}
+
+/* Seção 7.6: Citação lateral & Dicas */
+.light-mode .lg\:col-span-4 .text-orange-500\/20 {
+  color: rgba(225, 29, 72, 0.18) !important;
+  fill: rgba(225, 29, 72, 0.18) !important;
+}
+
+.light-mode .lg\:col-span-4 p.italic {
+  color: #1E293B !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+}
+
+.light-mode .lg\:col-span-4 span.text-orange-500 {
+  color: #E11D48 !important;
+}
+
+.light-mode .lg\:col-span-4 svg.text-orange-500 {
+  color: #E11D48 !important;
+}
+
+/* ========================================================
+   5. SEÇÃO 10: PROJETOS (TOOLBAR, CARDS, CABEÇALHO PASTEL)
+   ======================================================== */
+/* 10.1 Barra de ferramentas (busca + filtros) */
+.light-mode .bg-zinc-900\/40.p-2.rounded-2xl {
+  background: #FFFFFF !important;
+  border: 1px solid rgba(15, 23, 42, 0.18) !important;
+  box-shadow: inset 0 1px 0 #fff, 0 12px 26px -12px rgba(15, 23, 42, 0.20) !important;
+  border-radius: 18px !important;
+}
+
+.light-mode .bg-zinc-900\/40.p-2.rounded-2xl input {
+  background: linear-gradient(180deg, #F6F3EE, #FBFAF7) !important;
+  border: 1px solid rgba(15, 23, 42, 0.18) !important;
+  box-shadow: inset 0 2px 6px rgba(15, 23, 42, 0.10) !important;
+  color: #0F172A !important;
+  border-radius: 11px !important;
+  height: 34px !important;
+}
+
+.light-mode .bg-zinc-900\/40.p-2.rounded-2xl input::placeholder {
+  color: #6B7280 !important;
+}
+
+.light-mode .bg-zinc-900\/40.p-2.rounded-2xl .internal-nav-secondary {
+  background: linear-gradient(180deg, #E6E1D9, #ECE8E1) !important;
+  box-shadow: inset 0 2px 5px rgba(15, 23, 42, 0.13) !important;
+  border: 1px solid rgba(255, 255, 255, 0.85) !important;
+  border-radius: 12px !important;
+  height: 36px !important;
+  padding: 2px !important;
+}
+
+.light-mode .internal-nav-secondary-btn {
+  color: #3B4452 !important;
+  font-family: var(--font-mono) !important;
+  font-size: 9.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 1.1px !important;
+  text-transform: uppercase !important;
+}
+
+.light-mode .internal-nav-secondary-btn.active {
+  background: linear-gradient(135deg, #1E293B, #0F172A) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.3) !important;
+  border-radius: 9px !important;
+}
+
+/* 10.2 Card de Projeto */
+.light-mode .bg-zinc-950\/80.border-zinc-900 {
+  background: linear-gradient(180deg, #FFFFFF, #FDFCFA) !important;
+  border: 1px solid rgba(15, 23, 42, 0.20) !important;
+  box-shadow: 0 16px 32px -16px rgba(15, 23, 42, 0.28) !important;
+  border-radius: 18px !important;
+}
+
+/* Cabeçalho do projeto: Gradiente Pastel (#FCD9C0 → #EBCFF6 → #CDE8F8 a 120°) */
+.light-mode .bg-zinc-950\/80.border-zinc-900 .h-28.bg-zinc-900 {
+  background: linear-gradient(120deg, #FCD9C0 0%, #EBCFF6 50%, #CDE8F8 100%) !important;
+}
+
+.light-mode .bg-zinc-950\/80.border-zinc-900 .h-28.bg-zinc-900 .bg-gradient-to-t {
+  background: linear-gradient(to top, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.2) 60%, transparent 100%) !important;
+}
+
+/* Pílulas sobre o cabeçalho do projeto */
+.light-mode .bg-zinc-950\/80.border-zinc-900 .h-28 span.bg-zinc-950\/80 {
+  background: rgba(255, 255, 255, 0.94) !important;
+  border: 1px solid rgba(15, 23, 42, 0.14) !important;
+  color: #E11D48 !important;
+  font-family: var(--font-mono) !important;
+  font-size: 9px !important;
+  letter-spacing: 1.2px !important;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08) !important;
+  height: 25px !important;
+}
+
+.light-mode .bg-zinc-950\/80.border-zinc-900 .h-28 span[class*="text-amber-400"] {
+  color: #B45309 !important;
+}
+
+/* Botões circulares do cabeçalho */
+.light-mode .bg-zinc-950\/80.border-zinc-900 .h-28 button {
+  background: #FFFFFF !important;
+  border: 1px solid rgba(15, 23, 42, 0.18) !important;
+  color: #0F172A !important;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08) !important;
+}
+
+.light-mode .bg-zinc-950\/80.border-zinc-900 .h-28 button svg {
+  stroke: #0F172A !important;
+}
+
+/* Corpo do card de projeto */
+.light-mode .bg-zinc-950\/80.border-zinc-900 h3 {
+  color: #0F172A !important;
+  font-size: 16px !important;
+  font-weight: 800 !important;
+}
+
+.light-mode .bg-zinc-950\/80.border-zinc-900 p.text-zinc-400 {
+  color: #475569 !important;
+  font-size: 11.5px !important;
+  line-height: 19px !important;
+}
+
+/* Barra de progresso do projeto: #F97316 → #E11D48 com brilho vermelho */
+.light-mode .bg-zinc-950\/80.border-zinc-900 .bg-gradient-to-r.from-orange-500.to-amber-500 {
+  background: linear-gradient(90deg, #F97316, #E11D48) !important;
+  box-shadow: 0 0 10px rgba(225, 29, 72, 0.35) !important;
+}
+
+.light-mode .bg-zinc-950\/80.border-zinc-900 .w-full.bg-zinc-900 {
+  background-color: rgba(15, 23, 42, 0.10) !important;
+  height: 6px !important;
+}
+
+/* Rodapé do card de projeto: faixa #F8F6F2 → #F3F0EA com borda superior --hair */
+.light-mode .bg-zinc-950\/80.border-zinc-900 .bg-zinc-900\/40.border-t {
+  background: linear-gradient(180deg, #F8F6F2, #F3F0EA) !important;
+  border-top: 1px solid rgba(15, 23, 42, 0.13) !important;
+}
+
+.light-mode .bg-zinc-950\/80.border-zinc-900 .bg-zinc-900\/40.border-t span {
+  color: #5B6472 !important;
+  font-family: var(--font-mono) !important;
+  font-size: 9px !important;
+}
+
+/* ========================================================
+   6. SEÇÃO 10.4: PAINÉIS DO DASHBOARD & FINANÇAS
+   ======================================================== */
+.light-mode .bg-\[\#0a0a0c\]\/60.border-zinc-850,
+.light-mode .bg-\[\#0a0a0c\]\/40.border-zinc-850 {
+  background: linear-gradient(180deg, #FFFFFF, #FDFCFA) !important;
+  border: 1px solid rgba(15, 23, 42, 0.18) !important;
+  border-radius: 26px !important;
+  box-shadow: inset 0 1px 0 #fff, 0 12px 26px -12px rgba(15, 23, 42, 0.18) !important;
+}
+
+.light-mode .bg-\[\#0a0a0c\]\/60 h3,
+.light-mode .bg-\[\#0a0a0c\]\/40 h3 {
+  color: #0F172A !important;
+  font-size: 17px !important;
+  font-weight: 700 !important;
+}
+
+/* Rótulo de painel em mono --red */
+.light-mode .text-\[10px\].text-orange-500.font-extrabold.tracking-widest {
+  color: #E11D48 !important;
+  font-family: var(--font-mono) !important;
+  font-size: 9px !important;
+  letter-spacing: 1.4px !important;
+}
+
+/* Mini-cards de metas ativas */
+.light-mode .bg-zinc-950\/40.border.border-zinc-850\/70 {
+  background: #FFFFFF !important;
+  border: 1px solid rgba(15, 23, 42, 0.16) !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05) !important;
+}
+
+.light-mode .bg-zinc-950\/40.border.border-zinc-850\/70 span.text-white {
+  color: #0F172A !important;
+}
+
+/* Finanças: Tiles de Receitas e Despesas */
+.light-mode .bg-zinc-950.border-zinc-850\/60 {
+  background: #FFFFFF !important;
+  border: 1px solid rgba(15, 23, 42, 0.18) !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04) !important;
+  border-radius: 16px !important;
+  height: 65px !important;
+}
+
+.light-mode .bg-zinc-950.border-zinc-850\/60 span.text-white {
+  color: #0F172A !important;
+}
+
+.light-mode .bg-emerald-500\/10.text-emerald-400 {
+  background-color: rgba(5, 150, 105, 0.12) !important;
+  color: #059669 !important;
+}
+
+.light-mode .bg-rose-500\/10.text-rose-400 {
+  background-color: #FDECEF !important;
+  color: #E11D48 !important;
+}
+
+/* Lançamentos recentes no dashboard */
+.light-mode .bg-zinc-950\/40.p-2\.5.border-zinc-900 {
+  background: #FFFFFF !important;
+  border: 1px solid rgba(15, 23, 42, 0.14) !important;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04) !important;
+}
+
+.light-mode .bg-zinc-950\/40.p-2\.5.border-zinc-900 .text-white {
+  color: #0F172A !important;
+}
+
+/* Selo DESP em mono 8px #BE123C com fundo --redsoft e borda --redline */
+.light-mode .bg-zinc-950\/40.p-2\.5.border-zinc-900 span.bg-rose-500\/10 {
+  background-color: #FDECEF !important;
+  border: 1px solid #F5B3C1 !important;
+  color: #BE123C !important;
+  font-family: var(--font-mono) !important;
+  font-size: 8px !important;
+}
+
+/* ========================================================
+   7. SEÇÃO 9.5: BARRA DE NAVEGAÇÃO INFERIOR MOBILE
+   ======================================================== */
+.light-mode .lg\:hidden.fixed.bottom-0 .bg-\[\#0a0a0f\]\/95 {
+  background: linear-gradient(180deg, #FFFFFF, #F8F6F2) !important;
+  border-top: 1px solid rgba(15, 23, 42, 0.13) !important;
+  border-radius: 50% 50% 0 0 / 22px 22px 0 0 !important;
+  box-shadow: 0 -10px 28px -12px rgba(15, 23, 42, 0.25) !important;
+  height: 72px !important;
+}
+
+.light-mode .lg\:hidden.fixed.bottom-0 button .text-zinc-500,
+.light-mode .lg\:hidden.fixed.bottom-0 button .text-zinc-400 {
+  color: #334155 !important;
+}
+
+/* Item ativo na barra de navegação mobile: ícone em --red, sublinhado 26x2px em --red com brilho, rótulo em mono 7.5px */
+.light-mode .lg\:hidden.fixed.bottom-0 button .text-orange-500 {
+  color: #E11D48 !important;
+  filter: drop-shadow(0 0 8px rgba(225, 29, 72, 0.6)) !important;
+}
+
+.light-mode .lg\:hidden.fixed.bottom-0 button .bg-orange-500 {
+  background-color: #E11D48 !important;
+  box-shadow: 0 2px 10px rgba(225, 29, 72, 0.7) !important;
+  width: 26px !important;
+  height: 2px !important;
+}
+
+.light-mode .lg\:hidden.fixed.bottom-0 button span.font-bold.text-orange-500 {
+  color: #E11D48 !important;
+  font-family: var(--font-mono) !important;
+  font-size: 7.5px !important;
+  letter-spacing: 1.2px !important;
+}
+
 
 
 
