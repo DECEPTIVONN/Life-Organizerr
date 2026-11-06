@@ -4605,33 +4605,34 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                       </p>
                                     </div>
 
-                                    {/* Action buttons: Trocar Livro, Novo Livro, Config */}
-                                    <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+                                    {/* Action buttons: Trocar Livro, Novo Livro, Config (Icon-only) */}
+                                    <div className="flex items-center gap-1.5 shrink-0">
                                       <button
                                         type="button"
                                         onClick={() => setShowBookSwitcherModal(true)}
-                                        className="px-2.5 py-1.5 bg-zinc-900 hover:bg-zinc-850 hover:text-orange-400 text-zinc-300 rounded-lg border border-zinc-800 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
-                                        title="Trocar o livro sendo lido por outro livro do seu acervo"
+                                        className="task-book-switcher-btn p-1.5 bg-zinc-900 hover:bg-zinc-850 hover:text-orange-400 text-zinc-300 rounded-lg border border-zinc-800 text-xs font-bold transition-all flex items-center justify-center cursor-pointer shadow-xs"
+                                        title="Trocar Livro"
+                                        aria-label="Trocar Livro"
                                       >
                                         <ArrowUpDown className="h-3.5 w-3.5 text-orange-500" />
-                                        <span>Trocar Livro</span>
                                       </button>
 
                                       <button
                                         type="button"
                                         onClick={handleOpenNewBook}
-                                        className="px-2.5 py-1.5 bg-orange-500/15 hover:bg-orange-500/25 text-orange-400 hover:text-orange-300 border border-orange-500/30 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer shadow-xs"
-                                        title="Cadastrar um novo livro para ler"
+                                        className="task-book-new-btn p-1.5 bg-orange-500/15 hover:bg-orange-500/25 text-orange-400 hover:text-orange-300 border border-orange-500/30 rounded-lg text-xs font-bold transition-all flex items-center justify-center cursor-pointer shadow-xs"
+                                        title="Novo Livro"
+                                        aria-label="Novo Livro"
                                       >
                                         <Plus className="h-3.5 w-3.5" />
-                                        <span>Novo Livro</span>
                                       </button>
 
                                       <button
                                         type="button"
                                         onClick={handleOpenEditBook}
-                                        className="p-1.5 text-zinc-400 hover:text-white bg-zinc-900 hover:bg-zinc-850 rounded-lg border border-zinc-800 text-xs transition-colors shrink-0 cursor-pointer"
-                                        title="Editar metas e páginas do livro atual"
+                                        className="task-book-config-btn p-1.5 text-zinc-400 hover:text-white bg-zinc-900 hover:bg-zinc-850 rounded-lg border border-zinc-800 text-xs transition-colors shrink-0 cursor-pointer flex items-center justify-center"
+                                        title="Configurações do Livro"
+                                        aria-label="Configurações do Livro"
                                       >
                                         <Settings className="h-3.5 w-3.5" />
                                       </button>

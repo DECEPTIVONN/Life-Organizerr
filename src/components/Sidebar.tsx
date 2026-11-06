@@ -2000,20 +2000,20 @@ function Sidebar({
       {/* 4. DESKTOP SIDEBAR HUD (RESPONSIVE COLLAPSIBLE & PINNABLE) */}
       <aside 
         id="sidebarHUD" 
-        className={`fixed left-0 top-0 h-full bg-[#040405]/95 backdrop-blur-md border-r border-zinc-900 flex flex-col justify-between transition-all duration-300 select-none z-30 hidden lg:flex ${
+        className={`fixed left-0 top-0 h-full bg-[#040405]/95 backdrop-blur-md border-r border-zinc-900 flex flex-col justify-between transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] select-none z-30 hidden lg:flex ${
           isExpanded ? 'w-64' : 'w-[76px]'
         }`}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
         {/* User Mini profile with Leveling details - aligned with Pin button when expanded, and perfectly centered when collapsed */}
-        <div className={`border-b border-zinc-900/60 bg-[#07070a]/40 overflow-hidden relative transition-all duration-300 ${
-          isExpanded ? 'p-4' : 'py-5 px-0 flex flex-col items-center justify-center'
+        <div className={`border-b border-zinc-900/60 bg-[#07070a]/40 overflow-hidden relative transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          isExpanded ? 'p-4' : 'py-5 px-3 flex flex-col items-center justify-center'
         }`}>
-          <div className={`flex items-center gap-3 ${isExpanded ? 'justify-between w-full' : 'justify-center'}`}>
+          <div className={`flex items-center w-full transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${isExpanded ? 'justify-between' : 'justify-center'}`}>
             <button 
               onClick={() => setActiveTab('perfil')}
-              className="flex items-center gap-3 min-w-0 text-left hover:opacity-80 transition-opacity active:scale-95"
+              className="flex items-center min-w-0 text-left hover:opacity-80 transition-opacity active:scale-95"
               title="Ver seu Perfil"
             >
               <img 
@@ -2022,63 +2022,74 @@ function Sidebar({
                 className="h-8 w-8 rounded-full object-cover border border-orange-500/20 flex-shrink-0 shadow-[0_0_8px_rgba(249,115,22,0.15)]"
                 referrerPolicy="no-referrer"
               />
-              <div className={`transition-opacity duration-300 min-w-0 ${isExpanded ? 'opacity-100 block' : 'opacity-0 hidden w-0 h-0'}`}>
+              <div className={`transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] min-w-0 overflow-hidden whitespace-nowrap ${
+                isExpanded ? 'opacity-100 max-w-[130px] ml-3 translate-x-0' : 'opacity-0 max-w-0 ml-0 -translate-x-2 pointer-events-none'
+              }`}>
                 <h3 className="text-xs font-bold text-white tracking-tight truncate">{userName}</h3>
-                <p className="text-[9px] text-orange-500 font-mono font-bold">{xpTotal} XP Acumulados</p>
+                <p className="text-[9px] text-orange-500 font-mono font-bold truncate">{xpTotal} XP Acumulados</p>
               </div>
             </button>
 
-            {/* Pin Button - aligned with profile on the right side */}
-            {isExpanded && setPinned && (
+            {/* Pin Button - smooth fade and rotation when pinned/unpinned */}
+            {setPinned && (
               <button 
+                type="button"
                 onClick={() => setPinned(!pinned)}
-                className={`p-1.5 rounded hover:bg-zinc-900 transition-colors flex-shrink-0 ${pinned ? 'text-orange-500' : 'text-zinc-500 hover:text-white'}`}
-                title={pinned ? 'Desafixar menu' : 'Fixar menu lateral'}
+                className={`p-1.5 rounded hover:bg-zinc-900 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] flex-shrink-0 cursor-pointer ${
+                  pinned ? 'text-orange-500 bg-orange-500/10' : 'text-zinc-500 hover:text-white'
+                } ${
+                  isExpanded ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-75 pointer-events-none w-0 h-0 p-0 overflow-hidden'
+                }`}
+                title={pinned ? 'Desafixar menu lateral' : 'Fixar menu lateral'}
+                aria-label={pinned ? 'Desafixar menu lateral' : 'Fixar menu lateral'}
               >
-                <Pin className="h-3.5 w-3.5" />
+                <Pin className={`h-3.5 w-3.5 transition-transform duration-400 ${pinned ? 'rotate-0' : '-rotate-45'}`} />
               </button>
             )}
           </div>
 
-          {isExpanded ? (
-            <motion.div 
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              className="mt-3 space-y-2.5 w-full"
-            >
-              {/* Experience progress micro bar */}
-              <div>
-                <div className="w-full bg-zinc-900/80 h-1.5 rounded-full overflow-hidden border border-zinc-800/40">
-                  <div className="bg-gradient-to-r from-orange-500 to-amber-500 h-full rounded-full" style={{ width: `${progressPercent}%` }} />
+          <div className="overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] w-full">
+            {isExpanded ? (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                className="mt-3 space-y-2.5 w-full"
+              >
+                {/* Experience progress micro bar */}
+                <div>
+                  <div className="w-full bg-zinc-900/80 h-1.5 rounded-full overflow-hidden border border-zinc-800/40">
+                    <div className="bg-gradient-to-r from-orange-500 to-amber-500 h-full rounded-full" style={{ width: `${progressPercent}%` }} />
+                  </div>
+                  <div className="flex items-center justify-between text-[8px] font-mono text-gray-500 mt-1">
+                    <span>{xpInCurrentLevel} / 1000 XP</span>
+                    <button
+                      onClick={onOpenStreakHub}
+                      className="text-orange-400 hover:text-orange-300 flex items-center gap-0.5 font-bold hover:bg-orange-500/10 px-1 rounded transition-colors"
+                      title="Abrir Central de Ofensivas & Congelamento"
+                    >
+                      <Flame className="h-2.5 w-2.5 animate-pulse" /> {streak} dias
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between text-[8px] font-mono text-gray-500 mt-1">
-                  <span>{xpInCurrentLevel} / 1000 XP</span>
-                  <button
-                    onClick={onOpenStreakHub}
-                    className="text-orange-400 hover:text-orange-300 flex items-center gap-0.5 font-bold hover:bg-orange-500/10 px-1 rounded transition-colors"
-                    title="Abrir Central de Ofensivas & Congelamento"
-                  >
-                    <Flame className="h-2.5 w-2.5 animate-pulse" /> {streak} dias
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          ) : (
-            <div 
-              className="w-10 h-1 bg-zinc-900/60 rounded-full overflow-hidden mt-3 border-0"
-              title={`Progresso da página: ${Math.round(scrollProgress)}%`}
-            >
+              </motion.div>
+            ) : (
               <div 
-                className="bg-orange-500 h-full rounded-full transition-all duration-75 shadow-[0_0_4px_var(--color-orange-500,#f97316)] border-0" 
-                style={{ width: `${scrollProgress}%` }} 
-              />
-            </div>
-          )}
+                className="w-10 h-1 bg-zinc-900/60 rounded-full overflow-hidden mt-3 mx-auto border-0"
+                title={`Progresso da página: ${Math.round(scrollProgress)}%`}
+              >
+                <div 
+                  className="bg-orange-500 h-full rounded-full transition-all duration-75 shadow-[0_0_4px_var(--color-orange-500,#f97316)] border-0" 
+                  style={{ width: `${scrollProgress}%` }} 
+                />
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Navigation Section - scrollbar is completely hidden when minimized */}
         <nav 
-          className={`flex-1 px-2.5 py-4 space-y-1.5 flex flex-col items-center overflow-y-auto transition-all ${
+          className={`flex-1 px-2.5 py-4 space-y-1.5 flex flex-col items-center overflow-y-auto transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
             isExpanded 
               ? '' 
               : 'no-scrollbar scrollbar-none sidebar-minimized-scroll [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden [&::-webkit-scrollbar]:w-0'
@@ -2087,13 +2098,13 @@ function Sidebar({
           {/* Quick Search Button in Sidebar - perfectly centered when collapsed */}
           <button
             onClick={() => setSearchOpen(true)}
-            className={`w-full flex items-center rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-900/40 border border-transparent transition-all group duration-200 ${
+            className={`w-full flex items-center rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-900/40 border border-transparent transition-all group duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
               isExpanded ? 'px-3 py-2.5 justify-start' : 'p-2.5 justify-center h-10 w-10'
             }`}
             title="Buscar"
           >
             <Search className="h-4.5 w-4.5 text-zinc-500 group-hover:text-orange-500 transition-colors flex-shrink-0" />
-            <div className={`text-left transition-all duration-300 overflow-hidden whitespace-nowrap ${isExpanded ? 'ml-3 opacity-100 max-w-[160px]' : 'ml-0 opacity-0 max-w-0 pointer-events-none'}`}>
+            <div className={`text-left transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden whitespace-nowrap ${isExpanded ? 'ml-3 opacity-100 max-w-[160px]' : 'ml-0 opacity-0 max-w-0 pointer-events-none'}`}>
               <div className="text-[11px] font-bold leading-none">Buscar Geral</div>
             </div>
           </button>
@@ -2106,7 +2117,7 @@ function Sidebar({
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center rounded-xl text-left transition-all group relative duration-200 border ${
+                className={`w-full flex items-center rounded-xl text-left transition-all group relative duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border ${
                   isActive 
                     ? 'text-orange-500 bg-orange-500/5 border-orange-500/20 shadow-[inset_0_0_8px_rgba(249,115,22,0.05)] font-bold' 
                     : 'text-gray-400 hover:text-white hover:bg-zinc-900/40 border-transparent'
@@ -2121,7 +2132,7 @@ function Sidebar({
 
                 <Icon className={`h-4.5 w-4.5 transition-colors flex-shrink-0 ${isActive ? 'text-orange-500' : 'text-zinc-500 group-hover:text-white'}`} />
                 
-                <div className={`text-left transition-all duration-300 overflow-hidden whitespace-nowrap ${isExpanded ? 'ml-3 opacity-100 max-w-[160px]' : 'ml-0 opacity-0 max-w-0 pointer-events-none'}`}>
+                <div className={`text-left transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden whitespace-nowrap ${isExpanded ? 'ml-3 opacity-100 max-w-[160px]' : 'ml-0 opacity-0 max-w-0 pointer-events-none'}`}>
                   <div className="text-[11px] font-bold leading-none">{item.label}</div>
                   <div className="text-[8px] text-zinc-500 mt-1 font-mono">{item.desc}</div>
                 </div>
@@ -2131,12 +2142,12 @@ function Sidebar({
         </nav>
 
         {/* Utilities: Language Selector & Config Footer - centered and aligned */}
-        <div className="p-3 border-t border-zinc-900/60 bg-[#050507]/60 flex flex-col items-center gap-1.5">
+        <div className="p-3 border-t border-zinc-900/60 bg-[#050507]/60 flex flex-col items-center gap-1.5 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]">
           {/* Fullscreen & Install App triggers inside Desktop Sidebar */}
-          <div className={`w-full flex flex-col gap-1 ${isExpanded ? 'px-1' : 'items-center px-0'}`}>
+          <div className={`w-full flex flex-col gap-1 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${isExpanded ? 'px-1' : 'items-center px-0'}`}>
             <button
               onClick={toggleFullscreen}
-              className={`flex items-center rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-900/40 border border-transparent transition-all group duration-200 w-full cursor-pointer ${
+              className={`flex items-center rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-900/40 border border-transparent transition-all group duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] w-full cursor-pointer ${
                 isExpanded ? 'px-3 py-2 justify-start gap-3' : 'p-2 justify-center h-10 w-10'
               }`}
               title="Alternar Tela Cheia"
@@ -2146,7 +2157,7 @@ function Sidebar({
               ) : (
                 <Maximize className="h-4 w-4 text-zinc-500 group-hover:text-white flex-shrink-0 group-hover:scale-110 transition-all" />
               )}
-              <span className={`text-[11px] font-bold leading-none transition-all duration-300 overflow-hidden whitespace-nowrap ${isExpanded ? 'opacity-100 max-w-[160px]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
+              <span className={`text-[11px] font-bold leading-none transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden whitespace-nowrap ${isExpanded ? 'opacity-100 max-w-[160px]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
                 {isFullscreen ? 'Sair de Tela' : 'Tela Cheia'}
               </span>
             </button>
@@ -2154,7 +2165,7 @@ function Sidebar({
             {appLockEnabled && onLockApp && (
               <button
                 onClick={onLockApp}
-                className={`flex items-center rounded-xl text-zinc-400 hover:text-orange-400 hover:bg-orange-500/10 border border-transparent hover:border-orange-500/20 transition-all group duration-200 w-full ${
+                className={`flex items-center rounded-xl text-zinc-400 hover:text-orange-400 hover:bg-orange-500/10 border border-transparent hover:border-orange-500/20 transition-all group duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] w-full ${
                   isExpanded ? 'px-3 py-2 justify-start gap-3' : 'p-2 justify-center h-10 w-10'
                 }`}
                 title="Trancar App (PIN)"
@@ -2162,14 +2173,14 @@ function Sidebar({
                 <div className="p-1 bg-orange-500/10 rounded-lg border border-orange-500/20 group-hover:bg-orange-500/20 group-hover:border-orange-500/40 transition-all flex items-center justify-center flex-shrink-0 shadow-[0_0_8px_rgba(249,115,22,0.15)]">
                   <Lock className="h-3.5 w-3.5 text-orange-400 group-hover:scale-110 transition-all" />
                 </div>
-                <span className={`text-[11px] font-bold leading-none transition-all duration-300 overflow-hidden whitespace-nowrap ${isExpanded ? 'opacity-100 max-w-[160px]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
+                <span className={`text-[11px] font-bold leading-none transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden whitespace-nowrap ${isExpanded ? 'opacity-100 max-w-[160px]' : 'opacity-0 max-w-0 pointer-events-none'}`}>
                   Trancar App
                 </span>
               </button>
             )}
           </div>
 
-          <div className={`text-center mt-2 transition-all duration-300 overflow-hidden ${isExpanded ? 'opacity-100 max-h-6' : 'opacity-0 max-h-0'}`}>
+          <div className={`text-center mt-2 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden ${isExpanded ? 'opacity-100 max-h-6' : 'opacity-0 max-h-0'}`}>
             <span className="text-[8px] text-zinc-600 font-mono uppercase block">TRONUS SYSTEMS</span>
           </div>
         </div>

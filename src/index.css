@@ -652,8 +652,6 @@ html,
 body,
 #root,
 #main-app-container,
-#workspace-area,
-aside#sidebarHUD,
 .mobile-floating-bar,
 .internal-nav,
 .internal-nav-btn,
@@ -676,6 +674,28 @@ footer {
               color 0.35s ease,
               border-color 0.35s ease,
               box-shadow 0.35s ease !important;
+}
+
+/* Dedicated ultra-smooth transitions for pinning / unpinning the desktop sidebar */
+#workspace-area {
+  transition: padding-left 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+              padding 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              color 0.35s ease,
+              border-color 0.35s ease,
+              box-shadow 0.35s ease !important;
+  will-change: padding-left;
+}
+
+aside#sidebarHUD {
+  transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+              padding 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              color 0.35s ease,
+              border-color 0.35s ease,
+              box-shadow 0.35s ease !important;
+  will-change: width;
 }
 
 input,
@@ -3255,6 +3275,25 @@ body.light-mode {
 
 .light-mode #project-board-header button svg {
   color: #0F172A !important;
+}
+
+.light-mode #project-board-header button.bg-orange-500,
+.light-mode #project-board-header button[class*="bg-orange-500"] {
+  background: linear-gradient(135deg, #F43F5E 0%, #E11D48 60%, #BE123C 100%) !important;
+  border-color: #BE123C !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 14px rgba(225, 29, 72, 0.35) !important;
+}
+
+.light-mode #project-board-header button.bg-orange-500:hover,
+.light-mode #project-board-header button[class*="bg-orange-500"]:hover {
+  background: linear-gradient(135deg, #FB7185 0%, #F43F5E 60%, #E11D48 100%) !important;
+  box-shadow: 0 6px 18px rgba(225, 29, 72, 0.45) !important;
+}
+
+.light-mode #project-board-header button.bg-orange-500 svg,
+.light-mode #project-board-header button[class*="bg-orange-500"] svg {
+  color: #FFFFFF !important;
 }
 
 /* Colunas Kanban do projeto ativo */

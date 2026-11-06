@@ -2507,21 +2507,21 @@ export default function ProjetosView({
                 <Edit3 className="h-4 w-4 text-orange-400" />
               </button>
 
-              {/* Archived Lists Button */}
+              {/* Archived Lists Icon Button */}
               <button
                 type="button"
                 onClick={() => setIsArchivedListsModalOpen(true)}
-                className={`px-3 py-2 bg-zinc-900/90 hover:bg-zinc-800 border rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-1.5 ${
+                className={`relative p-2 bg-zinc-900/90 hover:bg-zinc-800 border rounded-xl shadow-sm transition-all cursor-pointer flex items-center justify-center ${
                   activeProject.lists.some(l => l.archived)
                     ? 'text-amber-400 border-amber-500/40 hover:border-amber-400'
                     : 'text-zinc-400 hover:text-white border-zinc-800 hover:border-zinc-700'
                 }`}
-                title="Ver Listas Arquivadas"
+                title="Listas Arquivadas"
+                aria-label="Listas Arquivadas"
               >
                 <Archive className="h-4 w-4" />
-                <span className="hidden md:inline">Arquivadas</span>
                 {activeProject.lists.some(l => l.archived) && (
-                  <span className="bg-amber-500/20 text-amber-300 text-[10px] font-mono font-bold px-1.5 py-0.2 rounded-full">
+                  <span className="absolute -top-1 -right-1 bg-amber-500 text-black text-[9px] font-mono font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-xs">
                     {activeProject.lists.filter(l => l.archived).length}
                   </span>
                 )}
@@ -2531,11 +2531,11 @@ export default function ProjetosView({
               <button
                 type="button"
                 onClick={() => setIsAddListModalOpen(true)}
-                className="px-3.5 py-2 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-xl shadow-lg shadow-orange-500/15 transition-all cursor-pointer flex items-center gap-1.5"
+                className="p-2 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl shadow-lg shadow-orange-500/15 transition-all cursor-pointer flex items-center justify-center"
                 title="Nova Lista"
+                aria-label="Nova Lista"
               >
                 <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">Nova Lista</span>
               </button>
             </div>
           </div>

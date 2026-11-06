@@ -4257,7 +4257,7 @@ export default function App() {
       {/* 2. Main Workspace Area (responsive margin/padding for the fixed desktop HUD and mobile header) */}
       <main 
         id="workspace-area" 
-        className={`flex-1 overflow-x-hidden min-h-screen pt-16 pb-28 lg:pt-8 lg:pb-8 transition-all duration-300 relative ${
+        className={`flex-1 overflow-x-hidden min-h-screen pt-16 pb-28 lg:pt-8 lg:pb-8 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] relative ${
           sidebarPinned ? 'lg:pl-64' : 'lg:pl-[76px]'
         }`}
       >
@@ -4272,7 +4272,7 @@ export default function App() {
         />
 
         <div 
-          className={`mx-auto py-8 relative overflow-x-hidden transition-all duration-300 ${
+          className={`mx-auto py-8 relative overflow-x-hidden transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
             activeTab === 'classificacao' || activeTab === 'ligas'
               ? 'w-full max-w-full px-2 sm:px-4 lg:px-6'
               : 'max-w-6xl px-4 sm:px-6 lg:px-8'

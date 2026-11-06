@@ -2249,11 +2249,11 @@ export default function ChecklistView({
                       e.stopPropagation();
                       setShowBookSwitcherModal(true);
                     }}
-                    className="task-book-switcher-btn text-[10px] font-bold text-zinc-300 hover:text-orange-400 bg-zinc-800/80 hover:bg-zinc-800 px-2 py-1 rounded-lg transition-colors flex items-center gap-1 border border-zinc-750 cursor-pointer"
+                    className="task-book-switcher-btn text-[10px] font-bold text-zinc-300 hover:text-orange-400 bg-zinc-800/80 hover:bg-zinc-800 p-1.5 rounded-lg transition-colors flex items-center justify-center border border-zinc-750 cursor-pointer"
                     title="Trocar livro em andamento"
+                    aria-label="Trocar livro em andamento"
                   >
                     <ArrowUpDown className="h-3 w-3 text-orange-400" />
-                    <span>Trocar</span>
                   </button>
                   <button 
                     type="button"
@@ -2261,11 +2261,11 @@ export default function ChecklistView({
                       e.stopPropagation();
                       handleOpenNewBook();
                     }}
-                    className="task-book-new-btn text-[10px] font-bold text-orange-400 hover:text-orange-300 bg-orange-500/15 hover:bg-orange-500/25 px-2 py-1 rounded-lg transition-colors flex items-center gap-1 border border-orange-500/30 cursor-pointer"
+                    className="task-book-new-btn text-[10px] font-bold text-orange-400 hover:text-orange-300 bg-orange-500/15 hover:bg-orange-500/25 p-1.5 rounded-lg transition-colors flex items-center justify-center border border-orange-500/30 cursor-pointer"
                     title="Cadastrar um novo livro"
+                    aria-label="Cadastrar um novo livro"
                   >
                     <Plus className="h-3 w-3" />
-                    <span>Novo</span>
                   </button>
                 </>
               )}
@@ -2342,20 +2342,20 @@ export default function ChecklistView({
                         <button
                           type="button"
                           onClick={() => setShowBookSwitcherModal(true)}
-                          className="task-book-switcher-btn px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-orange-400 border border-zinc-800 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                          className="task-book-switcher-btn p-1.5 bg-zinc-900 hover:bg-zinc-850 text-zinc-300 hover:text-orange-400 border border-zinc-800 rounded-lg text-xs font-bold transition-all flex items-center justify-center cursor-pointer"
                           title="Trocar o livro atual por outro do acervo"
+                          aria-label="Trocar livro"
                         >
-                          <ArrowUpDown className="h-3 w-3 text-orange-500" />
-                          <span>Trocar</span>
+                          <ArrowUpDown className="h-3.5 w-3.5 text-orange-500" />
                         </button>
                         <button
                           type="button"
                           onClick={handleOpenNewBook}
-                          className="task-book-new-btn px-2.5 py-1 bg-orange-500/15 hover:bg-orange-500/25 text-orange-400 border border-orange-500/30 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                          className="task-book-new-btn p-1.5 bg-orange-500/15 hover:bg-orange-500/25 text-orange-400 border border-orange-500/30 rounded-lg text-xs font-bold transition-all flex items-center justify-center cursor-pointer"
                           title="Cadastrar um novo livro"
+                          aria-label="Novo Livro"
                         >
-                          <Plus className="h-3 w-3" />
-                          <span>Novo</span>
+                          <Plus className="h-3.5 w-3.5" />
                         </button>
                         <button
                           type="button"
