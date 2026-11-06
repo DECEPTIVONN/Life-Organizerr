@@ -3413,13 +3413,24 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
           <div className="w-12 h-1.5 bg-zinc-700/80 rounded-full mx-auto my-3" />
 
           {/* Selected Day Preview Section (Lower portion) */}
-          <div className="bg-[#0a0a0c]/60 rounded-2xl border border-zinc-800/80 p-4 sm:p-5 space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800/60 pb-3">
+          <div 
+            id="calendar-selected-day-preview" 
+            className={`rounded-2xl border p-4 sm:p-5 space-y-4 transition-all ${
+              themeMode === 'light'
+                ? 'bg-gradient-to-b from-white to-[#FDFCFA] border-slate-200/90 shadow-[inset_0_1px_0_#fff,0_12px_26px_-12px_rgba(15,23,42,0.18)]'
+                : 'bg-[#0a0a0c]/60 border-zinc-800/80'
+            }`}
+          >
+            <div className={`flex flex-wrap items-center justify-between gap-3 border-b pb-3 ${
+              themeMode === 'light' ? 'border-slate-200/80' : 'border-zinc-800/60'
+            }`}>
               <div>
-                <h3 className="text-base font-extrabold text-white capitalize">
+                <h3 className={`text-base font-extrabold capitalize ${
+                  themeMode === 'light' ? 'text-slate-900' : 'text-white'
+                }`}>
                   {formatLongDate(selectedDateStr || getTodayDateStr())}
                 </h3>
-                <p className="text-xs text-zinc-500">
+                <p className={`text-xs ${themeMode === 'light' ? 'text-slate-500 font-medium' : 'text-zinc-500'}`}>
                   {getEventsForDay(selectedDateStr || getTodayDateStr()).length} eventos agendados para este dia
                 </p>
               </div>
@@ -3430,14 +3441,22 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                     setQuickEventDate(selectedDateStr || getTodayDateStr());
                     setIsQuickAddModalOpen(true);
                   }}
-                  className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5"
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    themeMode === 'light'
+                      ? 'bg-white hover:bg-slate-50 border border-slate-300/80 text-slate-800 shadow-sm active:scale-95'
+                      : 'bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white'
+                  }`}
                 >
                   <Plus className="h-3.5 w-3.5" /> Adicionar Evento
                 </button>
                 <button
                   onClick={() => setIsDaySpaceModalOpen(true)}
-                  className="px-3.5 py-1.5 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 hover:opacity-90"
-                  style={{ backgroundColor: userThemeColor, boxShadow: `0 0 14px ${userThemeGlow}` }}
+                  className="px-3.5 py-1.5 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 hover:opacity-90 active:scale-95 cursor-pointer"
+                  style={
+                    themeMode === 'light'
+                      ? { background: 'linear-gradient(135deg, #F43F5E, #BE123C)', boxShadow: '0 4px 14px rgba(225, 29, 72, 0.40)' }
+                      : { backgroundColor: userThemeColor, boxShadow: `0 0 14px ${userThemeGlow}` }
+                  }
                 >
                   <Sparkles className="h-3.5 w-3.5" /> Meu dia
                 </button>
@@ -3449,10 +3468,10 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
               const dayEvs = getEventsForDay(selectedDateStr || getTodayDateStr());
               if (dayEvs.length === 0) {
                 return (
-                  <div className="py-8 text-center text-zinc-500 space-y-2">
-                    <Calendar className="w-8 h-8 mx-auto text-zinc-700" />
-                    <p className="text-sm font-semibold text-zinc-400">Nenhum evento para hoje</p>
-                    <p className="text-xs text-zinc-600">
+                  <div className={`py-8 text-center space-y-2 ${themeMode === 'light' ? 'text-slate-600' : 'text-zinc-500'}`}>
+                    <Calendar className={`w-8 h-8 mx-auto ${themeMode === 'light' ? 'text-slate-400' : 'text-zinc-700'}`} />
+                    <p className={`text-sm font-semibold font-mono ${themeMode === 'light' ? 'text-slate-800 font-bold' : 'text-zinc-400'}`}>Nenhum evento para hoje</p>
+                    <p className={`text-xs ${themeMode === 'light' ? 'text-slate-500' : 'text-zinc-600'}`}>
                       Clique em "+ Adicionar Evento" para agendar ou "Meu dia" para diário pessoal e checklist.
                     </p>
                   </div>
@@ -3463,12 +3482,12 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                   {dayEvs.map((ev) => (
                     <div
                       key={ev.id}
-                      className={`p-3 rounded-xl border flex items-center justify-between gap-3 ${getEventColor(ev.name, ev.isGoogle)}`}
+                      className={`p-3 rounded-xl border flex items-center justify-between gap-3 shadow-sm ${getEventColor(ev.name, ev.isGoogle)}`}
                     >
                       <div className="overflow-hidden">
-                        <span className="text-[10px] uppercase font-bold tracking-wider opacity-80 block">{ev.tag}</span>
+                        <span className="text-[10px] uppercase font-bold tracking-wider opacity-85 block">{ev.tag}</span>
                         <p className="text-xs font-bold truncate">{ev.name}</p>
-                        {ev.description && <p className="text-[10px] opacity-75 truncate">{ev.description}</p>}
+                        {ev.description && <p className="text-[10px] opacity-80 truncate">{ev.description}</p>}
                       </div>
                       {!ev.isGoogle && (
                         <button
@@ -3476,7 +3495,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                             e.stopPropagation();
                             handleDeleteFutureEvent(ev.id);
                           }}
-                          className="p-1 hover:bg-black/20 rounded text-white/70 hover:text-white transition-colors"
+                          className="p-1 hover:bg-black/20 rounded text-white/80 hover:text-white transition-colors"
                           title="Excluir evento"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -3946,6 +3965,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
       <AnimatePresence>
         {((selectedDateStr && isDaySpaceModalOpen) || isEditingTemplates) && (
           <div 
+            id="day-space-modal-overlay"
             onClick={() => {
               setIsDaySpaceModalOpen(false);
               setIsEditingTemplates(false);
@@ -3953,6 +3973,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
             className="fixed inset-0 z-[9999] bg-[#040405] backdrop-blur-md flex flex-col p-0 overflow-hidden cursor-pointer"
           >
             <motion.div
+              id="day-space-modal-panel"
               onClick={(e) => e.stopPropagation()}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -4080,7 +4101,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                     )}
                     <button
                       onClick={() => setIsDaySpaceModalOpen(false)}
-                      className="p-2 sm:p-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 rounded-xl transition-all shadow-sm active:scale-95 flex items-center justify-center"
+                      className="p-2 sm:p-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 rounded-xl transition-all shadow-sm active:scale-95 flex items-center justify-center cursor-pointer"
                       title="Fechar Meu Dia"
                       aria-label="Fechar Meu Dia"
                     >
@@ -4105,6 +4126,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                     
                      {/* Primary Topic Selector (Grid de Categorias de Bloco) */}
                     <div 
+                      id="day-space-topic-selector"
                       onTouchStart={handleTouchStart}
                       onTouchEnd={handleTouchEnd}
                       className="shrink-0 grid grid-cols-3 sm:grid-cols-6 gap-1.5 sm:gap-2 bg-zinc-950 p-1.5 sm:p-2 rounded-xl sm:rounded-2xl border border-zinc-900"
@@ -4124,10 +4146,10 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                             key={tb.id}
                             type="button"
                             onClick={() => handleSelectTopic(tb.id as any)}
-                            className={`flex flex-col items-center justify-center p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all font-sans cursor-pointer active:scale-95 ${
+                            className={`day-space-topic-btn flex flex-col items-center justify-center p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all font-sans cursor-pointer active:scale-95 ${
                               isActive
-                                ? 'bg-orange-500 text-white font-extrabold shadow-lg shadow-orange-500/20 border border-orange-400/40 scale-[1.02]'
-                                : 'bg-zinc-900/80 hover:bg-zinc-850 text-zinc-400 hover:text-white border border-zinc-800/80'
+                                ? 'day-space-topic-active bg-orange-500 text-white font-extrabold shadow-lg shadow-orange-500/20 border border-orange-400/40 scale-[1.02]'
+                                : 'day-space-topic-inactive bg-zinc-900/80 hover:bg-zinc-850 text-zinc-400 hover:text-white border border-zinc-800/80'
                             }`}
                           >
                             <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${isActive ? 'text-white' : 'text-orange-400'}`} />
@@ -4274,12 +4296,12 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                         </div>
                       ) : activeTopic === 'checklist' ? (
                         /* CHECKLIST TOPIC */
-                        <div className="space-y-3 flex-1 flex flex-col">
+                        <div id="day-space-checklist-section" className="space-y-3 flex-1 flex flex-col">
                           <div className="flex justify-between items-center shrink-0">
-                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider day-space-section-label">
                               Tarefas Inegociáveis deste Dia
                             </span>
-                            <span className="text-[10px] text-orange-500 font-mono font-bold">
+                            <span className="text-[10px] text-orange-500 font-mono font-bold day-space-counter">
                               {dayChecklist.filter(t => t.completed).length}/{dayChecklist.length} concluídas
                             </span>
                           </div>
@@ -4291,11 +4313,11 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                               value={newDayTaskText}
                               onChange={(e) => setNewDayTaskText(e.target.value)}
                               placeholder="Nova tarefa para hoje..."
-                              className="flex-1 bg-zinc-950/40 border border-zinc-850 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-orange-500/50 font-sans"
+                              className="flex-1 bg-zinc-950/40 border border-zinc-850 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-orange-500/50 font-sans day-space-input"
                             />
                             <button
                               type="submit"
-                              className="bg-zinc-900 hover:bg-zinc-800 text-orange-500 border border-zinc-800 rounded-lg px-3 py-1.5 transition-colors font-bold text-xs shrink-0"
+                              className="bg-zinc-900 hover:bg-zinc-800 text-orange-500 border border-zinc-800 rounded-lg px-3 py-1.5 transition-colors font-bold text-xs shrink-0 day-space-btn-add cursor-pointer"
                             >
                               Adicionar
                             </button>
@@ -4316,7 +4338,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                 return (
                                   <div
                                     key={task.id}
-                                    className="flex flex-col p-2.5 bg-[#0e0e11]/60 border border-zinc-900 hover:border-zinc-850 rounded-xl transition-all"
+                                    className="day-space-task-card flex flex-col p-2.5 bg-[#0e0e11]/60 border border-zinc-900 hover:border-zinc-850 rounded-xl transition-all"
                                   >
                                     <div className="flex items-center justify-between">
                                       <label className="flex items-center gap-2.5 cursor-pointer flex-1 min-w-0">
@@ -4328,15 +4350,15 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                             className="sr-only"
                                           />
                                           <div
-                                            className={`w-4 h-4 rounded border flex items-center justify-center transition-all duration-200 ${
+                                            className={`day-space-checkbox w-4 h-4 rounded border flex items-center justify-center transition-all duration-200 ${
                                               task.completed
-                                                ? 'bg-gradient-to-br from-orange-500 to-amber-600 border-orange-500 shadow-sm shadow-orange-500/20 text-black scale-105'
+                                                ? 'completed bg-gradient-to-br from-orange-500 to-amber-600 border-orange-500 shadow-sm shadow-orange-500/20 text-black scale-105'
                                                 : 'border-zinc-800 hover:border-orange-500/50 bg-zinc-950/80'
                                             }`}
                                           >
                                             {task.completed && (
                                               <svg
-                                                className="w-2.5 h-2.5 stroke-black stroke-[3]"
+                                                className="w-2.5 h-2.5 stroke-black stroke-[3] day-space-check-icon"
                                                 fill="none"
                                                 viewBox="0 0 24 24"
                                                 stroke="currentColor"
@@ -4350,7 +4372,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                         {task.id === 'task-biblia' && <Book className="h-3.5 w-3.5 text-amber-500 shrink-0" />}
                                         {task.period === 'manha' && <Sun className="h-3.5 w-3.5 text-amber-400 shrink-0" />}
                                         {task.period === 'noite' && <Moon className="h-3.5 w-3.5 text-indigo-400 shrink-0" />}
-                                        <span className={`text-xs truncate ${task.completed ? 'line-through text-gray-500 font-medium' : 'text-gray-300 font-medium'}`}>
+                                        <span className={`day-space-task-text text-xs truncate ${task.completed ? 'line-through text-gray-500 font-medium' : 'text-gray-300 font-medium'}`}>
                                           {task.text}
                                         </span>
                                         {hasSubtasks && (
@@ -4392,15 +4414,15 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                                 className="sr-only"
                                               />
                                               <div
-                                                className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all duration-200 ${
+                                                className={`day-space-checkbox w-3.5 h-3.5 rounded border flex items-center justify-center transition-all duration-200 ${
                                                   sub.completed
-                                                    ? 'bg-gradient-to-br from-orange-500 to-amber-600 border-orange-500 text-black scale-105'
+                                                    ? 'completed bg-gradient-to-br from-orange-500 to-amber-600 border-orange-500 text-black scale-105'
                                                     : 'border-zinc-800 hover:border-orange-500/30 bg-zinc-950/80'
                                                 }`}
                                               >
                                                 {sub.completed && (
                                                   <svg
-                                                    className="w-2 h-2 stroke-black stroke-[3]"
+                                                    className="w-2 h-2 stroke-black stroke-[3] day-space-check-icon"
                                                     fill="none"
                                                     viewBox="0 0 24 24"
                                                     stroke="currentColor"
@@ -4537,7 +4559,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                         /* LEITURA TOPIC (LIVRO ATUAL, BÍBLIA & HISTÓRICO) */
                         <div className="space-y-3 flex-1 flex flex-col min-h-0">
                           {/* Leitura Subtopic Navigation */}
-                          <div className="flex items-center gap-1.5 bg-zinc-950 p-1 rounded-xl border border-zinc-900 shrink-0">
+                          <div id="leitura-subtopic-selector" className="flex items-center gap-1.5 bg-zinc-950 p-1 rounded-xl border border-zinc-900 shrink-0">
                             {[
                               { id: 'livro', label: 'Livro Atual', icon: BookOpen },
                               { id: 'biblia', label: 'Leitura da Bíblia', icon: Book },
@@ -4550,10 +4572,10 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                   key={sub.id}
                                   type="button"
                                   onClick={() => setActiveSubtopicLeitura(sub.id as any)}
-                                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-bold transition-all ${
+                                  className={`leitura-subtopic-btn flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                                     isSubActive
-                                      ? 'bg-zinc-800 text-white shadow-sm border border-zinc-700/60'
-                                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60'
+                                      ? 'leitura-subtopic-active bg-zinc-800 text-white shadow-sm border border-zinc-700/60'
+                                      : 'leitura-subtopic-inactive text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60'
                                   }`}
                                 >
                                   <SubIcon className={`h-3.5 w-3.5 ${isSubActive ? 'text-orange-500' : 'text-zinc-500'}`} />
@@ -4565,9 +4587,9 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
 
                           {/* SUBTOPIC 1: LIVRO ATUAL */}
                           {activeSubtopicLeitura === 'livro' && (
-                            <div className="space-y-3 pb-2">
+                            <div id="day-space-leitura-section" className="space-y-3 pb-2">
                               {bookTracker?.bookName ? (
-                                <div className="bg-zinc-950/60 border border-zinc-900 rounded-xl p-3.5 space-y-3">
+                                <div className="day-space-book-card bg-zinc-950/60 border border-zinc-900 rounded-xl p-3.5 space-y-3">
                                   {/* Book Header info */}
                                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-zinc-900 pb-3">
                                     <div className="min-w-0 flex-1">
@@ -5388,7 +5410,7 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                         </div>
                       ) : activeTopic === 'saude' ? (
                         /* SAÚDE & BEM-ESTAR DASHBOARD (Sem cara de formulário, interface moderna e fluida) */
-                        <div className="space-y-4 pb-2">
+                        <div id="day-space-saude-section" className="space-y-4 pb-2">
                           {/* 1. Vitality & Wellness Summary Hub */}
                           {(() => {
                             // Sleep stats calculation

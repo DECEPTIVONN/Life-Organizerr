@@ -160,6 +160,7 @@ interface DashboardViewProps {
   onOpenStreakHub?: () => void;
   onOpenRankingModal?: () => void;
   cardGlowEnabled?: boolean;
+  themeMode?: 'dark' | 'light';
 }
 
 function DashboardView({
@@ -191,7 +192,8 @@ function DashboardView({
   setIsFinancesOpen: propSetIsFinancesOpen,
   onOpenStreakHub,
   onOpenRankingModal,
-  cardGlowEnabled = true
+  cardGlowEnabled = true,
+  themeMode = 'dark'
 }: DashboardViewProps) {
   const [seederApplied, setSeederApplied] = useState(false);
 
@@ -716,8 +718,6 @@ function DashboardView({
         </div>
       </div>
 
-
-
       {/* Grid of Key Gamified Metrics */}
       <div id="dashboard-metrics-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
@@ -725,36 +725,50 @@ function DashboardView({
         <motion.div 
           id="metric-streak-card"
           onClick={onOpenStreakHub}
-          className={`relative overflow-hidden bg-[#0a0a0c]/90 p-5 rounded-2xl border border-zinc-850 hover:border-orange-500/40 transition-all flex flex-col justify-between cursor-pointer group min-h-[140px] ${
-            cardGlowEnabled ? 'card-glow-orange' : ''
+          className={`relative overflow-hidden ${
+            themeMode === 'light'
+              ? 'bg-gradient-to-b from-white to-[#FDFCFA] border-rose-500/40 shadow-[inset_0_1px_0_#fff,0_12px_26px_-12px_rgba(15,23,42,0.22)]'
+              : 'bg-[#0a0a0c]/90 border-zinc-850 hover:border-orange-500/40'
+          } p-5 rounded-2xl border transition-all flex flex-col justify-between cursor-pointer group min-h-[140px] ${
+            cardGlowEnabled ? (themeMode === 'light' ? 'card-glow-rose' : 'card-glow-orange') : ''
           }`}
           whileHover={{ y: -2 }}
         >
-          {/* Background Image & Dark Gradient Overlay */}
+          {/* Background Image & Overlay */}
           <img
             src="https://images.unsplash.com/photo-1517838277536-f5f99be501cd?q=80&w=1000"
             alt="Frequência"
-            className="absolute inset-0 w-full h-full object-cover opacity-25 group-hover:scale-105 group-hover:opacity-40 transition-all duration-500 pointer-events-none"
+            className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 pointer-events-none ${
+              themeMode === 'light' ? 'opacity-10 group-hover:opacity-15' : 'opacity-25 group-hover:scale-105 group-hover:opacity-40'
+            }`}
             referrerPolicy="no-referrer"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0c] via-[#0a0a0c]/80 to-black/30 pointer-events-none" />
+          <div className={`absolute inset-0 pointer-events-none ${
+            themeMode === 'light'
+              ? 'bg-gradient-to-t from-white/95 via-white/80 to-transparent'
+              : 'bg-gradient-to-t from-[#0a0a0c] via-[#0a0a0c]/80 to-black/30'
+          }`} />
 
           {/* Card Content */}
           <div className="relative z-10 flex flex-col justify-between h-full">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] text-gray-300 group-hover:text-orange-300 font-extrabold tracking-widest uppercase transition-colors drop-shadow">
+              <span className={`text-[10px] font-extrabold tracking-widest uppercase transition-colors drop-shadow-sm font-mono ${
+                themeMode === 'light' ? 'text-slate-600' : 'text-gray-300 group-hover:text-orange-300'
+              }`}>
                 Frequência
               </span>
-              <div className={`p-1.5 bg-orange-500/20 border border-orange-500/30 rounded-xl backdrop-blur-md ${
-                cardGlowEnabled ? 'shadow-[0_0_12px_rgba(249,115,22,0.35)]' : ''
+              <div className={`p-2 rounded-xl backdrop-blur-md ${
+                themeMode === 'light'
+                  ? 'bg-rose-50 border border-rose-200 text-rose-600 shadow-sm'
+                  : `bg-orange-500/20 border border-orange-500/30 ${cardGlowEnabled ? 'shadow-[0_0_12px_rgba(249,115,22,0.35)]' : ''}`
               }`}>
-                <Flame className="h-5 w-5 text-orange-500 fill-orange-500/20 animate-pulse" />
+                <Flame className={`h-5 w-5 ${themeMode === 'light' ? 'text-rose-600 fill-rose-600/20' : 'text-orange-500 fill-orange-500/20 animate-pulse'}`} />
               </div>
             </div>
             <div className="mt-4">
-              <span className="text-4xl font-black text-white font-mono drop-shadow-md">{streak}</span>
-              <span className="text-xs text-gray-400 ml-2 font-bold uppercase font-mono">{streak === 1 ? 'Dia' : 'Dias'}</span>
-              <p className="text-[11px] text-zinc-300 mt-1.5 italic font-medium drop-shadow-sm">
+              <span className={`text-4xl font-black font-mono drop-shadow-md ${themeMode === 'light' ? 'text-slate-900' : 'text-white'}`}>{streak}</span>
+              <span className={`text-xs ml-2 font-bold uppercase font-mono ${themeMode === 'light' ? 'text-slate-500' : 'text-gray-400'}`}>{streak === 1 ? 'Dia' : 'Dias'}</span>
+              <p className={`text-[11px] mt-1.5 italic font-medium drop-shadow-sm ${themeMode === 'light' ? 'text-slate-600' : 'text-zinc-300'}`}>
                 "A persistência é o caminho do êxito"
               </p>
             </div>
@@ -764,39 +778,59 @@ function DashboardView({
         {/* XP Total Card */}
         <motion.div 
           id="metric-xp-card"
-          className={`relative overflow-hidden bg-[#0a0a0c]/90 p-5 rounded-2xl border border-zinc-850 hover:border-amber-500/40 transition-all flex flex-col justify-between group min-h-[140px] ${
+          className={`relative overflow-hidden ${
+            themeMode === 'light'
+              ? 'bg-gradient-to-b from-white to-[#FDFCFA] border-amber-500/40 shadow-[inset_0_1px_0_#fff,0_12px_26px_-12px_rgba(15,23,42,0.22)]'
+              : 'bg-[#0a0a0c]/90 border-zinc-850 hover:border-amber-500/40'
+          } p-5 rounded-2xl border transition-all flex flex-col justify-between group min-h-[140px] ${
             cardGlowEnabled ? 'card-glow-amber' : ''
           }`}
           whileHover={{ y: -2 }}
         >
-          {/* Background Image & Dark Gradient Overlay */}
+          {/* Background Image & Overlay */}
           <img
             src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1000"
             alt="XP Acumulado"
-            className="absolute inset-0 w-full h-full object-cover opacity-25 group-hover:scale-105 group-hover:opacity-40 transition-all duration-500 pointer-events-none"
+            className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 pointer-events-none ${
+              themeMode === 'light' ? 'opacity-10 group-hover:opacity-15' : 'opacity-25 group-hover:scale-105 group-hover:opacity-40'
+            }`}
             referrerPolicy="no-referrer"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0c] via-[#0a0a0c]/80 to-black/30 pointer-events-none" />
+          <div className={`absolute inset-0 pointer-events-none ${
+            themeMode === 'light'
+              ? 'bg-gradient-to-t from-white/95 via-white/80 to-transparent'
+              : 'bg-gradient-to-t from-[#0a0a0c] via-[#0a0a0c]/80 to-black/30'
+          }`} />
 
           {/* Card Content */}
           <div className="relative z-10 flex flex-col justify-between h-full">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] text-gray-300 font-extrabold tracking-widest uppercase drop-shadow">XP Acumulado</span>
-              <div className={`p-1.5 bg-amber-500/20 border border-amber-500/30 rounded-xl backdrop-blur-md ${
-                cardGlowEnabled ? 'shadow-[0_0_12px_rgba(245,158,11,0.35)]' : ''
+              <span className={`text-[10px] font-extrabold tracking-widest uppercase drop-shadow-sm font-mono ${
+                themeMode === 'light' ? 'text-slate-600' : 'text-gray-300'
               }`}>
-                <Zap className="h-5 w-5 text-amber-400 fill-amber-400/20" />
+                XP Acumulado
+              </span>
+              <div className={`p-2 rounded-xl backdrop-blur-md ${
+                themeMode === 'light'
+                  ? 'bg-amber-50 border border-amber-200 text-amber-600 shadow-sm'
+                  : `bg-amber-500/20 border border-amber-500/30 ${cardGlowEnabled ? 'shadow-[0_0_12px_rgba(245,158,11,0.35)]' : ''}`
+              }`}>
+                <Zap className={`h-5 w-5 ${themeMode === 'light' ? 'text-amber-600 fill-amber-600/20' : 'text-amber-400 fill-amber-400/20'}`} />
               </div>
             </div>
             <div className="mt-4">
-              <span className="text-4xl font-black text-white font-mono drop-shadow-md">{xpTotal}</span>
-              <span className="text-xs text-gray-400 ml-2 font-bold">XP TOTAL</span>
+              <span className={`text-4xl font-black font-mono drop-shadow-md ${themeMode === 'light' ? 'text-slate-900' : 'text-white'}`}>{xpTotal}</span>
+              <span className={`text-xs ml-2 font-bold ${themeMode === 'light' ? 'text-slate-500' : 'text-gray-400'}`}>XP TOTAL</span>
             </div>
-            <div className="mt-2 border-t border-zinc-800/80 pt-2">
-              <div className="w-full bg-[#18181b]/90 h-1.5 rounded-full overflow-hidden border border-zinc-800/50">
-                <div className="bg-gradient-to-r from-amber-500 to-orange-500 h-full rounded-full" style={{ width: `${progressPercent}%` }} />
+            <div className={`mt-2 border-t pt-2 ${themeMode === 'light' ? 'border-slate-200/80' : 'border-zinc-800/80'}`}>
+              <div className={`w-full h-1.5 rounded-full overflow-hidden border ${
+                themeMode === 'light' ? 'bg-slate-200/80 border-slate-300/50' : 'bg-[#18181b]/90 border-zinc-800/50'
+              }`}>
+                <div className="bg-gradient-to-r from-amber-500 to-rose-500 h-full rounded-full shadow-[0_0_8px_rgba(245,158,11,0.4)]" style={{ width: `${progressPercent}%` }} />
               </div>
-              <p className="text-[9px] text-zinc-300 mt-1 text-right font-mono font-bold drop-shadow-sm">
+              <p className={`text-[9px] mt-1 text-right font-mono font-bold drop-shadow-sm ${
+                themeMode === 'light' ? 'text-slate-500' : 'text-zinc-300'
+              }`}>
                 Faltam {1000 - xpInCurrentLevel} XP para o Nível {level + 1}
               </p>
             </div>
@@ -806,39 +840,59 @@ function DashboardView({
         {/* Checklist Completeness Card */}
         <motion.div 
           id="metric-goals-card"
-          className={`relative overflow-hidden bg-[#0a0a0c]/90 p-5 rounded-2xl border border-zinc-850 hover:border-emerald-500/40 transition-all flex flex-col justify-between group min-h-[140px] ${
+          className={`relative overflow-hidden ${
+            themeMode === 'light'
+              ? 'bg-gradient-to-b from-white to-[#FDFCFA] border-emerald-500/40 shadow-[inset_0_1px_0_#fff,0_12px_26px_-12px_rgba(15,23,42,0.22)]'
+              : 'bg-[#0a0a0c]/90 border-zinc-850 hover:border-emerald-500/40'
+          } p-5 rounded-2xl border transition-all flex flex-col justify-between group min-h-[140px] ${
             cardGlowEnabled ? 'card-glow-emerald' : ''
           }`}
           whileHover={{ y: -2 }}
         >
-          {/* Background Image & Dark Gradient Overlay */}
+          {/* Background Image & Overlay */}
           <img
             src="https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?q=80&w=1000"
             alt="Checklist de Hoje"
-            className="absolute inset-0 w-full h-full object-cover opacity-25 group-hover:scale-105 group-hover:opacity-40 transition-all duration-500 pointer-events-none"
+            className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 pointer-events-none ${
+              themeMode === 'light' ? 'opacity-10 group-hover:opacity-15' : 'opacity-25 group-hover:scale-105 group-hover:opacity-40'
+            }`}
             referrerPolicy="no-referrer"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0c] via-[#0a0a0c]/80 to-black/30 pointer-events-none" />
+          <div className={`absolute inset-0 pointer-events-none ${
+            themeMode === 'light'
+              ? 'bg-gradient-to-t from-white/95 via-white/80 to-transparent'
+              : 'bg-gradient-to-t from-[#0a0a0c] via-[#0a0a0c]/80 to-black/30'
+          }`} />
 
           {/* Card Content */}
           <div className="relative z-10 flex flex-col justify-between h-full">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] text-gray-300 font-extrabold tracking-widest uppercase drop-shadow">Checklist de Hoje</span>
-              <div className={`p-1.5 bg-emerald-500/20 border border-emerald-500/30 rounded-xl backdrop-blur-md ${
-                cardGlowEnabled ? 'shadow-[0_0_12px_rgba(16,185,129,0.35)]' : ''
+              <span className={`text-[10px] font-extrabold tracking-widest uppercase drop-shadow-sm font-mono ${
+                themeMode === 'light' ? 'text-slate-600' : 'text-gray-300'
               }`}>
-                <CheckSquare className="h-5 w-5 text-emerald-400" />
+                Checklist de Hoje
+              </span>
+              <div className={`p-2 rounded-xl backdrop-blur-md ${
+                themeMode === 'light'
+                  ? 'bg-emerald-50 border border-emerald-200 text-emerald-600 shadow-sm'
+                  : `bg-emerald-500/20 border border-emerald-500/30 ${cardGlowEnabled ? 'shadow-[0_0_12px_rgba(16,185,129,0.35)]' : ''}`
+              }`}>
+                <CheckSquare className={`h-5 w-5 ${themeMode === 'light' ? 'text-emerald-600' : 'text-emerald-400'}`} />
               </div>
             </div>
             <div className="mt-4">
-              <span className="text-4xl font-black text-white font-mono drop-shadow-md">{completedChecklistCount}</span>
-              <span className="text-xs text-gray-400 ml-2 font-bold">DE {todayTasks.length} RITUAIS</span>
+              <span className={`text-4xl font-black font-mono drop-shadow-md ${themeMode === 'light' ? 'text-slate-900' : 'text-white'}`}>{completedChecklistCount}</span>
+              <span className={`text-xs ml-2 font-bold ${themeMode === 'light' ? 'text-slate-500' : 'text-gray-400'}`}>DE {todayTasks.length} RITUAIS</span>
             </div>
-            <div className="mt-2 border-t border-zinc-800/80 pt-2">
-              <div className="w-full bg-[#18181b]/90 h-1.5 rounded-full overflow-hidden border border-zinc-800/50">
-                <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${checklistPercent}%` }} />
+            <div className={`mt-2 border-t pt-2 ${themeMode === 'light' ? 'border-slate-200/80' : 'border-zinc-800/80'}`}>
+              <div className={`w-full h-1.5 rounded-full overflow-hidden border ${
+                themeMode === 'light' ? 'bg-slate-200/80 border-slate-300/50' : 'bg-[#18181b]/90 border-zinc-800/50'
+              }`}>
+                <div className="bg-emerald-500 h-full rounded-full shadow-[0_0_8px_rgba(16,185,129,0.4)]" style={{ width: `${checklistPercent}%` }} />
               </div>
-              <p className="text-[9px] text-emerald-400 mt-1 text-right font-bold drop-shadow-sm">
+              <p className={`text-[9px] mt-1 text-right font-bold drop-shadow-sm ${
+                themeMode === 'light' ? 'text-emerald-600 font-mono' : 'text-emerald-400'
+              }`}>
                 {checklistPercent}% concluído hoje
               </p>
             </div>
@@ -848,38 +902,56 @@ function DashboardView({
         {/* Saldo Financeiro Card */}
         <motion.div 
           id="metric-badges-card"
-          className={`relative overflow-hidden bg-[#0a0a0c]/90 p-5 rounded-2xl border border-zinc-850 hover:border-cyan-500/40 transition-all flex flex-col justify-between group min-h-[140px] ${
+          className={`relative overflow-hidden ${
+            themeMode === 'light'
+              ? 'bg-gradient-to-b from-white to-[#FDFCFA] border-cyan-500/40 shadow-[inset_0_1px_0_#fff,0_12px_26px_-12px_rgba(15,23,42,0.22)]'
+              : 'bg-[#0a0a0c]/90 border-zinc-850 hover:border-cyan-500/40'
+          } p-5 rounded-2xl border transition-all flex flex-col justify-between group min-h-[140px] ${
             cardGlowEnabled ? 'card-glow-cyan' : ''
           }`}
           whileHover={{ y: -2 }}
         >
-          {/* Background Image & Dark Gradient Overlay */}
+          {/* Background Image & Overlay */}
           <img
             src="https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?q=80&w=1000"
             alt="Saldo de Caixa"
-            className="absolute inset-0 w-full h-full object-cover opacity-25 group-hover:scale-105 group-hover:opacity-40 transition-all duration-500 pointer-events-none"
+            className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 pointer-events-none ${
+              themeMode === 'light' ? 'opacity-10 group-hover:opacity-15' : 'opacity-25 group-hover:scale-105 group-hover:opacity-40'
+            }`}
             referrerPolicy="no-referrer"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0c] via-[#0a0a0c]/80 to-black/30 pointer-events-none" />
+          <div className={`absolute inset-0 pointer-events-none ${
+            themeMode === 'light'
+              ? 'bg-gradient-to-t from-white/95 via-white/80 to-transparent'
+              : 'bg-gradient-to-t from-[#0a0a0c] via-[#0a0a0c]/80 to-black/30'
+          }`} />
 
           {/* Card Content */}
           <div className="relative z-10 flex flex-col justify-between h-full">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] text-gray-300 font-extrabold tracking-widest uppercase drop-shadow">Saldo de Caixa</span>
-              <div className={`p-1.5 bg-cyan-500/20 border border-cyan-500/30 rounded-xl backdrop-blur-md ${
-                cardGlowEnabled ? 'shadow-[0_0_12px_rgba(6,182,212,0.35)]' : ''
+              <span className={`text-[10px] font-extrabold tracking-widest uppercase drop-shadow-sm font-mono ${
+                themeMode === 'light' ? 'text-slate-600' : 'text-gray-300'
               }`}>
-                <Wallet className="h-5 w-5 text-cyan-400" />
+                Saldo de Caixa
+              </span>
+              <div className={`p-2 rounded-xl backdrop-blur-md ${
+                themeMode === 'light'
+                  ? 'bg-cyan-50 border border-cyan-200 text-cyan-600 shadow-sm'
+                  : `bg-cyan-500/20 border border-cyan-500/30 ${cardGlowEnabled ? 'shadow-[0_0_12px_rgba(6,182,212,0.35)]' : ''}`
+              }`}>
+                <Wallet className={`h-5 w-5 ${themeMode === 'light' ? 'text-cyan-600' : 'text-cyan-400'}`} />
               </div>
             </div>
             <div className="mt-4">
-              <span className="text-2xl font-black text-white font-mono drop-shadow-md">
+              <span className={`text-2xl font-black font-mono drop-shadow-md ${themeMode === 'light' ? 'text-slate-900' : 'text-white'}`}>
                 R$ {availableBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
-            <p className="text-[10px] text-gray-300 mt-2 border-t border-zinc-800/80 pt-2 font-medium flex items-center justify-between">
+            <p className={`text-[10px] mt-2 border-t pt-2 font-medium flex items-center justify-between ${
+              themeMode === 'light' ? 'border-slate-200/80 text-slate-500' : 'border-zinc-800/80 text-gray-300'
+            }`}>
               <span>Último mês:</span>
-              <span className={availableBalance >= 0 ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>
+              <span className={availableBalance >= 0 ? (themeMode === 'light' ? 'text-emerald-600 font-bold' : 'text-emerald-400 font-bold') : 'text-rose-500 font-bold'}>
                 {availableBalance >= 0 ? '+' : ''} R$ {availableBalance.toLocaleString('pt-BR')}
               </span>
             </p>

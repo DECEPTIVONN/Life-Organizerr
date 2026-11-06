@@ -3672,6 +3672,7 @@ export default function App() {
             isFinancesOpen={dashboardFinancesOpen}
             setIsFinancesOpen={setDashboardFinancesOpen}
             cardGlowEnabled={cardGlowEnabled}
+            themeMode={themeMode}
           />
         );
       case 'classificacao':
