@@ -311,7 +311,7 @@ export default function NotesView({ notes, setNotes, addXp, freeEditMode = false
       {/* Control Actions / Search */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         {/* Search Box */}
-        <div className="relative flex-1 max-w-md">
+        <div id="notes-search-container" className="relative flex-1 max-w-md">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
           <input
             type="text"
@@ -326,9 +326,9 @@ export default function NotesView({ notes, setNotes, addXp, freeEditMode = false
       {/* Quick Tag Row Filter */}
       {allTags.length > 0 && (
         <div className="space-y-2">
-          <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block">Filtro por Tags</span>
+          <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block font-mono">Filtro por Tags</span>
           <div className="flex flex-wrap gap-1.5 items-center">
-            <nav className="internal-nav-secondary max-w-full" aria-label="Filtro de Tags de Estudo">
+            <nav id="notes-tags-nav" className="internal-nav-secondary max-w-full" aria-label="Filtro de Tags de Estudo">
               <button
                 type="button"
                 onClick={() => setSelectedTag(null)}

@@ -1123,7 +1123,7 @@ export default function SettingsView({
   );
 
   return (
-    <div className="w-full min-h-[600px] bg-zinc-900/30 backdrop-blur-md text-white font-sans select-none relative pb-10 rounded-2xl overflow-hidden shadow-2xl">
+    <div id="settings-view-root" className="w-full min-h-[600px] bg-zinc-900/30 backdrop-blur-md text-white font-sans select-none relative pb-10 rounded-2xl overflow-hidden shadow-2xl">
       
       {/* ANIMATED ROUTER WRAPPER */}
       <AnimatePresence mode="wait">

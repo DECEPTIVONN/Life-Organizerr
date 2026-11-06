@@ -118,7 +118,7 @@ export default function LockScreen({
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center select-none overflow-hidden text-zinc-300 font-sans">
+    <div id="app-lock-screen" className="fixed inset-0 z-[9999] flex items-center justify-center select-none overflow-hidden text-zinc-300 font-sans">
       
       {/* Background Layer (Desktop Screen: desktopBg) */}
       <div 
@@ -172,7 +172,7 @@ export default function LockScreen({
         </div>
 
         {/* Security Lock Badge Indicator */}
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-zinc-950/80 border border-zinc-800/80 rounded-full mb-6 shadow-lg backdrop-blur-md">
+        <div id="lock-screen-badge" className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-zinc-950/80 border border-zinc-800/80 rounded-full mb-6 shadow-lg backdrop-blur-md">
           {isBiometricOnlyMode ? (
             <Fingerprint className="h-3.5 w-3.5" style={{ color: 'var(--color-orange-400, #fb923c)' }} />
           ) : (
@@ -236,6 +236,7 @@ export default function LockScreen({
         {isBiometricOnlyMode ? (
           <div className="w-full max-w-[320px] space-y-4">
             <button
+              id="lock-screen-biometric-btn"
               type="button"
               onClick={handleBiometricUnlock}
               disabled={isBiometricAuthenticating}
@@ -352,6 +353,7 @@ export default function LockScreen({
               </div>
 
               <input
+                id="lock-screen-password-input"
                 type={showPassword ? "text" : "password"}
                 value={passwordInput}
                 onChange={(e) => {
@@ -369,7 +371,7 @@ export default function LockScreen({
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4.5 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-300 transition-colors p-1.5 z-20"
+                className="absolute right-4.5 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-300 transition-colors p-1.5 z-20 cursor-pointer"
               >
                 {showPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
               </button>
@@ -391,6 +393,7 @@ export default function LockScreen({
 
             {/* Unlock Action Button */}
             <button
+              id="lock-screen-submit-btn"
               onClick={handleUnlock}
               className="w-full text-xs font-black rounded-2xl py-4 transition-all duration-300 font-sans uppercase tracking-[0.18em] cursor-pointer text-white active:scale-[0.98]"
               style={{

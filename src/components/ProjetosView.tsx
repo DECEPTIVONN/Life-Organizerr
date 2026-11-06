@@ -2427,6 +2427,7 @@ export default function ProjetosView({
         /* 2. DEDICATED PROJECT KANBAN BOARD VIEW (Matching Reference Images) */
         /* ------------------------------------------------------------- */
         <motion.div
+          id="project-board-view"
           key={`project-detail-${activeProject.id}`}
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
@@ -2435,7 +2436,7 @@ export default function ProjetosView({
           className="space-y-4"
         >
           {/* Top Breadcrumb & Action Header Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 rounded-2xl p-3.5 shadow-xl">
+          <div id="project-board-header" className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 rounded-2xl p-3.5 shadow-xl">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setActiveProjectId(null)}
@@ -2972,7 +2973,7 @@ export default function ProjetosView({
                     key={list.id}
                     onDragOver={(e) => handleListDragOver(e, list.id)}
                     onDrop={(e) => handleListDrop(e, list.id)}
-                    className={`w-80 sm:w-[360px] md:w-[420px] lg:w-[480px] xl:w-[540px] 2xl:w-[600px] shrink-0 bg-zinc-900/40 backdrop-blur-md border ${
+                    className={`project-kanban-column w-80 sm:w-[360px] md:w-[420px] lg:w-[480px] xl:w-[540px] 2xl:w-[600px] shrink-0 bg-zinc-900/40 backdrop-blur-md border ${
                       dragOverListId === list.id ? 'border-orange-500/80 bg-zinc-900/80 ring-2 ring-orange-500/20' : 'border-zinc-800/60'
                     } rounded-2xl flex flex-col max-h-[calc(100vh-270px)] shadow-xl transition-all`}
                   >
@@ -3114,7 +3115,7 @@ export default function ProjetosView({
                               setCardEstimatedHoursInput(card.estimatedHours !== undefined ? card.estimatedHours.toString() : '');
                               setCardLoggedHoursInput(card.loggedHours !== undefined ? card.loggedHours.toString() : '');
                             }}
-                            className={`bg-zinc-900/70 hover:bg-zinc-900 border ${
+                            className={`project-kanban-card bg-zinc-900/70 hover:bg-zinc-900 border ${
                               draggedCardId === card.id
                                 ? 'border-orange-500 opacity-40 scale-95'
                                 : dragOverCardId === card.id

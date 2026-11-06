@@ -4092,8 +4092,9 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                   <div className="flex items-center gap-2 sm:gap-3 mr-1">
                     {activeRecord && (
                       <button
+                        id="day-space-delete-btn"
                         onClick={handleDeleteRecord}
-                        className="p-2 sm:p-2.5 bg-zinc-900/70 hover:bg-zinc-800 text-zinc-400 hover:text-red-400 border border-zinc-800 rounded-xl transition-colors"
+                        className="p-2 sm:p-2.5 bg-zinc-900/70 hover:bg-zinc-800 text-zinc-400 hover:text-red-400 border border-zinc-800 rounded-xl transition-colors cursor-pointer"
                         title="Apagar este dia"
                       >
                         <Trash2 className="h-4 w-4" />

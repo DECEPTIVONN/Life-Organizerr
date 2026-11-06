@@ -2007,7 +2007,7 @@ export default function ChecklistView({
                     e.stopPropagation();
                     handleOpenTaskEditModal(task);
                   }}
-                  className="text-zinc-500 hover:text-orange-400 transition-colors p-1 opacity-80 sm:opacity-0 group-hover:opacity-100 focus:opacity-100"
+                  className="task-edit-btn text-zinc-500 hover:text-orange-400 transition-colors p-1 opacity-80 sm:opacity-0 group-hover:opacity-100 focus:opacity-100 cursor-pointer"
                   title="Editar Tarefa"
                 >
                   <Edit3 className="h-3.5 w-3.5" />
@@ -2249,7 +2249,7 @@ export default function ChecklistView({
                       e.stopPropagation();
                       setShowBookSwitcherModal(true);
                     }}
-                    className="text-[10px] font-bold text-zinc-300 hover:text-orange-400 bg-zinc-800/80 hover:bg-zinc-800 px-2 py-1 rounded-lg transition-colors flex items-center gap-1 border border-zinc-750"
+                    className="task-book-switcher-btn text-[10px] font-bold text-zinc-300 hover:text-orange-400 bg-zinc-800/80 hover:bg-zinc-800 px-2 py-1 rounded-lg transition-colors flex items-center gap-1 border border-zinc-750 cursor-pointer"
                     title="Trocar livro em andamento"
                   >
                     <ArrowUpDown className="h-3 w-3 text-orange-400" />
@@ -2261,7 +2261,7 @@ export default function ChecklistView({
                       e.stopPropagation();
                       handleOpenNewBook();
                     }}
-                    className="text-[10px] font-bold text-orange-400 hover:text-orange-300 bg-orange-500/15 hover:bg-orange-500/25 px-2 py-1 rounded-lg transition-colors flex items-center gap-1 border border-orange-500/30"
+                    className="task-book-new-btn text-[10px] font-bold text-orange-400 hover:text-orange-300 bg-orange-500/15 hover:bg-orange-500/25 px-2 py-1 rounded-lg transition-colors flex items-center gap-1 border border-orange-500/30 cursor-pointer"
                     title="Cadastrar um novo livro"
                   >
                     <Plus className="h-3 w-3" />
@@ -2279,7 +2279,7 @@ export default function ChecklistView({
                     handleOpenNewBook();
                   }
                 }}
-                className="text-[10px] font-bold text-zinc-400 hover:text-white bg-zinc-800/60 hover:bg-zinc-700 px-2 py-1 rounded-lg transition-colors"
+                className="task-book-config-btn text-[10px] font-bold text-zinc-400 hover:text-white bg-zinc-800/60 hover:bg-zinc-700 px-2 py-1 rounded-lg transition-colors cursor-pointer"
               >
                 {bookTracker?.bookName ? 'Editar' : 'Configurar'}
               </button>
@@ -2342,7 +2342,7 @@ export default function ChecklistView({
                         <button
                           type="button"
                           onClick={() => setShowBookSwitcherModal(true)}
-                          className="px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-orange-400 border border-zinc-800 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                          className="task-book-switcher-btn px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-orange-400 border border-zinc-800 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer"
                           title="Trocar o livro atual por outro do acervo"
                         >
                           <ArrowUpDown className="h-3 w-3 text-orange-500" />
@@ -2351,7 +2351,7 @@ export default function ChecklistView({
                         <button
                           type="button"
                           onClick={handleOpenNewBook}
-                          className="px-2.5 py-1 bg-orange-500/15 hover:bg-orange-500/25 text-orange-400 border border-orange-500/30 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                          className="task-book-new-btn px-2.5 py-1 bg-orange-500/15 hover:bg-orange-500/25 text-orange-400 border border-orange-500/30 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer"
                           title="Cadastrar um novo livro"
                         >
                           <Plus className="h-3 w-3" />
@@ -2481,7 +2481,7 @@ export default function ChecklistView({
                   e.stopPropagation();
                   setShowBibleConfig(true);
                 }}
-                className="text-[10px] font-bold text-zinc-400 hover:text-white bg-zinc-800/60 hover:bg-zinc-700 px-2 py-1 rounded transition-colors"
+                className="task-bible-config-btn text-[10px] font-bold text-zinc-400 hover:text-white bg-zinc-800/60 hover:bg-zinc-700 px-2 py-1 rounded transition-colors cursor-pointer"
               >
                 Configurar
               </button>
@@ -2835,10 +2835,12 @@ export default function ChecklistView({
       {/* Modal: Trocar Livro em Andamento */}
       {showBookSwitcherModal && (
         <div 
+          id="book-switcher-modal-backdrop"
           onClick={() => setShowBookSwitcherModal(false)}
           className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 cursor-pointer"
         >
           <motion.div
+            id="book-switcher-modal-panel"
             onClick={(e) => e.stopPropagation()}
             initial={{ scale: 0.95, opacity: 0, y: 10 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -2982,11 +2984,12 @@ export default function ChecklistView({
       {/* Bible Tracker Configuration Modal */}
       {showBibleConfig && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowBibleConfig(false)} />
+          <div id="bible-config-modal-backdrop" className="fixed inset-0 bg-black/80 backdrop-blur-sm cursor-pointer" onClick={() => setShowBibleConfig(false)} />
           <motion.div 
+            id="bible-config-modal-panel"
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-md overflow-hidden z-50 p-6 space-y-4 shadow-2xl"
+            className="cursor-default bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-md overflow-hidden z-50 p-6 space-y-4 shadow-2xl relative"
           >
             <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
               <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
@@ -3291,7 +3294,7 @@ export default function ChecklistView({
                 </div>
 
                 {/* Vertical Schedule Timeline for Mobile & Compact Screens */}
-                <div className="space-y-2 rounded-2xl border border-zinc-900 bg-zinc-950/70 p-3 sm:p-4">
+                <div className="routine-daily-container space-y-2 rounded-2xl border border-zinc-900 bg-zinc-950/70 p-3 sm:p-4">
                   {HOURS.map((hour) => {
                     const cellInfo = getCellBlockInfo(hour, routineSelectedDay);
 
@@ -3304,7 +3307,7 @@ export default function ChecklistView({
                         <div
                           key={hour}
                           onClick={() => handleOpenEditModal(hour, routineSelectedDay, block, cellInfo.key)}
-                          className={`p-3.5 rounded-xl border flex flex-col justify-between transition-all hover:brightness-110 cursor-pointer shadow-md active:scale-[0.99] select-none ${colorClasses}`}
+                          className={`routine-daily-block p-3.5 rounded-xl border flex flex-col justify-between transition-all hover:brightness-110 cursor-pointer shadow-md active:scale-[0.99] select-none ${colorClasses}`}
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="space-y-1">
@@ -3318,7 +3321,7 @@ export default function ChecklistView({
                                 </div>
                               )}
                             </div>
-                            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-black/40 border border-white/10 uppercase tracking-wide text-zinc-300 shrink-0">
+                            <span className="routine-daily-tag text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-black/40 border border-white/10 uppercase tracking-wide text-zinc-300 shrink-0">
                               {block.color || 'Rotina'}
                             </span>
                           </div>
@@ -3349,7 +3352,7 @@ export default function ChecklistView({
                         <span className="w-12 text-center font-mono text-xs font-semibold text-zinc-500 shrink-0 select-none">
                           {hour}
                         </span>
-                        <div className="flex-1 h-9 rounded-xl border border-dashed border-zinc-900 hover:border-zinc-700 bg-zinc-950/40 hover:bg-zinc-900/30 flex items-center justify-between px-3 text-zinc-600 hover:text-zinc-300 transition-all">
+                        <div className="routine-daily-empty-slot flex-1 h-9 rounded-xl border border-dashed border-zinc-900 hover:border-zinc-700 bg-zinc-950/40 hover:bg-zinc-900/30 flex items-center justify-between px-3 text-zinc-600 hover:text-zinc-300 transition-all">
                           <span className="text-xs text-zinc-500 group-hover:text-zinc-400">
                             Horário livre
                           </span>
@@ -4084,6 +4087,7 @@ export default function ChecklistView({
             setWeeklyReviews={propSetWeeklyReviews || (() => {})}
             notes={calendarNotes || []}
             setNotes={setCalendarNotes}
+            themeMode={themeMode}
           />
         </motion.div>
       )}
@@ -4093,10 +4097,12 @@ export default function ChecklistView({
       <AnimatePresence>
         {editingTask && !showDeleteConfirmModal && (
           <div 
+            id="task-edit-modal-backdrop"
             onClick={() => setEditingTask(null)}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm cursor-pointer"
           >
             <motion.div
+              id="task-edit-modal-panel"
               onClick={(e) => e.stopPropagation()}
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}

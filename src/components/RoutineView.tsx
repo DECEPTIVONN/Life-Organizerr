@@ -41,6 +41,7 @@ interface RoutineViewProps {
   setWeeklyReviews: React.Dispatch<React.SetStateAction<WeeklyReview[]>>;
   notes: CalendarNote[];
   setNotes?: React.Dispatch<React.SetStateAction<CalendarNote[]>>;
+  themeMode?: 'dark' | 'light';
 }
 
 const DEFAULT_GRATITUDE_TEMPLATE = `Sou profundamente grato(a) hoje por:
@@ -707,8 +708,9 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
 
           <button
             type="button"
+            id="routine-weekly-add-btn"
             onClick={() => setIsAdding(!isAdding)}
-            className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs px-3 py-2 rounded-lg flex items-center justify-center shadow-[0_4px_12px_rgba(249,115,22,0.3)] transition-all h-[38px] w-[38px]"
+            className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs px-3 py-2 rounded-lg flex items-center justify-center shadow-[0_4px_12px_rgba(249,115,22,0.3)] transition-all h-[38px] w-[38px] cursor-pointer"
             title={isAdding ? 'Fechar formulário' : 'Adicionar Atividade'}
             aria-label={isAdding ? 'Fechar formulário' : 'Adicionar Atividade'}
           >
@@ -717,8 +719,9 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
 
           <button
             type="button"
+            id="routine-weekly-clear-btn"
             onClick={() => setShowClearModal(true)}
-            className="text-xs font-semibold text-red-400 bg-red-400/5 hover:bg-red-400/10 border border-red-500/10 px-3 py-2 rounded-lg transition-all flex items-center justify-center h-[38px] w-[38px]"
+            className="text-xs font-semibold text-red-400 bg-red-400/5 hover:bg-red-400/10 border border-red-500/10 px-3 py-2 rounded-lg transition-all flex items-center justify-center h-[38px] w-[38px] cursor-pointer"
             title="Limpar rotina"
             aria-label="Limpar rotina"
           >
