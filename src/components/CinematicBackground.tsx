@@ -183,41 +183,16 @@ export const CinematicBackground: React.FC<CinematicBackgroundProps> = ({
   return (
     <div
       aria-hidden="true"
-      className="fixed inset-0 pointer-events-none z-0 overflow-hidden select-none transition-colors duration-1000"
-      style={{
-        background: isLight 
-          ? 'linear-gradient(180deg, #F5F2ED 0%, #EFEBE4 100%)' 
-          : '#040405',
-      }}
+      className="fixed inset-0 pointer-events-none z-0 overflow-hidden select-none"
     >
-      {/* Modo Claro Signature Ambient Blooms (ModoClaro.md Item 3) */}
-      {isLight ? (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {/* Brilho vermelho: canto superior direito */}
-          <div
-            className="absolute inset-0 pointer-events-none transition-opacity duration-1000"
-            style={{
-              background: 'radial-gradient(ellipse 55% 45% at 92% -5%, rgba(225, 29, 72, 0.13), transparent 70%)',
-            }}
-          />
-          {/* Brilho âmbar: canto inferior direito */}
-          <div
-            className="absolute inset-0 pointer-events-none transition-opacity duration-1000"
-            style={{
-              background: 'radial-gradient(ellipse 45% 40% at 100% 100%, rgba(245, 158, 11, 0.10), transparent 70%)',
-            }}
-          />
-        </div>
-      ) : (
-        /* Modo Escuro Campo de Fundo Fluido */
-        !isMinimal && (
-          <motion.div
-            key={`ambient-bloom-${activeTab}-${themeMode}`}
-            initial={{ opacity: 0.5 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute inset-0 overflow-hidden pointer-events-none"
-          >
+      {/* 1. Base Dark Background Layer */}
+      <div 
+        className="absolute inset-0 bg-[#040405] transition-opacity duration-700 ease-in-out pointer-events-none"
+        style={{ opacity: isLight ? 0 : 1 }}
+      >
+        {/* Modo Escuro Campo de Fundo Fluido */}
+        {!isMinimal && (
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
             {/* ONDA A: AURORA ZÊNITE LÍQUIDA */}
             <div
               className={`absolute -top-32 left-1/2 w-[140vw] max-w-[1500px] h-[520px] blur-[140px] pointer-events-none ${
@@ -251,9 +226,33 @@ export const CinematicBackground: React.FC<CinematicBackgroundProps> = ({
                 transition: 'background 1.1s cubic-bezier(0.16, 1, 0.3, 1)',
               }}
             />
-          </motion.div>
-        )
-      )}
+          </div>
+        )}
+      </div>
+
+      {/* 2. Base Light Background Layer (ModoClaro.md Item 3) */}
+      <div 
+        className="absolute inset-0 transition-opacity duration-700 ease-in-out pointer-events-none"
+        style={{ 
+          opacity: isLight ? 1 : 0,
+          background: 'linear-gradient(180deg, #F5F2ED 0%, #EFEBE4 100%)' 
+        }}
+      >
+        {/* Brilho vermelho: canto superior direito */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'radial-gradient(ellipse 55% 45% at 92% -5%, rgba(225, 29, 72, 0.13), transparent 70%)',
+          }}
+        />
+        {/* Brilho âmbar: canto inferior direito */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'radial-gradient(ellipse 45% 40% at 100% 100%, rgba(245, 158, 11, 0.10), transparent 70%)',
+          }}
+        />
+      </div>
 
       {/* 2. VINHETA PERIMÉTRICA DE ESTÚDIO */}
       <div

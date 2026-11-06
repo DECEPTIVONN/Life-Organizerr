@@ -5623,41 +5623,6 @@ ${weekReviewImprovements.map(i => `- ${i}`).join('\n')}`;
                                 />
                               </div>
                             </div>
-
-                            {/* 1-Tap Sleep Schedule Presets */}
-                            <div className="space-y-1.5 pt-1">
-                              <span className="text-[9px] text-zinc-500 font-mono font-medium block">
-                                Atalhos rápidos de sono (1 toque):
-                              </span>
-                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                                {[
-                                  { label: '22:30 → 06:30', hrs: '8h', bed: '22:30', wake: '06:30' },
-                                  { label: '23:00 → 07:00', hrs: '8h', bed: '23:00', wake: '07:00' },
-                                  { label: '00:00 → 07:30', hrs: '7h30', bed: '00:00', wake: '07:30' },
-                                  { label: '23:30 → 07:00', hrs: '7h30', bed: '23:30', wake: '07:00' },
-                                ].map(preset => {
-                                  const isCurrent = sleepBedTime === preset.bed && sleepWakeTime === preset.wake;
-                                  return (
-                                    <button
-                                      key={preset.label}
-                                      type="button"
-                                      onClick={() => {
-                                        setSleepBedTime(preset.bed);
-                                        setSleepWakeTime(preset.wake);
-                                      }}
-                                      className={`py-1 px-1.5 rounded-lg text-[9.5px] font-mono font-bold border transition-all cursor-pointer flex items-center justify-between ${
-                                        isCurrent
-                                          ? 'bg-indigo-500/25 border-indigo-500/60 text-indigo-300 shadow-xs'
-                                          : 'bg-zinc-900/60 hover:bg-zinc-850 border-zinc-800 text-zinc-400 hover:text-white'
-                                      }`}
-                                    >
-                                      <span>{preset.label}</span>
-                                      <span className="text-[8px] text-indigo-400">{preset.hrs}</span>
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            </div>
                           </div>
 
                           {/* 3. Smart Culinary Hub (Alimentação Interativa sem cara de formulário) */}
