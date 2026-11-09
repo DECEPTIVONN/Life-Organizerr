@@ -22,6 +22,7 @@ import {
   BookOpen,
   Book,
   History,
+  Tag,
   Tag as TagIcon,
   Flame,
   Zap
@@ -121,6 +122,8 @@ export default function DailyMissionsView({
   const [formRecurrence, setFormRecurrence] = useState<'none' | 'daily' | 'weekly' | 'weekends' | 'specific_days' | 'monthly'>('none');
   const [formSpecificDays, setFormSpecificDays] = useState<number[]>([1, 2, 3, 4, 5]);
   const [formIsHabit, setFormIsHabit] = useState(false);
+  const [formHabitId, setFormHabitId] = useState<string>('');
+  const [isTagsDropdownOpen, setIsTagsDropdownOpen] = useState(false);
 
   // Sub-modals for task creation
   const [isDatePickerModalOpen, setIsDatePickerModalOpen] = useState(false);
@@ -404,6 +407,8 @@ export default function DailyMissionsView({
     setFormRecurrence('none');
     setFormSpecificDays([1, 2, 3, 4, 5]);
     setFormIsHabit(false);
+    setFormHabitId('');
+    setIsTagsDropdownOpen(false);
     setIsTaskModalOpen(true);
   };
 
@@ -439,6 +444,8 @@ export default function DailyMissionsView({
     }
     setFormSpecificDays(task.specificDays || [1, 2, 3, 4, 5]);
     setFormIsHabit(Boolean(task.isHabit || task.habitId));
+    setFormHabitId(task.habitId || '');
+    setIsTagsDropdownOpen(false);
     setIsTaskModalOpen(true);
   };
 
@@ -494,15 +501,14 @@ export default function DailyMissionsView({
 
     if (editingTask) {
       // Edit existing task
-      const targetHabitId = formIsHabit ? (editingTask.habitId || ('hab-' + editingTask.id)) : undefined;
+      const targetHabitId = formIsHabit ? (formHabitId || editingTask.habitId || ('hab-' + editingTask.id)) : undefined;
 
       if (formIsHabit && setHabits) {
         setHabits(prevHabits => {
-          const existing = prevHabits.find(h => h.id === targetHabitId || h.name.toLowerCase() === formTitle.trim().toLowerCase());
+          const existing = prevHabits.find(h => h.id === targetHabitId || (!formHabitId && h.name.toLowerCase() === formTitle.trim().toLowerCase()));
           if (existing) {
             return prevHabits.map(h => h.id === existing.id ? {
               ...h,
-              name: formTitle.trim(),
               category: formTags[0] || h.category || 'Geral'
             } : h);
           }
@@ -550,11 +556,11 @@ export default function DailyMissionsView({
     } else {
       // Create new task
       const newTaskId = 'task-' + Math.random().toString(36).substring(2, 9);
-      const targetHabitId = formIsHabit ? ('hab-' + newTaskId) : undefined;
+      const targetHabitId = formIsHabit ? (formHabitId || ('hab-' + newTaskId)) : undefined;
 
       if (formIsHabit && setHabits) {
         setHabits(prevHabits => {
-          const existing = prevHabits.find(h => h.name.toLowerCase() === formTitle.trim().toLowerCase());
+          const existing = prevHabits.find(h => h.id === targetHabitId || (!formHabitId && h.name.toLowerCase() === formTitle.trim().toLowerCase()));
           if (existing) {
             return prevHabits;
           }
@@ -767,15 +773,6 @@ export default function DailyMissionsView({
             {fullDateHeaderLabel}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={handleOpenCreateTask}
-          className="btn-add-task self-start sm:self-auto cursor-pointer"
-          title="Criar nova tarefa (atalho N)"
-        >
-          <Plus className="w-4 h-4 stroke-[2.5]" />
-          <span>Adicionar tarefa</span>
-        </button>
       </div>
 
       {/* ======================================================== */}
@@ -843,17 +840,17 @@ export default function DailyMissionsView({
           </button>
         </div>
 
-        {/* Right icons: Ofensiva, Visão Geral & Trackers */}
+        {/* Right icons: Ofensiva (Apenas ícone da chama), Visão Geral & Trackers */}
         <div className="flex items-center gap-1.5">
           {onOpenStreakHub && (
             <button
               type="button"
               onClick={onOpenStreakHub}
-              className="streak-chip flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/20 hover:border-orange-500/40 hover:bg-orange-500/20 px-2.5 py-1.5 rounded-xl text-xs text-orange-400 font-bold transition-all cursor-pointer group"
-              title="Abrir Central de Ofensivas"
+              className="square-btn-34 p-2 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 rounded-xl border border-orange-500/20 hover:border-orange-500/40 transition-colors flex items-center justify-center cursor-pointer group"
+              title={`Central de Ofensivas (${streak} ${streak === 1 ? 'dia' : 'dias'})`}
+              aria-label="Central de Ofensivas"
             >
-              <Flame className="w-3.5 h-3.5 text-orange-500 fill-orange-500/20 group-hover:scale-110 transition-transform" />
-              <span>{streak} {streak === 1 ? 'dia' : 'dias'}</span>
+              <Flame className="w-4 h-4 text-orange-500 fill-orange-500/20 group-hover:scale-110 transition-transform" />
             </button>
           )}
 
@@ -1124,7 +1121,11 @@ export default function DailyMissionsView({
                     <motion.div
                       key={task.id}
                       layout
-                      className="task-card-layered bg-[#18181b] hover:bg-[#1f1f23] transition-colors rounded-[18px] px-4 py-3 sm:py-3.5 border border-zinc-800/50 shadow-sm relative group"
+                      className={`task-card-layered rounded-[18px] px-4 py-3 sm:py-3.5 border transition-all duration-200 relative group ${
+                        task.completed
+                          ? 'bg-[#121215]/85 border-zinc-900/70 opacity-60 hover:opacity-85 shadow-none'
+                          : 'bg-gradient-to-b from-[#1c1c23] via-[#18181e] to-[#141418] hover:from-[#23232c] hover:via-[#1c1c23] hover:to-[#17171d] border-zinc-800/80 hover:border-zinc-700/90 shadow-[0_4px_16px_rgba(0,0,0,0.28)] hover:shadow-[0_6px_22px_rgba(0,0,0,0.38)]'
+                      }`}
                     >
                       {/* Top Row: Checkbox + Priority Dot + Title + Chevron/Actions */}
                       <div className="flex items-center justify-between gap-3">
@@ -1138,8 +1139,8 @@ export default function DailyMissionsView({
                             }}
                             className={`task-checkbox w-5 h-5 rounded-md flex items-center justify-center transition-all shrink-0 cursor-pointer ${
                               task.completed
-                                ? 'task-completed bg-zinc-900 dark:bg-white border-zinc-900 dark:border-white text-white dark:text-zinc-950 shadow-sm'
-                                : 'border border-zinc-300 dark:border-zinc-600 hover:border-zinc-400 bg-transparent'
+                                ? 'task-completed bg-orange-500 border-orange-500 text-white shadow-sm shadow-orange-500/20'
+                                : 'border border-zinc-700 hover:border-orange-500/60 bg-zinc-900/60'
                             }`}
                           >
                             {task.completed && <Check className="w-3.5 h-3.5 stroke-[3]" />}
@@ -1160,7 +1161,7 @@ export default function DailyMissionsView({
                         )}
                         <h4
                           className={`text-sm sm:text-base font-semibold tracking-tight leading-snug transition-all ${
-                            task.completed ? 'line-through text-zinc-500' : 'text-white'
+                            task.completed ? 'line-through text-zinc-500' : 'text-zinc-100 group-hover:text-white'
                           }`}
                         >
                           {task.text}
@@ -1326,7 +1327,7 @@ export default function DailyMissionsView({
                         transition={{ duration: 0.18, ease: 'easeInOut' }}
                         className="overflow-hidden"
                       >
-                        <div className="mt-3 pt-2.5 border-t border-zinc-800/50 flex flex-wrap items-center gap-x-4 gap-y-2">
+                        <div className="mt-3 pt-2.5 border-t border-zinc-800/50 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-center w-full">
                           {task.subtasks!.map(st => (
                             <div
                               key={st.id}
@@ -1746,43 +1747,98 @@ export default function DailyMissionsView({
                       </div>
                     </div>
 
-                    {/* TAGS Section */}
-                    <div>
+                    {/* TAGS Section (exibidas após um dropdown) */}
+                    <div className="relative">
                       <label className="text-[10px] font-bold text-zinc-400 tracking-wider uppercase block mb-1.5">
                         TAGS
                       </label>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {allTags.map(tag => {
-                          const isSel = formTags.includes(tag.name);
-                          return (
-                            <button
-                              key={tag.id}
-                              type="button"
-                              onClick={() => handleToggleTagInForm(tag.name)}
-                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                                isSel
-                                  ? 'bg-zinc-900 border-zinc-700 text-white shadow-sm'
-                                  : 'bg-zinc-950 border-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-800'
-                              }`}
-                            >
-                              <span
-                                className="w-2 h-2 rounded-full shrink-0"
-                                style={{ backgroundColor: tag.color }}
-                              />
-                              <span className="capitalize">{tag.name}</span>
-                            </button>
-                          );
-                        })}
+                      <button
+                        type="button"
+                        onClick={() => setIsTagsDropdownOpen(prev => !prev)}
+                        className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border border-zinc-900 bg-zinc-950 hover:border-zinc-800 text-xs font-semibold text-zinc-300 transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Tag className="w-3.5 h-3.5 text-zinc-400" />
+                          <span>
+                            {formTags.length === 0
+                              ? 'Selecionar tags'
+                              : `${formTags.length} tag${formTags.length > 1 ? 's' : ''} selecionada${formTags.length > 1 ? 's' : ''}`}
+                          </span>
+                        </div>
+                        <ChevronDown className={`w-4 h-4 text-zinc-400 transition-transform ${isTagsDropdownOpen ? 'rotate-180' : ''}`} />
+                      </button>
 
-                        <button
-                          type="button"
-                          onClick={() => setIsNewTagModalOpen(true)}
-                          className="w-8 h-8 rounded-full bg-zinc-950 border border-zinc-900 hover:border-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center transition-colors"
-                          title="Nova tag"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </button>
-                      </div>
+                      {/* Dropdown de Tags */}
+                      {isTagsDropdownOpen && (
+                        <div className="mt-2 p-3 bg-zinc-950 border border-zinc-800 rounded-2xl shadow-xl space-y-2.5 z-20">
+                          <div className="flex items-center justify-between pb-1 border-b border-zinc-900">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Escolha as tags:</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                refreshTags();
+                                setIsNewTagModalOpen(true);
+                              }}
+                              className="text-[11px] font-semibold text-orange-400 hover:text-orange-300 flex items-center gap-1 cursor-pointer"
+                            >
+                              <Plus className="w-3 h-3" /> Nova tag
+                            </button>
+                          </div>
+                          <div className="flex items-center gap-2 flex-wrap max-h-40 overflow-y-auto pt-1">
+                            {allTags.map(tag => {
+                              const isSel = formTags.includes(tag.name);
+                              return (
+                                <button
+                                  key={tag.id}
+                                  type="button"
+                                  onClick={() => handleToggleTagInForm(tag.name)}
+                                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+                                    isSel
+                                      ? 'bg-zinc-800 border-zinc-600 text-white shadow-xs'
+                                      : 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'
+                                  }`}
+                                >
+                                  <span
+                                    className="w-2 h-2 rounded-full shrink-0"
+                                    style={{ backgroundColor: tag.color }}
+                                  />
+                                  <span className="capitalize">{tag.name}</span>
+                                  {isSel && <Check className="w-3 h-3 text-orange-400 stroke-[3] ml-0.5" />}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Selected Tags Badges */}
+                      {formTags.length > 0 && (
+                        <div className="flex items-center gap-1.5 flex-wrap mt-2">
+                          {formTags.map(tagName => {
+                            const tagObj = allTags.find(t => t.name === tagName);
+                            return (
+                              <span
+                                key={tagName}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-900 border border-zinc-800 text-zinc-200"
+                              >
+                                <span
+                                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                                  style={{ backgroundColor: tagObj?.color || '#a1a1aa' }}
+                                />
+                                <span className="capitalize">{tagName}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleTagInForm(tagName)}
+                                  className="text-zinc-500 hover:text-rose-400 ml-0.5 cursor-pointer"
+                                  title="Remover tag"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
 
                     {/* LEMBRETE Section */}
@@ -1795,7 +1851,7 @@ export default function DailyMissionsView({
                         <button
                           type="button"
                           onClick={() => setFormReminderHour(prev => !prev)}
-                          className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all flex items-center gap-1.5 ${
+                          className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer ${
                             formReminderHour
                               ? 'bg-zinc-900 border-zinc-700 text-white'
                               : 'bg-zinc-950 border-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-800'
@@ -1809,7 +1865,7 @@ export default function DailyMissionsView({
                         <button
                           type="button"
                           onClick={() => setFormReminderDate(prev => !prev)}
-                          className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all flex items-center gap-1.5 ${
+                          className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer ${
                             formReminderDate
                               ? 'bg-zinc-900 border-zinc-700 text-white'
                               : 'bg-zinc-950 border-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-800'
@@ -1822,15 +1878,21 @@ export default function DailyMissionsView({
                       </div>
                     </div>
 
-                    {/* HÁBITO Section - Assinalar como hábito para rastreamento */}
+                    {/* HÁBITO Section - Assinalar como hábito e exibir opções do rastreador de hábitos */}
                     <div>
                       <label className="text-[10px] font-bold text-zinc-400 tracking-wider uppercase block mb-1.5">
                         RASTREADOR DE HÁBITOS
                       </label>
                       <button
                         type="button"
-                        onClick={() => setFormIsHabit(prev => !prev)}
-                        className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-semibold flex items-center justify-between transition-all ${
+                        onClick={() => {
+                          const next = !formIsHabit;
+                          setFormIsHabit(next);
+                          if (!next) {
+                            setFormHabitId('');
+                          }
+                        }}
+                        className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
                           formIsHabit
                             ? 'bg-amber-500/15 border-amber-500/50 text-amber-300 shadow-sm'
                             : 'bg-zinc-950 border-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-800'
@@ -1855,6 +1917,69 @@ export default function DailyMissionsView({
                           {formIsHabit && <Check className="w-3.5 h-3.5 stroke-[3]" />}
                         </div>
                       </button>
+
+                      {/* Exibir opções dos hábitos do rastreador de hábitos ao marcar */}
+                      {formIsHabit && (
+                        <div className="mt-2.5 p-3 bg-zinc-950 border border-amber-500/30 rounded-2xl space-y-2.5">
+                          <span className="text-[10px] font-bold text-amber-400 tracking-wider uppercase block">
+                            Opções do Rastreador de Hábitos:
+                          </span>
+
+                          <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                            {/* Opção padrão: Criar novo hábito */}
+                            <button
+                              type="button"
+                              onClick={() => setFormHabitId('')}
+                              className={`w-full px-3 py-2 rounded-xl text-xs text-left border flex items-center justify-between transition-colors cursor-pointer ${
+                                !formHabitId
+                                  ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 font-semibold shadow-xs'
+                                  : 'bg-zinc-900/60 border-zinc-850 text-zinc-400 hover:text-white hover:border-zinc-750'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <Plus className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                <span>Criar novo hábito: <strong className="text-white">"{formTitle.trim() || 'Título da tarefa'}"</strong></span>
+                              </div>
+                              {!formHabitId && <Check className="w-3.5 h-3.5 text-amber-400 stroke-[3] shrink-0" />}
+                            </button>
+
+                            {/* Opções de hábitos existentes do rastreador */}
+                            {habits && habits.length > 0 ? (
+                              habits.map(h => {
+                                const isSelected = formHabitId === h.id;
+                                return (
+                                  <button
+                                    key={h.id}
+                                    type="button"
+                                    onClick={() => {
+                                      setFormHabitId(h.id);
+                                      if (!formTitle.trim()) {
+                                        setFormTitle(h.name);
+                                      }
+                                    }}
+                                    className={`w-full px-3 py-2 rounded-xl text-xs text-left border flex items-center justify-between transition-colors cursor-pointer ${
+                                      isSelected
+                                        ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 font-semibold shadow-xs'
+                                        : 'bg-zinc-900/60 border-zinc-850 text-zinc-400 hover:text-white hover:border-zinc-750'
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <span className={`w-2 h-2 rounded-full shrink-0 ${h.type === 'good' ? 'bg-emerald-400' : 'bg-rose-400'}`} />
+                                      <span className="font-medium text-white truncate">{h.name}</span>
+                                      <span className="text-[10px] text-zinc-500 shrink-0 font-mono">({h.category})</span>
+                                    </div>
+                                    {isSelected && <Check className="w-3.5 h-3.5 text-amber-400 stroke-[3] shrink-0" />}
+                                  </button>
+                                );
+                              })
+                            ) : (
+                              <p className="text-[11px] text-zinc-500 italic px-1 pt-1">
+                                Nenhum outro hábito cadastrado no rastreador.
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* RECORRÊNCIA Section - Only displayed when editing the task */}

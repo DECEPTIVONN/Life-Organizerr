@@ -42,7 +42,8 @@ import {
   History,
   CheckCircle2,
   ArrowUpDown,
-  Search
+  Search,
+  Settings
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { DailyTask, SubTask, BookTracker, BibleTracker, RoutineItem, YearlyBook, WeeklyReview, MonthlyReview, CalendarNote, Habit } from '../types';
@@ -2279,9 +2280,11 @@ export default function ChecklistView({
                     handleOpenNewBook();
                   }
                 }}
-                className="task-book-config-btn text-[10px] font-bold text-zinc-400 hover:text-white bg-zinc-800/60 hover:bg-zinc-700 px-2 py-1 rounded-lg transition-colors cursor-pointer"
+                className="task-book-config-btn text-zinc-400 hover:text-white bg-zinc-800/60 hover:bg-zinc-750 p-1.5 rounded-lg transition-colors cursor-pointer flex items-center justify-center border border-zinc-750"
+                title={bookTracker?.bookName ? "Configurações da leitura" : "Configurar leitura semanal"}
+                aria-label="Configurações da leitura"
               >
-                {bookTracker?.bookName ? 'Editar' : 'Configurar'}
+                <Settings className="w-3.5 h-3.5 text-orange-400" />
               </button>
               {bookOpen ? <ChevronUp className="h-4 w-4 text-zinc-500" /> : <ChevronDown className="h-4 w-4 text-zinc-500" />}
             </div>
@@ -2481,9 +2484,11 @@ export default function ChecklistView({
                   e.stopPropagation();
                   setShowBibleConfig(true);
                 }}
-                className="task-bible-config-btn text-[10px] font-bold text-zinc-400 hover:text-white bg-zinc-800/60 hover:bg-zinc-700 px-2 py-1 rounded transition-colors cursor-pointer"
+                className="task-bible-config-btn text-zinc-400 hover:text-white bg-zinc-800/60 hover:bg-zinc-750 p-1.5 rounded-lg transition-colors cursor-pointer flex items-center justify-center border border-zinc-750"
+                title="Configurações do plano da Bíblia"
+                aria-label="Configurar Bíblia"
               >
-                Configurar
+                <Settings className="w-3.5 h-3.5 text-amber-400" />
               </button>
               {bibleOpen ? <ChevronUp className="h-4 w-4 text-zinc-500" /> : <ChevronDown className="h-4 w-4 text-zinc-500" />}
             </div>
@@ -3207,9 +3212,17 @@ export default function ChecklistView({
               </div>
             </div>
 
-            {/* View Mode: Dia (Mobile First) vs Grade Semanal */}
-            {routineViewMode === 'dia' ? (
-              <div className="space-y-4">
+            {/* View Mode: Dia (Mobile First) vs Grade Semanal (com transição suave) */}
+            <AnimatePresence mode="wait">
+              {routineViewMode === 'dia' ? (
+                <motion.div
+                  key="routine-view-dia"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.22, ease: "easeOut" }}
+                  className="space-y-4"
+                >
                 {/* Day Selector Carousel / Pills */}
                 <div className="flex items-center justify-between gap-1.5 p-1.5 bg-zinc-900/60 rounded-2xl border border-zinc-900">
                   <button
@@ -3352,7 +3365,7 @@ export default function ChecklistView({
                         <span className="w-12 text-center font-mono text-xs font-semibold text-zinc-500 shrink-0 select-none">
                           {hour}
                         </span>
-                        <div className="routine-daily-empty-slot flex-1 h-9 rounded-xl border border-dashed border-zinc-900 hover:border-zinc-700 bg-zinc-950/40 hover:bg-zinc-900/30 flex items-center justify-between px-3 text-zinc-600 hover:text-zinc-300 transition-all">
+                        <div className="routine-daily-empty-slot flex-1 h-9 rounded-xl border-0 border-transparent outline-none ring-0 bg-zinc-950/40 hover:bg-zinc-900/30 flex items-center justify-between px-3 text-zinc-600 hover:text-zinc-300 transition-all">
                           <span className="text-xs text-zinc-500 group-hover:text-zinc-400">
                             Horário livre
                           </span>
@@ -3364,10 +3377,17 @@ export default function ChecklistView({
                     );
                   })}
                 </div>
-              </div>
+              </motion.div>
             ) : (
               /* Weekly Routine Grid Table (with mobile scroll reminder) */
-              <div className="space-y-2">
+              <motion.div
+                key="routine-view-grade"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.22, ease: "easeOut" }}
+                className="space-y-2"
+              >
                 <div className="text-[11px] text-zinc-500 text-right sm:hidden">
                   ← Deslize horizontalmente para ver todos os dias →
                 </div>
@@ -3453,9 +3473,10 @@ export default function ChecklistView({
                     </tbody>
                   </table>
                 </div>
-              </div>
+              </motion.div>
             )}
-          </div>
+          </AnimatePresence>
+        </div>
 
           {/* Time Block creation/editing modal */}
           <AnimatePresence>

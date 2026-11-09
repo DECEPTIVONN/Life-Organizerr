@@ -3026,16 +3026,25 @@ body.light-mode {
   color: #5B6472 !important;
 }
 
-/* Horário livre na rotina diária */
+/* Horário livre na rotina diária (sem outlines) */
+.routine-daily-empty-slot {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 .light-mode .routine-daily-empty-slot {
   background: #FFFFFF !important;
-  border: 1px dashed rgba(15, 23, 42, 0.22) !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
   color: #5B6472 !important;
 }
 
 .light-mode .routine-daily-empty-slot:hover {
   background: #FAF8F4 !important;
-  border-color: #E11D48 !important;
+  border: none !important;
+  outline: none !important;
 }
 
 .light-mode .routine-daily-empty-slot span:first-child {
