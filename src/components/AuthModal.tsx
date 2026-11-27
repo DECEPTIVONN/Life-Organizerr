@@ -21,12 +21,14 @@ import {
   EyeOff,
   Sparkles,
   KeyRound,
-  X
+  X,
+  FlaskConical
 } from 'lucide-react';
 import { 
   registerWithEmail, 
   loginWithEmailOrUsername, 
   loginWithGoogleProfile, 
+  loginWithTestAccount,
   isUsernameAvailable, 
   recoverAccountByEmail,
   createQrLoginSession,
@@ -313,6 +315,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
     }
   };
 
+  const handleTestAccountLogin = async () => {
+    setErrorMsg(null);
+    setLoading(true);
+    try {
+      const res = await loginWithTestAccount();
+      if (res.ok && res.user) {
+        onSuccess(res.user, rememberMe);
+      }
+    } catch (err: any) {
+      setErrorMsg('Erro ao entrar na conta teste.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[9999] w-full h-full flex flex-col justify-between bg-[#000000] overflow-y-auto no-scrollbar select-none text-white font-sans">
       {/* Curved Perspective Horizon Grid Background (Faithful to the Grok aesthetic) */}
@@ -478,6 +495,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
                 >
                   <UserPlus className="w-4.5 h-4.5 text-zinc-300 stroke-[1.75]" />
                   <span className="font-normal text-zinc-100">Criar conta</span>
+                </button>
+
+                {/* PILL 4: Entrar com Conta Teste */}
+                <button
+                  type="button"
+                  id="btn-login-test"
+                  onClick={handleTestAccountLogin}
+                  disabled={loading}
+                  className="w-full h-12 sm:h-13 bg-[#111115]/90 hover:bg-[#1a1a20] active:bg-[#0d0d10] border border-dashed border-zinc-700/80 hover:border-zinc-500 rounded-full text-zinc-200 font-medium text-sm sm:text-[15px] flex items-center justify-center gap-2.5 transition-all duration-200 active:scale-[0.985] cursor-pointer disabled:opacity-50"
+                >
+                  <FlaskConical className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span className="font-normal">Entrar com Conta Teste</span>
                 </button>
 
                 {/* Subtle secondary utilities: QR Code & Account Sync */}
@@ -656,19 +685,33 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
                   </button>
                 </form>
 
-                {/* Switch to Signup */}
-                <div className="mt-5 text-center text-xs text-zinc-500">
-                  <span>Não tem uma conta? </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMode('signup');
-                      setErrorMsg(null);
-                    }}
-                    className="text-white hover:underline font-medium"
-                  >
-                    Criar conta
-                  </button>
+                {/* Switch to Signup & Test Account */}
+                <div className="mt-5 space-y-3 text-center text-xs text-zinc-500">
+                  <div>
+                    <span>Não tem uma conta? </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMode('signup');
+                        setErrorMsg(null);
+                      }}
+                      className="text-white hover:underline font-medium"
+                    >
+                      Criar conta
+                    </button>
+                  </div>
+                  <div className="pt-2 border-t border-zinc-800/80">
+                    <button
+                      type="button"
+                      id="btn-login-test-inline"
+                      onClick={handleTestAccountLogin}
+                      disabled={loading}
+                      className="inline-flex items-center justify-center gap-1.5 text-amber-400 hover:text-amber-300 font-medium transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      <FlaskConical className="w-3.5 h-3.5" />
+                      <span>Entrar com Conta Teste</span>
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             )}

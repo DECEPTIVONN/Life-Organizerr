@@ -3030,6 +3030,10 @@ export default function App() {
       await connectSyncKey(user.syncKey);
     }
 
+    if (user.provider === 'test' && dailyTasks.length === 0 && goals.length === 0) {
+      loadDemoData();
+    }
+
     setIsUnlockLoading(false);
     setIsSyncLoading(true);
   };

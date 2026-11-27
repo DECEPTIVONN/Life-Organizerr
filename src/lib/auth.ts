@@ -13,7 +13,7 @@ export interface AuthUser {
   name: string;
   syncKey: string;
   photo?: string;
-  provider: 'email' | 'google' | 'qr';
+  provider: 'email' | 'google' | 'qr' | 'test';
 }
 
 export interface QrLoginSession {
@@ -542,4 +542,20 @@ export async function authorizeQrLoginSession(
 
   return { ok: true, message: 'Aparelho e sessão QR Code autorizados com sucesso!', sessionId: targetSessionId };
 }
+
+/**
+ * Logs in immediately with an isolated Test/Demo account for exploration and testing.
+ */
+export async function loginWithTestAccount(): Promise<{ ok: boolean; user: AuthUser }> {
+  const testUser: AuthUser = {
+    email: 'teste@lifeorganizer.app',
+    username: 'teste',
+    name: 'Conta Teste',
+    syncKey: 'MBC-TESTE-DEMO01',
+    provider: 'test'
+  };
+
+  return { ok: true, user: testUser };
+}
+
 
